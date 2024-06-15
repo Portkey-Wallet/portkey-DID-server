@@ -614,6 +614,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         {
             var getNftItemInfosDto = CreateGetNftItemInfosDto(redPackageDetailDto.Symbol, redPackageDetailDto.ChainId);
             var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+            _logger.LogInformation("cryptogift nftInfo id:{0}, symbol:{1}, chainId:{2}, indexerNftItemInfos={3}", redPackageDetailDto.Id, redPackageDetailDto.Symbol, redPackageDetailDto.ChainId, JsonConvert.SerializeObject(indexerNftItemInfos));
             List<NftItemInfo> nftItemInfos = indexerNftItemInfos.NftItemInfos;
 
             if (nftItemInfos != null && nftItemInfos.Count > 0)

@@ -347,6 +347,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             var getNftItemInfosDto = CreateGetNftItemInfosDto(detail.Symbol, detail.ChainId);
             var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+            _logger.LogInformation("redPackage nftInfo id:{0}, symbol:{1}, chainId:{2}, indexerNftItemInfos={3}", id, detail.Symbol, detail.ChainId, JsonConvert.SerializeObject(indexerNftItemInfos));
             List<NftItemInfo> nftItemInfos = indexerNftItemInfos.NftItemInfos;
 
             if (nftItemInfos != null && nftItemInfos.Count > 0)
