@@ -42,7 +42,6 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogInformation("CryptoGiftWorker is beginning");
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q => 
             q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
@@ -50,7 +49,6 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
             q.Term(i => i.Field(f => f.CreateTime > DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1)).ToUnixTimeMilliseconds())));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
-        _logger.LogInformation("CryptoWorker cryptoGiftIndices:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
             return;
@@ -59,49 +57,60 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
         var expiredTimeLimitMillis = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
         foreach (var cryptoGiftIndex in cryptoGiftIndices)
         {
-            var redPackageGrain = _clusterClient.GetGrain<ICryptoBoxGrain>(cryptoGiftIndex.RedPackageId);
-            var resultDto = await redPackageGrain.GetRedPackage(cryptoGiftIndex.RedPackageId);
-            _logger.LogInformation("CryptoWorker redPackageGrain:{0}", JsonConvert.SerializeObject(resultDto));
-            if (!resultDto.Success || resultDto.Data == null)
+            try
             {
-                continue;
-            }
-            var grain = _clusterClient.GetGrain<ICryptoGiftGran>(cryptoGiftIndex.RedPackageId);
-            var ctrCryptoGiftResult = await grain.GetCryptoGift(cryptoGiftIndex.RedPackageId);
-            _logger.LogInformation("CryptoWorker ctrCryptoGiftResult:{0}", JsonConvert.SerializeObject(ctrCryptoGiftResult));
-            if (!ctrCryptoGiftResult.Success || ctrCryptoGiftResult.Data == null)
-            {
-                continue;
-            }
-            
-            var cryptoGiftDto = ctrCryptoGiftResult.Data;
-            var redPackageDetailDto = resultDto.Data;
-            var expiredPreGrabItems = cryptoGiftDto.Items.Where(preGrabItem => PreGrabItemCondition(preGrabItem, expiredTimeLimitMillis)).ToList();
-            if (expiredPreGrabItems.IsNullOrEmpty())
-            {
-                continue;
-            }
-            bool modified = false;
-            var needReturnQuota = GetNeedReturnQuotaStatus(redPackageDetailDto);
-            foreach (var preGrabItem in expiredPreGrabItems)
-            {
-                modified = true;
-                if (needReturnQuota)
+                var redPackageGrain = _clusterClient.GetGrain<ICryptoBoxGrain>(cryptoGiftIndex.RedPackageId);
+                var resultDto = await redPackageGrain.GetRedPackage(cryptoGiftIndex.RedPackageId);
+                _logger.LogInformation("CryptoWorker redPackageGrain:{0}", JsonConvert.SerializeObject(resultDto));
+                if (!resultDto.Success || resultDto.Data == null)
                 {
-                    PreGrabBucketItemDto preGrabBucketItemDto = cryptoGiftDto.BucketClaimed[preGrabItem.Index];
-                    cryptoGiftDto.PreGrabbedAmount -= preGrabBucketItemDto.Amount;
-                    cryptoGiftDto.BucketNotClaimed.Add(preGrabBucketItemDto);
-                    cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
+                    continue;
+                }
+                var grain = _clusterClient.GetGrain<ICryptoGiftGran>(cryptoGiftIndex.RedPackageId);
+                var ctrCryptoGiftResult = await grain.GetCryptoGift(cryptoGiftIndex.RedPackageId);
+                _logger.LogInformation("CryptoWorker ctrCryptoGiftResult:{0}", JsonConvert.SerializeObject(ctrCryptoGiftResult));
+                if (!ctrCryptoGiftResult.Success || ctrCryptoGiftResult.Data == null)
+                {
+                    continue;
+                }
+        
+                var cryptoGiftDto = ctrCryptoGiftResult.Data;
+                var redPackageDetailDto = resultDto.Data;
+                var expiredPreGrabItems = cryptoGiftDto.Items.Where(preGrabItem => PreGrabItemCondition(preGrabItem, expiredTimeLimitMillis)).ToList();
+                if (expiredPreGrabItems.IsNullOrEmpty())
+                {
+                    continue;
+                }
+                bool modified = false;
+                var needReturnQuota = GetNeedReturnQuotaStatus(redPackageDetailDto);
+                foreach (var preGrabItem in expiredPreGrabItems)
+                {
+                    modified = true;
+                    if (needReturnQuota)
+                    {
+                        PreGrabBucketItemDto preGrabBucketItemDto = cryptoGiftDto.BucketClaimed.FirstOrDefault(bucket => bucket.Index.Equals(preGrabItem.Index));
+                        if (preGrabBucketItemDto == null)
+                        {
+                            continue;
+                        }
+                        cryptoGiftDto.PreGrabbedAmount -= preGrabBucketItemDto.Amount;
+                        cryptoGiftDto.BucketNotClaimed.Add(preGrabBucketItemDto);
+                        cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
+                    }
+                }
+                cryptoGiftDto.Items.RemoveAll(expiredPreGrabItems);
+                if (modified)
+                {
+                    var updateCryptoGift = await grain.UpdateCryptoGift(cryptoGiftDto);
+                    if (updateCryptoGift.Success && updateCryptoGift.Data != null)
+                    {
+                        _logger.LogInformation("CryptoGiftPreGrabQuotaExpiredWorker updateCryptoGift result:{0}", JsonConvert.SerializeObject(updateCryptoGift));
+                    }
                 }
             }
-            cryptoGiftDto.Items.RemoveAll(expiredPreGrabItems);
-            if (modified)
+            catch (Exception e)
             {
-                var updateCryptoGift = await grain.UpdateCryptoGift(cryptoGiftDto);
-                if (updateCryptoGift.Success && updateCryptoGift.Data != null)
-                {
-                    _logger.LogInformation("CryptoGiftPreGrabQuotaExpiredWorker updateCryptoGift result:{0}", JsonConvert.SerializeObject(updateCryptoGift));
-                }
+                _logger.LogError(e, "worker redpackageId:{0}", cryptoGiftIndex.RedPackageId);
             }
         }
     }

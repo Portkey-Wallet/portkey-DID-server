@@ -635,7 +635,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
             .ForMember(dest => dest.Decimals, src => src.MapFrom(m => m.Decimal))
             .ForMember(dest => dest.DisplayStatus, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
-        CreateMap<CryptoGiftDto, CryptoGiftAppDto>();
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));

@@ -32,12 +32,14 @@ using Volo.Abp.DistributedLocking;
 using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 using NftInfoDto = CAServer.UserAssets.Dtos.NftInfoDto;
+using PreGrabbedItemDto = CAServer.RedPackage.Dtos.PreGrabbedItemDto;
 
 namespace CAServer.CryptoGift;
 
 [RemoteService(isEnabled: false), DisableAuditing]
 public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
 {
+    private const long ExtraDeviationSeconds = 60;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IClusterClient _clusterClient;
     private readonly IObjectMapper _objectMapper;
@@ -393,11 +395,9 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         if (claimedPreGrabItem != null)
         {
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, claimedPreGrabItem.Amount, redPackageDetailDto.Decimal);
-            var remainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() -
-                                             DateTimeOffset.Now.ToUnixTimeSeconds();
+            var remainingExpirationSeconds = GetRemainingExpirationSeconds(claimedPreGrabItem);
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
-                caHolderDto, nftInfoDto, "You will get",  dollarValue, claimedPreGrabItem.Amount,
-                0, remainingExpirationSeconds);
+                caHolderDto, nftInfoDto, "You will get",  dollarValue, claimedPreGrabItem.Amount, 0, remainingExpirationSeconds);
         }
 
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
@@ -415,7 +415,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             }
             if (preGrabItem != null)
             {
-                var remainingExpirationSeconds = preGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
+                var remainingExpirationSeconds = GetRemainingExpirationSeconds(preGrabItem);
                 var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabItem.Amount, redPackageDetailDto.Decimal);
                 return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
                     caHolderDto, nftInfoDto, "Claim and Join Portkey", dollarValue, preGrabItem.Amount,
@@ -432,8 +432,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 .MinBy(crypto => crypto.GrabTime);
             if (preGrabItem != null)
             {
-                var remainingWaitingSeconds = preGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
-                            remainingWaitingSeconds = remainingWaitingSeconds > 0 ? remainingWaitingSeconds : 0;
+                var remainingWaitingSeconds = RemainingWaitingSeconds(preGrabItem);
                 return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.NoQuota, redPackageDetailDto,
                     caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
                     remainingWaitingSeconds, 0);
@@ -451,6 +450,23 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
             caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
             0, 0);
+    }
+
+    private long RemainingWaitingSeconds(PreGrabItem preGrabItem)
+    {
+        //due to the expired-checking scheduled task is executed every minute,
+        //so the other client try to claim the crypto gift won't feel the deviation time
+        var remainingWaitingSeconds = preGrabItem.GrabTime / 1000 + ExtraDeviationSeconds
+            + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
+        remainingWaitingSeconds = remainingWaitingSeconds > 0 ? remainingWaitingSeconds : 0;
+        return remainingWaitingSeconds;
+    }
+
+    private long GetRemainingExpirationSeconds(PreGrabItem preGrabItem)
+    {
+        return preGrabItem.GrabTime / 1000
+               + _cryptoGiftProvider.GetExpirationSeconds()
+               - DateTimeOffset.Now.ToUnixTimeSeconds();
     }
 
     private static string GetIdentityCode(Guid redPackageId, string ipAddress)
@@ -507,8 +523,54 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     {
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
-        _logger.LogInformation("=========GetCryptoGiftDetailFromGrainAsync:{0}", JsonConvert.SerializeObject(cryptoGiftResultDto.Data));
-        return _objectMapper.Map<CryptoGiftDto, CryptoGiftAppDto>(cryptoGiftResultDto.Data);
+        var cryptoGiftDto = cryptoGiftResultDto.Data;
+        List<PreGrabbedItemDto> items =new List<PreGrabbedItemDto>();
+        foreach (var preGrabItem in cryptoGiftDto.Items)
+        {
+            items.Add(new PreGrabbedItemDto()
+            {
+                Amount = preGrabItem.Amount.ToString(),
+                Decimal = preGrabItem.Decimal,
+                DisplayType = CryptoGiftDisplayType.Pending,
+                ExpirationTime = preGrabItem.GrabTime + _cryptoGiftProvider.GetExpirationSeconds() * 1000,
+                GrabTime = preGrabItem.GrabTime,
+                Username = preGrabItem.IdentityCode
+            });
+        }
+        List<PreGrabBucketItemAppDto> bucketNotClaimed = new List<PreGrabBucketItemAppDto>();
+        foreach (var preGrabBucketItemDto in cryptoGiftDto.BucketNotClaimed)
+        {
+            bucketNotClaimed.Add(new PreGrabBucketItemAppDto()
+            {
+                Amount = preGrabBucketItemDto.Amount,
+                IdentityCode = preGrabBucketItemDto.IdentityCode,
+                Index = preGrabBucketItemDto.Index,
+                UserId = preGrabBucketItemDto.UserId
+            });
+        }
+        List<PreGrabBucketItemAppDto> bucketClaimed = new List<PreGrabBucketItemAppDto>();
+       foreach (var preGrabBucketItemDto in cryptoGiftDto.BucketClaimed)
+       {
+           bucketClaimed.Add(new PreGrabBucketItemAppDto()
+           {
+               Amount = preGrabBucketItemDto.Amount,
+               IdentityCode = preGrabBucketItemDto.IdentityCode,
+               Index = preGrabBucketItemDto.Index,
+               UserId = preGrabBucketItemDto.UserId
+           });
+       }
+        return new CryptoGiftAppDto()
+        {
+            Id = cryptoGiftDto.Id,
+            SenderId = cryptoGiftDto.SenderId,
+            TotalAmount = cryptoGiftDto.TotalAmount,
+            PreGrabbedAmount = cryptoGiftDto.PreGrabbedAmount,
+            CreateTime = cryptoGiftDto.CreateTime,
+            Symbol = cryptoGiftDto.Symbol,
+            Items = items,
+            BucketNotClaimed = bucketNotClaimed,
+            BucketClaimed = bucketClaimed,
+        };
     }
 
     public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId)
@@ -619,7 +681,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         {
             var getNftItemInfosDto = CreateGetNftItemInfosDto(redPackageDetailDto.Symbol, redPackageDetailDto.ChainId);
             var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
-            _logger.LogInformation("cryptogift nftInfo id:{0}, symbol:{1}, chainId:{2}, indexerNftItemInfos={3}", redPackageDetailDto.Id, redPackageDetailDto.Symbol, redPackageDetailDto.ChainId, JsonConvert.SerializeObject(indexerNftItemInfos));
             List<NftItemInfo> nftItemInfos = indexerNftItemInfos.NftItemInfos;
 
             if (nftItemInfos != null && nftItemInfos.Count > 0)
@@ -627,9 +688,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 nftInfoDto.Alias = nftItemInfos[0].TokenName;
                 nftInfoDto.TokenId = redPackageDetailDto.Symbol.Split('-')[1];
                 nftInfoDto.ImageUrl = nftItemInfos[0].ImageUrl;
-                _logger.LogInformation("_ipfsOptions?.ReplacedIpfsPrefix:{0}", _ipfsOptions?.ReplacedIpfsPrefix);
                 nftInfoDto.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftInfoDto.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
-                _logger.LogInformation("cryptogift nftInfo imageUrl:{0}", nftInfoDto.ImageUrl);
             }
         }
 
