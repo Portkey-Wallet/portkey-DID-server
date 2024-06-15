@@ -81,4 +81,10 @@ public class RedPackageController : CAServerController
     {
         return await _redPackageAppService.GrabRedPackageAsync(input);
     }
+    
+    [HttpPost("logged/grab")]
+    public async Task<GrabRedPackageOutputDto> LoggedGrabRedPackageAsync(GrabRedPackageInputDto input)
+    {
+        return await _redPackageAppService.LoggedGrabRedPackageAsync(input);
+    }
 }

@@ -103,25 +103,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
                     _logger.LogInformation("CryptoGiftPreGrabQuotaExpiredWorker updateCryptoGift result:{0}", JsonConvert.SerializeObject(updateCryptoGift));
                 }
             }
-
-            //todo remove before online
-            await SpecialLogicBeforeOnline(cryptoGiftDto);
         }
-    }
-
-    private async Task SpecialLogicBeforeOnline(CryptoGiftDto cryptoGiftDto)
-    {
-        var preGrabbedAmount = cryptoGiftDto.Items
-            .Where(item => GrabbedStatus.Created.Equals(item.GrabbedStatus) || GrabbedStatus.Claimed.Equals(item.GrabbedStatus))
-            .Sum(item => item.Amount);
-        if (preGrabbedAmount == cryptoGiftDto.PreGrabbedAmount)
-        {
-            return;
-        }
-
-        cryptoGiftDto.PreGrabbedAmount = preGrabbedAmount;
-        var grain = _clusterClient.GetGrain<ICryptoGiftGran>(cryptoGiftDto.Id);
-        await grain.UpdateCryptoGift(cryptoGiftDto);
     }
 
     private bool GetNeedReturnQuotaStatus(RedPackageDetailDto redPackageDetailDto)
@@ -135,6 +117,6 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
     {
         return GrabbedStatus.Expired.Equals(preGrabItem.GrabbedStatus)
                || (GrabbedStatus.Created.Equals(preGrabItem.GrabbedStatus)
-                   && (preGrabItem.GrabTime + expiredTimeLimitMillis) >= DateTimeOffset.Now.ToUnixTimeMilliseconds());
+                   && (preGrabItem.GrabTime + expiredTimeLimitMillis) <= DateTimeOffset.Now.ToUnixTimeMilliseconds());
     }
 }
