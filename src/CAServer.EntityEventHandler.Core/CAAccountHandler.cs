@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
+using CAServer.Commons;
 using CAServer.ContractEventHandler;
 using CAServer.CryptoGift;
 using CAServer.Dtos;
@@ -145,7 +146,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             await AddGrowthInfoAsync(eventData.CaHash, eventData.ReferralInfo);
             
             _logger.LogInformation("CreateHolderEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _distributedCache.SetAsync($"CryptoGiftReferral:{eventData.CaHash}", JsonConvert.SerializeObject(new CryptoGiftReferralDto
+            await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
             {
                 CaHash = eventData.CaHash,
                 CaAddress = eventData.CaAddress,
@@ -202,11 +203,11 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             var duration = DateTime.UtcNow - recover.CreateTime;
             _indicatorLogger.LogInformation(MonitorTag.SocialRecover, MonitorTag.SocialRecover.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
-
+            
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
             _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _distributedCache.SetAsync($"CryptoGiftReferral:{eventData.CaHash}", JsonConvert.SerializeObject(new CryptoGiftReferralDto
+            await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
             {
                 CaHash = eventData.CaHash,
                 CaAddress = eventData.CaAddress,
