@@ -39,7 +39,7 @@ namespace CAServer.CryptoGift;
 [RemoteService(isEnabled: false), DisableAuditing]
 public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
 {
-    private const long ExtraDeviationSeconds = 60;
+    private const long ExtraDeviationSeconds = 120;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IClusterClient _clusterClient;
     private readonly IObjectMapper _objectMapper;
