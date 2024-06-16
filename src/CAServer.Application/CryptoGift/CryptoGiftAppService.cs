@@ -607,8 +607,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         if (redPackageDetailDto.IsNewUsersOnly && !caHolderGrainDto.IsNewUserRegistered)
         {
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
-                caHolderGrainDto, nftInfoDto, "Oops! This is an exclusive gift for new users", "",
-                0);
+                caHolderGrainDto, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
         }
         
         if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
