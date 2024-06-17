@@ -90,7 +90,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         return await _graphQlHelper.QueryAsync<ReferralInfoDto>(new GraphQLRequest
         {
             Query = @"
-			      query($caHashes:[String],$referralCodes:[String],$methodNames:[String],$startTime:long,$endTime:long) {
+			      query($caHashes:[String],$referralCodes:[String],$methodNames:[String],$startTime:Long,$endTime:Long) {
               referralInfo(dto: {caHashes:$caHashes,referralCodes:$referralCodes,methodNames:$methodNames,startTime:$startTime,endTime:$endTime}){
                      caHash,referralCode,projectCode,methodName,timestamp}
                 }",
