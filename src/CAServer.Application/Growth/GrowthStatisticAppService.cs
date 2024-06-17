@@ -23,19 +23,19 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 {
     private readonly IGrowthProvider _growthProvider;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
-    //private readonly ICacheProvider _cacheProvider;
+    private readonly ICacheProvider _cacheProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
-        //ICacheProvider cacheProvider,
+        ICacheProvider cacheProvider,
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
-        //_cacheProvider = cacheProvider;
+        _cacheProvider = cacheProvider;
         _activityProvider = activityProvider;
         _logger = logger;
     }
@@ -119,6 +119,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 break;
             }
 
+            await _cacheProvider.Increase(CommonConstant.ReferralKey, 1, TimeSpan.FromMicroseconds(10));
             _logger.LogDebug("Time from {startTime} to {endTime} add total referral records count is {count}",
                 ConvertTimestampToString(startTime),
                 ConvertTimestampToString(endTime), indexerReferralInfo.ReferralInfo.Count);
