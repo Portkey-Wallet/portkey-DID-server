@@ -22,20 +22,22 @@ namespace CAServer.Growth;
 public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticAppService
 {
     private readonly IGrowthProvider _growthProvider;
+
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
-    //private readonly ICacheProvider _cacheProvider;
+
+    private readonly ICacheProvider _cacheProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
-        //ICacheProvider cacheProvider, 
+        ICacheProvider cacheProvider, 
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
-        //_cacheProvider = cacheProvider;
+        _cacheProvider = cacheProvider;
         _activityProvider = activityProvider;
         _logger = logger;
     }
@@ -118,7 +120,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 break;
             }
-
             _logger.LogDebug("Time from {startTime} to {endTime} add total referral records count is {count}",
                 ConvertTimestampToString(startTime),
                 ConvertTimestampToString(endTime), indexerReferralInfo.ReferralInfo.Count);
@@ -128,7 +129,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             // first level to be added 
             var referralCodes = growthInfos.Select(t => t.ReferralCode).ToList();
 
-            var growthInfoDic = growthInfos.ToDictionary(t => t.InviteCode, t => t.CaHash);
+            var growthInfoDic = growthInfos.Where(t=>!t.InviteCode.IsNullOrEmpty()).ToDictionary(t => t.InviteCode, t => t.CaHash);
             foreach (var indexer in indexerReferralInfo.ReferralInfo)
             {
                 var caHolderInfo =
@@ -152,7 +153,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             }
 
             var secondGrowthInfos = await _growthProvider.GetGrowthInfosAsync(null, referralCodes);
-            var secondGrowthInfoDic = growthInfos.ToDictionary(t => t.InviteCode, t => t.CaHash);
+            var secondGrowthInfoDic = growthInfos.Where(t=>!t.InviteCode.IsNullOrEmpty()).ToDictionary(t => t.InviteCode, t => t.CaHash);
             foreach (var growthIndex in secondGrowthInfos)
             {
                 var caHolderInfo =
@@ -176,6 +177,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 };
                 await _growthProvider.AddReferralRecordAsync(referralRecord);
             }
+
             skip += limit;
         }
     }
@@ -206,19 +208,21 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 _logger.LogDebug("Current CaHash is {caHash},Referral detail is {referral}", caHash,
                     JsonConvert.SerializeObject(growthInfo));
                 //First invite
-                var inviteCodeList = new List<string>();
-                inviteCodeList.Add(growthInfo.InviteCode);
+
                 var indexerReferralInfo =
-                    await _growthProvider.GetReferralInfoAsync(new List<string>(), inviteCodeList,
+                    await _growthProvider.GetReferralInfoAsync(new List<string>(),
+                        new List<string> { growthInfo.InviteCode },
                         new List<string> { MethodName.CreateCAHolder }, 0, 0);
                 if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty())
                 {
+                    _logger.LogDebug("Current CaHash is {caHash},Have no invite user.",caHash);
                     continue;
                 }
 
                 var caHolderInfo =
                     await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHash);
-                _logger.LogDebug("CaHolder info is {info}",JsonConvert.SerializeObject(caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress));
+                _logger.LogDebug("CaHolder info is {info}",
+                    JsonConvert.SerializeObject(caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress));
                 //add record to ES
                 foreach (var referralRecordIndex in indexerReferralInfo.ReferralInfo.Select(referralInfo =>
                              new ReferralRecordIndex
@@ -231,14 +235,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                                  ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
                              }))
                 {
-                    _logger.LogDebug("Insert first level  Referral detail is {detail}",JsonConvert.SerializeObject(referralRecordIndex));
+                    _logger.LogDebug("Insert first level Referral detail is {detail}",
+                        JsonConvert.SerializeObject(referralRecordIndex));
                     await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
                 }
 
                 var secondCaHashes = indexerReferralInfo.ReferralInfo.Select(t => t.CaHash).ToList();
                 var growthIndices = await _growthProvider.GetGrowthInfosAsync(secondCaHashes, null);
                 var inviteCodes = growthIndices.Select(t => t.InviteCode).ToList();
-                var referralInfoDto = await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(inviteCodes),
+                var referralInfoDto = await _growthProvider.GetReferralInfoAsync(new List<string>(),
+                    new List<string>(inviteCodes),
                     new List<string>
                     {
                         MethodName.CreateCAHolder
@@ -318,7 +324,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private async Task<Dictionary<string, string>> GetNickNameByCaHashes(List<string> caHashes)
     {
         var caHolderList = await GetCaHolderByCaHashAsync(caHashes);
-        var caHashToWalletNameDic = caHolderList.ToDictionary(t => t.CaHash, t => t.NickName);
+        var caHashToWalletNameDic = caHolderList.Where(t=>!t.CaHash.IsNullOrEmpty()).ToDictionary(t => t.CaHash, t => t.NickName);
         return caHashToWalletNameDic;
     }
 
