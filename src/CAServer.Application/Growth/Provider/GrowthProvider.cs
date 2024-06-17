@@ -122,7 +122,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         if (!referralCaHash.IsNullOrEmpty())
         {
-            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralCaHash).Terms(caHash)));
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralCaHash).Terms(referralCaHash)));
         }
 
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));

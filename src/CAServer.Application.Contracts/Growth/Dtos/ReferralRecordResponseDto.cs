@@ -5,7 +5,7 @@ namespace CAServer.Growth.Dtos;
 public class ReferralRecordResponseDto
 {
     
-    public int LastDayReferralTotalCount { get; set; }
+    public bool HasNextPage { get; set; } = true;
 
     public List<ReferralRecordDetailDto> ReferralRecords { get; set; }
 
@@ -13,13 +13,12 @@ public class ReferralRecordResponseDto
 
 public class ReferralRecordDetailDto
 {
-    
-    public string CaHash { get; set; }
-
     public string WalletName { get; set; }
 
     public bool IsDirectlyInvite { get; set; }
 
     public string ReferralDate { get; set; }
+
+    
 
 }

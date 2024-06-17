@@ -84,9 +84,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
     {
         var caHash = input.CaHash;
-
+        var hasNextPage = true;
         var referralRecordList =
             await _growthProvider.GetReferralRecordListAsync(null, caHash, input.Skip, input.Limit);
+        if (referralRecordList.Count < input.Limit)
+        {
+            hasNextPage = false;
+        }
+
         var caHashes = referralRecordList.Select(t => t.CaHash).ToList();
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
@@ -95,10 +100,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             IsDirectlyInvite = index.IsDirectlyInvite == 0,
             ReferralDate = index.CreateTime.ToString("yyyy-MM-dd")
         }).ToList();
-        var lastDayCount = GetLastdayTotalCount(referralRecordList);
-        return new ReferralRecordResponseDto()
+        return new ReferralRecordResponseDto
         {
-            LastDayReferralTotalCount = lastDayCount,
+            HasNextPage = hasNextPage,
             ReferralRecords = records
         };
     }
