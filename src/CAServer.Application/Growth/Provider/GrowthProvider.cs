@@ -126,7 +126,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         }
 
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var (total, data) = await _referralRecordRepository.GetListAsync(Filter, sortExp: k => k.CreateTime,
+        var (total, data) = await _referralRecordRepository.GetListAsync(Filter, sortExp: k => k.ReferralDate,
             sortType: SortOrder.Descending, skip: skip, limit: limit);
         return data;
     }

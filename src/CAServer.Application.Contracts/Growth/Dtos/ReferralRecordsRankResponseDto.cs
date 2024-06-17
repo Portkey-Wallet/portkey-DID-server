@@ -15,4 +15,6 @@ public class ReferralRecordsRankDetail
 
     public int ReferralTotalCount { get; set; }
 
+    public int Rank { get; set; }
+
 }

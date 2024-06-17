@@ -27,7 +27,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly IActivityProvider _activityProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
 
-
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
@@ -65,20 +64,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var indexerReferralInfo =
             await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string> { growthInfo.InviteCode },
                 new List<string> { MethodName.CreateCAHolder }, 0, 0);
-
-        //Get Second invite users
-        var caHashes = indexerReferralInfo.ReferralInfo.Select(t => t.CaHash).ToList();
-        var growthInfos = await _growthProvider.GetGrowthInfosAsync(caHashes, null);
-        if (growthInfos.IsNullOrEmpty())
-        {
-            return indexerReferralInfo.ReferralInfo.Count;
-        }
-
-        var inviteCodes = growthInfos.Select(t => t.InviteCode).ToList();
-        var secondReferralUsers =
-            await _growthProvider.GetReferralInfoAsync(new List<string>(), inviteCodes,
-                new List<string> { MethodName.CreateCAHolder }, 0, 0);
-        return indexerReferralInfo.ReferralInfo.Count + secondReferralUsers.ReferralInfo.Count;
+        return indexerReferralInfo.ReferralInfo.Count;
     }
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
@@ -96,9 +82,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
         {
-            WalletName = nickNameByCaHashes[index.CaHash],
+            WalletName = nickNameByCaHashes[index.CaHash].NickName,
             IsDirectlyInvite = index.IsDirectlyInvite == 0,
-            ReferralDate = index.CreateTime.ToString("yyyy-MM-dd")
+            ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd"),
+            Avatar = nickNameByCaHashes[index.CaHash].Avatar
         }).ToList();
         return new ReferralRecordResponseDto
         {
@@ -110,85 +97,54 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task CalculateReferralRankAsync()
     {
         var endTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        var startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 4000 * 1000;
-        var skip = 0;
-        var limit = 100;
-        while (true)
+        var startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 30000;
+        var indexerReferralInfo =
+            await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(),
+                new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
+        if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty() || indexerReferralInfo.ReferralInfo.Count == 0)
         {
-            var indexerReferralInfo =
-                await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(),
-                    new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
-            if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty())
+            return;
+        }
+
+        _logger.LogDebug("Time from {startTime} to {endTime} add total referral records count is {count}",
+            ConvertTimestampToString(startTime) + "_" + startTime,
+            ConvertTimestampToString(endTime) + "_" + endTime, indexerReferralInfo.ReferralInfo.Count);
+        var inviteCodes = indexerReferralInfo.ReferralInfo.Select(t => t.ReferralCode).ToList();
+        //need to be added score
+        var growthInfos = await _growthProvider.GetGrowthInfosAsync(null, inviteCodes);
+        foreach (var info in growthInfos)
+        {
+            _logger.LogDebug("GrowthInfo is {growth}", JsonConvert.SerializeObject(info));
+        }
+
+        var growthInfoDic = growthInfos.Where(t => !t.InviteCode.IsNullOrEmpty())
+            .ToDictionary(t => t.InviteCode, t => t.CaHash);
+        foreach (var indexer in indexerReferralInfo.ReferralInfo)
+        {
+            if (!growthInfoDic.ContainsKey(indexer.ReferralCode))
             {
-                break;
+                _logger.LogDebug("The data is not in dic,data is {data}",JsonConvert.SerializeObject(indexer));
+                continue;
             }
 
-            _logger.LogDebug("Time from {startTime} to {endTime} add total referral records count is {count}",
-                ConvertTimestampToString(startTime),
-                ConvertTimestampToString(endTime), indexerReferralInfo.ReferralInfo.Count);
-            var inviteCodes = indexerReferralInfo.ReferralInfo.Select(t => t.ReferralCode).ToList();
-            //need to be added score
-            var growthInfos = await _growthProvider.GetGrowthInfosAsync(null, inviteCodes);
-            foreach (var info in growthInfos)
+            var caHolderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
+                    growthInfoDic[indexer.ReferralCode]);
+            var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+            await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                score + 1);
+            var referralRecord = new ReferralRecordIndex
             {
-                _logger.LogDebug("GrowthInfo is {growth}", JsonConvert.SerializeObject(info));
-            }
-
-            // first level to be added 
-            var referralCodes = growthInfos.Select(t => t.ReferralCode).ToList();
-
-            var growthInfoDic = growthInfos.Where(t => !t.InviteCode.IsNullOrEmpty())
-                .ToDictionary(t => t.InviteCode, t => t.CaHash);
-            foreach (var indexer in indexerReferralInfo.ReferralInfo)
-            {
-                var caHolderInfo =
-                    await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
-                        growthInfoDic[indexer.ReferralCode]);
-                var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                    score + 1);
-                var referralRecord = new ReferralRecordIndex
-                {
-                    CaHash = indexer.CaHash,
-                    ReferralCode = indexer.ReferralCode,
-                    IsDirectlyInvite = 0,
-                    ReferralCaHash = growthInfoDic[indexer.ReferralCode],
-                    CreateTime = UnixTimeStampToDateTime(indexer.Timestamp),
-                    ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
-                };
-                await _growthProvider.AddReferralRecordAsync(referralRecord);
-            }
-
-            var secondGrowthInfos = await _growthProvider.GetGrowthInfosAsync(null, referralCodes);
-            var secondGrowthInfoDic = growthInfos.Where(t => !t.InviteCode.IsNullOrEmpty())
-                .ToDictionary(t => t.InviteCode, t => t.CaHash);
-            foreach (var growthIndex in secondGrowthInfos)
-            {
-                var caHolderInfo =
-                    await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
-                        secondGrowthInfoDic[growthIndex.ReferralCode]);
-
-                var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                    score + 1);
-
-                var referralRecord = new ReferralRecordIndex
-                {
-                    CaHash = growthIndex.CaHash,
-                    ReferralCode = growthIndex.ReferralCode,
-                    IsDirectlyInvite = 1,
-                    ReferralCaHash = secondGrowthInfoDic[growthIndex.ReferralCode],
-                    CreateTime = growthIndex.CreateTime,
-                    ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
-                };
-                await _growthProvider.AddReferralRecordAsync(referralRecord);
-            }
-
-            skip += limit;
+                CaHash = indexer.CaHash,
+                ReferralCode = indexer.ReferralCode,
+                IsDirectlyInvite = 0,
+                ReferralCaHash = growthInfoDic[indexer.ReferralCode],
+                ReferralDate = UnixTimeStampToDateTime(indexer.Timestamp),
+                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+            };
+            await _growthProvider.AddReferralRecordAsync(referralRecord);
         }
     }
 
@@ -200,92 +156,51 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var count = 0;
         while (true)
         {
-            var list = await _growthProvider.GetAllGrowthInfosAsync(skip, limit);
-            if (list.IsNullOrEmpty())
+            var growthInfos = await _growthProvider.GetAllGrowthInfosAsync(skip, limit);
+            if (growthInfos.IsNullOrEmpty())
             {
                 break;
             }
 
-            var caHashes = list.Select(t => t.CaHash).ToList();
-            foreach (var caHash in caHashes)
+            foreach (var growthInfo in growthInfos)
             {
-                var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHash);
-                if (growthInfo == null)
-                {
-                    continue;
-                }
-
-                _logger.LogDebug("Current CaHash is {caHash},Referral detail is {referral}", caHash,
-                    JsonConvert.SerializeObject(growthInfo));
-                //First invite
-
                 var indexerReferralInfo =
                     await _growthProvider.GetReferralInfoAsync(new List<string>(),
                         new List<string> { growthInfo.InviteCode },
                         new List<string> { MethodName.CreateCAHolder }, 0, 0);
-                if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty())
+                if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty() || indexerReferralInfo.ReferralInfo.Count == 0)
                 {
-                    _logger.LogDebug("Current CaHash is {caHash},Have no invite user.", caHash);
+                    _logger.LogDebug("Current CaHash is {caHash},Have no invite user.", growthInfo.CaHash);
                     continue;
                 }
 
                 var caHolderInfo =
-                    await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHash);
+                    await _activityProvider.GetCaHolderInfoAsync(new List<string>(), growthInfo.CaHash);
                 _logger.LogDebug("CaHolder info is {info}",
                     JsonConvert.SerializeObject(caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress));
-                //add record to ES
+
                 foreach (var referralRecordIndex in indexerReferralInfo.ReferralInfo.Select(referralInfo =>
                              new ReferralRecordIndex
                              {
                                  CaHash = referralInfo.CaHash,
                                  ReferralCode = growthInfo.InviteCode,
                                  IsDirectlyInvite = 0,
-                                 CreateTime = UnixTimeStampToDateTime(referralInfo.Timestamp),
-                                 ReferralCaHash = caHash,
+                                 ReferralDate = UnixTimeStampToDateTime(referralInfo.Timestamp),
+                                 ReferralCaHash = growthInfo.CaHash,
                                  ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
                              }))
                 {
                     _logger.LogDebug("Insert first level Referral detail is {detail}",
                         JsonConvert.SerializeObject(referralRecordIndex));
                     await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
+                    _logger.LogDebug("Begin Redis add score,key is {address}",
+                        caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                    await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                        caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                        indexerReferralInfo.ReferralInfo.Count);
+                    skip += limit;
+                    count += growthInfos.Count;
                 }
-
-                var secondCaHashes = indexerReferralInfo.ReferralInfo.Select(t => t.CaHash).ToList();
-                var growthIndices = await _growthProvider.GetGrowthInfosAsync(secondCaHashes, null);
-                var inviteCodes = growthIndices.Select(t => t.InviteCode).ToList();
-                var referralInfoDto = await _growthProvider.GetReferralInfoAsync(new List<string>(),
-                    new List<string>(inviteCodes),
-                    new List<string>
-                    {
-                        MethodName.CreateCAHolder
-                    }, 0, 0);
-
-                if (!referralInfoDto.ReferralInfo.IsNullOrEmpty())
-                {
-                    foreach (var referralRecordIndex in referralInfoDto.ReferralInfo.Select(indexer =>
-                                 new ReferralRecordIndex
-                                 {
-                                     CaHash = indexer.CaHash,
-                                     ReferralCode = indexer.ReferralCode,
-                                     IsDirectlyInvite = 1,
-                                     CreateTime = UnixTimeStampToDateTime(indexer.Timestamp),
-                                     ReferralCaHash = caHash,
-                                     ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
-                                 }))
-                    {
-                        _logger.LogDebug("Insert second level  Referral detail is {detail}",
-                            JsonConvert.SerializeObject(referralRecordIndex));
-                        await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
-                    }
-                }
-
-                _logger.LogDebug("Begin Redis add score,key is {address}",
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                    indexerReferralInfo.ReferralInfo.Count + referralInfoDto.ReferralInfo.Count);
-                skip += limit;
-                count += list.Count;
             }
         }
 
@@ -298,18 +213,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var list = new List<ReferralRecordsRankDetail>();
         foreach (var entry in entries)
         {
+            var rank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey, entry.Element);
             var referralRecordsRankDetail = new ReferralRecordsRankDetail
             {
+                Rank = Convert.ToInt16(rank),
                 CaAddress = entry.Element,
                 ReferralTotalCount = Convert.ToInt16(entry.Score)
             };
-        
+
             list.Add(referralRecordsRankDetail);
         }
-        
+
         var caHolderInfo =
             await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
-        
+
         var totalCount = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
             caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
         var referralRecordRank = new ReferralRecordsRankResponseDto
@@ -325,26 +242,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         //return new ReferralRecordsRankResponseDto();
     }
 
-    private int GetLastdayTotalCount(List<ReferralRecordIndex> records)
-    {
-        var dateTimeToRecordDic = records.GroupBy(record => record.CreateTime.ToString("yyyy-MM-dd"))
-            .ToDictionary(record => record.Key, record => record.ToList());
-        var lastDayData = dateTimeToRecordDic.ContainsKey(GetSpecifyDay(-1));
-        if (!lastDayData)
-        {
-            return 0;
-        }
-        var yesterdayReferralRecords = dateTimeToRecordDic[GetSpecifyDay(-1)];
-        return yesterdayReferralRecords.Count;
-
-
-    }
-
-    private async Task<Dictionary<string, string>> GetNickNameByCaHashes(List<string> caHashes)
+    private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
         var caHolderList = await GetCaHolderByCaHashAsync(caHashes);
         var caHashToWalletNameDic = caHolderList.Where(t => !t.CaHash.IsNullOrEmpty())
-            .ToDictionary(t => t.CaHash, t => t.NickName);
+            .ToDictionary(t => t.CaHash, t => t);
         return caHashToWalletNameDic;
     }
 

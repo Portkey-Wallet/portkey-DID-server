@@ -12,7 +12,7 @@ public class ReferralRecordIndex : CAServerEsEntity<string>, IIndexBuild
     [Keyword] public string ReferralCaHash { get; set; }
     [Keyword] public string ReferralAddress { get; set; }
     public int IsDirectlyInvite { get; set; } = 0;
-    public DateTime CreateTime { get; set; }
+    public DateTime ReferralDate { get; set; }
     
     
 }

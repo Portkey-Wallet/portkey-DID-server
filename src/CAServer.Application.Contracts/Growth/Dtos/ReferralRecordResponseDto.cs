@@ -19,6 +19,8 @@ public class ReferralRecordDetailDto
 
     public string ReferralDate { get; set; }
 
-    
+    public string Avatar { get; set; }
+
+
 
 }
