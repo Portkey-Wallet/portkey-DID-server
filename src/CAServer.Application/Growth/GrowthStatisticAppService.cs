@@ -10,7 +10,9 @@ using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
+using Microsoft.Extensions.Logging;
 using Nest;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 
@@ -23,16 +25,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
     private readonly ICacheProvider _cacheProvider;
     private readonly IActivityProvider _activityProvider;
+    private readonly ILogger<GrowthStatisticAppService> _logger;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
-        ICacheProvider cacheProvider, IActivityProvider activityProvider)
+        ICacheProvider cacheProvider, IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
         _cacheProvider = cacheProvider;
         _activityProvider = activityProvider;
+        _logger = logger;
     }
 
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
@@ -101,7 +105,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task CalculateReferralRankAsync()
     {
         var endTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        var startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 3000;
+        var startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 4000;
         var skip = 0;
         var limit = 100;
         while (true)
@@ -109,12 +113,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var indexerReferralInfo =
                 await _growthProvider.GetReferralInfoAsync(null, null,
                     new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
-
             if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty())
             {
                 break;
             }
 
+            _logger.LogDebug("Time from {startTime} to {endTime} add total referral records count is {count}",
+                ConvertTimestampToString(startTime),
+                ConvertTimestampToString(endTime), indexerReferralInfo.ReferralInfo.Count);
             var inviteCodes = indexerReferralInfo.ReferralInfo.Select(t => t.ReferralCode).ToList();
             //need to be added score
             var growthInfos = await _growthProvider.GetGrowthInfosAsync(null, inviteCodes);
@@ -129,7 +135,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         growthInfoDic[indexer.ReferralCode]);
                 var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
                     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey, caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
                     score + 1);
                 var referralRecord = new ReferralRecordIndex
                 {
@@ -150,7 +157,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 var caHolderInfo =
                     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
                         secondGrowthInfoDic[growthIndex.ReferralCode]);
-                
+
                 var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
                     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
                 await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
@@ -168,7 +175,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 };
                 await _growthProvider.AddReferralRecordAsync(referralRecord);
             }
-
             skip += limit;
         }
     }
@@ -178,6 +184,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         var skip = 0;
         var limit = 100;
+        var count = 0;
         while (true)
         {
             var list = await _growthProvider.GetAllGrowthInfosAsync(skip, limit);
@@ -195,6 +202,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     continue;
                 }
 
+                _logger.LogDebug("Current CaHash is {caHash},Referral detail is {referral}", caHash,
+                    JsonConvert.SerializeObject(growthInfo));
                 //First invite
                 var indexerReferralInfo =
                     await _growthProvider.GetReferralInfoAsync(null, new List<string> { growthInfo.InviteCode },
@@ -218,6 +227,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                                  ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
                              }))
                 {
+                    _logger.LogDebug("Insert first level  Referral detail is {detail}",JsonConvert.SerializeObject(referralRecordIndex));
                     await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
                 }
 
@@ -243,6 +253,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                                      ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
                                  }))
                     {
+                        _logger.LogDebug("Insert second level  Referral detail is {detail}",
+                            JsonConvert.SerializeObject(referralRecordIndex));
                         await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
                     }
                 }
@@ -251,8 +263,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
                     indexerReferralInfo.ReferralInfo.Count + referralInfoDto.ReferralInfo.Count);
                 skip += limit;
+                count += list.Count;
             }
         }
+
+        _logger.LogDebug("Referral TotalCount is {count}", count);
     }
 
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
@@ -270,14 +285,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             list.Add(referralRecordsRankDetail);
         }
 
-        var totalCount = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey, input.CaHash);
-        var referralRecordRank = new ReferralRecordsRankResponseDto()
+        var caHolderInfo =
+            await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
+
+        var totalCount = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
+            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+        var referralRecordRank = new ReferralRecordsRankResponseDto
         {
             ReferralRecordsRank = list,
-            CurrentUserReferralRecordsRankDetail = new ReferralRecordsRankDetail()
+            CurrentUserReferralRecordsRankDetail = new ReferralRecordsRankDetail
             {
                 ReferralTotalCount = Convert.ToInt16(totalCount),
-                CaAddress = input.CaHash
+                CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
             }
         };
         return referralRecordRank;
@@ -446,7 +465,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private static string ConvertTimestampToString(long timestamp)
     {
         DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime;
-        return dateTime.ToString("yyyy-MM-dd");
+        return dateTime.ToString("G");
     }
 
     private static string GetSpecifyDay(int n)
