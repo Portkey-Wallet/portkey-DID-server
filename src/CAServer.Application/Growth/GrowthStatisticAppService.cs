@@ -63,7 +63,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         // Get First invite users
         var indexerReferralInfo =
-            await _growthProvider.GetReferralInfoAsync(null, new List<string> { growthInfo.InviteCode },
+            await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string> { growthInfo.InviteCode },
                 new List<string> { MethodName.CreateCAHolder }, 0, 0);
 
         //Get Second invite users
@@ -76,7 +76,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var inviteCodes = growthInfos.Select(t => t.InviteCode).ToList();
         var secondReferralUsers =
-            await _growthProvider.GetReferralInfoAsync(null, inviteCodes,
+            await _growthProvider.GetReferralInfoAsync(new List<string>(), inviteCodes,
                 new List<string> { MethodName.CreateCAHolder }, 0, 0);
         return indexerReferralInfo.ReferralInfo.Count + secondReferralUsers.ReferralInfo.Count;
     }
@@ -112,7 +112,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         while (true)
         {
             var indexerReferralInfo =
-                await _growthProvider.GetReferralInfoAsync(null, null,
+                await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(),
                     new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
             if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty())
             {
@@ -207,7 +207,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     JsonConvert.SerializeObject(growthInfo));
                 //First invite
                 var indexerReferralInfo =
-                    await _growthProvider.GetReferralInfoAsync(null, new List<string> { growthInfo.InviteCode },
+                    await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string> { growthInfo.InviteCode },
                         new List<string> { MethodName.CreateCAHolder }, 0, 0);
                 if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty())
                 {
@@ -235,7 +235,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 var secondCaHashes = indexerReferralInfo.ReferralInfo.Select(t => t.CaHash).ToList();
                 var growthIndices = await _growthProvider.GetGrowthInfosAsync(secondCaHashes, null);
                 var inviteCodes = growthIndices.Select(t => t.InviteCode).ToList();
-                var referralInfoDto = await _growthProvider.GetReferralInfoAsync(null, new List<string>(inviteCodes),
+                var referralInfoDto = await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(inviteCodes),
                     new List<string>
                     {
                         MethodName.CreateCAHolder
