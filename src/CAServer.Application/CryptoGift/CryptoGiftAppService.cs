@@ -731,6 +731,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     
     public async Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser)
     {
+        _logger.LogInformation("CryptoGiftTransferToRedPackage userId:{0},caAddress:{1},referralInfo:{2},isNewUser:{3}", userId, caAddress, JsonConvert.SerializeObject(referralInfo), isNewUser);
         if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
         {
             _logger.LogInformation("CryptoGiftTransferToRedPackage ProjectCode isn't 20000, referralInfo={0}", JsonConvert.SerializeObject(referralInfo));
