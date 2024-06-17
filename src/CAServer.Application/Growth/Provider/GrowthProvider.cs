@@ -22,7 +22,9 @@ public interface IGrowthProvider
 
     Task<List<GrowthIndex>> GetAllGrowthInfosAsync(int skip, int limit);
 
-    Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash, int skip, int limit);
+    Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash, int skip,
+        int limit);
+
     Task AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
 }
 
@@ -89,8 +91,8 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         {
             Query = @"
 			      query($caHashes:[String],$referralCodes:[String],$methodNames:[String],$startTime:[long],$endTime[long]) {
-              referralInfo(dto: {caHashes:$caHashes,referralCodes:$referralCodes,$methodNames:methodNames}){
-                     caHash,referralCode,projectCode,methodName}
+              referralInfo(dto: {caHashes:$caHashes,referralCodes:$referralCodes,$methodNames:methodNames,$$startTime:$$startTime,$endTime:$endTime}){
+                     caHash,referralCode,projectCode,methodName,timestamp}
                 }",
             Variables = new
             {
@@ -117,7 +119,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         {
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.CaHash).Terms(caHash)));
         }
-        
+
         if (!referralCaHash.IsNullOrEmpty())
         {
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralCaHash).Terms(caHash)));
@@ -131,7 +133,8 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
     public async Task AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex)
     {
-        var recordListAsync = await GetReferralRecordListAsync(referralRecordIndex.CaHash,referralRecordIndex.ReferralCaHash,0,1);
+        var recordListAsync =
+            await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1);
         if (recordListAsync.IsNullOrEmpty())
         {
             await _referralRecordRepository.AddAsync(referralRecordIndex);

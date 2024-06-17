@@ -206,8 +206,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 _logger.LogDebug("Current CaHash is {caHash},Referral detail is {referral}", caHash,
                     JsonConvert.SerializeObject(growthInfo));
                 //First invite
+                var inviteCodeList = new List<string>();
+                inviteCodeList.Add(growthInfo.InviteCode);
                 var indexerReferralInfo =
-                    await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string> { growthInfo.InviteCode },
+                    await _growthProvider.GetReferralInfoAsync(new List<string>(), inviteCodeList,
                         new List<string> { MethodName.CreateCAHolder }, 0, 0);
                 if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty())
                 {
@@ -216,6 +218,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
                 var caHolderInfo =
                     await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHash);
+                _logger.LogDebug("CaHolder info is {info}",JsonConvert.SerializeObject(caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress));
                 //add record to ES
                 foreach (var referralRecordIndex in indexerReferralInfo.ReferralInfo.Select(referralInfo =>
                              new ReferralRecordIndex
