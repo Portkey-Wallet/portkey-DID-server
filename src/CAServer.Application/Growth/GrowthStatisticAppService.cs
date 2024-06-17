@@ -325,8 +325,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         var dateTimeToRecordDic = records.GroupBy(record => record.CreateTime.ToString("yyyy-MM-dd"))
             .ToDictionary(record => record.Key, record => record.ToList());
+        var lastDayData = dateTimeToRecordDic.ContainsKey(GetSpecifyDay(-1));
+        if (!lastDayData)
+        {
+            return 0;
+        }
         var yesterdayReferralRecords = dateTimeToRecordDic[GetSpecifyDay(-1)];
         return yesterdayReferralRecords.Count;
+
+
     }
 
     private async Task<Dictionary<string, string>> GetNickNameByCaHashes(List<string> caHashes)
