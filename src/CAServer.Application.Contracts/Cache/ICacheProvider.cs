@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Cache;
 
-public interface ICacheProvider
+public interface ICacheProvider : ISingletonDependency
 {
     Task HSetWithExpire(string key, string member, string value, TimeSpan? expire);
     Task<bool> HashDeleteAsync(string key, string member);
