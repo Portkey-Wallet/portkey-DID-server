@@ -15,4 +15,5 @@ public class Fee
     public double CrossChain { get; set; } = CommonConstant.DefaultCrossChainFee;
     public double Max { get; set; } = CommonConstant.DefaultMaxFee;
     public double RedPackage { get; set; } = CommonConstant.DefaultMaxFee;
+    public double Etransfer { get; set; } = CommonConstant.DefaultEtransferFee;
 }
