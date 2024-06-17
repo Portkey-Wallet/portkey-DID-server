@@ -23,19 +23,19 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 {
     private readonly IGrowthProvider _growthProvider;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
-    //private readonly ICacheProvider _cacheProvider;
+    private readonly ICacheProvider _cacheProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
-        //ICacheProvider cacheProvider,
+        ICacheProvider cacheProvider,
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
-        //_cacheProvider = cacheProvider;
+        _cacheProvider = cacheProvider;
         _activityProvider = activityProvider;
         _logger = logger;
     }
@@ -140,11 +140,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 var caHolderInfo =
                     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
                         growthInfoDic[indexer.ReferralCode]);
-                // var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                // await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                //     score + 1);
+                var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                    score + 1);
                 var referralRecord = new ReferralRecordIndex
                 {
                     CaHash = indexer.CaHash,
@@ -166,11 +166,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
                         secondGrowthInfoDic[growthIndex.ReferralCode]);
 
-                // var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                // await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                //     score + 1);
+                var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                    score + 1);
 
                 var referralRecord = new ReferralRecordIndex
                 {
@@ -277,9 +277,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
                 _logger.LogDebug("Begin Redis add score,key is {address}",
                     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                // await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                //     indexerReferralInfo.ReferralInfo.Count + referralInfoDto.ReferralInfo.Count);
+                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                    indexerReferralInfo.ReferralInfo.Count + referralInfoDto.ReferralInfo.Count);
                 skip += limit;
                 count += list.Count;
             }
@@ -290,35 +290,35 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
-        // var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, 50);
-        // var list = new List<ReferralRecordsRankDetail>();
-        // foreach (var entry in entries)
-        // {
-        //     var referralRecordsRankDetail = new ReferralRecordsRankDetail
-        //     {
-        //         CaAddress = entry.Element,
-        //         ReferralTotalCount = Convert.ToInt16(entry.Score)
-        //     };
-        //
-        //     list.Add(referralRecordsRankDetail);
-        // }
-        //
-        // var caHolderInfo =
-        //     await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
-        //
-        // var totalCount = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
-        //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-        // var referralRecordRank = new ReferralRecordsRankResponseDto
-        // {
-        //     ReferralRecordsRank = list,
-        //     CurrentUserReferralRecordsRankDetail = new ReferralRecordsRankDetail
-        //     {
-        //         ReferralTotalCount = Convert.ToInt16(totalCount),
-        //         CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
-        //     }
-        // };
-        // return referralRecordRank;
-        return new ReferralRecordsRankResponseDto();
+        var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, 50);
+        var list = new List<ReferralRecordsRankDetail>();
+        foreach (var entry in entries)
+        {
+            var referralRecordsRankDetail = new ReferralRecordsRankDetail
+            {
+                CaAddress = entry.Element,
+                ReferralTotalCount = Convert.ToInt16(entry.Score)
+            };
+        
+            list.Add(referralRecordsRankDetail);
+        }
+        
+        var caHolderInfo =
+            await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
+        
+        var totalCount = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
+            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+        var referralRecordRank = new ReferralRecordsRankResponseDto
+        {
+            ReferralRecordsRank = list,
+            CurrentUserReferralRecordsRankDetail = new ReferralRecordsRankDetail
+            {
+                ReferralTotalCount = Convert.ToInt16(totalCount),
+                CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+            }
+        };
+        return referralRecordRank;
+        //return new ReferralRecordsRankResponseDto();
     }
 
     private int GetLastdayTotalCount(List<ReferralRecordIndex> records)
