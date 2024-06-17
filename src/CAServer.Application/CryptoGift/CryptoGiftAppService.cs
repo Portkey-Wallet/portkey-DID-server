@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
@@ -37,8 +39,10 @@ using PreGrabbedItemDto = CAServer.RedPackage.Dtos.PreGrabbedItemDto;
 namespace CAServer.CryptoGift;
 
 [RemoteService(isEnabled: false), DisableAuditing]
-public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
+public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
 {
+    [GeneratedRegex("\\.?0*$")]
+    private static partial Regex DollarRegex();
     private const long ExtraDeviationSeconds = 120;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IClusterClient _clusterClient;
@@ -288,6 +292,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
 
     public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal)
     {
+        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGiftAfterLogin:DistributionLock:" + redPackageId + ":" + userId, TimeSpan.FromSeconds(3));
+        if (handle == null)
+        {
+            throw new UserFriendlyException("please take a break for a while~");
+        }
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         if (ipAddress.IsNullOrEmpty())
         {
@@ -312,8 +321,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             IpAddress = ipAddress,
             IdentityCode = identityCode
         });
-        cryptoGiftDto.BucketClaimed.Add(preGrabBucketItemDto);
-        cryptoGiftDto.BucketNotClaimed.Remove(preGrabBucketItemDto);
         cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
         _logger.LogInformation("PreGrabCryptoGiftAfterLogging before update:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
@@ -379,6 +386,8 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var claimedResult = await _distributedCache.GetAsync(identityCode);
         if (claimedResult.IsNullOrEmpty())
         {
+            //just when the user saw the detail for the first time, showed the available detail
+            await _distributedCache.RemoveAsync(identityCode);
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0, 0, 0);
         }
@@ -478,15 +487,24 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     {
         var dollarValue = string.Empty;
         var tokenPriceData = await _tokenPriceService.GetCurrentPriceAsync(symbol);
-        if (tokenPriceData != null)
+        if (tokenPriceData == null)
         {
-            var finalAmount = decimal.Multiply(tokenPriceData.PriceInUsd, amount);
-            if (decimals > 0)
-            {
-                finalAmount = decimal.Multiply(finalAmount, (decimal)Math.Pow(10, -decimals));
-            }
-            dollarValue = "≈$ " + finalAmount;
+            return dollarValue;
         }
+        if (decimal.Equals(tokenPriceData.PriceInUsd, 0m))
+        {
+            return dollarValue;
+        }
+        var finalAmount = decimal.Multiply(tokenPriceData.PriceInUsd, amount);
+        if (decimal.Equals(finalAmount, 0m))
+        {
+            return dollarValue;
+        }
+        if (decimals > 0)
+        {
+            finalAmount = decimal.Multiply(finalAmount, (decimal)Math.Pow(10, -decimals));
+        }
+        dollarValue = "≈$ " + DollarRegex().Replace(finalAmount.ToString(CultureInfo.InvariantCulture), "");
 
         return dollarValue;
     }
