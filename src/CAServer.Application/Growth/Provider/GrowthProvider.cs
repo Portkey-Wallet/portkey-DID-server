@@ -133,9 +133,9 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
     public async Task AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex)
     {
-        var recordListAsync =
+        var record=
             await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1);
-        if (recordListAsync.IsNullOrEmpty())
+        if (record.IsNullOrEmpty())
         {
             await _referralRecordRepository.AddAsync(referralRecordIndex);
         }
