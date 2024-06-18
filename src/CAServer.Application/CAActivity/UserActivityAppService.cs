@@ -821,14 +821,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (needMap)
             {
                 await MapMethodNameAsync(caAddresses, dto, guardian);
-                _logger.LogInformation("TransactionId:{0} TransactionName:{1} check crypto gift", dto.TransactionId, dto.TransactionName);
-                            if ("Transfer".Equals(dto.TransactionType)
-                                && (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(dto.TransactionName)
-                                    || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(dto.TransactionName)
-                                    || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(dto.TransactionName)))
-                            {
-                                await CheckCryptoGiftByTransactionId(dto);
-                            }
             }
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress);
@@ -881,6 +873,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
         activityDto.TransactionName = typeName;
+        if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(activityDto.TransactionName))
+        {
+            await CheckCryptoGiftByTransactionId(activityDto);
+        }
         _logger.LogInformation($"---------------transactionId:{activityDto.TransactionId} transactionType:{transactionType} transactionName:{typeName}");
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
