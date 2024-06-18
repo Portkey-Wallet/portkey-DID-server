@@ -817,6 +817,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 dto.IsSystem = true;
             }
+
+            if (needMap)
+            {
+                await MapMethodNameAsync(caAddresses, dto, guardian);
+            }
+            
             _logger.LogInformation("TransactionId:{0} TransactionName:{1} check crypto gift", dto.TransactionId, dto.TransactionName);
             if ("Transfer".Equals(dto.TransactionType)
                 && (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(dto.TransactionName)
@@ -824,11 +830,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(dto.TransactionName)))
             {
                 await CheckCryptoGiftByTransactionId(dto);
-            }
-
-            if (needMap)
-            {
-                await MapMethodNameAsync(caAddresses, dto, guardian);
             }
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress);
