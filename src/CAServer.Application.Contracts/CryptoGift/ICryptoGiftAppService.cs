@@ -18,6 +18,8 @@ public interface ICryptoGiftAppService
 
     public Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal);
 
+    public Task CheckClaimQuotaAfterLoginCondition(Guid redPackageId);
+
     public Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId, string ipAddressParam);
 
     public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId);

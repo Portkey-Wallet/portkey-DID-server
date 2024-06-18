@@ -503,6 +503,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             };
         }
 
+        await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(input.Id);
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
         var result = await grain.GrabRedPackage(userId, input.UserCaAddress);
         if (result.Success)
@@ -547,8 +548,18 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                     ErrorMessage = RedPackageConsts.UserNotExist
                 };
             }
-
+            
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
+            // var redPackageGrainDto = await grain.GetRedPackage(input.Id);
+            // if (!redPackageGrainDto.Success || redPackageGrainDto.Data == null)
+            // {
+            //     throw new UserFriendlyException("the red package does not exist");
+            // }
+            //
+            // if (RedPackageDisplayType.CryptoGift.Equals(redPackageGrainDto.Data.RedPackageDisplayType))
+            // {
+            //     await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(input.Id);
+            // }
             var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
             if (result.Success)
             {
@@ -567,7 +578,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 Status = result.Data.Status
             };
             //add the crypto gift logic
-            await PreGrabCryptoGiftAfterLogging(input.Id, CurrentUser.GetId(), input.RedPackageDisplayType, result.Data.BucketItem.Index, result.Data.Decimal);
+            // await PreGrabCryptoGiftAfterLogging(input.Id, CurrentUser.GetId(), input.RedPackageDisplayType, result.Data.BucketItem.Index, result.Data.Decimal);
             if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
             {
                 res.Result = RedPackageGrabStatus.Success;
