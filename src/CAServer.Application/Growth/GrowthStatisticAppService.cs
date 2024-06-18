@@ -154,7 +154,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 CaHash = indexer.CaHash,
                 ReferralCode = indexer.ReferralCode,
                 IsDirectlyInvite = 0,
-                ReferralCaHash = growthInfoDic[indexer.ReferralCode],
+                ReferralCaHash = growthInfoDic.TryGetValue(indexer.ReferralCode,out var referralCaHash)?referralCaHash : "",
                 ReferralDate = UnixTimeStampToDateTime(indexer.Timestamp),
                 ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
             };
@@ -248,7 +248,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
-        
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, 50);
         var sortedSetEntries = entries.Where(t => t.Score > 0).ToList();
         var list = new List<ReferralRecordsRankDetail>();
@@ -273,27 +272,31 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             list.Add(referralRecordsRankDetail);
         }
 
-        var caHolderInfo =
-            await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
+        var currentUserReferralInfo = new ReferralRecordsRankDetail();
+        if (CurrentUser.Id.HasValue)
+        {
+            var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+            var caHolderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHolder.CaHash);
+            var currentCaHolder = await _activityProvider.GetCaHolderAsync(input.CaHash);
+            _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
+            var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+            var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
 
-        var currentCaHolder = await _activityProvider.GetCaHolderAsync(input.CaHash);
-        _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
-        var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
-            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-        var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+            currentUserReferralInfo.Rank = Convert.ToInt16(currentRank) == 0
+                ? Convert.ToInt16(currentRank)
+                : Convert.ToInt16(currentRank) + 1;
+            currentUserReferralInfo.ReferralTotalCount = Convert.ToInt16(currentReferralCount);
+            currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+            currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
+        }
+       
         var referralRecordRank = new ReferralRecordsRankResponseDto
         {
             ReferralRecordsRank = list,
-            CurrentUserReferralRecordsRankDetail = new ReferralRecordsRankDetail
-            {
-                Rank = Convert.ToInt16(currentRank) == 0
-                    ? Convert.ToInt16(currentRank)
-                    : Convert.ToInt16(currentRank) + 1,
-                ReferralTotalCount = Convert.ToInt16(currentReferralCount),
-                CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                Avatar = currentCaHolder != null ? currentCaHolder.Avatar : ""
-            }
+            CurrentUserReferralRecordsRankDetail = currentUserReferralInfo
         };
         return referralRecordRank;
         //return new ReferralRecordsRankResponseDto();
