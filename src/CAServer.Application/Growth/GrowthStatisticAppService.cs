@@ -78,14 +78,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             hasNextPage = false;
         }
 
-        var caHashes = referralRecordList.Select(t => t.CaHash).ToList();
+        var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
         {
-            WalletName = nickNameByCaHashes[index.CaHash].NickName,
+            WalletName = nickNameByCaHashes[index.CaHash] != null ? nickNameByCaHashes[index.CaHash].NickName : "",
             IsDirectlyInvite = index.IsDirectlyInvite == 0,
             ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd"),
-            Avatar = nickNameByCaHashes[index.CaHash].Avatar
+            Avatar = nickNameByCaHashes[index.CaHash] != null ? nickNameByCaHashes[index.CaHash].Avatar : ""
         }).ToList();
         return new ReferralRecordResponseDto
         {
@@ -123,7 +123,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             if (!growthInfoDic.ContainsKey(indexer.ReferralCode))
             {
-                _logger.LogDebug("The data is not in dic,data is {data}",JsonConvert.SerializeObject(indexer));
+                _logger.LogDebug("The data is not in dic,data is {data}", JsonConvert.SerializeObject(indexer));
                 continue;
             }
 
@@ -210,15 +210,22 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, 50);
+        var sortedSetEntries = entries.Where(t => t.Score > 0).ToList();
         var list = new List<ReferralRecordsRankDetail>();
-        foreach (var entry in entries)
+        foreach (var entry in sortedSetEntries)
         {
+            var caAddress = entry.Element;
+            var holderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string> { caAddress }, null);
+            var caHash = holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash;
+            var caHolder = await _activityProvider.GetCaHolderAsync(caHash);
             var rank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey, entry.Element);
             var referralRecordsRankDetail = new ReferralRecordsRankDetail
             {
                 Rank = Convert.ToInt16(rank),
                 CaAddress = entry.Element,
-                ReferralTotalCount = Convert.ToInt16(entry.Score)
+                ReferralTotalCount = Convert.ToInt16(entry.Score),
+                Avatar = caHolder != null ? caHolder.Avatar : ""
             };
 
             list.Add(referralRecordsRankDetail);

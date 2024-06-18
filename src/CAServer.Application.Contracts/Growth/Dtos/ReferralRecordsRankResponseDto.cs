@@ -17,4 +17,6 @@ public class ReferralRecordsRankDetail
 
     public int Rank { get; set; }
 
+    public string Avatar { get; set; }
+
 }
