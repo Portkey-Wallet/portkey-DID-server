@@ -631,17 +631,17 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         
-        var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
+        // get nft info
+        var nftInfoDto = await GetNftInfo(redPackageDetailDto);
+        
+        Guid userId = await GetUserId(caHash);
+        var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
         var caHolderResult = await caHolderGrain.GetCaHolder();
         if (!caHolderResult.Success || caHolderResult.Data == null)
         {
             throw new UserFriendlyException("the crypto gift sender does not exist");
         }
         var caHolderGrainDto = caHolderResult.Data;
-        
-        // get nft info
-        var nftInfoDto = await GetNftInfo(redPackageDetailDto);
-        
         if (redPackageDetailDto.IsNewUsersOnly && !caHolderGrainDto.IsNewUserRegistered)
         {
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
@@ -654,8 +654,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 caHolderGrainDto, nftInfoDto, "Oops, the crypto gift has expired.", "",
                 0);
         }
-
-        Guid userId = await GetUserId(caHash);
+        
         var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(userId));
         if (grabItemDto != null)
         {
@@ -800,6 +799,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
         await caHolderGrain.UpdateNewUserMarkAsync(isNewUser);
+        
         //0 make sure the client is whether or not a new one, according to the new user rule
         if (!Enum.IsDefined(redPackageDetailDto.RedPackageDisplayType) || RedPackageDisplayType.Common.Equals(redPackageDetailDto.RedPackageDisplayType))
         {
