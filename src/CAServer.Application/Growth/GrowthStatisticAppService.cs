@@ -240,7 +240,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 await _activityProvider.GetCaHolderInfoAsync(new List<string> { caAddress }, null);
             var caHash = holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash;
             var caHolder = await _activityProvider.GetCaHolderAsync(caHash);
-            var rank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey, entry.Element);
+            _logger.LogDebug("Get caHolder is {caHolder}",JsonConvert.SerializeObject(caHolder));
+            var rank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey, entry.Element) + 1;
             var referralRecordsRankDetail = new ReferralRecordsRankDetail
             {
                 Rank = Convert.ToInt16(rank),
