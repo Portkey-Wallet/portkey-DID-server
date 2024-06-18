@@ -505,7 +505,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
         await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(input.Id);
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
-        var result = await grain.GrabRedPackage(userId, input.UserCaAddress);
+        var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id);
+        var result = await grain.GrabRedPackageWithIdentityInfo(userId, input.UserCaAddress, ipAddress, identity);
         if (result.Success)
         {
             await _distributedEventBus.PublishAsync(new PayRedPackageEto()

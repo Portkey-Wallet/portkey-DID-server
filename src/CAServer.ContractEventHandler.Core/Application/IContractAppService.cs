@@ -171,7 +171,8 @@ public class ContractAppService : IContractAppService
             Id = message.Id,
             Context = message.Context,
             GrainId = message.GrainId,
-            ReferralInfo = message.ReferralInfo
+            ReferralInfo = message.ReferralInfo,
+            IpAddress = message.IpAddress
         };
 
         CreateHolderDto createHolderDto;
@@ -286,7 +287,8 @@ public class ContractAppService : IContractAppService
             Id = message.Id,
             Context = message.Context,
             GrainId = message.GrainId,
-            ReferralInfo = message.ReferralInfo
+            ReferralInfo = message.ReferralInfo,
+            IpAddress = message.IpAddress
         };
 
         SocialRecoveryDto socialRecoveryDto;

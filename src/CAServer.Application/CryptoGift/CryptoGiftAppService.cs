@@ -261,11 +261,20 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("RedPackage have been fully claimed");
         }
+        if (redPackageDetailDto.Items.Any(item => item.Identity.Equals(identityCode)))
+        {
+            throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
+        }
+
+        if (long.Parse(redPackageDetailDto.GrabbedAmount) + cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        {
+            throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
+        }
         if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
-        if (cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode) 
+        if (cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
                                          && (GrabbedStatus.Claimed.Equals(c.GrabbedStatus)
                                              || GrabbedStatus.Created.Equals(c.GrabbedStatus))))
         {
@@ -768,10 +777,10 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         await CryptoGiftTransferToRedPackage(user.Id, caAddress, new ReferralInfo(){
             ReferralCode = id.ToString() + "#" + identityCode,
             ProjectCode = "20000"
-            }, isNewUser);
+            }, isNewUser, _ipInfoAppService.GetRemoteIp());
     }
     
-    public async Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser)
+    public async Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress)
     {
         _logger.LogInformation("CryptoGiftTransferToRedPackage userId:{0},caAddress:{1},referralInfo:{2},isNewUser:{3}", userId, caAddress, JsonConvert.SerializeObject(referralInfo), isNewUser);
         if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
@@ -824,7 +833,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("CryptoGiftTransferToRedPackage updateCryptoGiftResult:{0}", JsonConvert.SerializeObject(updateCryptoGiftResult));
         
         //2 red package: amount/item
-        var redPackageUpdateResult = await grain.CryptoGiftTransferToRedPackage(userId, caAddress, preGrabBucketItemDto);
+        var redPackageUpdateResult = await grain.CryptoGiftTransferToRedPackage(userId, caAddress, preGrabBucketItemDto, ipAddress, identityCode);
         _logger.LogInformation("CryptoGiftTransferToRedPackage redPackageUpdateResult:{0}", JsonConvert.SerializeObject(redPackageUpdateResult));
     }
 
@@ -861,5 +870,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         preGrabBucketItemDto.UserId = userId;
         return preGrabBucketItemDto;
+    }
+
+    public (string, string) GetIpAddressAndIdentity(Guid redPackageId)
+    {
+        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var identityCode = GetIdentityCode(redPackageId, ipAddress);
+        return new ValueTuple<string, string>(ipAddress, identityCode);
     }
 }

@@ -24,10 +24,12 @@ public interface ICryptoGiftAppService
 
     public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId);
 
-    public Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser);
+    public Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress);
 
     public Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId);
 
     public Task TestCryptoGiftTransferToRedPackage(string caHash, string caAddress,
         Guid id, string identityCode, bool isNewUser);
+
+    public (string, string) GetIpAddressAndIdentity(Guid redPackageId);
 }

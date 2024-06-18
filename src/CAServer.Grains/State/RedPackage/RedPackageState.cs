@@ -44,7 +44,8 @@ public class GrabItem
     public bool IsLuckyKing { get; set; }
     public long Amount { get; set; }
     public int Decimal { get; set; }
-
+    public string IpAddress { get; set; }
+    public string Identity { get; set; }
 }
 
 public class BucketItem

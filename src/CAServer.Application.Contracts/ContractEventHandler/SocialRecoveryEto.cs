@@ -18,4 +18,5 @@ public class SocialRecoveryEto : ContractServiceEto
     public string RecoveryMessage { get; set; }
     public bool? RecoverySuccess { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
+    public string IpAddress { get; set; }
 }

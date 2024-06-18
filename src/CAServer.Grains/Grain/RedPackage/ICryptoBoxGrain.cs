@@ -14,9 +14,10 @@ public interface ICryptoBoxGrain : IGrainWithGuidKey
     Task<GrainResultDto<bool>> ExpireRedPackage();
     Task<GrainResultDto<bool>> CancelRedPackage();
     Task<GrainResultDto<GrabResultDto>> GrabRedPackage(Guid userId,string caAddress);
+    Task<GrainResultDto<GrabResultDto>> GrabRedPackageWithIdentityInfo(Guid userId, string caAddress, string ipAddress, string identity);
 
     Task<GrainResultDto<GrabResultDto>> CryptoGiftTransferToRedPackage(Guid userId, string caAddress,
-        PreGrabBucketItemDto preGrabBucketItemDto);
+        PreGrabBucketItemDto preGrabBucketItemDto, string ipAddress, string identity);
 
     Task<GrainResultDto<RedPackageDetailDto>> UpdateRedPackage(List<GrabItemDto> grabItemDtos);
     
