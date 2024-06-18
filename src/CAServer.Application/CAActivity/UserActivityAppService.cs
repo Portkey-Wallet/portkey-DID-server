@@ -821,15 +821,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (needMap)
             {
                 await MapMethodNameAsync(caAddresses, dto, guardian);
-            }
-            
-            _logger.LogInformation("TransactionId:{0} TransactionName:{1} check crypto gift", dto.TransactionId, dto.TransactionName);
-            if ("Transfer".Equals(dto.TransactionType)
-                && (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(dto.TransactionName)
-                    || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(dto.TransactionName)
-                    || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(dto.TransactionName)))
-            {
-                await CheckCryptoGiftByTransactionId(dto);
+                _logger.LogInformation("TransactionId:{0} TransactionName:{1} check crypto gift", dto.TransactionId, dto.TransactionName);
+                            if ("Transfer".Equals(dto.TransactionType)
+                                && (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(dto.TransactionName)
+                                    || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(dto.TransactionName)
+                                    || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(dto.TransactionName)))
+                            {
+                                await CheckCryptoGiftByTransactionId(dto);
+                            }
             }
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress);
@@ -882,7 +881,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
         activityDto.TransactionName = typeName;
-
+        _logger.LogInformation($"---------------transactionId:{activityDto.TransactionId} transactionType:{transactionType} transactionName:{typeName}");
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
         {
@@ -901,7 +900,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
         }
-
+        _logger.LogInformation($"================transactionId:{activityDto.TransactionId} transactionType:{transactionType} transactionName:{typeName}");
         if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             activityDto.TransactionName = ActivityConstants.DepositName;
