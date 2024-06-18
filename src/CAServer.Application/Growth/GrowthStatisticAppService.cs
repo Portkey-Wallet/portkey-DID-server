@@ -59,13 +59,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<int> GetReferralTotalCountAsync(ReferralRecordRequestDto input)
     {
-        if (!CurrentUser.Id.HasValue)
-        {
-            throw new AbpAuthorizationException("Unauthorized.");
-        }
-
-        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHolder.CaHash);
+        // if (!CurrentUser.Id.HasValue)
+        // {
+        //     throw new AbpAuthorizationException("Unauthorized.");
+        // }
+        //
+        // var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        // var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHolder.CaHash);
+        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(input.CaHash);
         if (growthInfo == null)
         {
             return 0;
