@@ -63,9 +63,9 @@ public class CryptoGiftController : CAServerController
     }
     
     [HttpGet("detail")]
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync([Required] Guid id, string ipAddress)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync([Required] Guid id)
     {
-        return await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id, ipAddress);
+        return await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id);
     }
     
     [HttpGet("login/detail")]

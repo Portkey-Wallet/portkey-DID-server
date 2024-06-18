@@ -20,7 +20,7 @@ public interface ICryptoGiftAppService
 
     public Task CheckClaimQuotaAfterLoginCondition(Guid redPackageId);
 
-    public Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId, string ipAddressParam);
+    public Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId);
 
     public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId);
 
