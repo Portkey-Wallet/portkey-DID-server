@@ -876,12 +876,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _logger.LogInformation($"---------------{_activityTypeOptions.TypeMap["CreateCryptoBox"]}" +
                                $" {_activityTypeOptions.TypeMap["TransferCryptoBoxes"]} {_activityTypeOptions.TypeMap["RefundCryptoBox"]}" +
                                $" {activityDto.TransactionName}");
-        if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(activityDto.TransactionName)
-                                || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(activityDto.TransactionName)
-                                || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(activityDto.TransactionName))
-        {
-            await CheckCryptoGiftByTransactionId(activityDto);
-        }
+        // if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(activityDto.TransactionName)
+        //                         || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(activityDto.TransactionName)
+        //                         || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(activityDto.TransactionName))
+        // {
+        await CheckCryptoGiftByTransactionId(activityDto);
+        // }
         _logger.LogInformation($"---------------transactionId:{activityDto.TransactionId} transactionType:{transactionType} transactionName:{typeName}");
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
