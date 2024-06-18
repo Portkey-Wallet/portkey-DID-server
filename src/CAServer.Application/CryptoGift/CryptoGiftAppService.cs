@@ -198,7 +198,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("the red package does not exist");
         }
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        _logger.LogInformation("pre grab data sync error set cache redPackageId:{0},identityCode:{1}", redPackageId, identityCode);
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -209,6 +208,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         CheckClaimCondition(redPackageDetailDto, cryptoGiftDto, identityCode);
+        _logger.LogInformation("pre grab data sync error redPackageId:{0}, set cache identityCode:{1}", redPackageId, identityCode);
         await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
         {
             AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
@@ -267,28 +267,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
         }
-    }
-
-    private async Task<bool> CheckAndUpdateCryptoGiftExpirationStatus(ICryptoGiftGran cryptoGiftGrain, CryptoGiftDto cryptoGiftDto, string identityCode)
-    {
-        if (identityCode.IsNullOrEmpty())
-        {
-            return false;
-        }
-        var expiredMills = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
-        var currentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        var preGrabItems = cryptoGiftDto.Items
-            .Where(crypto =>
-                crypto.IdentityCode.Equals(identityCode) && GrabbedStatus.Created.Equals(crypto.GrabbedStatus)
-                && (currentTime - crypto.GrabTime >= expiredMills))
-            .ToList();
-        foreach (var preGrabItem in preGrabItems)
-        {
-            preGrabItem.GrabbedStatus = GrabbedStatus.Expired;
-        }
-        var cryptoGrainResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
-        _logger.LogInformation("CheckAndUpdateCryptoGiftExpirationStatus cryptoGrainResult:{0}", JsonConvert.SerializeObject(cryptoGrainResult));
-        return !preGrabItems.IsNullOrEmpty();
     }
 
     public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal)
@@ -385,7 +363,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         return getNftItemInfosDto;
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId, string ipAddressParam)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -401,10 +379,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
-        //todo remove ipAddresssParam before online
-        var ipAddress = ipAddressParam.IsNullOrEmpty() ? _ipInfoAppService.GetRemoteIp() : ipAddressParam;
+        var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
         //get the sender info
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
         var caHolderGrainDto = await caHolderGrain.GetCaHolder();
@@ -419,7 +395,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         
         //before claiming, show the available crypto gift status
         var claimedResult = await _distributedCache.GetAsync(identityCode);
-        _logger.LogInformation("pre grab data sync error get cache redPackageId:{0},identityCode:{1},claimedResult:{2}", redPackageId, identityCode, claimedResult);
+        _logger.LogInformation("pre grab data sync error redPackageId:{0}, get cache identityCode:{1},claimedResult:{2}", redPackageId, identityCode, claimedResult);
         if (claimedResult.IsNullOrEmpty())
         {
             //just when the user saw the detail for the first time, showed the available detail
@@ -450,13 +426,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             var preGrabItem = cryptoGiftDto.Items
                 .FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
                                           && GrabbedStatus.Created.Equals(crypto.GrabbedStatus));
-            _logger.LogInformation("=====================");
-            foreach (var grabItem in cryptoGiftDto.Items)
-            {
-                _logger.LogInformation("identityCode:{0} grabItem:{1}", identityCode, JsonConvert.SerializeObject(grabItem));
-                _logger.LogInformation("crypto.IdentityCode.Equals(identityCode):{0}", grabItem.IdentityCode.Equals(identityCode));
-                _logger.LogInformation("GrabbedStatus.Created.Equals(crypto.GrabbedStatus):{0}", GrabbedStatus.Created.Equals(grabItem.GrabbedStatus));
-            }
             if (preGrabItem != null)
             {
                 var remainingExpirationSeconds = GetRemainingExpirationSeconds(preGrabItem);
@@ -661,7 +630,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
         
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
         var caHolderResult = await caHolderGrain.GetCaHolder();
