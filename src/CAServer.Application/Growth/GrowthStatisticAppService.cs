@@ -130,11 +130,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHolderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
                     growthInfoDic[indexer.ReferralCode]);
-            var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-            await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                score + 1);
+
             var referralRecord = new ReferralRecordIndex
             {
                 CaHash = indexer.CaHash,
@@ -144,7 +140,19 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 ReferralDate = UnixTimeStampToDateTime(indexer.Timestamp),
                 ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
             };
-            await _growthProvider.AddReferralRecordAsync(referralRecord);
+            var success = await _growthProvider.AddReferralRecordAsync(referralRecord);
+            if (success)
+            {
+                var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                    score + 1);
+                var scoreAdded = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                _logger.LogDebug("Sync Referral Date from index is {index},score is {score}",
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, score);
+            }
         }
     }
 
@@ -160,6 +168,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             if (growthInfos.IsNullOrEmpty())
             {
                 break;
+            }
+
+            foreach (var index in growthInfos)
+            {
+                _logger.LogDebug("GrowthIndex from ES ,index is {index}", JsonConvert.SerializeObject(index));
             }
 
             foreach (var growthInfo in growthInfos)
@@ -190,14 +203,22 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                                  ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
                              }))
                 {
-                    _logger.LogDebug("Insert first level Referral detail is {detail}",
+                    _logger.LogDebug("Insert Referral detail is {detail}",
                         JsonConvert.SerializeObject(referralRecordIndex));
-                    await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
-                    _logger.LogDebug("Begin Redis add score,key is {address}",
-                        caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                    await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                        caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                        indexerReferralInfo.ReferralInfo.Count);
+                    var success = await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
+                    if (success)
+                    {
+                        _logger.LogDebug("Begin Redis add score,key is {address}",
+                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                        await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                            indexerReferralInfo.ReferralInfo.Count);
+                        var scoreAsync = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                        _logger.LogDebug("GetScore from redis ,key is {key},score is {score}",
+                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, scoreAsync);
+                    }
+
                     skip += limit;
                     count += growthInfos.Count;
                 }

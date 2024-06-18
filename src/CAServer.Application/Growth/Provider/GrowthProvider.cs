@@ -25,7 +25,7 @@ public interface IGrowthProvider
     Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash, int skip,
         int limit);
 
-    Task AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
+    Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
 }
 
 public class GrowthProvider : IGrowthProvider, ISingletonDependency
@@ -131,13 +131,16 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         return data;
     }
 
-    public async Task AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex)
+    public async Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex)
     {
         var record=
             await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1);
-        if (record.IsNullOrEmpty())
+        if (!record.IsNullOrEmpty())
         {
-            await _referralRecordRepository.AddAsync(referralRecordIndex);
+            return false;
         }
+        await _referralRecordRepository.AddAsync(referralRecordIndex);
+        return true;
+
     }
 }
