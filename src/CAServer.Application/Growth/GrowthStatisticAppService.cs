@@ -100,13 +100,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         foreach (var index in referralRecordList)
         {
             _logger.LogDebug("Referral caHash is {hash}",JsonConvert.SerializeObject(index));
+            var holder = await _userAssetsProvider.GetCaHolderIndexByCahashAsync(index.CaHash);
+            _logger.LogDebug("HolderInfo is {holder}",JsonConvert.SerializeObject(holder));
         }
-        
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
-        foreach (var recordIndex in referralRecordList)
-        {
-            _logger.LogDebug("referralRecordIndex is {index}",JsonConvert.SerializeObject(recordIndex));
-        }
+       
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
         {
             WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo) ? indexInfo.NickName : "",
