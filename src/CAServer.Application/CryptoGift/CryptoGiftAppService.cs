@@ -298,20 +298,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("please take a break for a while~");
         }
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
-        if (ipAddress.IsNullOrEmpty())
-        {
-            throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging portkey can't get your ip, grab failed~");
-        }
-        var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
-        var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
-        if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
-        {
-            throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging the crypto gift does not exist");
-        }
-        var cryptoGiftDto = cryptoGiftResultDto.Data;
-        CheckClaimAfterLoginCondition(cryptoGiftDto, identityCode);
+        
+        var (cryptoGiftDto, identityCode, ipAddress) = await CheckClaimAfterLoginCondition(redPackageId);
         
         PreGrabBucketItemDto preGrabBucketItemDto = GetBucketByIndex(cryptoGiftDto, index, userId, identityCode);
         cryptoGiftDto.Items.Add(new PreGrabItem()
@@ -326,12 +314,41 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         });
         cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
         _logger.LogInformation("PreGrabCryptoGiftAfterLogging before update:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
         _logger.LogInformation("PreGrabCryptoGiftAfterLogging updateResult:{0}", JsonConvert.SerializeObject(updateResult));
     }
-    
-    private static void CheckClaimAfterLoginCondition(CryptoGiftDto cryptoGiftDto, string identityCode)
+
+    public async Task CheckClaimQuotaAfterLoginCondition(Guid redPackageId)
     {
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
+        if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
+        {
+            throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging the crypto gift does not exist");
+        }
+        var cryptoGiftDto = cryptoGiftResultDto.Data;
+        if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        {
+            throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
+        }
+    }
+    
+    private async Task<(CryptoGiftDto, string, string)> CheckClaimAfterLoginCondition(Guid redPackageId)
+    {
+        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        if (ipAddress.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging portkey can't get your ip, grab failed~");
+        }
+        var identityCode = GetIdentityCode(redPackageId, ipAddress);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
+        if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
+        {
+            throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging the crypto gift does not exist");
+        }
+        var cryptoGiftDto = cryptoGiftResultDto.Data;
         if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
@@ -342,6 +359,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
         }
+
+        return new ValueTuple<CryptoGiftDto, string, string>(cryptoGiftDto, identityCode, ipAddress);
     }
     
     private PreGrabBucketItemDto GetBucketByIndex(CryptoGiftDto cryptoGiftDto, int index, Guid userId, string identityCode)
@@ -552,6 +571,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             Amount = amount,
             Decimals = redPackageDetailDto.Decimal,
             Symbol = redPackageDetailDto.Symbol,
+            Label = ETransferConstant.SgrName.Equals(redPackageDetailDto.Symbol) ? ETransferConstant.SgrDisplayName : null,
             DollarValue = dollarValue,
             NftAlias = nftInfoDto.Alias,
             NftTokenId = nftInfoDto.TokenId,
@@ -754,6 +774,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             Amount = amount,
             Decimals = redPackageDetailDto.Decimal,
             Symbol = redPackageDetailDto.Symbol,
+            Label = ETransferConstant.SgrName.Equals(redPackageDetailDto.Symbol) ? ETransferConstant.SgrDisplayName : null,
             DollarValue = dollarValue,
             NftAlias = nftInfoDto.Alias,
             NftTokenId = nftInfoDto.TokenId,

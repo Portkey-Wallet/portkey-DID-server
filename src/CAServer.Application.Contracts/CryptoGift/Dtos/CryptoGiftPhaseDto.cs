@@ -17,6 +17,8 @@ public class CryptoGiftPhaseDto
     
     public string Symbol { get; set; }
     
+    public string Label { get; set; }
+    
     public string DollarValue { get; set; }
     
     public string NftAlias { get; set; }

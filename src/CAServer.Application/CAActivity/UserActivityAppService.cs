@@ -817,10 +817,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 dto.IsSystem = true;
             }
-
-            if ("Transfer".Equals(dto.TransactionType) 
+            _logger.LogInformation("TransactionId:{0} TransactionName:{1} check crypto gift", dto.TransactionId, dto.TransactionName);
+            if ("Transfer".Equals(dto.TransactionType)
                 && (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(dto.TransactionName)
-                || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(dto.TransactionName)))
+                    || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(dto.TransactionName)
+                    || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(dto.TransactionName)))
             {
                 await CheckCryptoGiftByTransactionId(dto);
             }
@@ -849,19 +850,27 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        _logger.LogInformation("TransactionId:{0} DisplayType:{1} cryptoGiftIndices:{2}",
+                    dto.TransactionId, (int)RedPackageDisplayType.CryptoGift, JsonConvert.SerializeObject(cryptoGiftIndices));
         var redPackageIndex = cryptoGiftIndices.FirstOrDefault(crypto => RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType));
         if (redPackageIndex == null )
         {
+            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
             return;
         }
         if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(dto.TransactionName))
         {
-            dto.TransactionName = _activityTypeOptions.TypeMap["CreateCryptoGift"];
+            dto.TransactionName = "Send Crypto Gift"; // _activityTypeOptions.TypeMap["CreateCryptoGift"];
             return;
         }
         if(_activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(dto.TransactionName))
         {
-            dto.TransactionName = _activityTypeOptions.TypeMap["TransferCryptoGift"];
+            dto.TransactionName = "Claim Crypto Gift"; //_activityTypeOptions.TypeMap["TransferCryptoGift"];
+            return;
+        }
+        if(_activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(dto.TransactionName))
+        {
+            dto.TransactionName = "Return Crypto Gift"; //_activityTypeOptions.TypeMap["RefundCryptoGift"];
         }
     }
 
