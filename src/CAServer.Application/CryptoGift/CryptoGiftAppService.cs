@@ -164,7 +164,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
         var cryptoGiftDto = cryptoGiftGrainDto.Data;
         _logger.LogInformation("========ListCryptoPreGiftGrabbedItems {0}", JsonConvert.SerializeObject(cryptoGiftDto.Items));
-        var grabbedItemDtos = _objectMapper.Map<List<PreGrabItem>, List<PreGrabbedItemDto>>(cryptoGiftDto.Items.Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus)).ToList());
+        var grabbedItemDtos = _objectMapper.Map<List<PreGrabItem>, List<PreGrabbedItemDto>>(
+            cryptoGiftDto.Items.Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus)).ToList());
         var expireMilliseconds = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
         foreach (var preGrabbedItemDto in grabbedItemDtos)
         {
@@ -197,10 +198,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("the red package does not exist");
         }
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-        });
+        _logger.LogInformation("pre grab data sync error set cache redPackageId:{0},identityCode:{1}", redPackageId, identityCode);
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -211,7 +209,10 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         CheckClaimCondition(redPackageDetailDto, cryptoGiftDto, identityCode);
-
+        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+        });
         PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(cryptoGiftDto, identityCode);
         cryptoGiftDto.Items.Add(new PreGrabItem()
         {
@@ -310,6 +311,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging the crypto gift does not exist");
         }
         var cryptoGiftDto = cryptoGiftResultDto.Data;
+        CheckClaimAfterLoginCondition(cryptoGiftDto, identityCode);
+        
         PreGrabBucketItemDto preGrabBucketItemDto = GetBucketByIndex(cryptoGiftDto, index, userId, identityCode);
         cryptoGiftDto.Items.Add(new PreGrabItem()
         {
@@ -327,11 +330,24 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("PreGrabCryptoGiftAfterLogging updateResult:{0}", JsonConvert.SerializeObject(updateResult));
     }
     
+    private static void CheckClaimAfterLoginCondition(CryptoGiftDto cryptoGiftDto, string identityCode)
+    {
+        if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        {
+            throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
+        }
+        if (cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode) 
+                                         && (GrabbedStatus.Claimed.Equals(c.GrabbedStatus)
+                                             || GrabbedStatus.Created.Equals(c.GrabbedStatus))))
+        {
+            throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
+        }
+    }
+    
     private PreGrabBucketItemDto GetBucketByIndex(CryptoGiftDto cryptoGiftDto, int index, Guid userId, string identityCode)
     {
         var bucket = cryptoGiftDto.BucketNotClaimed[index];
         bucket.IdentityCode = identityCode;
-        bucket.Index = index;
         bucket.UserId = userId;
         cryptoGiftDto.BucketNotClaimed.Remove(bucket);
         cryptoGiftDto.BucketClaimed.Add(bucket);
@@ -384,10 +400,10 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         
         //before claiming, show the available crypto gift status
         var claimedResult = await _distributedCache.GetAsync(identityCode);
+        _logger.LogInformation("pre grab data sync error get cache redPackageId:{0},identityCode:{1},claimedResult:{2}", redPackageId, identityCode, claimedResult);
         if (claimedResult.IsNullOrEmpty())
         {
             //just when the user saw the detail for the first time, showed the available detail
-            await _distributedCache.RemoveAsync(identityCode);
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0, 0, 0);
         }
@@ -454,6 +470,22 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.FullyClaimed, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
                 0, 0);
+        }
+        
+        if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
+             || RedPackageStatus.Claimed.Equals(redPackageDetailDto.Status)))
+        {
+            var preGrabItem = cryptoGiftDto.Items
+                .Where(crypto => crypto.IdentityCode.Equals(identityCode)
+                                 && GrabbedStatus.Expired.Equals(crypto.GrabbedStatus))
+                .MaxBy(crypto=>crypto.GrabTime);
+            if (preGrabItem != null)
+            {
+                var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabItem.Amount, redPackageDetailDto.Decimal);
+                return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.ExpiredReleased, redPackageDetailDto,
+                    caHolderDto, nftInfoDto, "Oops, the crypto gift has expired.", dollarValue, preGrabItem.Amount,
+                    0, 0);
+            }
         }
         
         return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
