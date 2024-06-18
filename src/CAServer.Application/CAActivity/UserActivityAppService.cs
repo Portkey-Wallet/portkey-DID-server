@@ -873,6 +873,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
         activityDto.TransactionName = typeName;
+        _logger.LogInformation($"---------------{_activityTypeOptions.TypeMap["CreateCryptoBox"]}" +
+                               $" {_activityTypeOptions.TypeMap["TransferCryptoBoxes"]} {_activityTypeOptions.TypeMap["RefundCryptoBox"]}" +
+                               $" {activityDto.TransactionName}");
         if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(activityDto.TransactionName)
                                 || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(activityDto.TransactionName)
                                 || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(activityDto.TransactionName))
