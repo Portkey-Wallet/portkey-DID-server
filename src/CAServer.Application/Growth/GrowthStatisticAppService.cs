@@ -240,7 +240,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 await _activityProvider.GetCaHolderInfoAsync(new List<string> { caAddress }, null);
             var caHash = holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash;
             var caHolder = await _activityProvider.GetCaHolderAsync(caHash);
-            _logger.LogDebug("Get caHolder is {caHolder}",JsonConvert.SerializeObject(caHolder));
+            _logger.LogDebug("Get caHolder is {caHolder},caAddress is {address},caHash is {caHash}",
+                JsonConvert.SerializeObject(caHolder), caAddress, caHash);
             var rank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey, entry.Element) + 1;
             var referralRecordsRankDetail = new ReferralRecordsRankDetail
             {
@@ -256,15 +257,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var caHolderInfo =
             await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
 
-        var totalCount = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
+        var currentCaHolder = await _activityProvider.GetCaHolderAsync(input.CaHash);
+        _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
+        var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
             caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
         var referralRecordRank = new ReferralRecordsRankResponseDto
         {
             ReferralRecordsRank = list,
             CurrentUserReferralRecordsRankDetail = new ReferralRecordsRankDetail
             {
-                ReferralTotalCount = Convert.ToInt16(totalCount),
-                CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+                ReferralTotalCount = Convert.ToInt16(currentRank) + 1,
+                CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                Avatar = currentCaHolder != null ? currentCaHolder.Avatar : ""
             }
         };
         return referralRecordRank;
