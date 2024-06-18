@@ -81,14 +81,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
     {
-        if (!CurrentUser.Id.HasValue)
-        {
-            throw new AbpAuthorizationException("Unauthorized.");
-        }
-        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        // if (!CurrentUser.Id.HasValue)
+        // {
+        //     throw new AbpAuthorizationException("Unauthorized.");
+        // }
+        // var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        
         var hasNextPage = true;
         var referralRecordList =
-            await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip, input.Limit);
+            await _growthProvider.GetReferralRecordListAsync(null, input.CaHash, input.Skip, input.Limit);
         if (referralRecordList.Count < input.Limit)
         {
             hasNextPage = false;
