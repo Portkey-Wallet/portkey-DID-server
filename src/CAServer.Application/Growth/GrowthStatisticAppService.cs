@@ -285,9 +285,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         //if (CurrentUser.Id.HasValue)
         if (!input.CaHash.IsNullOrEmpty())
         {
-            var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+            //var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
             var caHolderInfo =
-                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHolder.CaHash);
+                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
             var currentCaHolder = await _activityProvider.GetCaHolderAsync(input.CaHash);
             _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
             var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
