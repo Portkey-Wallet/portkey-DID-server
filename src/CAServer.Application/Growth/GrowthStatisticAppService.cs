@@ -97,6 +97,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
         
         var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
+        foreach (var index in referralRecordList)
+        {
+            _logger.LogDebug("Referral caHash is {hash}",JsonConvert.SerializeObject(index));
+        }
         
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
         foreach (var recordIndex in referralRecordList)
