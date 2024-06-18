@@ -98,7 +98,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
                         cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
                     }
                 }
-                cryptoGiftDto.Items.RemoveAll(expiredPreGrabItems);
+                // cryptoGiftDto.Items.RemoveAll(expiredPreGrabItems);
                 if (modified)
                 {
                     var updateCryptoGift = await grain.UpdateCryptoGift(cryptoGiftDto);
