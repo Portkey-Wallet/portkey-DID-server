@@ -12,6 +12,7 @@ using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -94,10 +95,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             hasNextPage = false;
         }
-
+        
         var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
+        
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
-
+        foreach (var recordIndex in referralRecordList)
+        {
+            _logger.LogDebug("referralRecordIndex is {index}",JsonConvert.SerializeObject(recordIndex));
+        }
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
         {
             WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo) ? indexInfo.NickName : "",
@@ -159,18 +164,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
             };
             var success = await _growthProvider.AddReferralRecordAsync(referralRecord);
-            if (success)
+            if (!success)
             {
-                var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                    score + 1);
-                var scoreAdded = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                _logger.LogDebug("Sync Referral Date from index is {index},score is {score}",
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, score);
+                continue;
             }
+
+            var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+            await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                score + 1);
+            var scoreAdded = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+            _logger.LogDebug("Sync Referral Date from index is {index},score is {score}",
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, score);
         }
     }
 
@@ -305,6 +312,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
         var caHolderList = await GetCaHolderByCaHashAsync(caHashes);
+        if (!caHolderList.IsNullOrEmpty())
+        {
+            foreach (var caHolder in caHolderList)
+            {
+                _logger.LogDebug("CaHolderInfo is {info}",JsonConvert.SerializeObject(caHolder));
+            }
+        }
         var caHashToWalletNameDic = caHolderList.Where(t => !t.CaHash.IsNullOrEmpty())
             .ToDictionary(t => t.CaHash, t => t);
         return caHashToWalletNameDic;
