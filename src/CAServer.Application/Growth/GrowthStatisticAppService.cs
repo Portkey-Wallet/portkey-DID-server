@@ -10,11 +10,14 @@ using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Authorization;
+using Volo.Abp.Users;
 
 namespace CAServer.Growth;
 
@@ -26,17 +29,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly ICacheProvider _cacheProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
+    private readonly IUserAssetsProvider _userAssetsProvider;
+    
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
-        IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger)
+        IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger, IUserAssetsProvider userAssetsProvider)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
         _cacheProvider = cacheProvider;
         _activityProvider = activityProvider;
         _logger = logger;
+        _userAssetsProvider = userAssetsProvider;
     }
 
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
@@ -53,8 +59,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<int> GetReferralTotalCountAsync(ReferralRecordRequestDto input)
     {
-        var caHash = input.CaHash;
-        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHash);
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new AbpAuthorizationException("Unauthorized.");
+        }
+
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHolder.CaHash);
         if (growthInfo == null)
         {
             return 0;
@@ -69,10 +80,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
     {
-        var caHash = input.CaHash;
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new AbpAuthorizationException("Unauthorized.");
+        }
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
         var hasNextPage = true;
         var referralRecordList =
-            await _growthProvider.GetReferralRecordListAsync(null, caHash, input.Skip, input.Limit);
+            await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip, input.Limit);
         if (referralRecordList.Count < input.Limit)
         {
             hasNextPage = false;
@@ -80,12 +95,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
+
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
         {
-            WalletName = nickNameByCaHashes[index.CaHash] != null ? nickNameByCaHashes[index.CaHash].NickName : "",
+            WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo) ? indexInfo.NickName : "",
             IsDirectlyInvite = index.IsDirectlyInvite == 0,
             ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd"),
-            Avatar = nickNameByCaHashes[index.CaHash] != null ? nickNameByCaHashes[index.CaHash].Avatar : ""
+            Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex) ? caHolderIndex.Avatar : "",
         }).ToList();
         return new ReferralRecordResponseDto
         {
@@ -230,6 +246,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
+        
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, 50);
         var sortedSetEntries = entries.Where(t => t.Score > 0).ToList();
         var list = new List<ReferralRecordsRankDetail>();
@@ -261,12 +278,17 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
         var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
             caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+        var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
         var referralRecordRank = new ReferralRecordsRankResponseDto
         {
             ReferralRecordsRank = list,
             CurrentUserReferralRecordsRankDetail = new ReferralRecordsRankDetail
             {
-                ReferralTotalCount = Convert.ToInt16(currentRank) + 1,
+                Rank = Convert.ToInt16(currentRank) == 0
+                    ? Convert.ToInt16(currentRank)
+                    : Convert.ToInt16(currentRank) + 1,
+                ReferralTotalCount = Convert.ToInt16(currentReferralCount),
                 CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
                 Avatar = currentCaHolder != null ? currentCaHolder.Avatar : ""
             }
