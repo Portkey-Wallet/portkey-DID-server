@@ -164,9 +164,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
         var cryptoGiftDto = cryptoGiftGrainDto.Data;
         _logger.LogInformation("========ListCryptoPreGiftGrabbedItems {0}", JsonConvert.SerializeObject(cryptoGiftDto.Items));
-        var grabbedItemDtos = _objectMapper.Map<List<PreGrabItem>, List<PreGrabbedItemDto>>(
-            cryptoGiftDto.Items.Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus)).ToList());
         var expireMilliseconds = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
+        var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        var grabbedItemDtos = _objectMapper.Map<List<PreGrabItem>, List<PreGrabbedItemDto>>(
+            cryptoGiftDto.Items.Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus) 
+                                                && crypto.GrabTime + expireMilliseconds > now).ToList());
         foreach (var preGrabbedItemDto in grabbedItemDtos)
         {
             preGrabbedItemDto.DisplayType = CryptoGiftDisplayType.Pending;
