@@ -146,16 +146,19 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             await AddGrowthInfoAsync(eventData.CaHash, eventData.ReferralInfo);
             
             _logger.LogInformation("CreateHolderEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
+            if (eventData.RegisterSuccess != null && eventData.RegisterSuccess.Value)
             {
-                CaHash = eventData.CaHash,
-                CaAddress = eventData.CaAddress,
-                ReferralInfo = eventData.ReferralInfo,
-                IsNewUser = true
-            }), new DistributedCacheEntryOptions()
-            {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-            });
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
+                {
+                    CaHash = eventData.CaHash,
+                    CaAddress = eventData.CaAddress,
+                    ReferralInfo = eventData.ReferralInfo,
+                    IsNewUser = true
+                }), new DistributedCacheEntryOptions()
+                {
+                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -206,17 +209,20 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
-            _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
+            if (eventData.RecoverySuccess != null && eventData.RecoverySuccess.Value)
             {
-                CaHash = eventData.CaHash,
-                CaAddress = eventData.CaAddress,
-                ReferralInfo = eventData.ReferralInfo,
-                IsNewUser = false
-            }), new DistributedCacheEntryOptions()
-            {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-            });
+                _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
+                {
+                    CaHash = eventData.CaHash,
+                    CaAddress = eventData.CaAddress,
+                    ReferralInfo = eventData.ReferralInfo,
+                    IsNewUser = false
+                }), new DistributedCacheEntryOptions()
+                {
+                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+                });
+            }
         }
         catch (Exception ex)
         {

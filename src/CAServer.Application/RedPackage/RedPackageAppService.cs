@@ -523,7 +523,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             Status = result.Data.Status
         };
         //add the crypto gift logic
-        await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift, result.Data.BucketItem.Index, result.Data.Decimal);
+        if (result.Success)
+        {
+            await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift,
+                result.Data.BucketItem.Index, result.Data.Decimal);
+        }
         if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
         {
             res.Result = RedPackageGrabStatus.Success;
