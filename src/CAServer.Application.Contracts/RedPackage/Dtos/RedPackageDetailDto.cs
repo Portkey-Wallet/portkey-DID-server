@@ -74,4 +74,6 @@ public class GrabItemDto
     public bool IsMe { get; set; }
     public CryptoGiftDisplayType DisplayType { get; set; }
     public long ExpirationTime { get; set; }
+    public string IpAddress { get; set; }
+    public string Identity { get; set; }
 }

@@ -19,4 +19,5 @@ public class AccountRegisterCreateEto : CAAccountBase
     public HubRequestContext Context { get; set; }
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
+    public string IpAddress { get; set; }
 }

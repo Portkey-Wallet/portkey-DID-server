@@ -153,7 +153,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
                     CaHash = eventData.CaHash,
                     CaAddress = eventData.CaAddress,
                     ReferralInfo = eventData.ReferralInfo,
-                    IsNewUser = true
+                    IsNewUser = true,
+                    IpAddress = eventData.IpAddress
                 }), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
@@ -217,7 +218,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
                     CaHash = eventData.CaHash,
                     CaAddress = eventData.CaAddress,
                     ReferralInfo = eventData.ReferralInfo,
-                    IsNewUser = false
+                    IsNewUser = false,
+                    IpAddress = eventData.IpAddress
                 }), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)

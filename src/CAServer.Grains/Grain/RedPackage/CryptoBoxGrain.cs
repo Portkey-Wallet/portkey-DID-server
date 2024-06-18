@@ -181,8 +181,80 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         await WriteStateAsync();
         return result;
     }
-    
-    public async Task<GrainResultDto<GrabResultDto>> CryptoGiftTransferToRedPackage(Guid userId, string caAddress, PreGrabBucketItemDto preGrabBucketItemDto)
+
+    public async Task<GrainResultDto<GrabResultDto>> GrabRedPackageWithIdentityInfo(Guid userId, string caAddress, string ipAddress, string identity)
+    {
+        var result = new GrainResultDto<GrabResultDto>();
+        var checkResult = CheckRedPackagePermissions(userId);
+        if (checkResult.Item1 == false)
+        {
+            result.Success = false;
+            result.Data = new GrabResultDto()
+            {
+                Result = RedPackageGrabStatus.Fail,
+                ErrorMessage = checkResult.Item2,
+                Status = State.Status,
+                ExpireTime = State.ExpireTime
+            };
+            if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
+            {
+                var grabed = State.Items.First(item => item.UserId == userId);
+                result.Data.Amount = grabed.Amount.ToString();
+                result.Data.Decimal = grabed.Decimal;
+            }
+
+            return result;
+        }
+
+        if (State.Status == RedPackageStatus.NotClaimed)
+        {
+            State.Status = RedPackageStatus.Claimed;
+        }
+
+        var bucket = GetBucket(userId);
+        var grabItem = new GrabItem()
+        {
+            Amount = bucket.Amount,
+            Decimal = State.Decimal,
+            PaymentCompleted = false,
+            GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+            IsLuckyKing = State.Type == RedPackageType.Random && bucket.IsLuckyKing,
+            UserId = userId,
+            CaAddress = caAddress,
+            IpAddress = ipAddress,
+            Identity = identity
+        };
+        if (grabItem.IsLuckyKing)
+        {
+            State.LuckKingId = userId;
+        }
+
+        State.Items.Add(grabItem);
+        State.GrabbedAmount += bucket.Amount;
+        State.Grabbed += 1;
+        if (State.Grabbed == State.Count)
+        {
+            State.Status = RedPackageStatus.FullyClaimed;
+            State.EndTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        }
+
+        result.Success = true;
+        result.Data = new GrabResultDto()
+        {
+            Result = RedPackageGrabStatus.Success,
+            ErrorMessage = "",
+            Amount = bucket.Amount.ToString(),
+            Decimal = State.Decimal,
+            Status = State.Status,
+            BucketItem = _objectMapper.Map<BucketItem, BucketItemDto>(bucket)
+        };
+
+        await WriteStateAsync();
+        return result;
+    }
+
+    public async Task<GrainResultDto<GrabResultDto>> CryptoGiftTransferToRedPackage(Guid userId, string caAddress, PreGrabBucketItemDto preGrabBucketItemDto,
+        string ipAddress, string identity)
     {
         var result = new GrainResultDto<GrabResultDto>();
         var checkResult = CheckRedPackagePermissions(userId);
@@ -221,7 +293,9 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
             GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
             IsLuckyKing = State.Type == RedPackageType.Random && bucket.IsLuckyKing,
             UserId = userId,
-            CaAddress = caAddress
+            CaAddress = caAddress,
+            IpAddress = ipAddress,
+            Identity = identity
         };
         if (grabItem.IsLuckyKing)
         {
