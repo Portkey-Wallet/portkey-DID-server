@@ -282,7 +282,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var currentUserReferralInfo = new ReferralRecordsRankDetail();
-        if (CurrentUser.Id.HasValue)
+        //if (CurrentUser.Id.HasValue)
+        if (!input.CaHash.IsNullOrEmpty())
         {
             var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
             var caHolderInfo =
