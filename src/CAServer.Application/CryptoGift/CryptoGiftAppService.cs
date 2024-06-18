@@ -193,13 +193,19 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("portkey can't get your ip, grab failed~");
         }
+        var identityCode = GetIdentityCode(redPackageId, ipAddress);
+        _logger.LogInformation("pre grab data sync error redPackageId:{0}, set cache identityCode:{1}", redPackageId, identityCode);
+        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+        });
+        
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         if (!redPackageDetail.Success || redPackageDetail.Data == null)
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        var identityCode = GetIdentityCode(redPackageId, ipAddress);
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -210,11 +216,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         CheckClaimCondition(redPackageDetailDto, cryptoGiftDto, identityCode);
-        _logger.LogInformation("pre grab data sync error redPackageId:{0}, set cache identityCode:{1}", redPackageId, identityCode);
-        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-        });
+        
         PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(cryptoGiftDto, identityCode);
         cryptoGiftDto.Items.Add(new PreGrabItem()
         {
@@ -477,7 +479,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                     0, 0);
             }
         }
-        
+        _logger.LogInformation("get crypto detail default logic redPackageId:{0}, get cache identityCode:{1}", redPackageId, identityCode);
         return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
             caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
             0, 0);
