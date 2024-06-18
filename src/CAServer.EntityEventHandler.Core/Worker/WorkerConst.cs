@@ -9,4 +9,5 @@ public class WorkerConst
     public const int CryptoGiftExpiredTimePeriod = 60000;
     //public const int InitReferralTimePeriod = Int32.MaxValue;
     public const int InitReferralTimePeriod = 30000;
+    public const int ReferralTimePeriod = 30000;
 }

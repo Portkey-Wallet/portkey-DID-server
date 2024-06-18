@@ -17,7 +17,7 @@ public class ReferralRankWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _growthStatisticAppService = growthStatisticAppService;
         _logger = logger;
-        Timer.Period = WorkerConst.TimePeriod;
+        Timer.Period = WorkerConst.ReferralTimePeriod;
 
     }
 
