@@ -626,7 +626,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId, Guid userIdParam)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -648,7 +648,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         // get nft info
         var nftInfoDto = await GetNftInfo(redPackageDetailDto);
         
-        Guid userId = await GetUserId(caHash);
+        Guid userId = Guid.Empty.Equals(userIdParam) ? await GetUserId(caHash) : userIdParam;
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
         var caHolderResult = await caHolderGrain.GetCaHolder();
         if (!caHolderResult.Success || caHolderResult.Data == null)
