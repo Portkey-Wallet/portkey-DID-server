@@ -12,5 +12,5 @@ public enum CryptoGiftPhase
     FullyClaimed, //the red package has been fully claimed
     OnlyNewUsers, //the crypto gift is only for new users
     GrabbedQuota, //claimed but have enough quota
-    NoQuota, //
+    NoQuota, //there is no quota right now
 }

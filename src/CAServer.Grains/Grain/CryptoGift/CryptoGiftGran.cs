@@ -57,12 +57,7 @@ public class CryptoGiftGran : Orleans.Grain<CryptoGiftState>, ICryptoGiftGran
         State.Symbol = input.Symbol;
         State.Items = new List<PreGrabItem>();
         State.BucketClaimed = _objectMapper.Map<List<BucketItemDto>, List<PreGrabBucketItemDto>>(bucketClaimed);
-        var preGrabBucketNotClaimed = _objectMapper.Map<List<BucketItemDto>, List<PreGrabBucketItemDto>>(bucketNotClaimed);
-        for (var i = 0; i < preGrabBucketNotClaimed.Count; i++)
-        {
-            preGrabBucketNotClaimed[i].Index = i;
-        }
-        State.BucketNotClaimed = preGrabBucketNotClaimed;
+        State.BucketNotClaimed = _objectMapper.Map<List<BucketItemDto>, List<PreGrabBucketItemDto>>(bucketNotClaimed);
         await WriteStateAsync();
 
         result.Success = true;
