@@ -838,8 +838,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q =>
             q.Term(i => i.Field(f => f.TransactionId).Value(dto.TransactionId)));
-        // mustQuery.Add(q => 
-        //     q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         _logger.LogInformation("TransactionId:{0} DisplayType:{1} cryptoGiftIndices:{2}",
@@ -876,12 +876,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _logger.LogInformation($"---------------{_activityTypeOptions.TypeMap["CreateCryptoBox"]}" +
                                $" {_activityTypeOptions.TypeMap["TransferCryptoBoxes"]} {_activityTypeOptions.TypeMap["RefundCryptoBox"]}" +
                                $" {activityDto.TransactionName}");
-        // if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(activityDto.TransactionName)
-        //                         || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(activityDto.TransactionName)
-        //                         || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(activityDto.TransactionName))
-        // {
-        await CheckCryptoGiftByTransactionId(activityDto);
-        // }
+        if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(activityDto.TransactionName))
+        {
+            await CheckCryptoGiftByTransactionId(activityDto);
+        }
         _logger.LogInformation($"---------------transactionId:{activityDto.TransactionId} transactionType:{transactionType} transactionName:{typeName}");
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
