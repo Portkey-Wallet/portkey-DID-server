@@ -19,4 +19,6 @@ public class ReferralRecordsRankDetail
 
     public string Avatar { get; set; }
 
+    public string WalletName { get; set; }
+
 }

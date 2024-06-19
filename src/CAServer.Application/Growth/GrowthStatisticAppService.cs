@@ -275,7 +275,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 Rank = Convert.ToInt16(rank),
                 CaAddress = entry.Element,
                 ReferralTotalCount = Convert.ToInt16(entry.Score),
-                Avatar = caHolder != null ? caHolder.Avatar : ""
+                Avatar = caHolder != null ? caHolder.Avatar : "",
+                WalletName = caHolder != null ? caHolder.NickName : ""
             };
 
             list.Add(referralRecordsRankDetail);
