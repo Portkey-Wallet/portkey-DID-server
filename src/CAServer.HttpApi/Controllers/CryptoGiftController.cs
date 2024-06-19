@@ -108,6 +108,7 @@ public class CryptoGiftController : CAServerController
     [HttpGet("ip")]
     public string GetRemoteIp()
     {
+        _logger.LogInformation($"_httpContextAccessor?.HttpContext?.Request.Headers[\"X-Forwarded-For\"]:{_httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"]}");
         var clientIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(clientIp))
         {
