@@ -6,6 +6,7 @@ using CAServer.CryptoGift;
 using CAServer.Etos;
 using CAServer.UserAssets;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
@@ -35,7 +36,11 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     {
         try
         {
-            await _distributedCache.SetAsync($"UserLoginHandler:{eventData.CaHash}", eventData.UserId.ToString());
+            var cachedUserId = await _distributedCache.GetAsync($"UserLoginHandler:{eventData.CaHash}");
+            if (cachedUserId.IsNullOrEmpty())
+            {
+                await _distributedCache.SetAsync($"UserLoginHandler:{eventData.CaHash}", eventData.UserId.ToString());
+            }
             
             await _contractAppService.SyncOriginChainIdAsync(eventData);
             
