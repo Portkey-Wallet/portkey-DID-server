@@ -196,7 +196,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("portkey can't get your ip, grab failed~");
         }
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        _logger.LogInformation("pre grab data sync error redPackageId:{0}, set cache identityCode:{1}", redPackageId, identityCode);
+        _logger.LogInformation($"pre grab data sync error redPackageId:{redPackageId}," +
+                               $"PreGrabCrypto identityCode:{identityCode}, ipAddress:{ipAddress}");
         await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
         {
             AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
@@ -410,7 +411,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         
         //before claiming, show the available crypto gift status
         var claimedResult = await _distributedCache.GetAsync(identityCode);
-        _logger.LogInformation("pre grab data sync error redPackageId:{0}, get cache identityCode:{1},claimedResult:{2}", redPackageId, identityCode, claimedResult);
+        _logger.LogInformation($"pre grab data sync error redPackageId:{redPackageId}," +
+                               $"GetCryptoGiftDetail identityCode:{identityCode}, claimedResult:{claimedResult},ipAddress:{ipAddress}");
         if (claimedResult.IsNullOrEmpty())
         {
             //just when the user saw the detail for the first time, showed the available detail
