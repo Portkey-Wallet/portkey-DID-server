@@ -102,7 +102,7 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
         var clientIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(clientIp))
         {
-            return clientIp;
+            return clientIp.Contains(',') ? clientIp.Split(",")[0].Trim() : clientIp;
         }
 
         var remoteIpAddress = _httpContextAccessor?.HttpContext?.Request.HttpContext.Connection.RemoteIpAddress;
