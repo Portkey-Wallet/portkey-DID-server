@@ -649,17 +649,17 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var nftInfoDto = await GetNftInfo(redPackageDetailDto);
         
         Guid userId = Guid.Empty.Equals(userIdParam) ? await GetUserId(caHash) : userIdParam;
-        var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
-        var caHolderResult = await caHolderGrain.GetCaHolder();
-        if (!caHolderResult.Success || caHolderResult.Data == null)
+        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        var receiverResult = await receiverGrain.GetCaHolder();
+        if (!receiverResult.Success || receiverResult.Data == null)
         {
             throw new UserFriendlyException("the crypto gift reciever does not exist");
         }
-        var caHolderGrainDto = caHolderResult.Data;
-        if (redPackageDetailDto.IsNewUsersOnly && !caHolderGrainDto.IsNewUserRegistered)
+        var receiver = receiverResult.Data;
+        if (redPackageDetailDto.IsNewUsersOnly && !receiver.IsNewUserRegistered)
         {
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
-                caHolderGrainDto, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
+                receiver, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
         }
         
         var caHolderSenderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
@@ -668,7 +668,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("the crypto gift sender does not exist");
         }
-        var caHolderSenderGrainDto = caHolderResult.Data;
+        var caHolderSenderGrainDto = caHolderSenderResult.Data;
         
         if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
         {
