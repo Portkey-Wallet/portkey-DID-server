@@ -110,7 +110,7 @@ public class CryptoGiftController : CAServerController
         var clientIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(clientIp))
         {
-            return clientIp;
+            return clientIp.Split(',')[0].Trim();
         }
 
         var remoteIpAddress = _httpContextAccessor?.HttpContext?.Request.HttpContext.Connection.RemoteIpAddress;
@@ -130,7 +130,7 @@ public class CryptoGiftController : CAServerController
         var clientIp = Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(clientIp))
         {
-            return clientIp;
+            return clientIp.Split(',')[0].Trim();
         }
 
         var remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
