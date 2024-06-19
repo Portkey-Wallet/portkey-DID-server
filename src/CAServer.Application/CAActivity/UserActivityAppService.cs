@@ -838,8 +838,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q =>
             q.Term(i => i.Field(f => f.TransactionId).Value(dto.TransactionId)));
-        mustQuery.Add(q => 
-            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        // mustQuery.Add(q => 
+        //     q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         _logger.LogInformation("TransactionId:{0} DisplayType:{1} cryptoGiftIndices:{2}",
