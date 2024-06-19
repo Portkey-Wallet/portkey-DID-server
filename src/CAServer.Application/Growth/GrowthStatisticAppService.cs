@@ -31,12 +31,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly IActivityProvider _activityProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
     private readonly IUserAssetsProvider _userAssetsProvider;
-    
+
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
-        IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger, IUserAssetsProvider userAssetsProvider)
+        IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
+        IUserAssetsProvider userAssetsProvider)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -87,7 +88,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         //     throw new AbpAuthorizationException("Unauthorized.");
         // }
         // var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        
+
         var hasNextPage = true;
         var referralRecordList =
             await _growthProvider.GetReferralRecordListAsync(null, input.CaHash, input.Skip, input.Limit);
@@ -95,16 +96,17 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             hasNextPage = false;
         }
-        
+
         var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
         foreach (var index in referralRecordList)
         {
-            _logger.LogDebug("Referral caHash is {hash}",JsonConvert.SerializeObject(index));
+            _logger.LogDebug("Referral caHash is {hash}", JsonConvert.SerializeObject(index));
             var holder = await _userAssetsProvider.GetCaHolderIndexByCahashAsync(index.CaHash);
-            _logger.LogDebug("HolderInfo is {holder}",JsonConvert.SerializeObject(holder));
+            _logger.LogDebug("HolderInfo is {holder}", JsonConvert.SerializeObject(holder));
         }
+
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
-       
+
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
         {
             WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo) ? indexInfo.NickName : "",
@@ -161,7 +163,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 CaHash = indexer.CaHash,
                 ReferralCode = indexer.ReferralCode,
                 IsDirectlyInvite = 0,
-                ReferralCaHash = growthInfoDic.TryGetValue(indexer.ReferralCode,out var referralCaHash)?referralCaHash : "",
+                ReferralCaHash = growthInfoDic.TryGetValue(indexer.ReferralCode, out var referralCaHash)
+                    ? referralCaHash
+                    : "",
                 ReferralDate = UnixTimeStampToDateTime(indexer.Timestamp),
                 ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
             };
@@ -257,10 +261,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
-        var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, 50);
-        var sortedSetEntries = entries.Where(t => t.Score > 0).ToList();
+        var hasNext = true;
+        var length = await _cacheProvider.GetSortedSetLength(CommonConstant.ReferralKey);
+        var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, input.Skip + input.Limit - 1);
+        if (length <= input.Skip + input.Limit)
+        {
+            hasNext = false;
+        }
+
+        var scores = entries.Select(t => t.Score).Distinct().ToList();
+        scores.Sort();
+        var skipList = entries.Skip(entries.Length - input.Limit).Take(input.Limit).ToArray();
         var list = new List<ReferralRecordsRankDetail>();
-        foreach (var entry in sortedSetEntries)
+
+        foreach (var entry in skipList)
         {
             var caAddress = entry.Element;
             var holderInfo =
@@ -269,10 +283,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHolder = await _activityProvider.GetCaHolderAsync(caHash);
             _logger.LogDebug("Get caHolder is {caHolder},caAddress is {address},caHash is {caHash}",
                 JsonConvert.SerializeObject(caHolder), caAddress, caHash);
-            var rank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey, entry.Element) + 1;
+            var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey, entry.Element);
             var referralRecordsRankDetail = new ReferralRecordsRankDetail
             {
-                Rank = Convert.ToInt16(rank),
+                Rank = scores.IndexOf(score) + 1,
                 CaAddress = entry.Element,
                 ReferralTotalCount = Convert.ToInt16(entry.Score),
                 Avatar = caHolder != null ? caHolder.Avatar : "",
@@ -283,30 +297,40 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var currentUserReferralInfo = new ReferralRecordsRankDetail();
-        //if (CurrentUser.Id.HasValue)
         if (!input.CaHash.IsNullOrEmpty())
         {
-            //var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
             var caHolderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
             var currentCaHolder = await _activityProvider.GetCaHolderAsync(input.CaHash);
             _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
             var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-            var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-
-            currentUserReferralInfo.Rank = Convert.ToInt16(currentRank) == 0
-                ? Convert.ToInt16(currentRank)
-                : Convert.ToInt16(currentRank) + 1;
-            currentUserReferralInfo.ReferralTotalCount = Convert.ToInt16(currentReferralCount);
-            currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
-            currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
-            currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
+            if (currentRank == -1)
+            {
+                currentUserReferralInfo.Rank = 0;
+                currentUserReferralInfo.ReferralTotalCount = 0;
+                currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+                currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
+                currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
+            }
+            else
+            {
+                var sortedEntries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, currentRank + 1);
+                var scoreList = sortedEntries.Select(t => t.Score).Distinct().ToList();
+                scoreList.Sort();
+                var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                currentUserReferralInfo.Rank = scoreList.IndexOf(currentReferralCount);
+                currentUserReferralInfo.ReferralTotalCount = Convert.ToInt16(currentReferralCount);
+                currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+                currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
+                currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
+            }
         }
-       
+
         var referralRecordRank = new ReferralRecordsRankResponseDto
         {
+            HasNext = hasNext,
             ReferralRecordsRank = list,
             CurrentUserReferralRecordsRankDetail = currentUserReferralInfo
         };
@@ -321,9 +345,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             foreach (var caHolder in caHolderList)
             {
-                _logger.LogDebug("CaHolderInfo is {info}",JsonConvert.SerializeObject(caHolder));
+                _logger.LogDebug("CaHolderInfo is {info}", JsonConvert.SerializeObject(caHolder));
             }
         }
+
         var caHashToWalletNameDic = caHolderList.Where(t => !t.CaHash.IsNullOrEmpty())
             .ToDictionary(t => t.CaHash, t => t);
         return caHashToWalletNameDic;

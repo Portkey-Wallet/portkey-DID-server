@@ -134,4 +134,10 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
         var order = highToLow ? Order.Descending : Order.Ascending;
         return await _database.SortedSetRangeByRankWithScoresAsync(leaderboardKey, startRank, stopRank, order);
     }
+
+    public async Task<long> GetSortedSetLength(string leaderboardKey)
+    {
+        var length = await _database.SortedSetLengthAsync(leaderboardKey);
+        return length;
+    }
 }

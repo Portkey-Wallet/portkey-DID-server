@@ -11,5 +11,9 @@ public class ReferralRecordRankRequestDto
 
     public string CaHash { get; set; }
 
+    public int Skip { get; set; }
+
+    public int Limit { get; set; }
+
 }
 

@@ -7,6 +7,8 @@ public class ReferralRecordsRankResponseDto
     public List<ReferralRecordsRankDetail> ReferralRecordsRank { get; set; }
 
     public ReferralRecordsRankDetail CurrentUserReferralRecordsRankDetail { get; set; }
+
+    public bool HasNext { get; set; }
 }
 
 public class ReferralRecordsRankDetail
