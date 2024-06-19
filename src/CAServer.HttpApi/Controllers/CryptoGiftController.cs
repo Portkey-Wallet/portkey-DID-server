@@ -7,6 +7,7 @@ using CAServer.CryptoGift;
 using CAServer.CryptoGift.Dtos;
 using CAServer.RedPackage.Dtos;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
@@ -23,12 +24,15 @@ public class CryptoGiftController : CAServerController
 {
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
     private readonly ILogger<CryptoGiftController> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public CryptoGiftController(ICryptoGiftAppService cryptoGiftAppService,
-        ILogger<CryptoGiftController> logger)
+        ILogger<CryptoGiftController> logger,
+        IHttpContextAccessor httpContextAccessor)
     {
         _cryptoGiftAppService = cryptoGiftAppService;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
     
     [HttpGet("history/first")]
@@ -104,19 +108,21 @@ public class CryptoGiftController : CAServerController
     [HttpGet("ip")]
     public string GetRemoteIp()
     {
-        var remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
-        _logger.LogInformation("IsIPv6Multicast:{0},IsIPv6Teredo:{1},IsIPv6LinkLocal:{2}," +
-                               "IsIPv6SiteLocal:{3},IsIPv6UniqueLocal:{4},IsIPv4MappedToIPv6:{5}",
-            remoteIpAddress.IsIPv6Multicast,
-            remoteIpAddress.IsIPv6Teredo,
-            remoteIpAddress.IsIPv6LinkLocal,
-            remoteIpAddress.IsIPv6SiteLocal,
-            remoteIpAddress.IsIPv6UniqueLocal,
-            remoteIpAddress.IsIPv4MappedToIPv6);
-        _logger.LogInformation("MapToIPv4:{0}", remoteIpAddress.MapToIPv4().ToString());
-        _logger.LogInformation("MapToIPv6:{0}", remoteIpAddress.MapToIPv6().ToString());
-        string ipAddress = remoteIpAddress?.ToString();
-        return ipAddress;
+        var clientIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(clientIp))
+        {
+            return clientIp;
+        }
+
+        var remoteIpAddress = _httpContextAccessor?.HttpContext?.Request.HttpContext.Connection.RemoteIpAddress;
+        if (remoteIpAddress == null)
+        {
+            return string.Empty;
+        }
+
+        return remoteIpAddress.IsIPv4MappedToIPv6
+            ? remoteIpAddress.MapToIPv4().ToString()
+            : remoteIpAddress.MapToIPv6().ToString();
     }
     
     [HttpGet("ip/async")]
