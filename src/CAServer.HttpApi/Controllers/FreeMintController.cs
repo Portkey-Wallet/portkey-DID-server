@@ -1,0 +1,59 @@
+using System.Threading.Tasks;
+using CAServer.FreeMint;
+using CAServer.FreeMint.Dtos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Volo.Abp;
+
+namespace CAServer.Controllers;
+
+[RemoteService]
+[Area("app")]
+[ControllerName("FreeMint")]
+[Route("api/app/mint/")]
+[Authorize]
+public class FreeMintController : CAServerController
+{
+    private readonly IFreeMintAppService _freeMintAppService;
+
+    public FreeMintController(IFreeMintAppService freeMintAppService)
+    {
+        _freeMintAppService = freeMintAppService;
+    }
+
+    [HttpGet("recentStatus")]
+    public async Task<GetRecentStatusDto> GetRecentStatusAsync()
+    {
+        return await _freeMintAppService.GetRecentStatusAsync();
+    }
+    
+    [HttpGet("info")]
+    public async Task<GetMintInfoDto> GetMintInfoAsync()
+    {
+        return await _freeMintAppService.GetMintInfoAsync();
+    }
+    
+    [HttpPost("confirm")]
+    public async Task<ConfirmDto> ConfirmAsync(ConfirmRequestDto requestDto)
+    {
+        return await _freeMintAppService.ConfirmAsync(requestDto);
+    }
+    
+    [HttpPost("mintAgain")]
+    public async Task<ConfirmDto> MintAgainAsync(MintAgainRequestDto requestDto)
+    {
+        return await _freeMintAppService.MintAgainAsync(requestDto);
+    }
+    
+    [HttpGet("recentStatus")]
+    public async Task<GetStatusDto> GetStatusAsync(string itemId)
+    {
+        return await _freeMintAppService.GetStatusAsync(itemId);
+    }
+    
+    [HttpGet("detail")]
+    public async Task<GetNftItemDetailDto> GetNftItemDetailAsync(string itemId)
+    {
+        return await _freeMintAppService.GetNftItemDetailAsync(itemId);
+    }
+}
