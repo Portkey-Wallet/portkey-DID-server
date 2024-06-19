@@ -653,7 +653,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var caHolderResult = await caHolderGrain.GetCaHolder();
         if (!caHolderResult.Success || caHolderResult.Data == null)
         {
-            throw new UserFriendlyException("the crypto gift sender does not exist");
+            throw new UserFriendlyException("the crypto gift reciever does not exist");
         }
         var caHolderGrainDto = caHolderResult.Data;
         if (redPackageDetailDto.IsNewUsersOnly && !caHolderGrainDto.IsNewUserRegistered)
@@ -662,10 +662,18 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 caHolderGrainDto, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
         }
         
+        var caHolderSenderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
+        var caHolderSenderResult = await caHolderSenderGrain.GetCaHolder();
+        if (!caHolderSenderResult.Success || caHolderSenderResult.Data == null)
+        {
+            throw new UserFriendlyException("the crypto gift sender does not exist");
+        }
+        var caHolderSenderGrainDto = caHolderResult.Data;
+        
         if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
         {
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Expired, redPackageDetailDto,
-                caHolderGrainDto, nftInfoDto, "Oops, the crypto gift has expired.", "",
+                caHolderSenderGrainDto, nftInfoDto, "Oops, the crypto gift has expired.", "",
                 0);
         }
         
@@ -676,7 +684,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                             $" {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount), redPackageDetailDto.Decimal);
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
-                caHolderGrainDto, nftInfoDto,  subPrompt, dollarValue,
+                caHolderSenderGrainDto, nftInfoDto,  subPrompt, dollarValue,
                 long.Parse(grabItemDto.Amount));
         }
 
@@ -690,7 +698,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             if (preGrabItem != null)
             {
                 return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.ExpiredReleased, redPackageDetailDto,
-                    caHolderGrainDto, nftInfoDto, "Oops, the crypto gift has expired.", "",
+                    caHolderSenderGrainDto, nftInfoDto, "Oops, the crypto gift has expired.", "",
                     0);
             }
         }
@@ -698,12 +706,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status))
         {
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.FullyClaimed, redPackageDetailDto,
-                caHolderGrainDto, nftInfoDto,  "Oh no, all the crypto gifts have been claimed.", "",
+                caHolderSenderGrainDto, nftInfoDto,  "Oh no, all the crypto gifts have been claimed.", "",
                 0);
         }
         
         return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
-                        caHolderGrainDto, nftInfoDto,  "Claim and Join Portkey", "",
+                        caHolderSenderGrainDto, nftInfoDto,  "Claim and Join Portkey", "",
                         0);
     }
 
