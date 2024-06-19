@@ -302,6 +302,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             currentUserReferralInfo.ReferralTotalCount = Convert.ToInt16(currentReferralCount);
             currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
             currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
+            currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
         }
        
         var referralRecordRank = new ReferralRecordsRankResponseDto
