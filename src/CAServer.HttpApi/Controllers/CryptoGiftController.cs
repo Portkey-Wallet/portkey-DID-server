@@ -74,15 +74,14 @@ public class CryptoGiftController : CAServerController
     
     [HttpGet("login/detail")]
     // [Authorize]
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync([Required] Guid id, [Required]string caHash, Guid userId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync([Required] Guid id, [Required]string caHash)
     {
         // var receiverId = CurrentUser.GetId();
         // if (Guid.Empty.Equals(receiverId))
         // {
         //     throw new UserFriendlyException("current user not exist!");
         // }
-        //todo remove userId before online
-        return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id, userId);
+        return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id);
     }
 
     [HttpGet("test/transfer")]
@@ -108,7 +107,6 @@ public class CryptoGiftController : CAServerController
     [HttpGet("ip")]
     public string GetRemoteIp()
     {
-        _logger.LogInformation($"_httpContextAccessor?.HttpContext?.Request.Headers[\"X-Forwarded-For\"]:{_httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"]}");
         var clientIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(clientIp))
         {

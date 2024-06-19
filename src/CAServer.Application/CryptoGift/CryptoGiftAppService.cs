@@ -629,7 +629,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId, Guid userIdParam)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -637,7 +637,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        Guid receiverId = Guid.Empty.Equals(userIdParam) ? await GetUserId(caHash) : userIdParam;
+        Guid receiverId = await GetUserId(caHash, 0);
         var cryptoGiftDto = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
         var redPackageDetailDto = redPackageDetail.Data;
         var ipAddress = _ipInfoAppService.GetRemoteIp();
@@ -745,8 +745,13 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         return cryptoGiftResultDto.Data;
     }
 
-    private async Task<Guid> GetUserId(string caHash)
+    private async Task<Guid> GetUserId(string caHash, int retryTimes)
     {
+        if (retryTimes > 2)
+        {
+            throw new UserFriendlyException("the user doesn't exist");
+        }
+
         var user = await _userManager.FindByNameAsync(caHash);
         if (user != null)
         {
@@ -759,7 +764,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             _logger.LogInformation("===============get from cache cahash:{0}", caHash);
             return Guid.Parse(userIdStr);
         }
-        throw new UserFriendlyException("the user doesn't exist");
+        
+        Thread.Sleep(TimeSpan.FromSeconds(1));
+        return await GetUserId(caHash, retryTimes + 1);
     }
 
     private async Task<NftInfoDto> GetNftInfo(RedPackageDetailDto redPackageDetailDto)
