@@ -24,6 +24,7 @@ using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -261,7 +262,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("RedPackage have been fully claimed");
         }
-        if (redPackageDetailDto.Items.Any(item => item.Identity.Equals(identityCode)))
+        if (!redPackageDetailDto.Items.IsNullOrEmpty() && redPackageDetailDto.Items.Any(item => identityCode.Equals(item.Identity)))
         {
             throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
         }
