@@ -22,7 +22,7 @@ public interface ICryptoGiftAppService
 
     public Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId);
 
-    public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId);
+    public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId, Guid userId);
 
     public Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress);
 
