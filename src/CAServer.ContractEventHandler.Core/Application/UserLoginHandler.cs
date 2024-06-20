@@ -1,12 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using CAServer.Commons;
-using CAServer.ContractEventHandler.Core.Application;
 using CAServer.CryptoGift;
 using CAServer.Etos;
-using CAServer.UserAssets;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
@@ -36,14 +33,13 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     {
         try
         {
+            _logger.LogInformation("UserLoginHandler receive message:{0}", JsonConvert.SerializeObject(eventData));
+            
             var cachedUserId = await _distributedCache.GetAsync($"UserLoginHandler:{eventData.CaHash}");
             if (cachedUserId.IsNullOrEmpty())
             {
                 await _distributedCache.SetAsync($"UserLoginHandler:{eventData.CaHash}", eventData.UserId.ToString());
             }
-            
-            await _contractAppService.SyncOriginChainIdAsync(eventData);
-            
             var cacheResult = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash));
             if (cacheResult.IsNullOrEmpty())
             {
@@ -57,6 +53,14 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
             }
             var cryptoGiftReferralDto = JsonConvert.DeserializeObject<CryptoGiftReferralDto>(cacheResult);
             await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UserLoginHandler Handle Crypto Gift error");
+        }
+        try
+        {
+            await _contractAppService.SyncOriginChainIdAsync(eventData);
         }
         catch (Exception e)
         {
