@@ -26,6 +26,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver.Linq;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -269,7 +270,16 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
         }
 
-        if (long.Parse(redPackageDetailDto.GrabbedAmount) + cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        long preGrabbedAmount = 0;
+        foreach (var preGrabItem in cryptoGiftDto.Items)
+        {
+            if (redPackageDetailDto.Items.Any(red => red.Identity.Equals(preGrabItem.IdentityCode)))
+            {
+                continue;
+            }
+            preGrabbedAmount += preGrabItem.Amount;
+        }
+        if (long.Parse(redPackageDetailDto.GrabbedAmount) + preGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
@@ -281,7 +291,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                                          && (GrabbedStatus.Claimed.Equals(c.GrabbedStatus)
                                              || GrabbedStatus.Created.Equals(c.GrabbedStatus))))
         {
-            throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
+            throw new UserFriendlyException("You have received this crypto gift, please complete the registration as soon as possible");
+        }
+
+        if (redPackageDetailDto.Items.Any(r => r.Identity.Equals(identityCode)))
+        {
+            throw new UserFriendlyException("You have claimed this crypto gift~");
         }
     }
 
