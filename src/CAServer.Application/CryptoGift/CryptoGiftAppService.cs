@@ -648,6 +648,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         Guid receiverId = await GetUserId(caHash, 0);
         var (isNewUserFromCache, cryptoGiftDto) = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
+        _logger.LogInformation("get crypto gift from cache cryptoGiftDto:{0} isNewUserFromCache{1}", JsonConvert.SerializeObject(cryptoGiftDto), isNewUserFromCache);
         var redPackageDetailDto = redPackageDetail.Data;
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
@@ -667,20 +668,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Expired, redPackageDetailDto,
                 sender, nftInfoDto, "Oops, the crypto gift has expired.", "",
                 0);
-        }
-        
-        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
-        var receiverResult = await receiverGrain.GetCaHolder();
-        if (!receiverResult.Success || receiverResult.Data == null)
-        {
-            throw new UserFriendlyException("the crypto gift reciever does not exist");
-        }
-        var receiver = receiverResult.Data;
-        var isNewUserRegistered = isNewUserFromCache ?? receiver.IsNewUserRegistered;
-        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
-        {
-            return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
-                sender, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
         }
         
         // var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(receiverId));
@@ -718,6 +705,19 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 0);
         }
         
+        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
+        var receiverResult = await receiverGrain.GetCaHolder();
+        if (!receiverResult.Success || receiverResult.Data == null)
+        {
+            throw new UserFriendlyException("the crypto gift reciever does not exist");
+        }
+        var receiver = receiverResult.Data;
+        var isNewUserRegistered = receiver.IsNewUserRegistered; //isNewUserFromCache ?? receiver.IsNewUserRegistered;
+        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
+        {
+            return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
+                sender, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
+        }
         return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
             sender, nftInfoDto,  "Claim and Join Portkey", "",
                         0);
