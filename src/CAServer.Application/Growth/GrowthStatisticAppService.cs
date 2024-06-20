@@ -270,7 +270,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             hasNext = false;
         }
 
-        var scores = entries.Select(t => t.Score).Distinct().ToList();
+        var scores = entries.Select(t => t.Score).ToList();
         if (scores.Count > RankLimit)
         {
             hasNext = false;
@@ -291,10 +291,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogDebug("Get caHolder is {caHolder},caAddress is {address},caHash is {caHash}",
                 JsonConvert.SerializeObject(caHolder), caAddress, caHash);
             var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey, entry.Element);
-            if (scores.IndexOf(score+1) > RankLimit)
+            if (scores.IndexOf(score) + 1 > RankLimit)
             {
                 continue;
             }
+
             var referralRecordsRankDetail = new ReferralRecordsRankDetail
             {
                 Rank = scores.IndexOf(score) + 1,
@@ -326,7 +327,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             else
             {
                 var sortedEntries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, currentRank + 1);
-                var scoreList = sortedEntries.Select(t => t.Score).Distinct().ToList();
+                var scoreList = sortedEntries.Select(t => t.Score).ToList();
                 scoreList.Sort();
                 scoreList.Reverse();
                 var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
