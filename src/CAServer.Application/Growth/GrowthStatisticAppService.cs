@@ -62,14 +62,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<int> GetReferralTotalCountAsync(ReferralRecordRequestDto input)
     {
-        // if (!CurrentUser.Id.HasValue)
-        // {
-        //     throw new AbpAuthorizationException("Unauthorized.");
-        // }
-        //
-        // var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        // var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHolder.CaHash);
-        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(input.CaHash);
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new AbpAuthorizationException("Unauthorized.");
+        }
+        
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHolder.CaHash);
+        //var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(input.CaHash);
         if (growthInfo == null)
         {
             return 0;
@@ -84,15 +84,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
     {
-        // if (!CurrentUser.Id.HasValue)
-        // {
-        //     throw new AbpAuthorizationException("Unauthorized.");
-        // }
-        // var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new AbpAuthorizationException("Unauthorized.");
+        }
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
 
         var hasNextPage = true;
         var referralRecordList =
-            await _growthProvider.GetReferralRecordListAsync(null, input.CaHash, input.Skip, input.Limit);
+            await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip, input.Limit);
         if (referralRecordList.Count < input.Limit)
         {
             hasNextPage = false;
@@ -515,12 +515,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime;
         return dateTime.ToString("G");
-    }
-
-    private static string GetSpecifyDay(int n)
-    {
-        var specifyDay = DateTime.Now.AddDays(n);
-        return specifyDay.ToString("yyyy-MM-dd");
     }
 
     private DateTime UnixTimeStampToDateTime(long unixTimeStamp)
