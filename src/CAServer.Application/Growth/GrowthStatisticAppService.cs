@@ -331,7 +331,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 scoreList.Reverse();
                 var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
                     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                currentUserReferralInfo.Rank = scoreList.IndexOf(currentReferralCount);
+                currentUserReferralInfo.Rank = scoreList.IndexOf(currentReferralCount) + 1;
                 currentUserReferralInfo.ReferralTotalCount = Convert.ToInt16(currentReferralCount);
                 currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
                 currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
