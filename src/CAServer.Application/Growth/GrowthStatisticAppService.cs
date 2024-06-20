@@ -278,7 +278,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         scores.Sort();
         scores.Reverse();
-        var skipList = entries.Skip(entries.Length - input.Limit).Take(input.Limit).ToArray();
+        var skipList = entries.Skip(input.Skip).Take(input.Limit).ToArray();
         var list = new List<ReferralRecordsRankDetail>();
 
         foreach (var entry in skipList)
