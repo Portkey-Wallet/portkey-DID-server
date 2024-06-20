@@ -84,7 +84,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
                 }
                 bool modified = false;
                 var needReturnQuota = GetNeedReturnQuotaStatus(redPackageDetailDto);
-                foreach (var preGrabItem in expiredPreGrabItems)
+                foreach (var preGrabItem in expiredPreGrabItems.ToList())
                 {
                     modified = true;
                     if (needReturnQuota)
@@ -95,8 +95,10 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
                             continue;
                         }
                         cryptoGiftDto.PreGrabbedAmount -= preGrabBucketItemDto.Amount;
-                        cryptoGiftDto.BucketNotClaimed.Add(preGrabBucketItemDto);
                         cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
+                        preGrabBucketItemDto.IdentityCode = string.Empty;
+                        cryptoGiftDto.BucketNotClaimed.Add(preGrabBucketItemDto);
+                        expiredPreGrabItems.Remove(preGrabItem);
                     }
                 }
                 // cryptoGiftDto.Items.RemoveAll(expiredPreGrabItems);
