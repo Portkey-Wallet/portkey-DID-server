@@ -31,6 +31,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly IActivityProvider _activityProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
     private readonly IUserAssetsProvider _userAssetsProvider;
+    private const int RankLimit = 50;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -270,7 +271,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var scores = entries.Select(t => t.Score).Distinct().ToList();
+        if (scores.Count > RankLimit)
+        {
+            hasNext = false;
+        }
+
         scores.Sort();
+        scores.Reverse();
         var skipList = entries.Skip(entries.Length - input.Limit).Take(input.Limit).ToArray();
         var list = new List<ReferralRecordsRankDetail>();
 
@@ -284,6 +291,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogDebug("Get caHolder is {caHolder},caAddress is {address},caHash is {caHash}",
                 JsonConvert.SerializeObject(caHolder), caAddress, caHash);
             var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey, entry.Element);
+            if (scores.IndexOf(score+1) > RankLimit)
+            {
+                continue;
+            }
             var referralRecordsRankDetail = new ReferralRecordsRankDetail
             {
                 Rank = scores.IndexOf(score) + 1,
@@ -292,7 +303,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 Avatar = caHolder != null ? caHolder.Avatar : "",
                 WalletName = caHolder != null ? caHolder.NickName : ""
             };
-
             list.Add(referralRecordsRankDetail);
         }
 
@@ -318,6 +328,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 var sortedEntries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, currentRank + 1);
                 var scoreList = sortedEntries.Select(t => t.Score).Distinct().ToList();
                 scoreList.Sort();
+                scoreList.Reverse();
                 var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
                     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
                 currentUserReferralInfo.Rank = scoreList.IndexOf(currentReferralCount);
