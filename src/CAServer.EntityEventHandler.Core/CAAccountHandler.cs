@@ -78,6 +78,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     {
         try
         {
+            _logger.LogInformation("received account register message:{0}", JsonConvert.SerializeObject(eventData));
             _logger.LogDebug("the first event: create register");
             var register = _objectMapper.Map<AccountRegisterCreateEto, AccountRegisterIndex>(eventData);
 
@@ -95,6 +96,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     {
         try
         {
+            _logger.LogInformation("received account recover message:{0}", JsonConvert.SerializeObject(eventData));
             _logger.LogDebug("the first event: create recover");
 
             var recover = _objectMapper.Map<AccountRecoverCreateEto, AccountRecoverIndex>(eventData);
