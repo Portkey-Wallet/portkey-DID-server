@@ -47,13 +47,13 @@ public class GrowthController : CAServerController
         return await _statisticAppService.GetReferralInfoAsync(input);
     }
 
-    [HttpGet("referralRecordList")]
+    [HttpGet("referralRecordList"),Authorize]
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
     {
         return await _statisticAppService.GetReferralRecordList(input);
     }
     
-    [HttpGet("referralTotalCount")]
+    [HttpGet("referralTotalCount"),Authorize]
     public async Task<int> GetReferralTotalCount(ReferralRecordRequestDto input)
     {
         return await _statisticAppService.GetReferralTotalCountAsync(input);

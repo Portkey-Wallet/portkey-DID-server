@@ -308,11 +308,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var currentUserReferralInfo = new ReferralRecordsRankDetail();
-        if (!input.CaHash.IsNullOrEmpty())
+        if (CurrentUser.Id.HasValue)
         {
+            var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
             var caHolderInfo =
-                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), input.CaHash);
-            var currentCaHolder = await _activityProvider.GetCaHolderAsync(input.CaHash);
+                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHolder.CaHash);
+            var currentCaHolder = await _activityProvider.GetCaHolderAsync(caHolder.CaHash);
             _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
             var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
