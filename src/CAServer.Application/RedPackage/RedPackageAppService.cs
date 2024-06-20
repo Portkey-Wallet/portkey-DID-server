@@ -524,11 +524,23 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             Status = result.Data.Status
         };
         //add the crypto gift logic
-        // if (result.Success)
-        // {
-        //     await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift,
-        //         result.Data.BucketItem.Index, result.Data.Decimal);
-        // }
+        if (result.Success)
+        {
+            try
+            {
+                await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift,
+                    result.Data.BucketItem.Index, result.Data.Decimal);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "pre grab crypto gift after logging error");
+                return new GrabRedPackageOutputDto()
+                {
+                    Result = RedPackageGrabStatus.Fail,
+                    ErrorMessage = "pre grab crypto gift after logging error"
+                };
+            }
+        }
         if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
         {
             res.Result = RedPackageGrabStatus.Success;
