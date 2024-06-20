@@ -744,7 +744,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             return await DoGetCryptoGiftAfterLogin(redPackageId);
         }
-        var cryptoGiftCacheDtoStr = await _distributedCache.GetAsync($"CryptoGiftUpdatedResult:{receiverId}");
+        var cryptoGiftCacheDtoStr = await _distributedCache.GetAsync($"CryptoGiftUpdatedResult:{receiverId}:{redPackageId}");
         if (cryptoGiftCacheDtoStr.IsNullOrEmpty())
         {
             _logger.LogInformation($"GetCryptoGiftDtoAfterLoginAsync redPackageId:{redPackageId} receiverId:{receiverId} retryTimes:{retryTimes}");
@@ -858,41 +858,44 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
         {
             _logger.LogInformation("CryptoGiftTransferToRedPackage ProjectCode isn't 20000, referralInfo={0}", JsonConvert.SerializeObject(referralInfo));
-            await UpdateCryptoGiftCacheResultFalse(userId);
+            _logger.LogInformation($"Transfer cached failed userId:{userId}");
             return;
         }
-
-        if (Guid.Empty.Equals(userId))
-        {
-            await UpdateCryptoGiftCacheResultFalse(userId);
-            throw new UserFriendlyException($"the user userId:{userId} doesn't exist");
-        }
+        
         var infos = referralInfo.ReferralCode.Split("#");
         string identityCode = infos[1];
         Guid redPackageId = Guid.Parse(infos[0]);
+        if (Guid.Empty.Equals(userId))
+        {
+            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
+            _logger.LogInformation($"Transfer cached failed cause userId redPackageId:{redPackageId}");
+            throw new UserFriendlyException($"the user userId:{userId} doesn't exist");
+        }
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
-            await UpdateCryptoGiftCacheResultFalse(userId);
+            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
+            _logger.LogInformation($"Transfer cached failed cause cryptoGift from mongo redPackageId:{redPackageId}");
             throw new UserFriendlyException("the crypto gift does not exist");
         }
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         var preGrabBucketItemDto = GetClaimedCryptoGift(userId, identityCode, redPackageId, cryptoGiftDto);
-        await _distributedCache.SetAsync($"CryptoGiftUpdatedResult:{userId}", JsonConvert.SerializeObject(new CryptoGiftCacheDto()
+        await _distributedCache.SetAsync($"CryptoGiftUpdatedResult:{userId}:{redPackageId}", JsonConvert.SerializeObject(new CryptoGiftCacheDto()
         {
             Success = true,
             IsNewUser = isNewUser,
             CryptoGiftDto = cryptoGiftDto
         }), new DistributedCacheEntryOptions()
         {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(60)
+            AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(600)
         });
+        _logger.LogInformation($"Transfer cached succeed redPackageId:{redPackageId}");
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         if (!redPackageDetail.Success || redPackageDetail.Data == null)
         {
-            await UpdateCryptoGiftCacheResultFalse(userId);
+            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
             throw new UserFriendlyException("the red package does not exist");
         }
         var redPackageDetailDto = redPackageDetail.Data;
@@ -900,7 +903,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         //0 make sure the client is whether or not a new one, according to the new user rule
         if (!Enum.IsDefined(redPackageDetailDto.RedPackageDisplayType) || RedPackageDisplayType.Common.Equals(redPackageDetailDto.RedPackageDisplayType))
         {
-            await UpdateCryptoGiftCacheResultFalse(userId);
+            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
             return;
         }
         if (redPackageDetailDto.IsNewUsersOnly && !isNewUser)
@@ -909,7 +912,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             ReturnPreGrabbedCryptoGift(identityCode, cryptoGiftDto);
             var returnResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
             _logger.LogInformation("CryptoGiftTransferToRedPackage returnResult:{}", JsonConvert.SerializeObject(returnResult));
-            await UpdateCryptoGiftCacheResultFalse(userId);
+            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
+            _logger.LogInformation($"Transfer failed cause not new user redPackageId:{redPackageId}");
             return;
         }
         //1 crypto gift: amount/item
@@ -922,9 +926,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("CryptoGiftTransferToRedPackage redPackageUpdateResult:{0}", JsonConvert.SerializeObject(redPackageUpdateResult));
     }
 
-    private async Task UpdateCryptoGiftCacheResultFalse(Guid userId)
+    private async Task UpdateCryptoGiftCacheResultFalse(Guid userId, Guid redPackageId)
     {
-        await _distributedCache.SetAsync($"CryptoGiftUpdatedResult:{userId}", JsonConvert.SerializeObject(new CryptoGiftCacheDto()
+        await _distributedCache.SetAsync($"CryptoGiftUpdatedResult:{userId}:{redPackageId}", JsonConvert.SerializeObject(new CryptoGiftCacheDto()
         {
             Success = false
         }), new DistributedCacheEntryOptions()
