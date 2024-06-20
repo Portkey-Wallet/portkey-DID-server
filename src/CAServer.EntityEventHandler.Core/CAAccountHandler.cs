@@ -188,9 +188,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     {
         try
         {
+            _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
             if (eventData.RecoverySuccess != null && eventData.RecoverySuccess.Value)
             {
-                _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
                 await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
                 {
                     CaHash = eventData.CaHash,
