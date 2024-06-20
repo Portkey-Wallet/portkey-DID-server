@@ -953,6 +953,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         cryptoGiftDto.BucketNotClaimed.Add(preGrabBucketItemDto);
         cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
+        cryptoGiftDto.Items.Remove(preGrabItem);
     }
 
     private static PreGrabBucketItemDto GetClaimedCryptoGift(Guid userId, string identityCode, Guid redPackageId,
