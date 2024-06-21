@@ -301,15 +301,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
     }
 
-    public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal)
+    public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal, string ipAddress, string identityCode)
     {
-        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGiftAfterLogin:DistributionLock:" + redPackageId + ":" + userId, TimeSpan.FromSeconds(3));
-        if (handle == null)
-        {
-            throw new UserFriendlyException("please take a break for a while~");
-        }
-        
-        var (cryptoGiftDto, identityCode, ipAddress) = await CheckClaimAfterLoginCondition(redPackageId);
+        var cryptoGiftDto = await CheckClaimAfterLoginCondition(redPackageId, userId, ipAddress, identityCode);
         
         PreGrabBucketItemDto preGrabBucketItemDto = GetBucketByIndex(cryptoGiftDto, index, userId, identityCode);
         if (preGrabBucketItemDto == null)
@@ -348,14 +342,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
     }
     
-    private async Task<(CryptoGiftDto, string, string)> CheckClaimAfterLoginCondition(Guid redPackageId)
+    private async Task<CryptoGiftDto> CheckClaimAfterLoginCondition(Guid redPackageId, Guid userId, string ipAddress, string identityCode)
     {
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
-        if (ipAddress.IsNullOrEmpty())
-        {
-            throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging portkey can't get your ip, grab failed~");
-        }
-        var identityCode = GetIdentityCode(redPackageId, ipAddress);
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -367,14 +355,17 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
-        if (cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode) 
+        if (cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
                                          && (GrabbedStatus.Claimed.Equals(c.GrabbedStatus)
                                              || GrabbedStatus.Created.Equals(c.GrabbedStatus))))
         {
             throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
         }
-
-        return new ValueTuple<CryptoGiftDto, string, string>(cryptoGiftDto, identityCode, ipAddress);
+        if (cryptoGiftDto.BucketClaimed.Any(b => b.UserId.Equals(userId)))
+        {
+            throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
+        }
+        return cryptoGiftDto;
     }
     
     private PreGrabBucketItemDto GetBucketByIndex(CryptoGiftDto cryptoGiftDto, int index, Guid userId, string identityCode)
