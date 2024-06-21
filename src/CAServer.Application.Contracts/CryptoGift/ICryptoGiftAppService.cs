@@ -16,7 +16,7 @@ public interface ICryptoGiftAppService
 
     public Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId);
 
-    public Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal);
+    public Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal, string ipAddress, string identityCode);
 
     public Task CheckClaimQuotaAfterLoginCondition(Guid redPackageId);
 

@@ -507,6 +507,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
         var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id);
         var result = await grain.GrabRedPackageWithIdentityInfo(userId, input.UserCaAddress, ipAddress, identity);
+        _logger.LogInformation("LoggedGrabRedPackageResult redPackageId:{0} result:{1}", input.Id, JsonConvert.SerializeObject(result));
         if (result.Success)
         {
             await _distributedEventBus.PublishAsync(new PayRedPackageEto()
@@ -529,7 +530,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             try
             {
                 await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift,
-                    result.Data.BucketItem.Index, result.Data.Decimal);
+                    result.Data.BucketItem.Index, result.Data.Decimal, ipAddress, identity);
             }
             catch (Exception e)
             {
@@ -567,16 +568,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             }
             
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
-            // var redPackageGrainDto = await grain.GetRedPackage(input.Id);
-            // if (!redPackageGrainDto.Success || redPackageGrainDto.Data == null)
-            // {
-            //     throw new UserFriendlyException("the red package does not exist");
-            // }
-            //
-            // if (RedPackageDisplayType.CryptoGift.Equals(redPackageGrainDto.Data.RedPackageDisplayType))
-            // {
-            //     await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(input.Id);
-            // }
             var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
             if (result.Success)
             {
@@ -612,14 +603,15 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
-    private async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, RedPackageDisplayType displayType, int index, int amountDecimal)
+    private async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, RedPackageDisplayType displayType,
+        int index, int amountDecimal, string ipAddress, string identityCode)
     {
         if (!Enum.IsDefined(displayType) || !RedPackageDisplayType.CryptoGift.Equals(displayType))
         {
             return;
         }
 
-        await _cryptoGiftAppService.PreGrabCryptoGiftAfterLogging(redPackageId, userId, index, amountDecimal);
+        await _cryptoGiftAppService.PreGrabCryptoGiftAfterLogging(redPackageId, userId, index, amountDecimal, ipAddress, identityCode);
     }
     
     private void CheckLuckKing(RedPackageDetailDto input)
