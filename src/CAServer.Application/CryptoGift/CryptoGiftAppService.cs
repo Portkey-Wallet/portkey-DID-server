@@ -272,13 +272,21 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
 
         long preGrabbedAmount = 0;
-        foreach (var preGrabItem in cryptoGiftDto.Items)
+        if (!redPackageDetailDto.Items.IsNullOrEmpty())
         {
-            if (redPackageDetailDto.Items.Any(red => red.Identity.Equals(preGrabItem.IdentityCode)))
+            var preGrabItems = cryptoGiftDto.Items.Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus)
+                    || GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus)).ToList();
+            if (!preGrabItems.IsNullOrEmpty())
             {
-                continue;
+                foreach (var preGrabItem in preGrabItems)
+                {
+                    if (redPackageDetailDto.Items.Any(red => red.Identity.Equals(preGrabItem.IdentityCode)))
+                    {
+                        continue;
+                    }
+                    preGrabbedAmount += preGrabItem.Amount;
+                }
             }
-            preGrabbedAmount += preGrabItem.Amount;
         }
         if (long.Parse(redPackageDetailDto.GrabbedAmount) + preGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
