@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -662,8 +663,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("the red package does not exist");
         }
         Guid receiverId = await GetUserId(caHash, 0);
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
         var (isNewUserFromCache, cryptoGiftDto) = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
         _logger.LogInformation("get crypto gift from cache cryptoGiftDto:{0} isNewUserFromCache{1}", JsonConvert.SerializeObject(cryptoGiftDto), isNewUserFromCache);
+        sw.Stop();
+        _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
         var redPackageDetailDto = redPackageDetail.Data;
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);

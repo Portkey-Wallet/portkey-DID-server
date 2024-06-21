@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CryptoGift;
@@ -63,13 +64,23 @@ public class CryptoGiftController : CAServerController
     [HttpPost("grab")]
     public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift([FromBody] PreGrabCryptoGiftCmd preGrabCryptoGiftCmd)
     {
-        return await _cryptoGiftAppService.PreGrabCryptoGift(preGrabCryptoGiftCmd.Id);
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        var result = await _cryptoGiftAppService.PreGrabCryptoGift(preGrabCryptoGiftCmd.Id);
+        sw.Stop();
+        _logger.LogInformation($"statistics id:{preGrabCryptoGiftCmd.Id} PreGrabCryptoGift cost:{sw.ElapsedMilliseconds}ms");
+        return result;
     }
     
     [HttpGet("detail")]
     public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync([Required] Guid id)
     {
-        return await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id);
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        var result = await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id);
+        sw.Stop();
+        _logger.LogInformation($"statistics id:{id} GetCryptoGiftDetailAsync cost:{sw.ElapsedMilliseconds}ms");
+        return result;
     }
     
     [HttpGet("login/detail")]
@@ -81,7 +92,12 @@ public class CryptoGiftController : CAServerController
         // {
         //     throw new UserFriendlyException("current user not exist!");
         // }
-        return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id);
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        var result = await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id);
+        sw.Stop();
+        _logger.LogInformation($"statistics id:{id} GetCryptoGiftLoginDetailAsync cost:{sw.ElapsedMilliseconds}ms");
+        return result;
     }
 
     [HttpGet("test/transfer")]
