@@ -593,9 +593,13 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
     {
+        var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
+        var redPackageDetail = await grain.GetRedPackage(redPackageId);
+        _logger.LogInformation("Test redPackageDetail:{0} cryptoGiftDto:{1}", redPackageId, JsonConvert.SerializeObject(redPackageDetail.Data));
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         var cryptoGiftDto = cryptoGiftResultDto.Data;
+        _logger.LogInformation("Test redPackageId:{0} cryptoGiftDto:{1}", redPackageId, JsonConvert.SerializeObject(cryptoGiftDto));
         List<PreGrabbedItemDto> items =new List<PreGrabbedItemDto>();
         foreach (var preGrabItem in cryptoGiftDto.Items)
         {
