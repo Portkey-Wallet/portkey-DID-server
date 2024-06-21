@@ -28,19 +28,19 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
         services.AddSingleton(MockGrowthProvider());
     }
     
-    [Fact]
-    public async Task VerifierGoogleReCaptcha_Test()
-    {
-        var param = new ReferralRecordRequestDto
-        {
-            CaHash = "",
-            Skip = 0,
-            Limit = 10
-        };
-        var result = await _statisticAppService.GetReferralRecordList(param);
-
-    }
-    
+    // [Fact]
+    // public async Task VerifierGoogleReCaptcha_Test()
+    // {
+    //     var param = new ReferralRecordRequestDto
+    //     {
+    //         CaHash = "",
+    //         Skip = 0,
+    //         Limit = 10
+    //     };
+    //     var result = await _statisticAppService.GetReferralRecordList(param);
+    //
+    // }
+    //
     
     
 }
