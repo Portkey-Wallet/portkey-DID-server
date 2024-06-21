@@ -51,7 +51,11 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
                     return;
                 }
             }
+            _logger.LogInformation("UserLoginHandler caHash:{0} cacheResult:{1}", eventData.CaHash, cacheResult);
             var cryptoGiftReferralDto = JsonConvert.DeserializeObject<CryptoGiftReferralDto>(cacheResult);
+            _logger.LogInformation("UserLoginHandler caHash:{0} cryptoGiftReferralDto:{1}", eventData.CaHash, JsonConvert.SerializeObject(cryptoGiftReferralDto));
+            _logger.LogInformation($"CryptoGiftTransferToRedPackage userId:{eventData.UserId},caAddress:{cryptoGiftReferralDto.CaAddress},referralInfo:{cryptoGiftReferralDto.ReferralInfo}," +
+                                   $"isNewUser:{cryptoGiftReferralDto.IsNewUser},ipAddress:{cryptoGiftReferralDto.IpAddress}");
             await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
         }
         catch (Exception e)
