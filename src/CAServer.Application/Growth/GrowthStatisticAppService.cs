@@ -32,6 +32,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly ILogger<GrowthStatisticAppService> _logger;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private const int RankLimit = 50;
+    private const string InitReferralTimesCache = "InitReferralTimesCacheKey";
+    private const int ExpireTime = 24;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -191,6 +193,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task InitReferralRankAsync()
     {
+        var expire = TimeSpan.FromHours(ExpireTime);
+        var initTimes = await _cacheProvider.Get(InitReferralTimesCache);
+        if (initTimes.HasValue)
+        {
+            return;
+        }
+
         var skip = 0;
         var limit = 100;
         var count = 0;
@@ -256,7 +265,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 }
             }
         }
-
+        await _cacheProvider.Increase(InitReferralTimesCache, 1, expire);
         _logger.LogDebug("Referral TotalCount is {count}", count);
     }
 
