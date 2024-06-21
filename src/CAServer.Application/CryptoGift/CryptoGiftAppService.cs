@@ -898,7 +898,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("the crypto gift does not exist");
         }
         var cryptoGiftDto = cryptoGiftResultDto.Data;
-        //todo 补充抢红包校验逻辑
         try
         {
             CheckClaimAfterLoginCondition(userId, cryptoGiftDto, identityCode);
