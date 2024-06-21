@@ -656,8 +656,18 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         Guid receiverId = await GetUserId(caHash, 0);
         Stopwatch sw = new Stopwatch();
         sw.Start();
-        var (isNewUserFromCache, cryptoGiftDto) = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
-        _logger.LogInformation("get crypto gift from cache cryptoGiftDto:{0} isNewUserFromCache{1}", JsonConvert.SerializeObject(cryptoGiftDto), isNewUserFromCache);
+        CryptoGiftDto cryptoGiftDto;
+        var refreshCachedResult = await _distributedCache.GetAsync($"RefreshedPage:{caHash}:{redPackageId}");
+        if (refreshCachedResult.IsNullOrEmpty())
+        {
+            cryptoGiftDto = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
+        }
+        else
+        {
+            cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
+        }
+        await _distributedCache.SetAsync($"RefreshedPage:{caHash}:{redPackageId}", "true");
+        _logger.LogInformation("get crypto gift from cache cryptoGiftDto:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         sw.Stop();
         _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
         var redPackageDetailDto = redPackageDetail.Data;
@@ -690,8 +700,17 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                             $" {preGrabClaimedItem.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabClaimedItem.Amount, redPackageDetailDto.Decimal);
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
-                sender, nftInfoDto,  subPrompt, dollarValue,
-                preGrabClaimedItem.Amount);
+                sender, nftInfoDto,  subPrompt, dollarValue, preGrabClaimedItem.Amount);
+        }
+
+        var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(receiverId));
+        if (grabItemDto != null)
+        {
+            var subPrompt = $"You've already claimed this crypto gift and received" +
+                            $" {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
+            var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount), redPackageDetailDto.Decimal);
+            return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
+                sender, nftInfoDto,  subPrompt, dollarValue, long.Parse(grabItemDto.Amount));
         }
 
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
@@ -734,7 +753,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                         0);
     }
 
-    private async Task<(bool?, CryptoGiftDto)> GetCryptoGiftDtoAfterLoginAsync(Guid redPackageId, Guid receiverId, int retryTimes)
+    private async Task<CryptoGiftDto> GetCryptoGiftDtoAfterLoginAsync(Guid redPackageId, Guid receiverId, int retryTimes)
     {
         if (retryTimes >= 9)
         {
@@ -752,10 +771,10 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             return await DoGetCryptoGiftAfterLogin(redPackageId);
         }
-        return new ValueTuple<bool?, CryptoGiftDto>(cryptoGiftCacheDto.IsNewUser, cryptoGiftCacheDto.CryptoGiftDto);
+        return cryptoGiftCacheDto.CryptoGiftDto;
     }
 
-    private async Task<(bool?,CryptoGiftDto)> DoGetCryptoGiftAfterLogin(Guid redPackageId)
+    private async Task<CryptoGiftDto> DoGetCryptoGiftAfterLogin(Guid redPackageId)
     {
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
@@ -764,7 +783,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("the crypto gift does not exist");
         }
 
-        return new ValueTuple<bool?, CryptoGiftDto>(null, cryptoGiftResultDto.Data);
+        return cryptoGiftResultDto.Data;
     }
 
     private async Task<Guid> GetUserId(string caHash, int retryTimes)
