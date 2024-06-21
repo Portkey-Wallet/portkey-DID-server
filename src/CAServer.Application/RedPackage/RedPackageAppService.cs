@@ -520,6 +520,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             Result = result.Data.Result,
             ErrorMessage = result.Data.ErrorMessage,
+            ErrorCode = result.Data.ErrorMessage.Equals(RedPackageConsts.RedPackageUserGrabbed) ? 10001 : 0,
             Amount = result.Data.Amount,
             Decimal = result.Data.Decimal,
             Status = result.Data.Status
@@ -529,6 +530,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             try
             {
+                _logger.LogInformation("===========LoggedGrabRedPackageResult success redPackageId:{0}", input.Id);
                 await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift,
                     result.Data.BucketItem.Index, result.Data.Decimal, ipAddress, identity);
             }
