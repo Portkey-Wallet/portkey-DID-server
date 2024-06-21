@@ -85,6 +85,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
                 var needReturnQuota = GetNeedReturnQuotaStatus(redPackageDetailDto);
                 foreach (var preGrabItem in expiredPreGrabItems.ToList())
                 {
+                    preGrabItem.GrabbedStatus = GrabbedStatus.Expired;
                     if (needReturnQuota)
                     {
                         PreGrabBucketItemDto preGrabBucketItemDto = cryptoGiftDto.BucketClaimed.FirstOrDefault(bucket => bucket.Index.Equals(preGrabItem.Index));
