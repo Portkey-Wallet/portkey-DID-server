@@ -31,6 +31,20 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     
     public async Task HandleEventAsync(UserLoginEto eventData)
     {
+        await CryptoGiftTransferRedPackageHandler(eventData);
+        
+        try
+        {
+            await _contractAppService.SyncOriginChainIdAsync(eventData);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UserLoginHandler HandleEventAsync error");
+        }
+    }
+
+    private async Task CryptoGiftTransferRedPackageHandler(UserLoginEto eventData)
+    {
         try
         {
             _logger.LogInformation("UserLoginHandler receive message:{0}", JsonConvert.SerializeObject(eventData));
@@ -56,19 +70,15 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
             _logger.LogInformation("UserLoginHandler caHash:{0} cryptoGiftReferralDto:{1}", eventData.CaHash, JsonConvert.SerializeObject(cryptoGiftReferralDto));
             _logger.LogInformation($"CryptoGiftTransferToRedPackage userId:{eventData.UserId},caAddress:{cryptoGiftReferralDto.CaAddress},referralInfo:{cryptoGiftReferralDto.ReferralInfo}," +
                                    $"isNewUser:{cryptoGiftReferralDto.IsNewUser},ipAddress:{cryptoGiftReferralDto.IpAddress}");
+            if (cryptoGiftReferralDto.ReferralInfo == null)
+            {
+                return;
+            }
             await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "UserLoginHandler Handle Crypto Gift error");
-        }
-        try
-        {
-            await _contractAppService.SyncOriginChainIdAsync(eventData);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "UserLoginHandler HandleEventAsync error");
         }
     }
 }

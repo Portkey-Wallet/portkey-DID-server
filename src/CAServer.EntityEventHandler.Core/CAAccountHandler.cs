@@ -202,6 +202,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
                 {
                     AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
                 });
+                await _distributedCache.RemoveAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash));
+                var cachedResult = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash));
+                _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage cachedResult:{cachedResult}", cachedResult);
             }
             _logger.LogDebug("the second event: update recover grain.");
 
