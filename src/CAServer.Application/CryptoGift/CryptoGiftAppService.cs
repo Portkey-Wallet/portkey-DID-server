@@ -375,6 +375,20 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
     }
     
+    private void CheckClaimConditionWhenAutoTransfer(Guid userId, CryptoGiftDto cryptoGiftDto, string identityCode)
+    {
+        
+        if (cryptoGiftDto.PreGrabbedAmount > cryptoGiftDto.TotalAmount)
+        {
+            throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
+        }
+        if (cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
+                                         && GrabbedStatus.Created.Equals(c.GrabbedStatus)))
+        {
+            throw new UserFriendlyException("You didn't pre grab a crypto gift");
+        }
+    }
+    
     private PreGrabBucketItemDto GetBucketByIndex(CryptoGiftDto cryptoGiftDto, int index, Guid userId, string identityCode)
     {
         var bucket = cryptoGiftDto.BucketNotClaimed
@@ -908,7 +922,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         try
         {
-            CheckClaimAfterLoginCondition(userId, cryptoGiftDto, identityCode);
+            CheckClaimConditionWhenAutoTransfer(userId, cryptoGiftDto, identityCode);
         }
         catch (Exception e)
         {
