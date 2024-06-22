@@ -4,6 +4,7 @@ namespace CAServer.Grains.State.RedPackage;
 [Serializable]
 public class RedPackageState
 {
+    public Guid SessionId { get; set; }
     public RedPackageDisplayType RedPackageDisplayType { get; set; }
     public bool IsNewUsersOnly { get; set; }
     public Guid Id { get; set; }

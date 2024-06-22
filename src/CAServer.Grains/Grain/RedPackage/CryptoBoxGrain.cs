@@ -48,6 +48,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
 
         var bucketResult = GenerateBucket(input.Count, long.Parse(input.TotalAmount), minAmount, decimalIn, input.Type);
         State = _objectMapper.Map<SendRedPackageInputDto, RedPackageState>(input);
+        State.SessionId = input.SessionId;
         State.Status = RedPackageStatus.NotClaimed;
         State.CreateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         State.EndTime = 0;

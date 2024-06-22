@@ -189,6 +189,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 throw new UserFriendlyException("PortkeyToken token not found");
             }
 
+            var sessionId = Guid.NewGuid(); //Guid of ES 
+            input.SessionId = sessionId;
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
                 CurrentUser.Id.Value, _redPackageOptions.ExpireTimeMs);
@@ -210,8 +212,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                     throw new UserFriendlyException(cryptoGiftCreateResult.Message);
                 }
             }
-
-            var sessionId = Guid.NewGuid();
 
             var redPackageIndex = _objectMapper.Map<RedPackageDetailDto, RedPackageIndex>(createResult.Data);
             redPackageIndex.Id = sessionId;
@@ -587,8 +587,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 Decimal = result.Data.Decimal,
                 Status = result.Data.Status
             };
-            //add the crypto gift logic
-            // await PreGrabCryptoGiftAfterLogging(input.Id, CurrentUser.GetId(), input.RedPackageDisplayType, result.Data.BucketItem.Index, result.Data.Decimal);
             if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
             {
                 res.Result = RedPackageGrabStatus.Success;

@@ -23,4 +23,5 @@ public class SendRedPackageInputDto
     // [Required] im scene required, crypto gift not required
     public string Message { get; set; }
     public int AssetType { get; set; }
+    public Guid SessionId { get; set; }
 }
