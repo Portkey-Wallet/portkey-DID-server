@@ -382,7 +382,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
-        if (cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
+        if (!cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
                                          && GrabbedStatus.Created.Equals(c.GrabbedStatus)))
         {
             throw new UserFriendlyException("You didn't pre grab a crypto gift");
@@ -741,11 +741,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
              || RedPackageStatus.Claimed.Equals(redPackageDetailDto.Status)))
         {
+            //check the latest status is expired
             var preGrabItem = cryptoGiftDto.Items
-                .Where(crypto => crypto.IdentityCode.Equals(identityCode) 
-                                 && GrabbedStatus.Expired.Equals(crypto.GrabbedStatus))
+                .Where(crypto => crypto.IdentityCode.Equals(identityCode))
                 .MaxBy(crypto => crypto.GrabTime);
-            if (preGrabItem != null)
+            if (preGrabItem is { GrabbedStatus: GrabbedStatus.Expired })
             {
                 return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.ExpiredReleased, redPackageDetailDto,
                     sender, nftInfoDto, "Oops, the crypto gift has expired.", "",
