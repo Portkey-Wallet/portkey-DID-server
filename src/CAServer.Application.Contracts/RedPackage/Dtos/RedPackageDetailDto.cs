@@ -6,6 +6,7 @@ namespace CAServer.RedPackage.Dtos;
 [Serializable]
 public class RedPackageDetailDto
 {
+    public Guid SessionId { get; set; }
     public RedPackageDisplayType RedPackageDisplayType { get; set; }
     public bool IsNewUsersOnly { get; set; }
     public Guid Id { get; set; }
