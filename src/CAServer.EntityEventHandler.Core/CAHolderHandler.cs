@@ -117,7 +117,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.PopedUp = false;
                 caHolderGrainDto.ModifiedNickname = false;
                 caHolderGrainDto.Avatar = picture;
-                caHolderGrainDto.IsNewUserRegistered = true;
             }
             else
             {
@@ -126,7 +125,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.ModifiedNickname = true;
                 caHolderGrainDto.IdentifierHash = identifierHash;
                 caHolderGrainDto.Avatar = picture;
-                caHolderGrainDto.IsNewUserRegistered = true;
             }
             var result = await grain.AddHolderWithAvatarAsync(caHolderGrainDto);
             if (!result.Success)

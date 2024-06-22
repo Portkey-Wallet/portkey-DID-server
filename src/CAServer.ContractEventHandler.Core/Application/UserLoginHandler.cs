@@ -3,8 +3,10 @@ using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.CryptoGift;
 using CAServer.Etos;
+using CAServer.Grains.Grain.Contacts;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Orleans;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -17,16 +19,19 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
     private readonly IDistributedCache<string> _distributedCache;
     private readonly ILogger<UserLoginHandler> _logger;
+    private readonly IClusterClient _clusterClient;
     
     public UserLoginHandler(IContractAppService contractAppService,
         ICryptoGiftAppService cryptoGiftAppService,
         IDistributedCache<string> distributedCache,
-        ILogger<UserLoginHandler> logger)
+        ILogger<UserLoginHandler> logger,
+        IClusterClient clusterClient)
     {
         _contractAppService = contractAppService;
         _cryptoGiftAppService = cryptoGiftAppService;
         _distributedCache = distributedCache;
         _logger = logger;
+        _clusterClient = clusterClient;
     }
     
     public async Task HandleEventAsync(UserLoginEto eventData)
@@ -74,6 +79,10 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
             {
                 return;
             }
+            //todo 用户的新注册标注位在这里更新合理，只有站外红包业务需要用到，然后再登录态抢红包和登录详情页使用
+            var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
+            var caHolderGrainDto = await grain.UpdateNewUserMarkAsync(cryptoGiftReferralDto.IsNewUser);
+            _logger.LogInformation("UserLoginHandler update caHolderGrainDto:{0}", JsonConvert.SerializeObject(caHolderGrainDto.Data));
             await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
         }
         catch (Exception e)

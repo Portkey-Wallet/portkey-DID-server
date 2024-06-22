@@ -502,9 +502,18 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 ErrorMessage = RedPackageConsts.UserNotExist
             };
         }
-
-        await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(input.Id);
+        
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
+        var redPackageResultDto= await grain.GetRedPackage(input.Id);
+        if (!redPackageResultDto.Success || redPackageResultDto.Data == null)
+        {
+            return new GrabRedPackageOutputDto()
+                        {
+                            Result = RedPackageGrabStatus.Fail,
+                            ErrorMessage = RedPackageConsts.UserNotExist
+                        };
+        }
+        await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(redPackageResultDto.Data, user.Id);
         var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id);
         var result = await grain.GrabRedPackageWithIdentityInfo(userId, input.UserCaAddress, ipAddress, identity);
         _logger.LogInformation("LoggedGrabRedPackageResult redPackageId:{0} result:{1}", input.Id, JsonConvert.SerializeObject(result));

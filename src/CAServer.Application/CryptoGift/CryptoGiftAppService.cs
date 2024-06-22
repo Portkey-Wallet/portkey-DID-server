@@ -341,8 +341,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("PreGrabCryptoGiftAfterLogging updateResult:{0}", JsonConvert.SerializeObject(updateResult));
     }
 
-    public async Task CheckClaimQuotaAfterLoginCondition(Guid redPackageId)
+    public async Task CheckClaimQuotaAfterLoginCondition(RedPackageDetailDto redPackageDetailDto, Guid receiverId)
     {
+        var redPackageId = redPackageDetailDto.Id;
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -353,6 +354,18 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
+        }
+        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
+        var receiverResult = await receiverGrain.GetCaHolder();
+        if (!receiverResult.Success || receiverResult.Data == null)
+        {
+            throw new UserFriendlyException("user does not exist");
+        }
+        var receiver = receiverResult.Data;
+        var isNewUserRegistered = receiver.IsNewUserRegistered;
+        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
+        {
+            throw new UserFriendlyException("user does not exist");
         }
     }
     
@@ -679,22 +692,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("the red package does not exist");
         }
         Guid receiverId = await GetUserId(caHash, 0);
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
-        CryptoGiftDto cryptoGiftDto;
-        var refreshCachedResult = await _distributedCache.GetAsync($"RefreshedPage:{caHash}:{redPackageId}");
-        if (refreshCachedResult.IsNullOrEmpty())
-        {
-            cryptoGiftDto = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
-        }
-        else
-        {
-            cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
-        }
-        await _distributedCache.SetAsync($"RefreshedPage:{caHash}:{redPackageId}", "true");
-        _logger.LogInformation("get crypto gift from cache cryptoGiftDto:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
-        sw.Stop();
-        _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
         var redPackageDetailDto = redPackageDetail.Data;
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
@@ -716,7 +713,36 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 0);
         }
         
-        // var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(receiverId));
+        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
+        var receiverResult = await receiverGrain.GetCaHolder();
+        if (!receiverResult.Success || receiverResult.Data == null)
+        {
+            throw new UserFriendlyException("the crypto gift receiver does not exist");
+        }
+        var receiver = receiverResult.Data;
+        var isNewUserRegistered = receiver.IsNewUserRegistered; //isNewUserFromCache ?? receiver.IsNewUserRegistered;
+        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
+        {
+            return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
+                sender, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
+        }
+        
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        CryptoGiftDto cryptoGiftDto;
+        var refreshCachedResult = await _distributedCache.GetAsync($"RefreshedPage:{caHash}:{redPackageId}");
+        if (refreshCachedResult.IsNullOrEmpty())
+        {
+            cryptoGiftDto = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
+        }
+        else
+        {
+            cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
+        }
+        await _distributedCache.SetAsync($"RefreshedPage:{caHash}:{redPackageId}", "true");
+        _logger.LogInformation("get crypto gift from cache cryptoGiftDto:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
+        sw.Stop();
+        _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
         var preGrabClaimedItem = cryptoGiftDto.Items.FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
                                                        && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
         if (preGrabClaimedItem != null)
@@ -760,19 +786,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 0);
         }
         
-        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
-        var receiverResult = await receiverGrain.GetCaHolder();
-        if (!receiverResult.Success || receiverResult.Data == null)
-        {
-            throw new UserFriendlyException("the crypto gift reciever does not exist");
-        }
-        var receiver = receiverResult.Data;
-        var isNewUserRegistered = receiver.IsNewUserRegistered; //isNewUserFromCache ?? receiver.IsNewUserRegistered;
-        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
-        {
-            return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
-                sender, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
-        }
         return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
             sender, nftInfoDto,  "Claim and Join Portkey", "",
                         0);
@@ -929,6 +942,25 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
             throw new UserFriendlyException(e.Message);
         }
+        
+        var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
+        var redPackageDetail = await grain.GetRedPackage(redPackageId);
+        if (!redPackageDetail.Success || redPackageDetail.Data == null)
+        {
+            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
+            throw new UserFriendlyException("the red package does not exist");
+        }
+        var redPackageDetailDto = redPackageDetail.Data;
+        if (redPackageDetailDto.IsNewUsersOnly && !isNewUser)
+        {
+            //return the quota of the crypto gift
+            ReturnPreGrabbedCryptoGift(identityCode, cryptoGiftDto);
+            var returnResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
+            _logger.LogInformation("CryptoGiftTransferToRedPackage returnResult:{}", JsonConvert.SerializeObject(returnResult));
+            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
+            _logger.LogInformation($"Transfer failed cause not new user redPackageId:{redPackageId}");
+            return;
+        }
         var preGrabBucketItemDto = GetClaimedCryptoGift(userId, identityCode, redPackageId, cryptoGiftDto);
         await _distributedCache.SetAsync($"CryptoGiftUpdatedResult:{userId}:{redPackageId}", JsonConvert.SerializeObject(new CryptoGiftCacheDto()
         {
@@ -940,29 +972,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(600)
         });
         _logger.LogInformation($"Transfer cached succeed redPackageId:{redPackageId}");
-        var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
-        var redPackageDetail = await grain.GetRedPackage(redPackageId);
-        if (!redPackageDetail.Success || redPackageDetail.Data == null)
-        {
-            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
-            throw new UserFriendlyException("the red package does not exist");
-        }
-        var redPackageDetailDto = redPackageDetail.Data;
         
         //0 make sure the client is whether or not a new one, according to the new user rule
         if (!Enum.IsDefined(redPackageDetailDto.RedPackageDisplayType) || RedPackageDisplayType.Common.Equals(redPackageDetailDto.RedPackageDisplayType))
         {
             await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
-            return;
-        }
-        if (redPackageDetailDto.IsNewUsersOnly && !isNewUser)
-        {
-            //return the quota of the crypto gift
-            ReturnPreGrabbedCryptoGift(identityCode, cryptoGiftDto);
-            var returnResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
-            _logger.LogInformation("CryptoGiftTransferToRedPackage returnResult:{}", JsonConvert.SerializeObject(returnResult));
-            await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
-            _logger.LogInformation($"Transfer failed cause not new user redPackageId:{redPackageId}");
             return;
         }
         
