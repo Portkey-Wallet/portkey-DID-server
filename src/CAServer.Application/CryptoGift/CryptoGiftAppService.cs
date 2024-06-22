@@ -341,8 +341,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("PreGrabCryptoGiftAfterLogging updateResult:{0}", JsonConvert.SerializeObject(updateResult));
     }
 
-    public async Task CheckClaimQuotaAfterLoginCondition(Guid redPackageId)
+    public async Task CheckClaimQuotaAfterLoginCondition(RedPackageDetailDto redPackageDetailDto, Guid receiverId)
     {
+        var redPackageId = redPackageDetailDto.Id;
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -353,6 +354,18 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
+        }
+        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
+        var receiverResult = await receiverGrain.GetCaHolder();
+        if (!receiverResult.Success || receiverResult.Data == null)
+        {
+            throw new UserFriendlyException("user does not exist");
+        }
+        var receiver = receiverResult.Data;
+        var isNewUserRegistered = receiver.IsNewUserRegistered;
+        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
+        {
+            throw new UserFriendlyException("user does not exist");
         }
     }
     
