@@ -713,15 +713,16 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 0);
         }
         
-        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
-        var receiverResult = await receiverGrain.GetCaHolder();
-        if (!receiverResult.Success || receiverResult.Data == null)
-        {
-            throw new UserFriendlyException("the crypto gift receiver does not exist");
-        }
-        var receiver = receiverResult.Data;
-        var isNewUserRegistered = receiver.IsNewUserRegistered; //isNewUserFromCache ?? receiver.IsNewUserRegistered;
-        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
+        // var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
+        // var receiverResult = await receiverGrain.GetCaHolder();
+        // if (!receiverResult.Success || receiverResult.Data == null)
+        // {
+        //     throw new UserFriendlyException("the crypto gift receiver does not exist");
+        // }
+        // var receiver = receiverResult.Data;
+        // var isNewUserRegistered = receiver.IsNewUserRegistered;
+        var registerCacheExist = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, caHash));
+        if (redPackageDetailDto.IsNewUsersOnly && registerCacheExist.IsNullOrEmpty())
         {
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.OnlyNewUsers, redPackageDetailDto,
                 sender, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
