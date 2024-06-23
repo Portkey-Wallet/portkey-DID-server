@@ -79,7 +79,6 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
             {
                 return;
             }
-            //todo 用户的新注册标注位在这里更新合理，只有站外红包业务需要用到，然后再登录态抢红包和登录详情页使用
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
             var caHolderGrainDto = await grain.UpdateNewUserMarkAsync(cryptoGiftReferralDto.IsNewUser);
             _logger.LogInformation("UserLoginHandler update caHolderGrainDto:{0}", JsonConvert.SerializeObject(caHolderGrainDto.Data));
