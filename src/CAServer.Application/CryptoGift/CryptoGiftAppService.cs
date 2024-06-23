@@ -26,8 +26,6 @@ using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver.Linq;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -341,7 +339,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("PreGrabCryptoGiftAfterLogging updateResult:{0}", JsonConvert.SerializeObject(updateResult));
     }
 
-    public async Task CheckClaimQuotaAfterLoginCondition(RedPackageDetailDto redPackageDetailDto, Guid receiverId)
+    public async Task CheckClaimQuotaAfterLoginCondition(RedPackageDetailDto redPackageDetailDto, string caHash)
     {
         var redPackageId = redPackageDetailDto.Id;
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
@@ -355,17 +353,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
-        var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
-        var receiverResult = await receiverGrain.GetCaHolder();
-        if (!receiverResult.Success || receiverResult.Data == null)
+        
+        var registerCacheExist = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, caHash));
+        if (redPackageDetailDto.IsNewUsersOnly && registerCacheExist.IsNullOrEmpty())
         {
-            throw new UserFriendlyException("user does not exist");
-        }
-        var receiver = receiverResult.Data;
-        var isNewUserRegistered = receiver.IsNewUserRegistered;
-        if (redPackageDetailDto.IsNewUsersOnly && !isNewUserRegistered)
-        {
-            throw new UserFriendlyException("user does not exist");
+            throw new UserFriendlyException("the crypto gift is only for new user");
         }
     }
     
@@ -713,14 +705,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 0);
         }
         
-        // var receiverGrain = _clusterClient.GetGrain<ICAHolderGrain>(receiverId);
-        // var receiverResult = await receiverGrain.GetCaHolder();
-        // if (!receiverResult.Success || receiverResult.Data == null)
-        // {
-        //     throw new UserFriendlyException("the crypto gift receiver does not exist");
-        // }
-        // var receiver = receiverResult.Data;
-        // var isNewUserRegistered = receiver.IsNewUserRegistered;
         var registerCacheExist = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, caHash));
         if (redPackageDetailDto.IsNewUsersOnly && registerCacheExist.IsNullOrEmpty())
         {

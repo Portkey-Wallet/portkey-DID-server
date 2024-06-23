@@ -15,6 +15,4 @@ public class CAHolderState
     public bool ModifiedNickname { get; set; }
 
     public string IdentifierHash { get; set; }
-    
-    public bool IsNewUserRegistered { get; set; }
 }
