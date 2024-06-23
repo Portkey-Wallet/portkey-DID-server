@@ -185,7 +185,7 @@ public class PayRedPackageService : IPayRedPackageService
         var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
         if (redPackageIndex == null)
         {
-            _logger.LogError("RedPackageSendResultEto not found: {Message}",
+            _logger.LogError("RedPackage PagedResultEto not found: {Message}",
                 JsonConvert.SerializeObject(transactionResultDto));
             return;
         }
@@ -193,8 +193,8 @@ public class PayRedPackageService : IPayRedPackageService
         redPackageIndex.PayedTransactionId = transactionResultDto.TransactionId;
         redPackageIndex.PayedTransactionResult = transactionResultDto.Status;
         redPackageIndex.PayedTransactionStatus = transactionSucceed ? RedPackageTransactionStatus.Success : RedPackageTransactionStatus.Fail;
-        var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
-        _logger.LogInformation("redPackageId:{0} PayedRedPackage UpdateRedPackageEs result:{1}", redPackageIndex.RedPackageId, JsonConvert.SerializeObject(updateTask));
+        await _redPackageRepository.UpdateAsync(redPackageIndex);
+        _logger.LogInformation("redPackageId:{0} PayedRedPackage UpdateRedPackageEs successfully", redPackageIndex.RedPackageId);
     }
 
     private void RemoveRedPackageJob(Guid redPackageId)
