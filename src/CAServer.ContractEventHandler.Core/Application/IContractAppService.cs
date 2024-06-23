@@ -555,8 +555,8 @@ public class ContractAppService : IContractAppService
         redPackageIndex.RefundedTransactionId = transactionResultDto.TransactionId;
         redPackageIndex.RefundedTransactionResult = transactionResultDto.Status;
         redPackageIndex.RefundedTransactionStatus = transactionSucceed ? RedPackageTransactionStatus.Success : RedPackageTransactionStatus.Fail;
-        var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
-        _logger.LogInformation("redPackageId:{0} RefundedRedPackage UpdateRedPackageEs result:{1}", redPackageIndex.RedPackageId, JsonConvert.SerializeObject(updateTask));
+        await _redPackageRepository.UpdateAsync(redPackageIndex);
+        _logger.LogInformation("redPackageId:{0} RefundedRedPackage UpdateRedPackageEs successfully", redPackageIndex.RedPackageId);
     }
 
     private async Task ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
