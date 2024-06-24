@@ -20,6 +20,7 @@ using CAServer.UserAssets.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -176,11 +177,15 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             {
                 throw new UserFriendlyException("auth fail");
             }
-
-            var relationToken = _httpContextAccessor.HttpContext?.Request?.Headers[ImConstant.RelationAuthHeader];
-            if (string.IsNullOrEmpty(relationToken))
+            
+            StringValues? relationToken = null;
+            if (input.RedPackageDisplayType == null || RedPackageDisplayType.Common.Equals(input.RedPackageDisplayType))
             {
-                throw new UserFriendlyException("Relation token not found");
+                relationToken = _httpContextAccessor.HttpContext?.Request?.Headers[ImConstant.RelationAuthHeader];
+                if (string.IsNullOrEmpty(relationToken))
+                {
+                    throw new UserFriendlyException("Relation token not found");
+                }
             }
 
             var portkeyToken = _httpContextAccessor.HttpContext?.Request?.Headers[CommonConstant.AuthHeader];
