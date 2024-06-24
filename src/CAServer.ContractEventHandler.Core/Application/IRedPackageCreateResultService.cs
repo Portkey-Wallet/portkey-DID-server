@@ -6,6 +6,7 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.EntityEventHandler.Core;
+using CAServer.EnumType;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
 using CAServer.RedPackage;
@@ -81,34 +82,41 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
         
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
                 TimeSpan.FromMilliseconds(_redPackageOptions.ExpireTimeMs + 30 * 1000));
-        
-            //send redpackage Card
-            var imSendMessageRequestDto = new ImSendMessageRequestDto();
-            try
+
+            if (RedPackageDisplayType.Common.Equals(redPackageIndex.RedPackageDisplayType))
             {
-                imSendMessageRequestDto =
-                    JsonConvert.DeserializeObject<ImSendMessageRequestDto>(redPackageIndex.Message);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "RedPackageCreateResultEto Message DeserializeObject fail: {Message}",
-                    redPackageIndex.Message);
-                imSendMessageRequestDto = new ImSendMessageRequestDto();
-                imSendMessageRequestDto.SendUuid = Guid.NewGuid().ToString();
-                imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;
-                imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(
-                    redPackageIndex.SenderId,
-                    redPackageIndex.Memo, redPackageIndex.RedPackageId);
-                imSendMessageRequestDto.Type = RedPackageConsts.RedPackageCardType;
-            }
+                //send redpackage Card
+                var imSendMessageRequestDto = new ImSendMessageRequestDto();
+                try
+                {
+                    imSendMessageRequestDto =
+                        JsonConvert.DeserializeObject<ImSendMessageRequestDto>(redPackageIndex.Message);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "RedPackageCreateResultEto Message DeserializeObject fail: {Message}",
+                        redPackageIndex.Message);
+                    imSendMessageRequestDto = new ImSendMessageRequestDto();
+                    imSendMessageRequestDto.SendUuid = Guid.NewGuid().ToString();
+                    imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;
+                    imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(
+                        redPackageIndex.SenderId,
+                        redPackageIndex.Memo, redPackageIndex.RedPackageId);
+                    imSendMessageRequestDto.Type = RedPackageConsts.RedPackageCardType;
+                }
         
-            var headers = new Dictionary<string, string>();
-            headers.Add(ImConstant.RelationAuthHeader, redPackageIndex.SenderRelationToken);
-            headers.Add(CommonConstant.AuthHeader, redPackageIndex.SenderPortkeyToken);
-            var sendMessageTask = _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
-                _imServerOptions.BaseUrl + ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
+                var headers = new Dictionary<string, string>();
+                headers.Add(ImConstant.RelationAuthHeader, redPackageIndex.SenderRelationToken);
+                headers.Add(CommonConstant.AuthHeader, redPackageIndex.SenderPortkeyToken);
+                var sendMessageTask = _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
+                    _imServerOptions.BaseUrl + ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
         
-            await Task.WhenAll(updateTask, sendMessageTask);
+                await Task.WhenAll(updateTask, sendMessageTask);
+            }
+            else {
+                await Task.WhenAll(updateTask);
+            }
+            
         }
         catch (Exception ex)
         {
