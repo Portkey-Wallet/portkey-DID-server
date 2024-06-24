@@ -30,6 +30,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using OpenAI.Extensions;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Orleans;
@@ -98,6 +99,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
         ConfigureHub(context, configuration);
+        ConfigureOpenAi(context,configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
@@ -274,6 +276,16 @@ public class CAServerHttpApiHostModule : AbpModule
             .Connect(configuration["Redis:Configuration"]);
         context.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
         Configure<HubCacheOptions>(configuration.GetSection("Hub:Configuration"));
+    }
+
+    private void ConfigureOpenAi(ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddOpenAIService(settings =>
+        {
+            settings.ApiKey = configuration["OpenAiKey:Key"];
+        });
+       
     }
 
     private void ConfigureGraphQl(ServiceConfigurationContext context,

@@ -124,4 +124,10 @@ public class CAAccountController : CAServerController
         return await _caAccountService.RevokeValidateAsync(userId, type);
     }
     
+    [HttpGet("chatGptTest")]
+    public async Task<string> ChatGptAsync(string message)
+    {
+        return await _caAccountService.ChatGptAsync(message);
+    }
+    
 }

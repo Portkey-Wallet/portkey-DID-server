@@ -26,6 +26,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
+using OpenAI.Interfaces;
+using OpenAI.ObjectModels.RequestModels;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -57,6 +59,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public const double MinBanlance = 0.05 * 100000000;
     private readonly IVerifierServerClient _verifierServerClient;
     private readonly IIpInfoAppService _ipInfoAppService;
+    private readonly IOpenAIService _openAiService;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -71,7 +74,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IAppleAuthProvider appleAuthProvider,
         IOptionsSnapshot<ManagerCountLimitOptions> managerCountLimitOptions,
         IVerifierServerClient verifierServerClient,
-        IIpInfoAppService ipInfoAppService)
+        IIpInfoAppService ipInfoAppService, IOpenAIService openAiService)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -87,8 +90,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
         _ipInfoAppService = ipInfoAppService;
+        _openAiService = openAiService;
     }
-    
+
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
@@ -451,7 +455,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             validateDevice = false;
         }
-        var validateGuardian = await ValidateGuardianAsync(holderInfo,type);
+
+        var validateGuardian = await ValidateGuardianAsync(holderInfo, type);
         return new CancelCheckResultDto
         {
             ValidatedDevice = validateDevice,
@@ -516,17 +521,19 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
 
             var value = (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type);
-            var guardian = guardians.FirstOrDefault(t=>(int)t.Type == value);
+            var guardian = guardians.FirstOrDefault(t => (int)t.Type == value);
             if (guardian == null)
             {
                 throw new Exception(ResponseMessage.LoginGuardianNotExists);
             }
         }
 
-        
+
 
         var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && (int)t.Type == (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
+            holderInfo?.GuardianList.Guardians.FirstOrDefault(t =>
+                t.IsLoginGuardian && (int)t.Type ==
+                (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
         if (currentGuardian != null)
         {
             var caHolderDto =
@@ -535,7 +542,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
                 t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
             await tasks.WhenAll();
-            if (tasks.Count(t =>!t.Result.IsDeleted) > 1)
+            if (tasks.Count(t => !t.Result.IsDeleted) > 1)
             {
                 validateGuardian = false;
             }
@@ -583,5 +590,19 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 chainId);
 
         return output?.CaHash?.ToHex();
+    }
+
+    public async Task<string> ChatGptAsync(string message)
+    {
+        var result = await _openAiService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+        {
+            Messages = new List<ChatMessage>
+            {
+                ChatMessage.FromUser(message)
+            },
+            Model = OpenAI.ObjectModels.Models.Gpt_4,
+            MaxTokens = 100
+        });
+        return result.Choices.First().Message.Content;
     }
 }
