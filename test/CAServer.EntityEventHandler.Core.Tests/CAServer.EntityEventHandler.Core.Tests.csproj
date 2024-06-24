@@ -14,6 +14,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\CAServer.EntityEventHandler.Core\CAServer.EntityEventHandler.Core.csproj" />
+      <ProjectReference Include="..\..\src\CAServer.Redis\CAServer.Redis.csproj" />
       <ProjectReference Include="..\CAServer.Orleans.TestBase\CAServer.Orleans.TestBase.csproj" />
     </ItemGroup>
 

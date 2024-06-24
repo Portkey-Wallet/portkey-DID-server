@@ -329,14 +329,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
         var caHolderList = await GetCaHolderByCaHashAsync(caHashes);
-        if (!caHolderList.IsNullOrEmpty())
-        {
-            foreach (var caHolder in caHolderList)
-            {
-                _logger.LogDebug("CaHolderInfo is {info}", JsonConvert.SerializeObject(caHolder));
-            }
-        }
-
         var caHashToWalletNameDic = caHolderList.Where(t => !t.CaHash.IsNullOrEmpty())
             .ToDictionary(t => t.CaHash, t => t);
         return caHashToWalletNameDic;

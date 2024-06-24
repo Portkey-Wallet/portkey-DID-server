@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using AElf;
+using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
+using CAServer.Guardian.Provider;
 using CAServer.UserAssets.Provider;
 using Moq;
 using Portkey.Contracts.CA;
+using StackExchange.Redis;
 
 namespace CAServer.Growth;
 
@@ -38,10 +42,12 @@ public partial class GrowthServiceTest
         var provider = new Mock<IUserAssetsProvider>();
         provider.Setup(t => t.GetCaHolderIndexAsync(It.IsAny<Guid>())).ReturnsAsync(new CAHolderIndex()
         {
-            CaHash = "",
-            Avatar = "",
-            NickName = ""
+            CaHash = "MockCaHash",
+            Avatar = "MockAvatar",
+            NickName = "MockNickName"
         });
+
+
         return provider.Object;
     }
 
@@ -54,13 +60,83 @@ public partial class GrowthServiceTest
             {
                 new ReferralRecordIndex()
                 {
-                    CaHash = "",
-                    ReferralAddress = "",
-                    ReferralCaHash = "",
+                    CaHash = "MockCaHash",
+                    ReferralAddress = "MockAddress",
+                    ReferralCaHash = "MockReferralCaHash",
                     ReferralDate = new DateTime().ToUniversalTime(),
-                    ReferralCode = "",
+                    ReferralCode = "MockCode",
                     IsDirectlyInvite = 1
                 }
+            });
+
+        provider.Setup(t => t.GetGrowthInfoByCaHashAsync(It.IsAny<string>())).ReturnsAsync(new GrowthIndex()
+        {
+            CaHash = "MockCaHash",
+            ReferralCode = "MockReferralCode",
+            InviteCode = "MockInviteCode"
+        });
+
+        var list = new List<IndexerReferralInfo>()
+        {
+            new IndexerReferralInfo()
+            {
+                CaHash = "MockCaHash",
+                ReferralCode = "MockInviteCode",
+            }
+        };
+        provider.Setup(m => m.GetReferralInfoAsync(It.IsAny<List<string>>(), It.IsAny<List<string>>(),
+            It.IsAny<List<string>>(), It.IsAny<long>(), It.IsAny<long>())).ReturnsAsync(new ReferralInfoDto()
+        {
+            ReferralInfo = list
+        });
+
+
+        provider.Setup(t => t.GetGrowthInfosAsync(It.IsAny<List<string>>(), It.IsAny<List<string>>())).ReturnsAsync(
+            new List<GrowthIndex>()
+            {
+                new GrowthIndex()
+                {
+                    CaHash = "MockCaHash",
+                    InviteCode = "MockInviteCode",
+                    ReferralCode = "MockReferralCode"
+                }
+            });
+
+
+        provider.Setup(t => t.AddReferralRecordAsync(It.IsAny<ReferralRecordIndex>())).ReturnsAsync(true);
+
+        provider.Setup(t => t.GetAllGrowthInfosAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync((int skip,int limit)=>skip==100?
+            
+        new List<GrowthIndex>()
+            {
+                new GrowthIndex()
+                {
+                    CaHash = "MockCaHash",
+                    InviteCode = "MockInviteCode",
+                    ReferralCode = "MockReferralCode"
+                }
+            }:new List<GrowthIndex>());
+        
+        
+        return provider.Object;
+    }
+
+    public IActivityProvider MockIActivityProvider()
+    {
+        var provider = new Mock<IActivityProvider>();
+        provider.Setup(t =>
+                t.GetCaHolderInfoAsync(It.IsAny<List<string>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new GuardiansDto()
+            {
+                CaHolderInfo = new List<GuardianDto>()
+                {
+                    new GuardianDto()
+                    {
+                        CaHash = "MockCaHash",
+                        CaAddress = "MockCaAddress"
+                    }
+                }
+                
             });
         return provider.Object;
     }

@@ -12,6 +12,7 @@ using CAServer.Http.Dtos;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
+using StackExchange.Redis;
 
 namespace CAServer;
 
@@ -19,6 +20,7 @@ public abstract partial class CAServerApplicationTestBase
 {
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory = new();
     private readonly Mock<HttpMessageHandler> _mockHandler = new(MockBehavior.Strict);
+    private readonly Mock<IConnectionMultiplexer> _mockConnectionMultiplexer = new Mock<IConnectionMultiplexer>();
 
 
     protected IHttpClientFactory MockHttpFactory()
@@ -27,6 +29,14 @@ public abstract partial class CAServerApplicationTestBase
             .Setup(_ => _.CreateClient(It.IsAny<string>()))
             .Returns(new HttpClient(_mockHandler.Object) { BaseAddress = new Uri("http://test.com/") });
         return _mockHttpClientFactory.Object;
+    }
+
+    protected IConnectionMultiplexer MockIConnectionMultiplexer()
+    {
+        _mockConnectionMultiplexer.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>()))
+            .Returns(new Mock<IDatabase>().Object);
+        return _mockConnectionMultiplexer.Object;
+
     }
 
 
