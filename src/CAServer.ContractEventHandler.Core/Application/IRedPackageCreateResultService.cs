@@ -79,9 +79,9 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
         
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
-        
+            //todo cancel the annotation before online
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(_redPackageOptions.ExpireTimeMs + 30 * 1000));
+                TimeSpan.FromMilliseconds(/*_redPackageOptions.ExpireTimeMs + */30 * 1000));
 
             if (RedPackageDisplayType.Common.Equals(redPackageIndex.RedPackageDisplayType))
             {
