@@ -22,6 +22,7 @@ namespace CAServer.EntityEventHandler.Core.Worker;
 
 public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorkerBase
 {
+    private const long ExtraDeviationMilliSeconds = 90000;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IClusterClient _clusterClient;
     private readonly ICryptoGiftProvider _cryptoGiftProvider;
@@ -129,6 +130,6 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
     private bool PreGrabItemCondition(PreGrabItem preGrabItem, long expiredTimeLimitMillis)
     {
         return (GrabbedStatus.Created.Equals(preGrabItem.GrabbedStatus)
-                   && (preGrabItem.GrabTime + expiredTimeLimitMillis) <= DateTimeOffset.Now.ToUnixTimeMilliseconds());
+                   && (preGrabItem.GrabTime + expiredTimeLimitMillis - ExtraDeviationMilliSeconds) <= DateTimeOffset.Now.ToUnixTimeMilliseconds());
     }
 }
