@@ -616,6 +616,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         _logger.LogInformation("Test redPackageDetail:{0} cryptoGiftDto:{1}", redPackageId, JsonConvert.SerializeObject(redPackageDetail.Data));
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.Id).Value(redPackageDetail.Data.SessionId)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        _logger.LogInformation("Test redPackageIndex:{0} cryptoGiftIndices:{1}", redPackageId, JsonConvert.SerializeObject(cryptoGiftIndices));
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         var cryptoGiftDto = cryptoGiftResultDto.Data;
