@@ -45,7 +45,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 {
     [GeneratedRegex("\\.?0*$")]
     private static partial Regex DollarRegex();
-    private const long ExtraDeviationSeconds = 120;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IClusterClient _clusterClient;
     private readonly IObjectMapper _objectMapper;
@@ -118,20 +117,17 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q =>
             q.Term(i => i.Field(f => f.SenderId).Value(senderId)));
-        // mustQuery.Add(q => 
-        //     q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
-        return cryptoGiftIndices.Where(crypto => Guid.Parse("7d911f61-0511-4121-8cf3-1443d057999e").Equals(crypto.RedPackageId)
-            || Guid.Parse("6c1eda46-f2d0-440b-82db-ed1abc2f0261").Equals(crypto.RedPackageId)
-            || RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType)).ToList();
+        return cryptoGiftIndices.Where(crypto => RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType)).ToList();
     }
 
     public async Task<List<CryptoGiftHistoryItemDto>> ListCryptoGiftHistoriesAsync(Guid senderId)
     {
         List<CryptoGiftHistoryItemDto> result = new List<CryptoGiftHistoryItemDto>();
         var cryptoGiftIndices = await GetCryptoGiftHistoriesFromEs(senderId);
-        _logger.LogInformation("senderId:{0} history from es records:{1}", senderId, JsonConvert.SerializeObject(cryptoGiftIndices));
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
             return result;
@@ -165,7 +161,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
 
         var cryptoGiftDto = cryptoGiftGrainDto.Data;
-        _logger.LogInformation("========ListCryptoPreGiftGrabbedItems {0}", JsonConvert.SerializeObject(cryptoGiftDto.Items));
         var expireMilliseconds = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
         var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var grabbedItemDtos = _objectMapper.Map<List<PreGrabItem>, List<PreGrabbedItemDto>>(
@@ -544,17 +539,16 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     {
         //due to the expired-checking scheduled task is executed every minute,
         //so the other client try to claim the crypto gift won't feel the deviation time
-        var remainingWaitingSeconds = preGrabItem.GrabTime / 1000 + ExtraDeviationSeconds
+        var remainingWaitingSeconds = preGrabItem.GrabTime / 1000 
             + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
-        remainingWaitingSeconds = remainingWaitingSeconds > 0 ? remainingWaitingSeconds : 0;
-        return remainingWaitingSeconds;
+        return remainingWaitingSeconds > 0 ? remainingWaitingSeconds : 0;
     }
 
     private long GetRemainingExpirationSeconds(PreGrabItem preGrabItem)
     {
-        return preGrabItem.GrabTime / 1000
-               + _cryptoGiftProvider.GetExpirationSeconds()
-               - DateTimeOffset.Now.ToUnixTimeSeconds();
+        long remainingExpirationSeconds =preGrabItem.GrabTime / 1000 
+            + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
+        return remainingExpirationSeconds < 0 ? 0 : remainingExpirationSeconds;
     }
 
     private static string GetIdentityCode(Guid redPackageId, string ipAddress)
