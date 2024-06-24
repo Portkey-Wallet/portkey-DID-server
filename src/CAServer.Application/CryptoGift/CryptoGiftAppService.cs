@@ -1000,6 +1000,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException($"old user grabbed new user crypto gift, return the quoter failed,red packageId:{cryptoGiftDto.Id}");
         }
+        cryptoGiftDto.PreGrabbedAmount -= preGrabBucketItemDto.Amount;
         cryptoGiftDto.BucketNotClaimed.Add(preGrabBucketItemDto);
         cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
         cryptoGiftDto.Items.Remove(preGrabItem);
