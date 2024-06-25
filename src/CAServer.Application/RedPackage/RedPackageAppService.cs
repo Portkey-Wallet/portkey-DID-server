@@ -198,7 +198,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             input.SessionId = sessionId;
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
-                CurrentUser.Id.Value, _redPackageOptions.ExpireTimeMs);
+                CurrentUser.Id.Value, 600000/*_redPackageOptions.ExpireTimeMs*/);
             _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}", input);
             _logger.LogInformation("CreateRedPackage createResult:" + JsonConvert.SerializeObject(createResult));
             if (!createResult.Success)
