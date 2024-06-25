@@ -7,7 +7,6 @@ using CAServer.CryptoGift;
 using CAServer.CryptoGift.Dtos;
 using CAServer.RedPackage.Dtos;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;

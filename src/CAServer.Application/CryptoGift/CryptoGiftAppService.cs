@@ -179,7 +179,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId)
     {
-        //todo make sure if the user red package id is available
         await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(3));
         if (handle == null)
         {
@@ -227,9 +226,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             IdentityCode = identityCode
         });
         cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
-        _logger.LogInformation("PreGrabCryptoGift before update:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
-        _logger.LogInformation("PreGrabCryptoGift updateResult:{0}", JsonConvert.SerializeObject(updateResult));
         return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
     }
     
@@ -329,9 +326,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             IdentityCode = identityCode
         });
         cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
-        _logger.LogInformation("PreGrabCryptoGiftAfterLogging before update:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
-        _logger.LogInformation("PreGrabCryptoGiftAfterLogging updateResult:{0}", JsonConvert.SerializeObject(updateResult));
     }
 
     public async Task CheckClaimQuotaAfterLoginCondition(RedPackageDetailDto redPackageDetailDto, string caHash)
@@ -448,8 +443,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         
         //before claiming, show the available crypto gift status
         var claimedResult = await _distributedCache.GetAsync(identityCode);
-        _logger.LogInformation($"pre grab data sync error redPackageId:{redPackageId}," +
-                               $"GetCryptoGiftDetail identityCode:{identityCode}, claimedResult:{claimedResult},ipAddress:{ipAddress}");
         if (claimedResult.IsNullOrEmpty())
         {
             //just when the user saw the detail for the first time, showed the available detail
@@ -529,7 +522,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                     0, 0);
             }
         }
-        _logger.LogInformation("get crypto detail default logic redPackageId:{0}, get cache identityCode:{1}", redPackageId, identityCode);
         return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
             caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
             0, 0);
@@ -725,7 +717,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
         }
         await _distributedCache.SetAsync($"RefreshedPage:{caHash}:{redPackageId}", "true");
-        _logger.LogInformation("get crypto gift from cache cryptoGiftDto:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         sw.Stop();
         _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
         var preGrabClaimedItem = cryptoGiftDto.Items.FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
@@ -786,7 +777,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (cryptoGiftCacheDtoStr.IsNullOrEmpty())
         {
             _logger.LogInformation($"GetCryptoGiftDtoAfterLoginAsync redPackageId:{redPackageId} receiverId:{receiverId} retryTimes:{retryTimes}");
-            Thread.Sleep(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
             return await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, retryTimes + 1);
         }
         var cryptoGiftCacheDto = JsonConvert.DeserializeObject<CryptoGiftCacheDto>(cryptoGiftCacheDtoStr);
@@ -819,13 +810,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var user = await _userManager.FindByNameAsync(caHash);
         if (user != null)
         {
-            _logger.LogInformation("===============get from user manager cahash:{0}", caHash);
             return user.Id;
         }
         var userIdStr = await _distributedCache.GetAsync($"UserLoginHandler:{caHash}");
         if (!userIdStr.IsNullOrEmpty())
         {
-            _logger.LogInformation("===============get from cache cahash:{0}", caHash);
             return Guid.Parse(userIdStr);
         }
         

@@ -211,7 +211,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 var cryptoGiftGran = _clusterClient.GetGrain<ICryptoGiftGran>(input.Id);
                 var cryptoGiftCreateResult = await cryptoGiftGran.CreateCryptoGift(input, createResult.Data.BucketNotClaimed,
                     createResult.Data.BucketClaimed, CurrentUser.Id.Value);
-                _logger.LogInformation("CreateCryptoGift createResult:{0}", JsonConvert.SerializeObject(cryptoGiftCreateResult));
                 if (!cryptoGiftCreateResult.Success)
                 {
                     throw new UserFriendlyException(cryptoGiftCreateResult.Message);
@@ -226,7 +225,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             redPackageIndex.SenderPortkeyToken = portkeyToken;
             redPackageIndex.Message = input.Message;
             redPackageIndex.AssetType = input.AssetType;
-            _logger.LogInformation("CreateRedPackageIndex createResult:{0}", JsonConvert.SerializeObject(redPackageIndex));
             await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
             _ = _distributedEventBus.PublishAsync(new RedPackageCreateEto()
             {
@@ -385,28 +383,22 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         TryUpdateImageUrlForDetail(detail);
 
         await CryptoGiftHandler(id, displayType, detail, skipCount, maxResultCount);
-        _logger.LogInformation("RedPackageId:{0} GetRedPackageItems:{1} BucketNotClaimed:{2} BucketClaimed:{3}",
-            id, JsonConvert.SerializeObject(detail.Items), JsonConvert.SerializeObject(detail.BucketNotClaimed), JsonConvert.SerializeObject(detail.BucketClaimed));
         return detail;
     }
 
     private async Task CryptoGiftHandler(Guid id, RedPackageDisplayType displayType, RedPackageDetailDto detail,
         int skipCount, int maxResultCount)
     {
-        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0}", id);
         if (!RedPackageDisplayType.CryptoGift.Equals(displayType))
         {
             return;
         }
-        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0} displayType:{1}", id, displayType);
         var preGrabbedDto = await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(id);
-        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0} preGrabbedDto:{1}", id, JsonConvert.SerializeObject(preGrabbedDto));
         foreach (var grabItemDto in detail.Items)
         {
             grabItemDto.DisplayType = CryptoGiftDisplayType.Common;
         }
         detail.Items.AddRange(_objectMapper.Map<List<PreGrabbedItemDto>, List<GrabItemDto>>(preGrabbedDto.Items));
-        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0} detail.Items:{1}", id, JsonConvert.SerializeObject(detail.Items));
         detail.Items = detail.Items.Skip(skipCount).Take(maxResultCount).ToList();
     }
 
@@ -521,7 +513,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(redPackageResultDto.Data, input.CaHash);
         var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id);
         var result = await grain.GrabRedPackageWithIdentityInfo(userId, input.UserCaAddress, ipAddress, identity);
-        _logger.LogInformation("LoggedGrabRedPackageResult redPackageId:{0} result:{1}", input.Id, JsonConvert.SerializeObject(result));
         if (result.Success)
         {
             await _distributedEventBus.PublishAsync(new PayRedPackageEto()
@@ -544,7 +535,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             try
             {
-                _logger.LogInformation("===========LoggedGrabRedPackageResult success redPackageId:{0}", input.Id);
                 await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift,
                     result.Data.BucketItem.Index, result.Data.Decimal, ipAddress, identity);
             }
