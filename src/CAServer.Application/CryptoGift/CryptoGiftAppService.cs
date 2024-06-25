@@ -26,6 +26,7 @@ using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -736,8 +737,18 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             var subPrompt = $"You've already claimed this crypto gift and received" +
                             $" {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount), redPackageDetailDto.Decimal);
-            return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
-                sender, nftInfoDto,  subPrompt, dollarValue, long.Parse(grabItemDto.Amount));
+            var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash));
+            if (visited.IsNullOrEmpty())
+            {
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
+                return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
+                    sender, nftInfoDto,  subPrompt, dollarValue, long.Parse(grabItemDto.Amount));
+            }
+            else
+            {
+                return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.ClaimedVisited, redPackageDetailDto,
+                    sender, nftInfoDto,  subPrompt, dollarValue, long.Parse(grabItemDto.Amount));
+            }
         }
 
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)

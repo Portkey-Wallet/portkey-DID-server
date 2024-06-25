@@ -13,4 +13,5 @@ public enum CryptoGiftPhase
     OnlyNewUsers = 5, //the crypto gift is only for new users
     GrabbedQuota = 6, //claimed but have enough quota
     NoQuota = 7, //there is no quota right now
+    ClaimedVisited = 8, //claimed the crypto gift, visited more than one time
 }
