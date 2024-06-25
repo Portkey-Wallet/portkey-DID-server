@@ -286,7 +286,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         };
 
         var result = await _userActivityAppService.GetActivitiesAsync(param);
-        result.TotalRecordCount.ShouldBe(1);
+        result.TotalRecordCount.ShouldBe(0);
 
         var data = result.Data[0];
         data.TransactionType.ShouldBe("methodName");

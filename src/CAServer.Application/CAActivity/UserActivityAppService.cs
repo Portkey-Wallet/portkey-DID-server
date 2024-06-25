@@ -123,7 +123,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
-            _logger.LogInformation("=========_activityTypeOptions:{0}", JsonConvert.SerializeObject(_activityTypeOptions));
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
             var transactionInfos = await GetTransactionInfosAsync(request);
             var activitiesDto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
@@ -892,16 +891,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         var redPackageIndex = cryptoGiftIndices.FirstOrDefault(cp => !cp.PayedTransactionIds.IsNullOrEmpty() && cp.PayedTransactionIds.Contains(dto.TransactionId));
-        if (redPackageIndex == null)
+        if (redPackageIndex == null || redPackageIndex.PayedTransactionDtoList.IsNullOrEmpty())
         {
             _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es because of redPackageIndex null", dto.TransactionId);
             return false;
         }
-        bool payedTransactionSucceed = false;
-        foreach (var payedTransactionDto in redPackageIndex.PayedTransactionDtoList)
-        {
-            payedTransactionSucceed = RedPackageTransactionStatus.Success.Equals(payedTransactionDto.PayedTransactionStatus);
-        }
+        bool payedTransactionSucceed = redPackageIndex.PayedTransactionDtoList
+            .Any(payed => payed.PayedTransactionId.Equals(dto.TransactionId) 
+                          && RedPackageTransactionStatus.Success.Equals(payed.PayedTransactionStatus));
         if (!payedTransactionSucceed)
         {
             _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es because of payedTransactionSucceed", dto.TransactionId);
