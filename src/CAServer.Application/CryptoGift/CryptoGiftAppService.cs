@@ -727,10 +727,10 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             var subPrompt = $"You've already claimed this crypto gift and received" +
                             $" {preGrabClaimedItem.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabClaimedItem.Amount, redPackageDetailDto.Decimal);
-            var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash));
+            var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash, redPackageId));
             if (visited.IsNullOrEmpty())
             {
-                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash, redPackageId), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
                 return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
                     sender, nftInfoDto, subPrompt, dollarValue, preGrabClaimedItem.Amount);
             }
@@ -747,10 +747,10 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             var subPrompt = $"You've already claimed this crypto gift and received" +
                             $" {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount), redPackageDetailDto.Decimal);
-            var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash));
+            var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash, redPackageId));
             if (visited.IsNullOrEmpty())
             {
-                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash, redPackageId), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
                 return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
                     sender, nftInfoDto,  subPrompt, dollarValue, long.Parse(grabItemDto.Amount));
             }
