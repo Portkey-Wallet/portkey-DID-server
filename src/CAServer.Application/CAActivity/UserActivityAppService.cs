@@ -890,7 +890,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return false;
         }
 
-        var redPackageIndex = cryptoGiftIndices.FirstOrDefault(cp => cp.PayedTransactionIds.Contains(dto.TransactionId));
+        var redPackageIndex = cryptoGiftIndices.FirstOrDefault(cp => !cp.PayedTransactionIds.IsNullOrEmpty() && cp.PayedTransactionIds.Contains(dto.TransactionId));
         if (redPackageIndex == null)
         {
             _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es because of redPackageIndex null", dto.TransactionId);
