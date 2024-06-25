@@ -738,9 +738,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                             $" {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount), redPackageDetailDto.Decimal);
             var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash));
+            _logger.LogInformation("visited cash result caHash:{0} result:{1}", caHash, visited);
             if (visited.IsNullOrEmpty())
             {
                 await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
+                _logger.LogInformation("visited cash result caHash:{0} set result:{1}", caHash, visited);
                 return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
                     sender, nftInfoDto,  subPrompt, dollarValue, long.Parse(grabItemDto.Amount));
             }
