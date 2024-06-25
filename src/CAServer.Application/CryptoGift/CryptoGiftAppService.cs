@@ -727,8 +727,18 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             var subPrompt = $"You've already claimed this crypto gift and received" +
                             $" {preGrabClaimedItem.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabClaimedItem.Amount, redPackageDetailDto.Decimal);
-            return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
-                sender, nftInfoDto,  subPrompt, dollarValue, preGrabClaimedItem.Amount);
+            var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash));
+            if (visited.IsNullOrEmpty())
+            {
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
+                return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
+                    sender, nftInfoDto, subPrompt, dollarValue, preGrabClaimedItem.Amount);
+            }
+            else
+            {
+                return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.ClaimedVisited, redPackageDetailDto,
+                    sender, nftInfoDto, subPrompt, dollarValue, preGrabClaimedItem.Amount);
+            }
         }
 
         var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(receiverId));
@@ -738,11 +748,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                             $" {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
             var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount), redPackageDetailDto.Decimal);
             var visited = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash));
-            _logger.LogInformation("visited cash result caHash:{0} result:{1}", caHash, visited);
             if (visited.IsNullOrEmpty())
             {
                 await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.CryptoGiftClaimedVisitedPrefix, caHash), CryptoGiftConstant.CryptoGiftClaimedVisitedValue);
-                _logger.LogInformation("visited cash result caHash:{0} set result:{1}", caHash, visited);
                 return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
                     sender, nftInfoDto,  subPrompt, dollarValue, long.Parse(grabItemDto.Amount));
             }
