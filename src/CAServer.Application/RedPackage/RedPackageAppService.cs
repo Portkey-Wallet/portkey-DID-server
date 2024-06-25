@@ -519,6 +519,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             {
                 RedPackageId = input.Id
             });
+            _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0}", input.Id);
         }
 
         var res = new GrabRedPackageOutputDto()
@@ -581,6 +582,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 {
                     RedPackageId = input.Id
                 });
+                _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0}", input.Id);
             }
 
             var res = new GrabRedPackageOutputDto()
