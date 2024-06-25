@@ -12,6 +12,7 @@ using Hangfire;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.Caching;
@@ -190,9 +191,24 @@ public class PayRedPackageService : IPayRedPackageService
             return;
         }
 
-        redPackageIndex.PayedTransactionId = transactionResultDto.TransactionId;
-        redPackageIndex.PayedTransactionResult = transactionResultDto.Status;
-        redPackageIndex.PayedTransactionStatus = transactionSucceed ? RedPackageTransactionStatus.Success : RedPackageTransactionStatus.Fail;
+        if (redPackageIndex.PayedTransactionIds.IsNullOrEmpty())
+        {
+            redPackageIndex.PayedTransactionIds = transactionResultDto.TransactionId;
+        }
+        else
+        {
+            redPackageIndex.PayedTransactionIds = redPackageIndex.PayedTransactionIds + "," + transactionResultDto.TransactionId;
+        }
+        if (redPackageIndex.PayedTransactionDtoList == null)
+        {
+            redPackageIndex.PayedTransactionDtoList = new List<RedPackageIndex.PayedTransactionDto>();
+        }
+        redPackageIndex.PayedTransactionDtoList.Add(new RedPackageIndex.PayedTransactionDto()
+        {
+            PayedTransactionId = transactionResultDto.TransactionId,
+            PayedTransactionStatus = transactionSucceed ? RedPackageTransactionStatus.Success : RedPackageTransactionStatus.Fail,
+            PayedTransactionResult = transactionResultDto.Status
+        });
         await _redPackageRepository.UpdateAsync(redPackageIndex);
         _logger.LogInformation("redPackageId:{0} PayedRedPackage UpdateRedPackageEs successfully", redPackageIndex.RedPackageId);
     }

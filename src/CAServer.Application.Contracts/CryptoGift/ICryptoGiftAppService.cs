@@ -28,8 +28,5 @@ public interface ICryptoGiftAppService
 
     public Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId);
 
-    public Task TestCryptoGiftTransferToRedPackage(string caHash, string caAddress,
-        Guid id, string identityCode, bool isNewUser);
-
     public (string, string) GetIpAddressAndIdentity(Guid redPackageId);
 }
