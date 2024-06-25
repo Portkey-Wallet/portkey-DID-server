@@ -205,7 +205,7 @@ public class CAServerApplicationTestModule : AbpModule
 
         context.Services.Configure<AppleCacheOptions>(options =>
         {
-            options.Configuration = "127.0.0.1:6379";
+            options.Configuration = "http://127.0.0.1:6379";
             options.Db = 2;
         });
 
