@@ -878,8 +878,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private async Task<bool> ReplacePayedRedPackageActivity(GetActivityDto dto)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
-        mustQuery.Add(q =>
-            q.Term(i => i.Field(f => f.PayedTransactionIds).Value($"*{dto.TransactionId}*")));
+        // mustQuery.Add(q =>
+        //     q.Term(i => i.Field(f => f.PayedTransactionIds).Value($"*{dto.TransactionId}*")));
         mustQuery.Add(q => 
             q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
@@ -889,17 +889,21 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
             return false;
         }
-        bool payedTransactionSucceed = false;
-        foreach (var cryptoGiftIndex in cryptoGiftIndices)
+
+        var redPackageIndex = cryptoGiftIndices.FirstOrDefault(cp => cp.PayedTransactionIds.Contains(dto.TransactionId));
+        if (redPackageIndex == null)
         {
-            foreach (var payedTransactionDto in cryptoGiftIndex.PayedTransactionDtoList)
-            {
-                payedTransactionSucceed = RedPackageTransactionStatus.Success.Equals(payedTransactionDto.PayedTransactionStatus);
-            }
+            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es because of redPackageIndex null", dto.TransactionId);
+            return false;
+        }
+        bool payedTransactionSucceed = false;
+        foreach (var payedTransactionDto in redPackageIndex.PayedTransactionDtoList)
+        {
+            payedTransactionSucceed = RedPackageTransactionStatus.Success.Equals(payedTransactionDto.PayedTransactionStatus);
         }
         if (!payedTransactionSucceed)
         {
-            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
+            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es because of payedTransactionSucceed", dto.TransactionId);
             return false;
         }
         dto.TransactionName = "Claim Crypto Gift"; //_activityTypeOptions.TypeMap["TransferCryptoGift"];

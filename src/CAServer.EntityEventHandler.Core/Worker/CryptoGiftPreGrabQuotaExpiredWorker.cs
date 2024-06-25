@@ -43,11 +43,12 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        var yesterday = DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1)).ToUnixTimeMilliseconds();
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q => 
             q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
         mustQuery.Add(q => 
-            q.Term(i => i.Field(f => f.CreateTime > DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1)).ToUnixTimeMilliseconds())));
+            q.Term(i => i.Field(f => f.CreateTime > yesterday)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         _logger.LogInformation("CryptoWorker cryptoGiftIndices:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
@@ -56,6 +57,11 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
             return;
         }
 
+        cryptoGiftIndices = cryptoGiftIndices.Where(crypto => crypto.CreateTime > yesterday).ToList();
+        if (cryptoGiftIndices.IsNullOrEmpty())
+        {
+            return;
+        }
         var expiredTimeLimitMillis = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
         foreach (var cryptoGiftIndex in cryptoGiftIndices)
         {
