@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Growth.Dtos;
 using CAServer.Security;
@@ -62,8 +63,34 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
     {
         await _statisticAppService.InitReferralRankAsync();
     }
-    
-  
+
+    [Fact]
+    public async Task ReferralRank_Test()
+    {
+        var param = new ReferralRecordRankRequestDto
+        {
+            Skip = 0,
+            Limit = 10
+        };
+        var result = await _statisticAppService.GetReferralRecordRankAsync(param);
+        result.ReferralRecordsRank.Count.ShouldBe(1);
+        result.CurrentUserReferralRecordsRankDetail.Rank.ShouldBe(1);
+    }
+
+    /*[Fact]
+    public async Task GetReferralInfoAsync_Test()
+    {
+        var param = new ReferralRequestDto()
+        {
+            CaHashes = new List<string>()
+            {
+                "MockCaHash"
+            }
+        };
+        await _statisticAppService.GetReferralInfoAsync(param);
+    }*/
+
+
 
 
 
