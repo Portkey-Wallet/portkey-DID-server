@@ -49,27 +49,21 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
         {
             _logger.LogInformation("UserLoginHandler receive message:{0}", JsonConvert.SerializeObject(eventData));
             
-            var cachedUserId = await _distributedCache.GetAsync($"UserLoginHandler:{eventData.CaHash}");
+            var cachedUserId = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.UserLoginPrefix, eventData.CaHash));
             if (cachedUserId.IsNullOrEmpty())
             {
-                await _distributedCache.SetAsync($"UserLoginHandler:{eventData.CaHash}", eventData.UserId.ToString());
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.UserLoginPrefix, eventData.CaHash), eventData.UserId.ToString());
             }
             var cacheResult = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash));
             if (cacheResult.IsNullOrEmpty())
             {
-                _logger.LogInformation("UserLoginHandler register cacheResult is null, eventData:{0}", eventData);
                 cacheResult = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash));
                 if (cacheResult.IsNullOrEmpty())
                 {
-                    _logger.LogInformation("UserLoginHandler social recovery cacheResult is null, eventData:{0}", eventData);
                     return;
                 }
             }
-            _logger.LogInformation("UserLoginHandler caHash:{0} cacheResult:{1}", eventData.CaHash, cacheResult);
             var cryptoGiftReferralDto = JsonConvert.DeserializeObject<CryptoGiftReferralDto>(cacheResult);
-            _logger.LogInformation("UserLoginHandler caHash:{0} cryptoGiftReferralDto:{1}", eventData.CaHash, JsonConvert.SerializeObject(cryptoGiftReferralDto));
-            _logger.LogInformation($"CryptoGiftTransferToRedPackage userId:{eventData.UserId},caAddress:{cryptoGiftReferralDto.CaAddress},referralInfo:{cryptoGiftReferralDto.ReferralInfo}," +
-                                   $"isNewUser:{cryptoGiftReferralDto.IsNewUser},ipAddress:{cryptoGiftReferralDto.IpAddress}");
             if (cryptoGiftReferralDto.ReferralInfo == null)
             {
                 return;

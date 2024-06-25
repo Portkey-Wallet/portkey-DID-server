@@ -71,7 +71,7 @@ public class PayRedPackageService : IPayRedPackageService
                 var payRecurringCount = 0;
                 var recurringKey = _payRedPackageRecurringPrefix + redPackageId;
                 var recurringInfo = await _distributedCache.GetAsync(recurringKey);
-
+                _logger.LogInformation("redPackageId:{0} get the recurringInfo result:{1}", redPackageId, recurringInfo);
                 if (recurringInfo != null)
                 {
                     var totalPayRecurringCount = recurringInfo.TotalPayRecurringCount;

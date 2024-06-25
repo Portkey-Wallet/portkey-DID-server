@@ -9,6 +9,7 @@ using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.CryptoGift;
 using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.Guardian.Provider;
@@ -837,15 +838,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
-            if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(dto.TransactionName))
+            if (_activityTypeOptions.TypeMap[CryptoGiftConstants.CreateCryptoBox].Equals(dto.TransactionName))
             {
                 await ReplaceSentRedPackageActivity(dto);
             }
-            else if(_activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(dto.TransactionName))
+            else if(_activityTypeOptions.TypeMap[CryptoGiftConstants.TransferCryptoBoxes].Equals(dto.TransactionName))
             {
                 await ReplacePayedRedPackageActivity(dto);
             }
-            else if(_activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(dto.TransactionName))
+            else if(_activityTypeOptions.TypeMap[CryptoGiftConstants.RefundCryptoBox].Equals(dto.TransactionName))
             {
                 await ReplaceRefundedRedPackageActivity(dto);
             }
@@ -868,10 +869,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var redPackageIndex = cryptoGiftIndices.FirstOrDefault();
         if (redPackageIndex == null )
         {
-            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
             return false;
         }
-        dto.TransactionName = "Send Crypto Gift"; // _activityTypeOptions.TypeMap["CreateCryptoGift"];
+        dto.TransactionName = CryptoGiftConstants.SendTransactionName;
         return true;
     }
     
@@ -886,14 +887,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
-            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
             return false;
         }
 
         var redPackageIndex = cryptoGiftIndices.FirstOrDefault(cp => !cp.PayedTransactionIds.IsNullOrEmpty() && cp.PayedTransactionIds.Contains(dto.TransactionId));
         if (redPackageIndex == null)
         {
-            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es because of redPackageIndex null", dto.TransactionId);
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es because of redPackageIndex null", dto.TransactionId);
             return false;
         }
         bool payedTransactionSucceed = false;
@@ -903,10 +904,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         if (!payedTransactionSucceed)
         {
-            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es because of payedTransactionSucceed", dto.TransactionId);
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es because of payedTransactionSucceed", dto.TransactionId);
             return false;
         }
-        dto.TransactionName = "Claim Crypto Gift"; //_activityTypeOptions.TypeMap["TransferCryptoGift"];
+        dto.TransactionName = CryptoGiftConstants.ClaimTransactionName;
         return true;
     }
     
@@ -922,10 +923,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var redPackageIndex = cryptoGiftIndices.FirstOrDefault(crypto => RedPackageTransactionStatus.Success.Equals(crypto.RefundedTransactionStatus));
         if (redPackageIndex == null )
         {
-            _logger.LogInformation("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
             return false;
         }
-        dto.TransactionName = "Return Crypto Gift"; //_activityTypeOptions.TypeMap["RefundCryptoGift"];
+        dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
         return true;
     }
 
@@ -936,16 +937,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
         activityDto.TransactionName = typeName;
-        _logger.LogInformation($"---------------{_activityTypeOptions.TypeMap["CreateCryptoBox"]}" +
-                               $" {_activityTypeOptions.TypeMap["TransferCryptoBoxes"]} {_activityTypeOptions.TypeMap["RefundCryptoBox"]}" +
-                               $" {activityDto.TransactionName}");
-        if (_activityTypeOptions.TypeMap["CreateCryptoBox"].Equals(activityDto.TransactionName)
-                                || _activityTypeOptions.TypeMap["TransferCryptoBoxes"].Equals(activityDto.TransactionName)
-                                || _activityTypeOptions.TypeMap["RefundCryptoBox"].Equals(activityDto.TransactionName))
+        if (_activityTypeOptions.TypeMap[CryptoGiftConstants.CreateCryptoBox].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap[CryptoGiftConstants.TransferCryptoBoxes].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap[CryptoGiftConstants.RefundCryptoBox].Equals(activityDto.TransactionName))
         {
             await CheckCryptoGiftByTransactionId(activityDto);
         }
-        _logger.LogInformation($"---------------transactionId:{activityDto.TransactionId} transactionType:{transactionType} transactionName:{typeName}");
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
         {
@@ -964,7 +961,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
         }
-        _logger.LogInformation($"================transactionId:{activityDto.TransactionId} transactionType:{transactionType} transactionName:{typeName}");
         if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             activityDto.TransactionName = ActivityConstants.DepositName;
