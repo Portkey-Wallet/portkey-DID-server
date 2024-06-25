@@ -81,7 +81,7 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
             var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
             //todo cancel the annotation before online
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(900000/*_redPackageOptions.ExpireTimeMs + 30 * 1000*/));
+                TimeSpan.FromMilliseconds(600000/*_redPackageOptions.ExpireTimeMs + 30 * 1000*/));
 
             if (RedPackageDisplayType.Common.Equals(redPackageIndex.RedPackageDisplayType))
             {
