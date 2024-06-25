@@ -6,11 +6,11 @@ namespace CAServer.EnumType;
 public enum CryptoGiftPhase
 {
     Available = 0, //not claimed and not expired
-    Expired, //the red package is expired
-    Claimed, //the client has received the gift
-    ExpiredReleased, //the quota is expired, so it's released
-    FullyClaimed, //the red package has been fully claimed
-    OnlyNewUsers, //the crypto gift is only for new users
-    GrabbedQuota, //claimed but have enough quota
-    NoQuota, //there is no quota right now
+    Expired = 1, //the red package is expired
+    Claimed = 2, //the client has received the gift
+    ExpiredReleased = 3, //the quota is expired, so it's released
+    FullyClaimed = 4, //the red package has been fully claimed
+    OnlyNewUsers = 5, //the crypto gift is only for new users
+    GrabbedQuota = 6, //claimed but have enough quota
+    NoQuota = 7, //there is no quota right now
 }
