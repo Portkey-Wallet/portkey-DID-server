@@ -27,9 +27,8 @@ public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public RedPackageType Type { get; set; }
     [Keyword] public string TransactionId { get; set; }
     [Keyword] public string TransactionResult { get; set; }
-    [Keyword] public string PayedTransactionId { get; set; }
-    public string PayedTransactionResult { get; set; }
-    public RedPackageTransactionStatus PayedTransactionStatus { get; set; }
+    [Keyword] public string PayedTransactionIds { get; set; }
+    public List<PayedTransactionDto> PayedTransactionDtoList { get; set; }
     [Keyword] public string RefundedTransactionId { get; set; }
     public string RefundedTransactionResult { get; set; }
     public RedPackageTransactionStatus RefundedTransactionStatus { get; set; }
@@ -48,5 +47,12 @@ public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
         public string CaAddress { get; set; }
         public Guid UserId { get; set; }
         public bool PaymentCompleted{ get; set; }
+    }
+    
+    public class PayedTransactionDto
+    {
+        public string PayedTransactionId { get; set; }
+        public string PayedTransactionResult { get; set; }
+        public RedPackageTransactionStatus PayedTransactionStatus { get; set; }
     }
 }

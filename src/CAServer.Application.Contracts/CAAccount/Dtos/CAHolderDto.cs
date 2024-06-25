@@ -18,6 +18,4 @@ public class CAHolderDto
     
     //used to identify which login account rule the current nickname used
     public string IdentifierHash { get; set; }
-    
-    public bool IsNewUserRegistered { get; set; }
 }
