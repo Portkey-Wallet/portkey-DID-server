@@ -10,6 +10,7 @@ using Moq;
 using NSubstitute;
 using Shouldly;
 using Volo.Abp;
+using Volo.Abp.Identity;
 using Volo.Abp.Users;
 using Xunit;
 
@@ -19,13 +20,15 @@ namespace CAServer.RedPackage;
 public partial class RedPackageTest : CAServerApplicationTestBase
 {
     private readonly IRedPackageAppService _redPackageAppService;
+    private readonly IdentityUserManager _userManager;
     protected ICurrentUser _currentUser;
     private readonly Guid userId = Guid.Parse("158ff364-3264-4234-ab20-02aaada2aaad");
     private Guid redPackageId = Guid.Parse("f825f8f1-d3a4-4ee7-a98d-ad06b61094c0");
     
     public RedPackageTest()
     {
-        _redPackageAppService = GetRequiredService<IRedPackageAppService>();;
+        _redPackageAppService = GetRequiredService<IRedPackageAppService>();
+        _userManager = GetRequiredService<IdentityUserManager>();
     }
     
     protected override void AfterAddApplication(IServiceCollection services)
