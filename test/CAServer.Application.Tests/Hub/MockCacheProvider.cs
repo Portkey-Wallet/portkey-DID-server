@@ -128,7 +128,7 @@ public class MockCacheProvider : ICacheProvider
         throw new NotImplementedException();
     }
 
-    public Task<long> GetSortedSetLength(string leaderboardKey)
+    public Task<long> GetSortedSetLengthAsync(string leaderboardKey)
     {
         throw new NotImplementedException();
     }

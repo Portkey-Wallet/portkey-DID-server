@@ -242,7 +242,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
         var hasNext = true;
-        var length = await _cacheProvider.GetSortedSetLength(CommonConstant.ReferralKey);
+        var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.ReferralKey);
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, input.Skip + input.Limit - 1);
         if (length <= input.Skip + input.Limit)
         {

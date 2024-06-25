@@ -26,6 +26,6 @@ public interface ICacheProvider
 
     Task<SortedSetEntry[]> GetTopAsync(string leaderboardKey, long startRank, long stopRank, bool highToLow = true);
 
-    Task<long> GetSortedSetLength(string leaderboardKey);
+    Task<long> GetSortedSetLengthAsync(string leaderboardKey);
 
 }
