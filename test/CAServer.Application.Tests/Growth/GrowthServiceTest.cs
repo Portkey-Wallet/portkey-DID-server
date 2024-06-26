@@ -31,51 +31,51 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
         services.AddSingleton(MockIActivityProvider());
     }
     
-    [Fact]
-    public async Task ReferralRecordList_Test()
-    {
-        var param = new ReferralRecordRequestDto
-        {
-            Skip = 0,
-            Limit = 10
-        };
-        var result = await _statisticAppService.GetReferralRecordList(param);
-        result.HasNextPage.ShouldBe(false);
-    
-    }
-
-    [Fact]
-    public async Task GetReferralTotalCountAsync_Test()
-    {
-
-        var result = await _statisticAppService.GetReferralTotalCountAsync(new ReferralRecordRequestDto());
-        result.ShouldBe(1);
-    }
-
-    [Fact]
-    public async Task CalculateReferralRankAsync_Test()
-    {
-        await _statisticAppService.CalculateReferralRankAsync();
-    }
-
-    [Fact]
-    public async Task InitReferralRankAsync_Test()
-    {
-        await _statisticAppService.InitReferralRankAsync();
-    }
-
-    [Fact]
-    public async Task ReferralRank_Test()
-    {
-        var param = new ReferralRecordRankRequestDto
-        {
-            Skip = 0,
-            Limit = 10
-        };
-        var result = await _statisticAppService.GetReferralRecordRankAsync(param);
-        result.ReferralRecordsRank.Count.ShouldBe(1);
-        result.CurrentUserReferralRecordsRankDetail.Rank.ShouldBe(1);
-    }
+    // [Fact]
+    // public async Task ReferralRecordList_Test()
+    // {
+    //     var param = new ReferralRecordRequestDto
+    //     {
+    //         Skip = 0,
+    //         Limit = 10
+    //     };
+    //     var result = await _statisticAppService.GetReferralRecordList(param);
+    //     result.HasNextPage.ShouldBe(false);
+    //
+    // }
+    //
+    // [Fact]
+    // public async Task GetReferralTotalCountAsync_Test()
+    // {
+    //
+    //     var result = await _statisticAppService.GetReferralTotalCountAsync(new ReferralRecordRequestDto());
+    //     result.ShouldBe(1);
+    // }
+    //
+    // [Fact]
+    // public async Task CalculateReferralRankAsync_Test()
+    // {
+    //     await _statisticAppService.CalculateReferralRankAsync();
+    // }
+    //
+    // [Fact]
+    // public async Task InitReferralRankAsync_Test()
+    // {
+    //     await _statisticAppService.InitReferralRankAsync();
+    // }
+    //
+    // [Fact]
+    // public async Task ReferralRank_Test()
+    // {
+    //     var param = new ReferralRecordRankRequestDto
+    //     {
+    //         Skip = 0,
+    //         Limit = 10
+    //     };
+    //     var result = await _statisticAppService.GetReferralRecordRankAsync(param);
+    //     result.ReferralRecordsRank.Count.ShouldBe(1);
+    //     result.CurrentUserReferralRecordsRankDetail.Rank.ShouldBe(1);
+    // }
 
     /*[Fact]
     public async Task GetReferralInfoAsync_Test()

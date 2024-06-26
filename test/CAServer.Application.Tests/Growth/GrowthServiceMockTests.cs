@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using AElf;
 using CAServer.CAActivity.Provider;
+using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Growth.Dtos;

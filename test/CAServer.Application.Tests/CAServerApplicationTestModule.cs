@@ -87,7 +87,7 @@ public class CAServerApplicationTestModule : AbpModule
         
         context.Services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
-            var configuration = ConfigurationOptions.Parse("http://127.0.0.1");
+            var configuration = ConfigurationOptions.Parse("127.0.0.1");
             return ConnectionMultiplexer.Connect(configuration);
         });
 
