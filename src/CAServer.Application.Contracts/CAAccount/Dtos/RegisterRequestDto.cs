@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using AElf.Types;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Commons;
 
 namespace CAServer.Dtos;
@@ -23,6 +24,8 @@ public class RegisterRequestDto : IValidatableObject
     [Required] public HubRequestContextDto Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
+    
+    public ZkJwtAuthInfoDto ZkJwtAuthInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
