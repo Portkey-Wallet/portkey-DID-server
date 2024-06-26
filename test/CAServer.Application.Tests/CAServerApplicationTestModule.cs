@@ -5,6 +5,7 @@ using CAServer.BackGround.EventHandler.Treasury;
 using CAServer.BackGround.Provider;
 using CAServer.BackGround.Provider.Treasury;
 using CAServer.Bookmark;
+using CAServer.Cache;
 using CAServer.Common;
 using CAServer.ContractEventHandler.Core;
 using CAServer.EntityEventHandler.Core;
@@ -13,6 +14,7 @@ using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
+using CAServer.Redis;
 using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.ThirdPart;
@@ -20,6 +22,7 @@ using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 using Volo.Abp.Auditing;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
@@ -57,7 +60,8 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddMemoryCache();
 
         context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
-
+        context.Services.AddSingleton<ICacheProvider,RedisCacheProvider>(); 
+        
         context.Services.AddSingleton<NftOrderSettlementTransferWorker>();
         context.Services.AddSingleton<NftOrderThirdPartOrderStatusWorker>();
         context.Services.AddSingleton<NftOrderThirdPartNftResultNotifyWorker>();
@@ -80,6 +84,12 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<TreasuryCreateHandler>();
         context.Services.AddSingleton<TreasuryTransferHandler>();
         context.Services.AddSingleton<TreasuryCallBackHandler>();
+        
+        context.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var configuration = ConfigurationOptions.Parse("127.0.0.1");
+            return ConnectionMultiplexer.Connect(configuration);
+        });
 
 
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
@@ -195,7 +205,7 @@ public class CAServerApplicationTestModule : AbpModule
 
         context.Services.Configure<AppleCacheOptions>(options =>
         {
-            options.Configuration = "127.0.0.1:6379";
+            options.Configuration = "http://127.0.0.1:6379";
             options.Db = 2;
         });
 

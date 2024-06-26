@@ -2,14 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElf.Indexing.Elasticsearch.Options;
+using CAServer.Cache;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
+using CAServer.CryptoGift;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
+using CAServer.Redis;
 using CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -60,10 +63,12 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
         Configure<FeiXiaoHaoOptions>(configuration.GetSection("FeiXiaoHao"));
+        Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
         ConfigureMassTransit(context, configuration);
+        ConfigureRedisCacheProvider(context, configuration);
         context.Services.AddSingleton<IClusterClient>(o =>
         {
             return new ClientBuilder()
@@ -114,6 +119,16 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .Connect(configuration["Redis:Configuration"]);
             return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
         });
+    }
+    
+    private void ConfigureRedisCacheProvider(
+        ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        var multiplexer = ConnectionMultiplexer
+            .Connect(configuration["Redis:Configuration"]);
+        context.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+        context.Services.AddSingleton<ICacheProvider,RedisCacheProvider>();
     }
 
     
@@ -170,6 +185,10 @@ public class CAServerEntityEventHandlerModule : AbpModule
         var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TokenPriceBackgroundWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftPreGrabQuotaExpiredWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitReferralRankWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ReferralRankWorker>());
+        
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }

@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
+using CAServer.EnumType;
 using CAServer.Growth.Dtos;
 
 namespace CAServer.Growth;
@@ -11,4 +12,5 @@ public interface IGrowthAppService
     Task<ShortLinkDto> GetShortLinkAsync(string projectCode);
     Task CreateGrowthInfoAsync(string caHash, ReferralInfo referralInfo);
     Task<string> GetRedirectUrlAsync(string shortLinkCode);
+    Task<ActivityDateRangeResponseDto> GetActivityDateRangeAsync(ActivityEnums activityEnum);
 }

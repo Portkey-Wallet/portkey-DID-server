@@ -102,4 +102,42 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
 
         return count;
     }
+
+    public async Task AddScoreAsync(string leaderboardKey, string member, double score)
+    {
+        await _database.SortedSetAddAsync(leaderboardKey, member, score);
+    }
+
+    public async Task<double> GetScoreAsync(string leaderboardKey, string member)
+    {
+        return await _database.SortedSetScoreAsync(leaderboardKey, member) ?? 0;
+    }
+
+    public async Task<long> GetRankAsync(string leaderboardKey, string member, bool highToLow = true)
+    {
+        long? rank;
+
+        if (highToLow)
+        {
+            rank = await _database.SortedSetRankAsync(leaderboardKey, member, Order.Descending);
+        }
+        else
+        {
+            rank = await _database.SortedSetRankAsync(leaderboardKey, member);
+        }
+
+        return rank ?? -1; // -1 indicates that the member is not in the leaderboard
+    }
+
+    public async Task<SortedSetEntry[]> GetTopAsync(string leaderboardKey, long startRank, long stopRank, bool highToLow = true)
+    {
+        var order = highToLow ? Order.Descending : Order.Ascending;
+        return await _database.SortedSetRangeByRankWithScoresAsync(leaderboardKey, startRank, stopRank, order);
+    }
+
+    public async Task<long> GetSortedSetLengthAsync(string leaderboardKey)
+    {
+        var length = await _database.SortedSetLengthAsync(leaderboardKey);
+        return length;
+    }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Etos;
 using Microsoft.Extensions.Logging;
