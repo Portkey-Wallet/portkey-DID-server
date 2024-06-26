@@ -20,13 +20,13 @@ using CAServer.Grains.State;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
+using CAServer.RedPackage.Etos;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -34,6 +34,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 using NftInfoDto = CAServer.UserAssets.Dtos.NftInfoDto;
@@ -58,6 +59,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     private readonly IDistributedCache<string> _distributedCache;
     private readonly IpfsOptions _ipfsOptions;
     private readonly ILogger<CryptoGiftAppService> _logger;
+    private readonly IDistributedEventBus _distributedEventBus;
 
     public CryptoGiftAppService(INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IClusterClient clusterClient,
@@ -70,7 +72,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IUserAssetsProvider userAssetsProvider,
         IDistributedCache<string> distributedCache,
         IOptionsSnapshot<IpfsOptions> ipfsOptions,
-        ILogger<CryptoGiftAppService> logger)
+        ILogger<CryptoGiftAppService> logger,
+        IDistributedEventBus distributedEventBus)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
         _clusterClient = clusterClient;
@@ -84,6 +87,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _distributedCache = distributedCache;
         _ipfsOptions = ipfsOptions.Value;
         _logger = logger;
+        _distributedEventBus = distributedEventBus;
     }
 
     public async Task<CryptoGiftHistoryItemDto> GetFirstCryptoGiftHistoryDetailAsync(Guid senderId)
@@ -969,6 +973,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("CryptoGiftTransferToRedPackage redPackageUpdateResult:{0}", JsonConvert.SerializeObject(redPackageUpdateResult));
         if (redPackageUpdateResult.Success)
         {
+            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            {
+                RedPackageId = redPackageId
+            });
+            _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0}", redPackageId);
             //2 crypto gift: amount/item
             _logger.LogInformation("CryptoGiftTransferToRedPackage GetClaimedCryptoGift:{0}", JsonConvert.SerializeObject(preGrabBucketItemDto));
             var updateCryptoGiftResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
