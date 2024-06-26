@@ -110,6 +110,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             {
                 picture = string.Empty;
             }
+
             if (changedNickname.IsNullOrEmpty() || nickname.Equals(changedNickname))
             {
                 caHolderGrainDto.Nickname = nickname;
@@ -142,7 +143,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             _logger.LogError(ex, "{Message}: {Data}", "Create CA holder fail", JsonConvert.SerializeObject(eventData));
         }
     }
-    
+
     private async Task<GuardianInfoBase> GetLoginAccountInfo(string caHash)
     {
         //if the guardian type is third party, the holderInfo is null

@@ -56,12 +56,15 @@ public static class CommonConstant
     public const double DefaultAchFee = 0.39;
     public const double DefaultCrossChainFee = 0.35;
     public const double DefaultMaxFee = 0.39;
+    public const double DefaultEtransferFee = 0.01;
     
     public const string AelfCoingeckoId = "aelf";
     public const string AelfSymbol = "ELF";
     public const string SgrCoingeckoId = "schrodinger-2";
     public const string SgrSymbol = "SGR";
     public const string SgrSymbolName = "SGR-1";
+
+    public const string CryptoGiftProjectCode = "20000";
 
     public const string AppleTransferMessage =
         "We are currently upgrading our system to serve you better. During this period, the Apple ID service is temporarily unavailable.";
@@ -108,4 +111,6 @@ public static class CommonConstant
     
     public const string ActivitiesStartVersion = "1.17.0";
     public const string NftToFtStartVersion = "1.18.0";
+
+    public const string ReferralKey = "Portkey:ReferralBank";
 }

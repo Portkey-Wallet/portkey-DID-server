@@ -2,13 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.CryptoGift;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -21,6 +24,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -50,6 +54,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly ITokenPriceService _tokenPriceService;
     private readonly TokenSpenderOptions _tokenSpenderOptions;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -58,7 +63,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
         IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
-        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor)
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor,
+        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -76,6 +82,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _tokenPriceService = tokenPriceService;
         _httpContextAccessor = httpContextAccessor;
         _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
+        _redPackageIndexRepository = redPackageIndexRepository;
     }
 
 
@@ -825,6 +832,100 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         return result;
     }
+    
+    private async Task CheckCryptoGiftByTransactionId(GetActivityDto dto)
+    {
+        try
+        {
+            if (_activityTypeOptions.TypeMap[CryptoGiftConstants.CreateCryptoBox].Equals(dto.TransactionName))
+            {
+                await ReplaceSentRedPackageActivity(dto);
+            }
+            else if(_activityTypeOptions.TypeMap[CryptoGiftConstants.TransferCryptoBoxes].Equals(dto.TransactionName))
+            {
+                await ReplacePayedRedPackageActivity(dto);
+            }
+            else if(_activityTypeOptions.TypeMap[CryptoGiftConstants.RefundCryptoBox].Equals(dto.TransactionName))
+            {
+                await ReplaceRefundedRedPackageActivity(dto);
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "crypto gift transaction replaced error");
+        }
+    }
+
+    private async Task<bool> ReplaceSentRedPackageActivity(GetActivityDto dto)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.TransactionId).Value(dto.TransactionId)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        var redPackageIndex = cryptoGiftIndices.FirstOrDefault();
+        if (redPackageIndex == null )
+        {
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
+            return false;
+        }
+        dto.TransactionName = CryptoGiftConstants.SendTransactionName;
+        return true;
+    }
+    
+    private async Task<bool> ReplacePayedRedPackageActivity(GetActivityDto dto)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        // mustQuery.Add(q =>
+        //     q.Term(i => i.Field(f => f.PayedTransactionIds).Value($"*{dto.TransactionId}*")));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        if (cryptoGiftIndices.IsNullOrEmpty())
+        {
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
+            return false;
+        }
+
+        var redPackageIndex = cryptoGiftIndices.FirstOrDefault(cp => !cp.PayedTransactionIds.IsNullOrEmpty() && cp.PayedTransactionIds.Contains(dto.TransactionId));
+        if (redPackageIndex == null || redPackageIndex.PayedTransactionDtoList.IsNullOrEmpty())
+        {
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es because of redPackageIndex null", dto.TransactionId);
+            return false;
+        }
+        bool payedTransactionSucceed = redPackageIndex.PayedTransactionDtoList
+            .Any(payed => payed.PayedTransactionId.Equals(dto.TransactionId) 
+                          && RedPackageTransactionStatus.Success.Equals(payed.PayedTransactionStatus));
+        if (!payedTransactionSucceed)
+        {
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es because of payedTransactionSucceed", dto.TransactionId);
+            return false;
+        }
+        dto.TransactionName = CryptoGiftConstants.ClaimTransactionName;
+        return true;
+    }
+    
+    private async Task<bool> ReplaceRefundedRedPackageActivity(GetActivityDto dto)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.RefundedTransactionId).Value(dto.TransactionId)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        var redPackageIndex = cryptoGiftIndices.FirstOrDefault(crypto => RedPackageTransactionStatus.Success.Equals(crypto.RefundedTransactionStatus));
+        if (redPackageIndex == null )
+        {
+            _logger.LogWarning("TransactionId:{0} cann't get redPackageIndex from es", dto.TransactionId);
+            return false;
+        }
+        dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
+        return true;
+    }
 
     private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
         GuardiansDto guardian = null)
@@ -833,7 +934,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
         activityDto.TransactionName = typeName;
-
+        if (_activityTypeOptions.TypeMap[CryptoGiftConstants.CreateCryptoBox].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap[CryptoGiftConstants.TransferCryptoBoxes].Equals(activityDto.TransactionName)
+                                || _activityTypeOptions.TypeMap[CryptoGiftConstants.RefundCryptoBox].Equals(activityDto.TransactionName))
+        {
+            await CheckCryptoGiftByTransactionId(activityDto);
+        }
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
         {
@@ -852,7 +958,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
         }
-
         if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             activityDto.TransactionName = ActivityConstants.DepositName;
