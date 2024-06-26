@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using CAServer.EnumType;
 
 namespace CAServer.RedPackage.Dtos;
 [Serializable]
 public class RedPackageDetailDto
 {
+    public Guid SessionId { get; set; }
+    public RedPackageDisplayType RedPackageDisplayType { get; set; }
+    public bool IsNewUsersOnly { get; set; }
     public Guid Id { get; set; }
     public int TotalCount { get; set; }
     public string TotalAmount { get; set; }
@@ -23,6 +27,8 @@ public class RedPackageDetailDto
     public long CreateTime { get; set; }
     public long EndTime { get; set; }
     public long ExpireTime { get; set; }
+    
+    public long GrabExpireSeconds { get; set; }
     public string Symbol { get; set; }
     public int Decimal { get; set; }
     public int Count { get; set; }
@@ -30,6 +36,7 @@ public class RedPackageDetailDto
     public string ChannelUuid { get; set; }
     public bool IsCurrentUserGrabbed { get; set; } = false;
     public RedPackageType Type { get; set; }
+    public string DisplayStatus { get; set; }
     public RedPackageStatus Status { get; set; }
     public List<GrabItemDto> Items { get; set; }
     public bool IfRefund{ get; set; }
@@ -40,6 +47,18 @@ public class RedPackageDetailDto
     public string ImageUrl { get; set; }
     public bool IsSeed { get; set; }
     public int SeedType { get; set; }
+    
+    public List<BucketItemDto> BucketNotClaimed { get; set; }
+    
+    public List<BucketItemDto> BucketClaimed { get; set; }
+}
+
+public class BucketItemDto
+{
+    public int Index { get; set; }
+    public long Amount { get; set; }
+    public bool IsLuckyKing { get; set; }
+    public Guid UserId { get; set; }
 }
 
 public class GrabItemDto
@@ -53,4 +72,9 @@ public class GrabItemDto
     public string Amount { get; set; }
     public int Decimal { get; set; }
     public bool PaymentCompleted;
+    public bool IsMe { get; set; }
+    public CryptoGiftDisplayType DisplayType { get; set; }
+    public long ExpirationTime { get; set; }
+    public string IpAddress { get; set; }
+    public string Identity { get; set; }
 }

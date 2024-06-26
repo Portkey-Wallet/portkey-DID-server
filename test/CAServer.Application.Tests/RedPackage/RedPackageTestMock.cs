@@ -6,6 +6,7 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
@@ -172,7 +173,7 @@ public partial class RedPackageTest
                 IfRefund = false
             }
         };
-        mock.Setup(o => o.GetRedPackage(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Guid>())).ReturnsAsync(
+        mock.Setup(o => o.GetRedPackage(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Guid>(), RedPackageDisplayType.Common)).ReturnsAsync(
             commonResultDto
         );
         mock.Setup(o => o.GetRedPackage(It.IsAny<Guid>())).ReturnsAsync(

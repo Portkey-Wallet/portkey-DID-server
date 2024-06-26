@@ -25,6 +25,7 @@
         <ProjectReference Include="..\CAServer.EntityEventHandler.Core\CAServer.EntityEventHandler.Core.csproj" />
         <ProjectReference Include="..\CAServer.MongoDB\CAServer.MongoDB.csproj" />
         <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
+        <ProjectReference Include="..\CAServer.Redis\CAServer.Redis.csproj" />
     </ItemGroup>
 
     <ItemGroup>

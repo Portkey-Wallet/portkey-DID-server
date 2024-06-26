@@ -8,6 +8,8 @@ public class IndexerReferralInfo
     public string MethodName { get; set; }
     public string ReferralCode { get; set; }
     public string ProjectCode { get; set; }
+    
+    public long Timestamp { get; set; }
 }
 
 public class ReferralInfoDto

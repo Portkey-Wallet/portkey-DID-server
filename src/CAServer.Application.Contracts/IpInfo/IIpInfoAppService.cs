@@ -5,4 +5,6 @@ namespace CAServer.IpInfo;
 public interface IIpInfoAppService
 {
     Task<IpInfoResultDto> GetIpInfoAsync();
+
+    string GetRemoteIp();
 }
