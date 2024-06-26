@@ -941,7 +941,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             await CheckCryptoGiftByTransactionId(activityDto);
         }
-        _logger.LogInformation("activity transactionType:{0} transactionName:{2}", transactionType, activityDto.TransactionName);
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
         {
@@ -968,8 +967,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
         {
-            _logger.LogInformation("transactionId:{0} transactionType:{1} activityDto.TransactionType:{2} ShowNftTypes:{3}",
-                activityDto.TransactionId, transactionType, activityDto.TransactionType, JsonConvert.SerializeObject(_activityTypeOptions.ShowNftTypes));
             var nftTransactionName =
                 (transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName or CryptoGiftConstants.CreateCryptoBox 
                     or CryptoGiftConstants.TransferCryptoBoxes or CryptoGiftConstants.RefundCryptoBox)
