@@ -934,6 +934,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
         activityDto.TransactionName = typeName;
+        _logger.LogInformation("activity transactionType:{0} transactionName:{2}", transactionType, typeName);
         if (_activityTypeOptions.TypeMap[CryptoGiftConstants.CreateCryptoBox].Equals(activityDto.TransactionName)
                                 || _activityTypeOptions.TypeMap[CryptoGiftConstants.TransferCryptoBoxes].Equals(activityDto.TransactionName)
                                 || _activityTypeOptions.TypeMap[CryptoGiftConstants.RefundCryptoBox].Equals(activityDto.TransactionName))
@@ -966,6 +967,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
         {
+            _logger.LogInformation("transactionId:{0} transactionType:{1} activityDto.TransactionType:{2} ShowNftTypes:{3}",
+                activityDto.TransactionId, transactionType, activityDto.TransactionType, JsonConvert.SerializeObject(_activityTypeOptions.ShowNftTypes));
             var nftTransactionName =
                 transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName
                     ? activityDto.TransactionName
