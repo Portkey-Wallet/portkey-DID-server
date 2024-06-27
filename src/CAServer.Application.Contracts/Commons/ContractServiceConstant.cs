@@ -113,4 +113,6 @@ public static class CommonConstant
     public const string NftToFtStartVersion = "1.18.0";
 
     public const string ReferralKey = "Portkey:ReferralBank";
+
+    public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
 }

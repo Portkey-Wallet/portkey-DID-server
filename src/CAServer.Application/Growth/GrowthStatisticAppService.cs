@@ -7,11 +7,14 @@ using CAServer.CAActivity.Provider;
 using CAServer.Cache;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
+using CAServer.Options;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -32,14 +35,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly IUserAssetsProvider _userAssetsProvider;
     private const int RankLimit = 50;
     private const string InitReferralTimesCache = "InitReferralTimesCacheKey";
+    private const string ReferralCalculateTimesCache = "Portkey:ReferralCalculateTimesCache";
     private const int ExpireTime = 24;
+    private readonly ActivityDateRangeOptions _activityDateRangeOptions;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
-        IUserAssetsProvider userAssetsProvider)
+        IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityDateRangeOptions> activityDateRangeOptions)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -47,6 +52,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _activityProvider = activityProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
+        _activityDateRangeOptions = activityDateRangeOptions.Value;
     }
 
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
@@ -69,17 +75,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHolder.CaHash);
-        if (growthInfo == null)
-        {
-            return 0;
-        }
-
-        // Get First invite users
-        var indexerReferralInfo =
-            await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string> { growthInfo.InviteCode },
-                new List<string> { MethodName.CreateCAHolder }, 0, 0);
-        return indexerReferralInfo.ReferralInfo.Count;
+        var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash , 0 ,
+            Int16.MaxValue);
+        return growthInfo?.Count ?? 0;
     }
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
@@ -117,8 +115,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task CalculateReferralRankAsync()
     {
+        var startTime = 0L;
+        var referralTimes =  await _cacheProvider.Get(ReferralCalculateTimesCache);
+        if (!referralTimes.HasValue)
+        {
+            _activityDateRangeOptions.ActivityDateRanges.TryGetValue(Convert.ToInt16(ActivityEnums.Invition),out var dateRange);
+            startTime = StringToTimeStamp(dateRange != null ? dateRange.StartDate : CommonConstant.DefaultReferralActivityStartTime);
+        }
+        else
+        {
+            startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 30000;
+        }
+        
         var endTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        var startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 30000;
+        
         var indexerReferralInfo =
             await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(),
                 new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
@@ -490,5 +500,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
         return dtDateTime;
+    }
+
+    private long StringToTimeStamp(string dateString)
+    {
+        var dateTime = DateTime.Parse(dateString);
+        return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
     }
 }
