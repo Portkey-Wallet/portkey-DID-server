@@ -65,6 +65,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<FeiXiaoHaoOptions>(configuration.GetSection("FeiXiaoHao"));
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
         Configure<ReferralRefreshTimeOptions>(configuration.GetSection("ReferralRefreshTime"));
+        Configure<ActivityDateRangeOptions>(configuration.GetSection("ActivityDateRange"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
