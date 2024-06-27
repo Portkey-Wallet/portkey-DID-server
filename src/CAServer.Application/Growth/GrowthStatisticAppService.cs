@@ -119,8 +119,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var referralTimes =  await _cacheProvider.Get(ReferralCalculateTimesCache);
         if (!referralTimes.HasValue)
         {
-            //_activityDateRangeOptions.ActivityDateRanges.TryGetValue(Convert.ToInt16(ActivityEnums.Invition),out var dateRange);
-            startTime = StringToTimeStamp(CommonConstant.DefaultReferralActivityStartTime);
+            _activityDateRangeOptions.ActivityDateRanges.TryGetValue(ActivityEnums.Invition.ToString(),out var dateRange);
+            startTime = StringToTimeStamp(dateRange != null ? dateRange.StartDate : CommonConstant.DefaultReferralActivityStartTime);
         }
         else
         {

@@ -47,9 +47,6 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
         var date =  "2024-06-27 00:00:00";
         var dateTime = DateTime.Parse(date); 
         var stamp = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
-        
-        
-    
     }
     //
     // [Fact]
@@ -60,11 +57,11 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
     //     result.ShouldBe(1);
     // }
     //
-    // [Fact]
-    // public async Task CalculateReferralRankAsync_Test()
-    // {
-    //     await _statisticAppService.CalculateReferralRankAsync();
-    // }
+    [Fact]
+    public async Task CalculateReferralRankAsync_Test()
+    {
+        await _statisticAppService.CalculateReferralRankAsync();
+    }
     //
     // [Fact]
     // public async Task InitReferralRankAsync_Test()
