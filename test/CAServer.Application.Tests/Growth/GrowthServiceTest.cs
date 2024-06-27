@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.EnumType;
 using CAServer.Growth.Dtos;
 using CAServer.Security;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,19 +31,24 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
         services.AddSingleton(MockUserAssetsProvider());
         services.AddSingleton(MockGrowthProvider());
         services.AddSingleton(MockIActivityProvider());
-    }
+        // services.AddSingleton(MockCacheProvider());
+     }
     
     // [Fact]
     // public async Task ReferralRecordList_Test()
     // {
-    //     var param = new ReferralRecordRequestDto
-    //     {
-    //         Skip = 0,
-    //         Limit = 10
-    //     };
-    //     var result = await _statisticAppService.GetReferralRecordList(param);
-    //     result.HasNextPage.ShouldBe(false);
-    //
+    //     // var param = new ReferralRecordRequestDto
+    //     // {
+    //     //     Skip = 0,
+    //     //     Limit = 10
+    //     // };
+    //     // var result = await _statisticAppService.GetReferralRecordList(param);
+    //     // result.HasNextPage.ShouldBe(false);
+    //     
+    //     var date =  "2024-06-27 00:00:00";
+    //     var dateTime = DateTime.Parse(date); 
+    //     var stamp = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+    //     var enums = ActivityEnums.Invition.ToString();
     // }
     //
     // [Fact]

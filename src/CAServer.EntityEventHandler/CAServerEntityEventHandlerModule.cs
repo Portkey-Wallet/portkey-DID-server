@@ -64,6 +64,8 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
         Configure<FeiXiaoHaoOptions>(configuration.GetSection("FeiXiaoHao"));
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
+        Configure<ReferralRefreshTimeOptions>(configuration.GetSection("ReferralRefreshTime"));
+        Configure<ActivityDateRangeOptions>(configuration.GetSection("ActivityDateRange"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
@@ -186,7 +188,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TokenPriceBackgroundWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftPreGrabQuotaExpiredWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitReferralRankWorker>());
+        //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitReferralRankWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ReferralRankWorker>());
         
         
