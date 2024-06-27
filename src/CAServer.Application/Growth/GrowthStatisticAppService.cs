@@ -120,7 +120,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         if (!referralTimes.HasValue)
         {
             _activityDateRangeOptions.ActivityDateRanges.TryGetValue(Convert.ToInt16(ActivityEnums.Invition),out var dateRange);
-            startTime = StringToTimeStamp(dateRange != null ? dateRange.StartDate : CommonConstant.DefaultReferralActivityStartTime);
+            startTime = StringToTimeStamp(CommonConstant.DefaultReferralActivityStartTime);
         }
         else
         {
