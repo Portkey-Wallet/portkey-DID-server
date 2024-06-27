@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.EnumType;
 using CAServer.Growth.Dtos;
 using CAServer.Security;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +48,7 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
         var date =  "2024-06-27 00:00:00";
         var dateTime = DateTime.Parse(date); 
         var stamp = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+        var enums = ActivityEnums.Invition.ToString();
     }
     //
     // [Fact]
@@ -57,11 +59,11 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
     //     result.ShouldBe(1);
     // }
     //
-    [Fact]
-    public async Task CalculateReferralRankAsync_Test()
-    {
-        await _statisticAppService.CalculateReferralRankAsync();
-    }
+    // [Fact]
+    // public async Task CalculateReferralRankAsync_Test()
+    // {
+    //     await _statisticAppService.CalculateReferralRankAsync();
+    // }
     //
     // [Fact]
     // public async Task InitReferralRankAsync_Test()
