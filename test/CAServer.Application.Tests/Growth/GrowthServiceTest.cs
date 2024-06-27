@@ -34,22 +34,22 @@ public partial class GrowthServiceTest : CAServerApplicationTestBase
         // services.AddSingleton(MockCacheProvider());
      }
     
-    [Fact]
-    public async Task ReferralRecordList_Test()
-    {
-        // var param = new ReferralRecordRequestDto
-        // {
-        //     Skip = 0,
-        //     Limit = 10
-        // };
-        // var result = await _statisticAppService.GetReferralRecordList(param);
-        // result.HasNextPage.ShouldBe(false);
-        
-        var date =  "2024-06-27 00:00:00";
-        var dateTime = DateTime.Parse(date); 
-        var stamp = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
-        var enums = ActivityEnums.Invition.ToString();
-    }
+    // [Fact]
+    // public async Task ReferralRecordList_Test()
+    // {
+    //     // var param = new ReferralRecordRequestDto
+    //     // {
+    //     //     Skip = 0,
+    //     //     Limit = 10
+    //     // };
+    //     // var result = await _statisticAppService.GetReferralRecordList(param);
+    //     // result.HasNextPage.ShouldBe(false);
+    //     
+    //     var date =  "2024-06-27 00:00:00";
+    //     var dateTime = DateTime.Parse(date); 
+    //     var stamp = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+    //     var enums = ActivityEnums.Invition.ToString();
+    // }
     //
     // [Fact]
     // public async Task GetReferralTotalCountAsync_Test()
