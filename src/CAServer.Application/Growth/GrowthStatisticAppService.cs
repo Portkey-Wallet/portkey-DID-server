@@ -37,14 +37,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private const string InitReferralTimesCache = "InitReferralTimesCacheKey";
     private const string ReferralCalculateTimesCache = "Portkey:ReferralCalculateTimesCache";
     private const int ExpireTime = 360;
-    private readonly ActivityDateRangeOptions _activityDateRangeOptions;
+    //private readonly ActivityDateRangeOptions _activityDateRangeOptions;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
-        IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityDateRangeOptions> activityDateRangeOptions)
+        IUserAssetsProvider userAssetsProvider)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -52,7 +52,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _activityProvider = activityProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
-        _activityDateRangeOptions = activityDateRangeOptions.Value;
+        //_activityDateRangeOptions = activityDateRangeOptions.Value;
     }
 
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
@@ -119,8 +119,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var referralTimes =  await _cacheProvider.Get(ReferralCalculateTimesCache);
         if (!referralTimes.HasValue)
         {
-            _activityDateRangeOptions.ActivityDateRanges.TryGetValue(Convert.ToInt16(ActivityEnums.Invition),out var dateRange);
-            startTime = StringToTimeStamp(dateRange != null ? dateRange.StartDate : CommonConstant.DefaultReferralActivityStartTime);
+            //_activityDateRangeOptions.ActivityDateRanges.TryGetValue(Convert.ToInt16(ActivityEnums.Invition),out var dateRange);
+            startTime = StringToTimeStamp(CommonConstant.DefaultReferralActivityStartTime);
         }
         else
         {
