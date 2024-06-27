@@ -36,7 +36,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private const int RankLimit = 50;
     private const string InitReferralTimesCache = "InitReferralTimesCacheKey";
     private const string ReferralCalculateTimesCache = "Portkey:ReferralCalculateTimesCache";
-    private const int ExpireTime = 24;
+    private const int ExpireTime = 360;
     private readonly ActivityDateRangeOptions _activityDateRangeOptions;
 
 
@@ -180,6 +180,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
                 score + 1);
         }
+        var expire = TimeSpan.FromDays(ExpireTime);
+        await _cacheProvider.Set(ReferralCalculateTimesCache, "Init", expire);
     }
 
 
