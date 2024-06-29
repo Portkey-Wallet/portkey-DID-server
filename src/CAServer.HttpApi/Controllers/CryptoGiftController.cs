@@ -96,4 +96,18 @@ public class CryptoGiftController : CAServerController
     {
         return await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(redPackageId);
     }
+
+    [HttpGet("nums")]
+    public async Task<List<CryptoGiftSentNumberDto>> ComputeCryptoGiftNumber([Required] bool newUsersOnly,
+        [Required] string[] symbols, [Required] long createTime)
+    {
+        return await _cryptoGiftAppService.ComputeCryptoGiftNumber(newUsersOnly, symbols, createTime);
+    }
+    
+    [HttpGet("claim/stats")]
+    public async Task<List<CryptoGiftClaimDto>> ComputeCryptoGiftClaimStatistics([Required] bool newUsersOnly,
+        [Required] string[] symbols, [Required] long createTime)
+    {
+        return await _cryptoGiftAppService.ComputeCryptoGiftClaimStatistics(newUsersOnly, symbols, createTime);
+    }
 }

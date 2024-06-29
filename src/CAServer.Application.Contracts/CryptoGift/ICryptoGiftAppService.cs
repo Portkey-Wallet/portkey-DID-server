@@ -29,4 +29,8 @@ public interface ICryptoGiftAppService
     public Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId);
 
     public (string, string) GetIpAddressAndIdentity(Guid redPackageId);
+
+    public Task<List<CryptoGiftSentNumberDto>> ComputeCryptoGiftNumber(bool newUsersOnly, string[] symbols, long createTime);
+
+    public Task<List<CryptoGiftClaimDto>> ComputeCryptoGiftClaimStatistics(bool newUsersOnly, string[] symbols, long createTime);
 }

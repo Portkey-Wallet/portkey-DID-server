@@ -8,7 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
+using AElf.Types;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts.Provider;
 using CAServer.CryptoGift.Dtos;
@@ -25,6 +27,7 @@ using CAServer.RedPackage.Etos;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using MassTransit.Testing.Implementations;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -62,6 +65,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     private readonly ILogger<CryptoGiftAppService> _logger;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IContactProvider _contactProvider;
+    private readonly IContractProvider _contractProvider;
 
     public CryptoGiftAppService(INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IClusterClient clusterClient,
@@ -76,7 +80,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IOptionsSnapshot<IpfsOptions> ipfsOptions,
         ILogger<CryptoGiftAppService> logger,
         IDistributedEventBus distributedEventBus,
-        IContactProvider contactProvider)
+        IContactProvider contactProvider,
+        IContractProvider contractProvider)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
         _clusterClient = clusterClient;
@@ -92,6 +97,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger = logger;
         _distributedEventBus = distributedEventBus;
         _contactProvider = contactProvider;
+        _contractProvider = contractProvider;
     }
 
     public async Task<CryptoGiftHistoryItemDto> GetFirstCryptoGiftHistoryDetailAsync(Guid senderId)
@@ -1106,5 +1112,97 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         return new ValueTuple<string, string>(ipAddress, identityCode);
+    }
+    
+    public async Task<List<CryptoGiftSentNumberDto>> ComputeCryptoGiftNumber(bool newUsersOnly, string[] symbols, long createTime)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.IsNewUsersOnly).Value(newUsersOnly)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        mustQuery.Add(q=>
+            q.Terms(i => i.Field(f => f.Symbol).Terms(symbols)));
+        mustQuery.Add(q => 
+            q.Range(i => i.Field(f => f.CreateTime).GreaterThanOrEquals(createTime)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        var cryptoGiftCountByDate = cryptoGiftIndices.GroupBy(crypto => ConvertTimestampToDate(crypto.CreateTime))
+            .Select(group => new CryptoGiftSentNumberDto { DateTime = group.Key, Date = group.Key.ToString("yyyy-MM-dd"), Number = group.Count()}).ToList();
+        return cryptoGiftCountByDate.OrderBy(c => c.DateTime).ToList();
+    }
+
+    private static DateTime ConvertTimestampToDate(long timestamp)
+    {
+        var dtDateTime = new DateTime(1970,1,1,0,0,0,0,System.DateTimeKind.Utc);
+        return dtDateTime.AddSeconds(timestamp).ToLocalTime();
+    }
+
+    public async Task<List<CryptoGiftClaimDto>> ComputeCryptoGiftClaimStatistics(bool newUsersOnly, string[] symbols,
+        long createTime)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.IsNewUsersOnly).Value(newUsersOnly)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        mustQuery.Add(q=>
+            q.Terms(i => i.Field(f => f.Symbol).Terms(symbols)));
+        mustQuery.Add(q => 
+            q.Range(i => i.Field(f => f.CreateTime).GreaterThanOrEquals(createTime)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        var details = new List<RedPackageDetailDto>();
+        foreach (var cryptoGiftIndex in cryptoGiftIndices)
+        {
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(cryptoGiftIndex.RedPackageId);
+            var redPackageDetail = await grain.GetRedPackage(cryptoGiftIndex.RedPackageId);
+            if (!redPackageDetail.Success || redPackageDetail.Data == null)
+            {
+                continue;
+            }
+            details.Add(redPackageDetail.Data);
+        }
+
+        var cryptoGiftClaimDtos = details.Select(detail => new CryptoGiftClaimDto()
+        {
+            UserId = detail.SenderId,
+            Number = 1,
+            Grabbed = detail.Grabbed,
+            Count = detail.Count
+        }).ToList();
+        foreach (var cryptoGiftClaimDto in cryptoGiftClaimDtos)
+        {
+            cryptoGiftClaimDto.CaAddress = await GetCaAddress(cryptoGiftClaimDto.UserId, cryptoGiftClaimDto.ChainId);
+        }
+
+        return  cryptoGiftClaimDtos.GroupBy(crypto => crypto.CaAddress)
+            .Select(group => new CryptoGiftClaimDto()
+            {
+                CaAddress = group.Key,
+                Number = group.Count(),
+                Count = group.Sum(g => g.Count),
+                Grabbed = group.Sum(g => g.Grabbed)
+            }).ToList();
+    }
+
+    private async Task<string> GetCaAddress(Guid userId, string chainId)
+    {
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
+        var caHash = caHolderIndex.CaHash;
+        try
+        {
+            var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
+            if (result != null)
+            {
+                return result.CaAddress.ToBase58();
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "get holder from chain error, userId:{userId}, caHash:{caHash}", userId.ToString(), caHash);
+        }
+
+        return string.Empty;
     }
 }
