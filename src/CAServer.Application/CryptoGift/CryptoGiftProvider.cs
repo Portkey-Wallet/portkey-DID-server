@@ -6,6 +6,10 @@ namespace CAServer.CryptoGift;
 public interface ICryptoGiftProvider
 {
     public long GetExpirationSeconds();
+
+    public int GetTransferDelayedRetryTimes();
+
+    public int GetTransferDelayedIntervalSeconds();
 }
 
 public class CryptoGiftProvider : ICryptoGiftProvider, ISingletonDependency
@@ -20,5 +24,15 @@ public class CryptoGiftProvider : ICryptoGiftProvider, ISingletonDependency
     public long GetExpirationSeconds()
     {
         return _optionsMonitor.CurrentValue.ExpireSeconds;
+    }
+
+    public int GetTransferDelayedRetryTimes()
+    {
+        return _optionsMonitor.CurrentValue.TransferDelayedRetryTimes;
+    }
+
+    public int GetTransferDelayedIntervalSeconds()
+    {
+        return _optionsMonitor.CurrentValue.TransferDelayedIntervalSeconds;
     }
 }

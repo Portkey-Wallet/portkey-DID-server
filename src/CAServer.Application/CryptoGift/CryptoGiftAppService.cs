@@ -10,6 +10,7 @@ using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAAccount.Dtos;
 using CAServer.Commons;
+using CAServer.Contacts.Provider;
 using CAServer.CryptoGift.Dtos;
 using CAServer.Entities.Es;
 using CAServer.EnumType;
@@ -20,13 +21,13 @@ using CAServer.Grains.State;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
+using CAServer.RedPackage.Etos;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -34,6 +35,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 using NftInfoDto = CAServer.UserAssets.Dtos.NftInfoDto;
@@ -58,6 +60,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     private readonly IDistributedCache<string> _distributedCache;
     private readonly IpfsOptions _ipfsOptions;
     private readonly ILogger<CryptoGiftAppService> _logger;
+    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IContactProvider _contactProvider;
 
     public CryptoGiftAppService(INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IClusterClient clusterClient,
@@ -70,7 +74,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IUserAssetsProvider userAssetsProvider,
         IDistributedCache<string> distributedCache,
         IOptionsSnapshot<IpfsOptions> ipfsOptions,
-        ILogger<CryptoGiftAppService> logger)
+        ILogger<CryptoGiftAppService> logger,
+        IDistributedEventBus distributedEventBus,
+        IContactProvider contactProvider)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
         _clusterClient = clusterClient;
@@ -84,6 +90,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _distributedCache = distributedCache;
         _ipfsOptions = ipfsOptions.Value;
         _logger = logger;
+        _distributedEventBus = distributedEventBus;
+        _contactProvider = contactProvider;
     }
 
     public async Task<CryptoGiftHistoryItemDto> GetFirstCryptoGiftHistoryDetailAsync(Guid senderId)
@@ -890,7 +898,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
     
-    public async Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress)
+    public async Task CryptoGiftTransferToRedPackage(Guid userId, string caHash, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress)
     {
         _logger.LogInformation("CryptoGiftTransferToRedPackage userId:{0},caAddress:{1},referralInfo:{2},isNewUser:{3}", userId, caAddress, JsonConvert.SerializeObject(referralInfo), isNewUser);
         if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
@@ -969,15 +977,75 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("CryptoGiftTransferToRedPackage redPackageUpdateResult:{0}", JsonConvert.SerializeObject(redPackageUpdateResult));
         if (redPackageUpdateResult.Success)
         {
+            _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0}", redPackageId);
             //2 crypto gift: amount/item
             _logger.LogInformation("CryptoGiftTransferToRedPackage GetClaimedCryptoGift:{0}", JsonConvert.SerializeObject(preGrabBucketItemDto));
             var updateCryptoGiftResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
             _logger.LogInformation("CryptoGiftTransferToRedPackage updateCryptoGiftResult:{0}", JsonConvert.SerializeObject(updateCryptoGiftResult));
+            if (isNewUser)
+            {
+                await DelayTransferProcess(redPackageId, redPackageDetail.Data.ChainId, caHash, caAddress);
+            }
+            else
+            {
+                await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+                {
+                    RedPackageId = redPackageId
+                });
+            }
         }
         else
         {
             await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
         }
+    }
+
+    private async Task DelayTransferProcess(Guid redPackageId, string chainId, string caHash, string caAddress)
+    {
+        var executed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
+        if (executed)
+        {
+            return;
+        }
+        var i = 1;
+        while (i <= _cryptoGiftProvider.GetTransferDelayedRetryTimes())
+        {
+            await Task.Delay(TimeSpan.FromSeconds(_cryptoGiftProvider.GetTransferDelayedIntervalSeconds() * i));
+            var succeed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
+            if (succeed)
+            {
+                return;
+            }
+            i++;
+        }
+    }
+    
+    private async Task<bool> ExecutedDelayedTask(Guid redPackageId, string chainId, string caHash, string caAddress)
+    {
+        bool existed = false;
+        try
+        {
+            var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>() {caAddress}, chainId);
+            _logger.LogInformation("redPackageId:{0} executed delayed task chainId:{1} caHash:{2} caAddress:{3} guardiansDto:{4}", redPackageId, chainId, caHash, caAddress, JsonConvert.SerializeObject(guardiansDto)); 
+            existed = guardiansDto.CaHolderInfo.Any(guardian => guardian.CaHash.Equals(caHash)
+                                                                    && guardian.CaAddress.Equals(caAddress)
+                                                                    && guardian.ChainId.Equals(chainId));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "redPackageId:{0} executed delayed task error", redPackageId);
+        }
+        if (!existed)
+        {
+            return false;
+        }
+
+        await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+        {
+            RedPackageId = redPackageId
+        });
+        return true;
+
     }
 
     private async Task UpdateCryptoGiftCacheResultFalse(Guid userId, Guid redPackageId)

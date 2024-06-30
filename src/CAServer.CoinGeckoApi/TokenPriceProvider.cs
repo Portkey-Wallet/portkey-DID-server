@@ -9,6 +9,7 @@ using CAServer.Tokens.TokenPrice;
 using CoinGecko.Clients;
 using CoinGecko.Entities.Response.Coins;
 using CoinGecko.Entities.Response.Search;
+using CoinGecko.Entities.Response.Simple;
 using CoinGecko.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -88,9 +89,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
         try
         {
-            var coinData =
-                await RequestAsync(async () =>
-                    await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] { coinId }, new[] { UsdSymbol }));
+            var coinData = await GetTokenPriceAsync(coinId);
             _logger.LogDebug("Get coinGecko data: {Price}", JsonConvert.SerializeObject(coinData));
             if (!coinData.TryGetValue(coinId, out var value))
             {
@@ -104,6 +103,19 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             _logger.LogError(ex, "Can not get current price from 'CoinGecko' :{Symbol}", symbol);
             throw;
         }
+    }
+
+    private async Task<Price> GetTokenPriceAsync(string coinId)
+    {
+        if (coinId == CommonConstant.SgrCoingeckoId)
+        {
+            return
+                await RequestAsync(async () => await GetSgrPriceAsync());
+        }
+
+        return
+            await RequestAsync(async () =>
+                await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] { coinId }, new[] { UsdSymbol }));
     }
 
     public async Task<Dictionary<string, decimal>> GetPriceAsync(params string[] symbols)
@@ -181,8 +193,9 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         await _requestLimitProvider.RecordRequestAsync();
         return await task();
     }
-    
-    private RestRequest GetCoingeckoRequest() {
+
+    private RestRequest GetCoingeckoRequest()
+    {
         RestRequest request = new RestRequest("");
         request.AddHeader("accept", "application/json");
         if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
@@ -204,7 +217,24 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         var client = new RestClient(options);
         return client;
     }
-    
+
+    private async Task<Price> GetSgrPriceAsync()
+    {
+        try
+        {
+            var client = GetRestClient("simple/price?ids=schrodinger-2&vs_currencies=usd");
+            var request = GetCoingeckoRequest();
+            var responseFromApi = await client.GetAsync(request);
+            var content = responseFromApi.Content;
+            return JsonConvert.DeserializeObject<Price>(content);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Can not get hot listings");
+            throw;
+        }
+    }
+
     public async Task<List<CoinMarkets>> GetHotListingsAsync()
     {
         List<CoinMarkets> response;

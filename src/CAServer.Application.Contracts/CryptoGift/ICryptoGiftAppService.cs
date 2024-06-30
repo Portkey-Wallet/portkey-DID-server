@@ -24,7 +24,7 @@ public interface ICryptoGiftAppService
 
     public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId);
 
-    public Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress);
+    public Task CryptoGiftTransferToRedPackage(Guid userId, string caHash, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress);
 
     public Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId);
 

@@ -68,7 +68,7 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
             {
                 return;
             }
-            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
+            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, eventData.CaHash, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
         }
         catch (Exception e)
         {
