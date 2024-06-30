@@ -97,18 +97,15 @@ public class CryptoGiftController : CAServerController
         return await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(redPackageId);
     }
 
-    [HttpGet("nums")]
-    public async Task<List<CryptoGiftSentNumberDto>> ComputeCryptoGiftNumber([Required] bool newUsersOnly,
-        [Required] string[] symbols, [Required] long createTime)
+    [HttpPost("nums")]
+    public async Task<List<CryptoGiftSentNumberDto>> ComputeCryptoGiftNumber([FromBody] CryptoGiftStatisticsRequestDto requestDto)
     {
-        _logger.LogInformation("===========================symbols:{}", symbols.ToString());
-        return await _cryptoGiftAppService.ComputeCryptoGiftNumber(newUsersOnly, symbols, createTime);
+        return await _cryptoGiftAppService.ComputeCryptoGiftNumber(requestDto.NewUsersOnly, requestDto.Symbols.ToArray(), requestDto.CreateTime);
     }
     
-    [HttpGet("claim/stats")]
-    public async Task<List<CryptoGiftClaimDto>> ComputeCryptoGiftClaimStatistics([Required] bool newUsersOnly,
-        [Required] string[] symbols, [Required] long createTime)
+    [HttpPost("claim/stats")]
+    public async Task<List<CryptoGiftClaimDto>> ComputeCryptoGiftClaimStatistics([FromBody] CryptoGiftStatisticsRequestDto requestDto)
     {
-        return await _cryptoGiftAppService.ComputeCryptoGiftClaimStatistics(newUsersOnly, symbols, createTime);
+        return await _cryptoGiftAppService.ComputeCryptoGiftClaimStatistics(requestDto.NewUsersOnly, requestDto.Symbols.ToArray(), requestDto.CreateTime);
     }
 }

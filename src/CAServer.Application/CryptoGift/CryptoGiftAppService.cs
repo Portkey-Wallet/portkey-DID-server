@@ -1128,11 +1128,17 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         var cryptoGiftCountByDate = cryptoGiftIndices.GroupBy(crypto => ConvertTimestampToDate(crypto.CreateTime))
-            .Select(group => new CryptoGiftSentNumberDto { DateTime = group.Key, Date = group.Key.ToString("yyyy-MM-dd"), Number = group.Count()}).ToList();
-        return cryptoGiftCountByDate.OrderBy(c => c.DateTime).ToList();
+            .Select(group => new CryptoGiftSentNumberDto { Date = group.Key, Number = group.Count()}).ToList();
+        return cryptoGiftCountByDate.OrderBy(c => c.Date).ToList();
+    }
+    
+    private static string ConvertTimestampToDate(long timestamp)
+    {
+        var dtDateTime = new DateTime(1970,1,1,0,0,0,0,System.DateTimeKind.Utc);
+        return dtDateTime.AddSeconds(timestamp / 1000).ToLocalTime().ToString("yyyy-MM-dd");
     }
 
-    private static DateTime ConvertTimestampToDate(long timestamp)
+    private static DateTime ConvertTimestampToDateTime(long timestamp)
     {
         var dtDateTime = new DateTime(1970,1,1,0,0,0,0,System.DateTimeKind.Utc);
         return dtDateTime.AddSeconds(timestamp / 1000).ToLocalTime();
@@ -1152,6 +1158,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             q.Range(i => i.Field(f => f.CreateTime).GreaterThanOrEquals(createTime)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        _logger.LogInformation("====================cryptoGiftIndices:{0} ", JsonConvert.SerializeObject(cryptoGiftIndices));
         var details = new List<RedPackageDetailDto>();
         foreach (var cryptoGiftIndex in cryptoGiftIndices)
         {
