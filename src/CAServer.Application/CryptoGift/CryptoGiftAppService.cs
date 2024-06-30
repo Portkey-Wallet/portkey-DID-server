@@ -1135,7 +1135,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     private static DateTime ConvertTimestampToDate(long timestamp)
     {
         var dtDateTime = new DateTime(1970,1,1,0,0,0,0,System.DateTimeKind.Utc);
-        return dtDateTime.AddSeconds(timestamp).ToLocalTime();
+        return dtDateTime.AddSeconds(timestamp / 1000).ToLocalTime();
     }
 
     public async Task<List<CryptoGiftClaimDto>> ComputeCryptoGiftClaimStatistics(bool newUsersOnly, string[] symbols,

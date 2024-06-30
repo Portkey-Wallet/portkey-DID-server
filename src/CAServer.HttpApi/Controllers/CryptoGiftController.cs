@@ -101,6 +101,7 @@ public class CryptoGiftController : CAServerController
     public async Task<List<CryptoGiftSentNumberDto>> ComputeCryptoGiftNumber([Required] bool newUsersOnly,
         [Required] string[] symbols, [Required] long createTime)
     {
+        _logger.LogInformation("===========================symbols:{}", symbols.ToString());
         return await _cryptoGiftAppService.ComputeCryptoGiftNumber(newUsersOnly, symbols, createTime);
     }
     
