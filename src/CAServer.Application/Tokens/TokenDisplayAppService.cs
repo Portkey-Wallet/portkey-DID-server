@@ -60,7 +60,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         IContractProvider contractProvider, IDistributedEventBus distributedEventBus,
         IUserTokenAppService userTokenAppService, ITokenProvider tokenProvider,
         IAssetsLibraryProvider assetsLibraryProvider, IDistributedCache<List<Token>> userTokenCache,
-        IDistributedCache<string> userTokenBalanceCache, IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
+        IDistributedCache<string> userTokenBalanceCache,
+        IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
     {
@@ -128,7 +129,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             AddDefaultTokens(userTokens);
 
             // remove nft to ft token
-            userTokens.RemoveAll(t =>_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Token.Symbol));
+            userTokens.RemoveAll(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Token.Symbol));
             var userTokenSymbols = userTokens.Where(t => t.IsDefault || t.IsDisplay).ToList();
 
             if (userTokenSymbols.IsNullOrEmpty())
@@ -266,7 +267,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
 
         var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
         // remove nft to ft token
-        tokenInfoList.RemoveAll(t =>_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol));
+        tokenInfoList.RemoveAll(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol));
 
         // Check and adjust SkipCount and MaxResultCount
         var skipCount = input.SkipCount < TokensConstants.SkipCountDefault
@@ -289,7 +290,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         ftTokens.RemoveAll(t => !t.IsDisplay && sourceSymbols.Contains(t.Token.Symbol));
         AddDefaultAssertTokens(ftTokens, requestDto.Keyword);
         ftTokens = ftTokens.Where(t => !_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Token.Symbol)).ToList();
-        
+
         var userPackageAssets = await GetUserPackageAssetsAsync(requestDto);
         var userPackageFtAssetsWithPositiveBalance = userPackageAssets.Data
             .Where(asset => asset.TokenInfo?.Balance != null && long.Parse(asset.TokenInfo.Balance) > 0)
@@ -442,7 +443,9 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
 
     private List<UserPackageAsset> SortUserPackageAssets(List<UserPackageAsset> assets)
     {
-        var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        var defaultSymbols = _tokenListOptions.UserToken
+            .Where(f => !_nftToFtOptions.NftToFtInfos.Keys.Contains(f.Token.Symbol)).Select(t => t.Token.Symbol)
+            .Distinct().ToList();
         var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
 
         return assets.OrderBy(t => t.Symbol != CommonConstant.ELF)

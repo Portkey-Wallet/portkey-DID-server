@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -117,10 +118,10 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
             _logger.LogError("token price providers is null.");
             return;
         }
-
-        var symbols = symbol != null ? new[] { symbol } : _tokenPriceWorkerOption.CurrentValue.Symbols.ToArray();
+        
         foreach (var tokenPriceProvider in _tokenPriceProviders)
         {
+            var symbols = symbol != null ? new[] { symbol } : _tokenPriceWorkerOption.CurrentValue.Symbols.ToArray();
             if (!tokenPriceProvider.IsAvailable())
             {
                 continue;
@@ -128,6 +129,15 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
 
             try
             {
+                if (tokenPriceProvider.GetType().Name == nameof(FeiXiaoHaoTokenPriceProvider))
+                {
+                    symbols = symbols.Where(t => t != CommonConstant.SgrSymbolName).ToArray();
+                }
+                else
+                {
+                    symbols = symbols.Where(t => t == CommonConstant.SgrSymbolName).ToArray();
+                }
+
                 var prices = await tokenPriceProvider.GetPriceAsync(symbols);
                 if (prices.IsNullOrEmpty())
                 {
@@ -147,7 +157,6 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
 
                 _logger.LogInformation("refresh current price success, the provider used is: {0}",
                     tokenPriceProvider.GetType().ToString());
-                break;
             }
             catch (Exception e)
             {
