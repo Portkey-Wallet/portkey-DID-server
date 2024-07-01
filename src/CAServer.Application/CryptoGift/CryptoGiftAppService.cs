@@ -1178,11 +1178,13 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("===========userIdChainId:{0}", JsonConvert.SerializeObject(userIdChainId));
         foreach (var item in userIdChainId)
         {
-            var split = item.Group.Split("#");
-            if (groupToCaAddress[item.Group].IsNullOrEmpty())
+            if (groupToCaAddress.TryGetValue(item.Group, out var value))
             {
-                groupToCaAddress.Add(item.Group, await GetCaAddress(Guid.Parse(split[0]), split[1]));
+                continue;
             }
+
+            var split = item.Group.Split("#");
+            groupToCaAddress.Add(item.Group, await GetCaAddress(Guid.Parse(split[0]), split[1]));
         }
         foreach (var cryptoGiftClaimDto in cryptoGiftClaimDtos)
         {
