@@ -33,6 +33,7 @@ using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
+using Error = CAServer.CAAccount.Dtos.Error;
 
 namespace CAServer.CAAccount;
 
@@ -458,6 +459,47 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             ValidatedAssets = validateAssets,
             ValidatedGuardian = validateGuardian,
         };
+    }
+
+    public async Task<CAHolderExistsResponseDto> VerifyCaHolderExistByAddressAsync(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            throw new UserFriendlyException("validate address");
+        }
+        var result = new CAHolderExistsResponseDto();
+        var caAddresses = new List<string>()
+        {
+            address
+        };
+        var caHolderInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
+        if (caHolderInfo != null)
+        {
+            result.Success = new Success()
+            {   
+                Data = new Dtos.Data()
+                {
+                    Result = true
+                }
+            };
+        }
+
+        return new CAHolderExistsResponseDto()
+        {
+            Failed = new Failed()
+            {
+                Error = new Error()
+                {
+                    Code = 0,
+                    Message = "error message"
+                },
+                Data = new Dtos.Data()
+                {
+                    Result = false
+                }
+            }
+        };
+
     }
 
     public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)

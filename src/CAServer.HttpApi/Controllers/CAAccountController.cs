@@ -124,4 +124,10 @@ public class CAAccountController : CAServerController
         return await _caAccountService.RevokeValidateAsync(userId, type);
     }
     
+    [HttpPost("verify/caHolderExist")]
+    public async Task<CAHolderExistsResponseDto> CaHolderExistByAddress(string address)
+    {
+        return await _caAccountService.VerifyCaHolderExistByAddressAsync(address);
+    }
+    
 }
