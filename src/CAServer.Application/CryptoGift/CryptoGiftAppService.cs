@@ -1175,12 +1175,13 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IDictionary<string, string> groupToCaAddress = new Dictionary<string, string>();
         var userIdChainId = cryptoGiftClaimDtos.GroupBy(c => c.UserId + "#" + c.ChainId)
             .Select(group => new {Group = group.Key});
+        _logger.LogInformation("===========userIdChainId:{0}", JsonConvert.SerializeObject(userIdChainId));
         foreach (var item in userIdChainId)
         {
             var split = item.Group.Split("#");
             if (groupToCaAddress[item.Group].IsNullOrEmpty())
             {
-                groupToCaAddress[item.Group] = await GetCaAddress(Guid.Parse(split[0]), split[1]);
+                groupToCaAddress.Add(item.Group, await GetCaAddress(Guid.Parse(split[0]), split[1]));
             }
         }
         foreach (var cryptoGiftClaimDto in cryptoGiftClaimDtos)
