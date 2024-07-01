@@ -79,6 +79,10 @@ public class RedPackageController : CAServerController
     [Authorize]
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
+        if (!Enum.IsDefined(input.RedPackageDisplayType))
+        {
+            input.RedPackageDisplayType = RedPackageDisplayType.Common;
+        }
         return await _redPackageAppService.GrabRedPackageAsync(input);
     }
     
