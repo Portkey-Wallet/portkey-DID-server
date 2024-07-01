@@ -1164,6 +1164,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             details.Add(redPackageDetail.Data);
         }
 
+        _logger.LogInformation("====================redPackageDetail:{0} ", JsonConvert.SerializeObject(details));
         var cryptoGiftClaimDtos = details.Select(detail => new CryptoGiftClaimDto()
         {
             UserId = detail.SenderId,
@@ -1175,14 +1176,18 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IDictionary<string, string> groupToCaAddress = new Dictionary<string, string>();
         var userIdChainId = cryptoGiftClaimDtos.GroupBy(c => c.UserId + "#" + c.ChainId)
             .Select(group => new {Group = group.Key});
+        _logger.LogInformation("===========userIdChainId:{0}", JsonConvert.SerializeObject(userIdChainId));
         foreach (var item in userIdChainId)
         {
-            var split = item.Group.Split("#");
-            if (groupToCaAddress[item.Group].IsNullOrEmpty())
+            if (groupToCaAddress.TryGetValue(item.Group, out var value))
             {
-                groupToCaAddress[item.Group] = await GetCaAddress(Guid.Parse(split[0]), split[1]);
+                continue;
             }
+
+            var split = item.Group.Split("#");
+            groupToCaAddress.Add(item.Group, await GetCaAddress(Guid.Parse(split[0]), split[1]));
         }
+        _logger.LogInformation("===========groupToCaAddress:{0}", JsonConvert.SerializeObject(groupToCaAddress));
         foreach (var cryptoGiftClaimDto in cryptoGiftClaimDtos)
         {
             var key = cryptoGiftClaimDto.UserId + "#" + cryptoGiftClaimDto.ChainId;
