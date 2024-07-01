@@ -22,7 +22,7 @@ public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageE
 
     public Task HandleEventAsync(PayRedPackageEto eventData)
     {
-        _logger.LogInformation("receive PayRedPackageEto RedPackageId:{0}", eventData.RedPackageId);
+        _logger.LogInformation("receive PayRedPackageEto RedPackageId:{0} receiverId:{1}", eventData.RedPackageId, eventData.ReceiverId);
         _ = _payRedPackageService.PayRedPackageAsync(eventData.RedPackageId);
         return Task.CompletedTask;
     }
