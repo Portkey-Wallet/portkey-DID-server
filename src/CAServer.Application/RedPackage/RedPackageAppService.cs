@@ -583,7 +583,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 await _distributedEventBus.PublishAsync(new PayRedPackageEto()
                 {
                     RedPackageId = input.Id,
-                    DisplayType = RedPackageDisplayType.CryptoGift,
+                    DisplayType = RedPackageDisplayType.Common,
                     ReceiverId = CurrentUser.Id.Value
                 });
                 _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0} receiverId:{1}", input.Id, CurrentUser.Id.Value);
