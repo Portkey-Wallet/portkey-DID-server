@@ -226,7 +226,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
-
+        
         var contactDtoList = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList);
 
 
