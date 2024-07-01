@@ -475,20 +475,18 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             address
         };
         var caHolderInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
-        if (caHolderInfo == null)
+        if (caHolderInfo == null || caHolderInfo.CaHolderManagerInfo.Count == 0)
         {
-            return new CAHolderExistsResponseDto
+            result.Data = new Dtos.Data
             {
-                Error = new Error
-                {
-                    Code = 0,
-                    Message = "error message"
-                },
-                Data = new Dtos.Data
-                {
-                    Result = false
-                }
+                Result = false
             };
+            result.Error = new Error
+            {
+                Code = 0,
+                Message = "No CaHolder is found."
+            };
+            return result;
         }
 
         result.Data = new Dtos.Data
