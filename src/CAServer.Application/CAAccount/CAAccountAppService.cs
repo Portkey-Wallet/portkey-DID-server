@@ -465,40 +465,41 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     {
         if (string.IsNullOrWhiteSpace(address))
         {
-            throw new UserFriendlyException("validate address");
+            throw new UserFriendlyException("Invalidate address");
         }
         var result = new CAHolderExistsResponseDto();
-        var caAddresses = new List<string>()
+        var caAddresses = new List<string>
         {
             address
         };
         var caHolderInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
-        if (caHolderInfo != null)
+        if (caHolderInfo == null)
         {
-            result.Success = new Success()
-            {   
-                Data = new Dtos.Data()
+            return new CAHolderExistsResponseDto()
+            {
+                Failed = new Failed()
                 {
-                    Result = true
+                    Error = new Error()
+                    {
+                        Code = 0,
+                        Message = "error message"
+                    },
+                    Data = new Dtos.Data()
+                    {
+                        Result = false
+                    }
                 }
             };
         }
 
-        return new CAHolderExistsResponseDto()
-        {
-            Failed = new Failed()
+        result.Success = new Success()
+        {   
+            Data = new Dtos.Data()
             {
-                Error = new Error()
-                {
-                    Code = 0,
-                    Message = "error message"
-                },
-                Data = new Dtos.Data()
-                {
-                    Result = false
-                }
+                Result = true
             }
         };
+        return result;
 
     }
 
