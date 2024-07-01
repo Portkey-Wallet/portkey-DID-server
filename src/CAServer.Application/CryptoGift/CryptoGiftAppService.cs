@@ -988,17 +988,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             _logger.LogInformation("CryptoGiftTransferToRedPackage GetClaimedCryptoGift:{0}", JsonConvert.SerializeObject(preGrabBucketItemDto));
             var updateCryptoGiftResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
             _logger.LogInformation("CryptoGiftTransferToRedPackage updateCryptoGiftResult:{0}", JsonConvert.SerializeObject(updateCryptoGiftResult));
-            if (isNewUser)
+            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
             {
-                await DelayTransferProcess(redPackageId, redPackageDetail.Data.ChainId, caHash, caAddress);
-            }
-            else
-            {
-                await _distributedEventBus.PublishAsync(new PayRedPackageEto()
-                {
-                    RedPackageId = redPackageId
-                });
-            }
+                RedPackageId = redPackageId,
+                DisplayType = RedPackageDisplayType.CryptoGift,
+                ReceiverId = userId
+            });
         }
         else
         {
@@ -1006,53 +1001,55 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
     }
 
-    private async Task DelayTransferProcess(Guid redPackageId, string chainId, string caHash, string caAddress)
-    {
-        var executed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
-        if (executed)
-        {
-            return;
-        }
-        var i = 1;
-        while (i <= _cryptoGiftProvider.GetTransferDelayedRetryTimes())
-        {
-            await Task.Delay(TimeSpan.FromSeconds(_cryptoGiftProvider.GetTransferDelayedIntervalSeconds() * i));
-            var succeed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
-            if (succeed)
-            {
-                return;
-            }
-            i++;
-        }
-    }
+    // private async Task DelayTransferProcess(Guid redPackageId, string chainId, string caHash, string caAddress)
+    // {
+    //     var executed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
+    //     if (executed)
+    //     {
+    //         return;
+    //     }
+    //     var i = 1;
+    //     while (i <= _cryptoGiftProvider.GetTransferDelayedRetryTimes())
+    //     {
+    //         await Task.Delay(TimeSpan.FromSeconds(_cryptoGiftProvider.GetTransferDelayedIntervalSeconds() * i));
+    //         var succeed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
+    //         if (succeed)
+    //         {
+    //             return;
+    //         }
+    //         i++;
+    //     }
+    // }
     
-    private async Task<bool> ExecutedDelayedTask(Guid redPackageId, string chainId, string caHash, string caAddress)
-    {
-        bool existed = false;
-        try
-        {
-            var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>() {caAddress}, chainId);
-            _logger.LogInformation("redPackageId:{0} executed delayed task chainId:{1} caHash:{2} caAddress:{3} guardiansDto:{4}", redPackageId, chainId, caHash, caAddress, JsonConvert.SerializeObject(guardiansDto)); 
-            existed = guardiansDto.CaHolderInfo.Any(guardian => guardian.CaHash.Equals(caHash)
-                                                                    && guardian.CaAddress.Equals(caAddress)
-                                                                    && guardian.ChainId.Equals(chainId));
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "redPackageId:{0} executed delayed task error", redPackageId);
-        }
-        if (!existed)
-        {
-            return false;
-        }
-
-        await _distributedEventBus.PublishAsync(new PayRedPackageEto()
-        {
-            RedPackageId = redPackageId
-        });
-        return true;
-
-    }
+    // private async Task<bool> ExecutedDelayedTask(Guid redPackageId, string chainId, string caHash, string caAddress)
+    // {
+    //     bool existed = false;
+    //     try
+    //     {
+    //         var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>() {caAddress}, chainId);
+    //         _logger.LogInformation("redPackageId:{0} executed delayed task chainId:{1} caHash:{2} caAddress:{3} guardiansDto:{4}", redPackageId, chainId, caHash, caAddress, JsonConvert.SerializeObject(guardiansDto)); 
+    //         existed = guardiansDto.CaHolderInfo.Any(guardian => guardian.CaHash.Equals(caHash)
+    //                                                                 && guardian.CaAddress.Equals(caAddress)
+    //                                                                 && guardian.ChainId.Equals(chainId));
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         _logger.LogError(e, "redPackageId:{0} executed delayed task error", redPackageId);
+    //     }
+    //     if (!existed)
+    //     {
+    //         return false;
+    //     }
+    //
+    //     await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+    //     {
+    //         RedPackageId = redPackageId,
+    //         DisplayType = RedPackageDisplayType.CryptoGift,
+    //         ReceiverId = userId
+    //     });
+    //     return true;
+    //
+    // }
 
     private async Task UpdateCryptoGiftCacheResultFalse(Guid userId, Guid redPackageId)
     {

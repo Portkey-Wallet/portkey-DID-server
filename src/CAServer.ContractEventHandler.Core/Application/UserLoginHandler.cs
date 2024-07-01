@@ -48,6 +48,11 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
         try
         {
             _logger.LogInformation("UserLoginHandler receive message:{0}", JsonConvert.SerializeObject(eventData));
+            if (!eventData.FromCaServer.HasValue || !eventData.FromCaServer.Value)
+            {
+                _logger.LogInformation("UserLoginHandler userId:{0} caHash:{1} not from the caserver, ignored", eventData.UserId, eventData.CaHash);
+                return;
+            }
             
             var cachedUserId = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.UserLoginPrefix, eventData.CaHash));
             if (cachedUserId.IsNullOrEmpty())
