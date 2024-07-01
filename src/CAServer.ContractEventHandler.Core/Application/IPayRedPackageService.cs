@@ -201,9 +201,17 @@ public class PayRedPackageService : IPayRedPackageService
         }
         foreach (var grabItemDto in grabItems.ToList())
         {
-            var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>() {grabItemDto.CaAddress}, chainId);
-            _logger.LogInformation("redPackageId:{0} executed delayed task chainId:{1} caAddress:{3} guardiansDto:{4}", redPackageId, chainId, grabItemDto.CaAddress, JsonConvert.SerializeObject(guardiansDto)); 
-            var existed = guardiansDto.CaHolderInfo.Any(guardian => guardian.CaAddress.Equals(grabItemDto.CaAddress) && guardian.ChainId.Equals(chainId));
+            bool existed = false;
+            try
+            {
+                var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>() {grabItemDto.CaAddress}, chainId);
+                _logger.LogInformation("redPackageId:{0} filter caholder of cross chain logic chainId:{1} caAddress:{3} guardiansDto:{4}", redPackageId, chainId, grabItemDto.CaAddress, JsonConvert.SerializeObject(guardiansDto)); 
+                existed = guardiansDto.CaHolderInfo.Any(guardian => guardian.CaAddress.Equals(grabItemDto.CaAddress) && guardian.ChainId.Equals(chainId));
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation("redPackageId:{0} chainId:{1} caAddress:{3} query guardians error", redPackageId, chainId, grabItemDto.CaAddress);
+            }
             if (!existed)
             {
                 grabItems.Remove(grabItemDto);
