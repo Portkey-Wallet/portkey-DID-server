@@ -1,3 +1,4 @@
+using CAServer.EnumType;
 using CAServer.Grains.State;
 using CAServer.RedPackage.Dtos;
 using Volo.Abp.ObjectMapping;
@@ -75,5 +76,56 @@ public class CryptoGiftGran : Orleans.Grain<CryptoGiftState>, ICryptoGiftGran
             Success = true,
             Data = cryptoGiftDto
         };
+    }
+
+    public async Task<GrainResultDto<CryptoGiftDto>> GrabCryptoGift(string identityCode, string ipAddress, int decimalForItem)
+    {
+        if (State.BucketClaimed.Any(bucket => bucket.IdentityCode.Equals(identityCode)))
+        {
+            return new GrainResultDto<CryptoGiftDto>
+            {
+                Success = false,
+                Data = _objectMapper.Map<CryptoGiftState, CryptoGiftDto>(State)
+            };
+        }
+        PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(identityCode);
+        if (State.Items.Any(item => item.Index.Equals(preGrabBucketItemDto.Index)))
+        {
+            return new GrainResultDto<CryptoGiftDto>
+            {
+                Success = false,
+                Data = _objectMapper.Map<CryptoGiftState, CryptoGiftDto>(State)
+            };
+        }
+        State.Items.Add(new PreGrabItem()
+        {
+            Index = preGrabBucketItemDto.Index,
+            Amount = preGrabBucketItemDto.Amount,
+            Decimal = decimalForItem,
+            GrabbedStatus = GrabbedStatus.Created,
+            GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+            IpAddress = ipAddress,
+            IdentityCode = identityCode
+        });
+        State.PreGrabbedAmount += preGrabBucketItemDto.Amount;
+        
+        await WriteStateAsync();
+        
+        return new GrainResultDto<CryptoGiftDto>
+        {
+            Success = true,
+            Data = _objectMapper.Map<CryptoGiftState, CryptoGiftDto>(State)
+        };
+    }
+    
+    private PreGrabBucketItemDto GetBucket(string identityCode)
+    {
+        var random = new Random();
+        var index = random.Next(State.BucketNotClaimed.Count);
+        var bucket = State.BucketNotClaimed[index];
+        bucket.IdentityCode = identityCode;
+        State.BucketNotClaimed.Remove(bucket);
+        State.BucketClaimed.Add(bucket);
+        return bucket;
     }
 }
