@@ -9,4 +9,6 @@ public class UserLoginEto
     public string CaHash { get; set; }
     public string Nickname { get; set; }
     public DateTime CreateTime { get; set; }
+    
+    public bool? FromCaServer { get; set; }
 }
