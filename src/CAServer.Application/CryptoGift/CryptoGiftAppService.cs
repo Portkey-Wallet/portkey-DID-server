@@ -193,7 +193,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId)
     {
-        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(3));
+        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(5));
         if (handle == null)
         {
             throw new UserFriendlyException("please take a break for a while~");
@@ -204,12 +204,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("portkey can't get your ip, grab failed~");
         }
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        _logger.LogInformation($"pre grab data sync error redPackageId:{redPackageId}," +
+        _logger.LogInformation($"pre grab data redPackageId:{redPackageId}," +
                                $"PreGrabCrypto identityCode:{identityCode}, ipAddress:{ipAddress}");
-        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-        });
         
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -228,19 +224,28 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         CheckClaimCondition(redPackageDetailDto, cryptoGiftDto, identityCode);
         
-        PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(cryptoGiftDto, identityCode);
-        cryptoGiftDto.Items.Add(new PreGrabItem()
+        // PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(cryptoGiftDto, identityCode);
+        // cryptoGiftDto.Items.Add(new PreGrabItem()
+        // {
+        //     Index = preGrabBucketItemDto.Index,
+        //     Amount = preGrabBucketItemDto.Amount,
+        //     Decimal = redPackageDetailDto.Decimal,
+        //     GrabbedStatus = GrabbedStatus.Created,
+        //     GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+        //     IpAddress = ipAddress,
+        //     IdentityCode = identityCode
+        // });
+        // cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
+        // var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
+        var grabbedResult = await cryptoGiftGrain.GrabCryptoGift(identityCode, ipAddress, redPackageDetailDto.Decimal);
+        if (!grabbedResult.Success)
         {
-            Index = preGrabBucketItemDto.Index,
-            Amount = preGrabBucketItemDto.Amount,
-            Decimal = redPackageDetailDto.Decimal,
-            GrabbedStatus = GrabbedStatus.Created,
-            GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-            IpAddress = ipAddress,
-            IdentityCode = identityCode
+            throw new UserFriendlyException("pre grabbed error");
+        }
+        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
         });
-        cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
-        var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
         return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
     }
     
@@ -718,21 +723,21 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 sender, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
         }
         
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
+        // Stopwatch sw = new Stopwatch();
+        // sw.Start();
         CryptoGiftDto cryptoGiftDto;
-        var refreshCachedResult = await _distributedCache.GetAsync($"RefreshedPage:{caHash}:{redPackageId}");
-        if (refreshCachedResult.IsNullOrEmpty())
-        {
-            cryptoGiftDto = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
-        }
-        else
-        {
-            cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
-        }
-        await _distributedCache.SetAsync($"RefreshedPage:{caHash}:{redPackageId}", "true");
-        sw.Stop();
-        _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
+        // var refreshCachedResult = await _distributedCache.GetAsync($"RefreshedPage:{caHash}:{redPackageId}");
+        // if (refreshCachedResult.IsNullOrEmpty())
+        // {
+        //     cryptoGiftDto = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
+        // }
+        // else
+        // {
+        cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
+        // }
+        // await _distributedCache.SetAsync($"RefreshedPage:{caHash}:{redPackageId}", "true");
+        // sw.Stop();
+        // _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
         var preGrabClaimedItem = cryptoGiftDto.Items.FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
                                                        && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
         if (preGrabClaimedItem != null)
@@ -959,17 +964,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             return;
         }
         var preGrabBucketItemDto = GetClaimedCryptoGift(userId, identityCode, redPackageId, cryptoGiftDto);
-        await _distributedCache.SetAsync($"CryptoGiftUpdatedResult:{userId}:{redPackageId}", JsonConvert.SerializeObject(new CryptoGiftCacheDto()
-        {
-            Success = true,
-            IsNewUser = isNewUser,
-            CryptoGiftDto = cryptoGiftDto
-        }), new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(600)
-        });
-        _logger.LogInformation($"Transfer cached succeed redPackageId:{redPackageId}");
-        
         //0 make sure the client is whether or not a new one, according to the new user rule
         if (!Enum.IsDefined(redPackageDetailDto.RedPackageDisplayType) || RedPackageDisplayType.Common.Equals(redPackageDetailDto.RedPackageDisplayType))
         {

@@ -11,4 +11,6 @@ public interface ICryptoGiftGran : IGrainWithGuidKey
         List<BucketItemDto> bucketNotClaimed, List<BucketItemDto> bucketClaimed, Guid senderId);
     
     public Task<GrainResultDto<CryptoGiftDto>> UpdateCryptoGift(CryptoGiftDto cryptoGiftDto);
+    
+    public Task<GrainResultDto<CryptoGiftDto>> GrabCryptoGift(string identityCode, string ipAddress, int decimalForItem);
 }
