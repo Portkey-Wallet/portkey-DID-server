@@ -206,7 +206,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         _logger.LogInformation($"pre grab data redPackageId:{redPackageId}," +
                                $"PreGrabCrypto identityCode:{identityCode}, ipAddress:{ipAddress}");
-        await _distributedCache.SetAsync(identityCode + ":" + redPackageId, "Claimed");
+        await _distributedCache.SetAsync(identityCode, "Claimed");
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         if (!redPackageDetail.Success || redPackageDetail.Data == null)
@@ -457,7 +457,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var nftInfoDto = await GetNftInfo(redPackageDetailDto);
         
         //before claiming, show the available crypto gift status
-        var claimedResult = await _distributedCache.GetAsync(identityCode + ":" + redPackageId);
+        var claimedResult = await _distributedCache.GetAsync(identityCode);
         if (claimedResult.IsNullOrEmpty())
         {
             //just when the user saw the detail for the first time, showed the available detail
