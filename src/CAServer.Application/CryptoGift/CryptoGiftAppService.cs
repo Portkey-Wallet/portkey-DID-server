@@ -206,7 +206,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         _logger.LogInformation($"pre grab data redPackageId:{redPackageId}," +
                                $"PreGrabCrypto identityCode:{identityCode}, ipAddress:{ipAddress}");
-        
+        await _distributedCache.SetAsync(identityCode, "Claimed");
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         if (!redPackageDetail.Success || redPackageDetail.Data == null)
@@ -242,10 +242,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("pre grabbed error");
         }
-        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-        });
         return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
     }
     
