@@ -206,7 +206,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         _logger.LogInformation($"pre grab data redPackageId:{redPackageId}," +
                                $"PreGrabCrypto identityCode:{identityCode}, ipAddress:{ipAddress}");
-        
+        await _distributedCache.SetAsync(identityCode, "Claimed");
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         if (!redPackageDetail.Success || redPackageDetail.Data == null)
@@ -224,40 +224,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         CheckClaimCondition(redPackageDetailDto, cryptoGiftDto, identityCode);
         
-        // PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(cryptoGiftDto, identityCode);
-        // cryptoGiftDto.Items.Add(new PreGrabItem()
-        // {
-        //     Index = preGrabBucketItemDto.Index,
-        //     Amount = preGrabBucketItemDto.Amount,
-        //     Decimal = redPackageDetailDto.Decimal,
-        //     GrabbedStatus = GrabbedStatus.Created,
-        //     GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-        //     IpAddress = ipAddress,
-        //     IdentityCode = identityCode
-        // });
-        // cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
-        // var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
         var grabbedResult = await cryptoGiftGrain.GrabCryptoGift(identityCode, ipAddress, redPackageDetailDto.Decimal);
         if (!grabbedResult.Success)
         {
-            throw new UserFriendlyException("pre grabbed error");
+            throw new UserFriendlyException(grabbedResult.Message);
         }
-        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-        });
         return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
-    }
-    
-    private PreGrabBucketItemDto GetBucket(CryptoGiftDto cryptoGiftDto, string identityCode)
-    {
-        var random = new Random();
-        var index = random.Next(cryptoGiftDto.BucketNotClaimed.Count);
-        var bucket = cryptoGiftDto.BucketNotClaimed[index];
-        bucket.IdentityCode = identityCode;
-        cryptoGiftDto.BucketNotClaimed.Remove(bucket);
-        cryptoGiftDto.BucketClaimed.Add(bucket);
-        return bucket;
     }
 
     private static void CheckClaimCondition(RedPackageDetailDto redPackageDetailDto, CryptoGiftDto cryptoGiftDto,

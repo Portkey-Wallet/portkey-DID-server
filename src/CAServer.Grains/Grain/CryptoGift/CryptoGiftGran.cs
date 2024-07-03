@@ -85,16 +85,17 @@ public class CryptoGiftGran : Orleans.Grain<CryptoGiftState>, ICryptoGiftGran
             return new GrainResultDto<CryptoGiftDto>
             {
                 Success = false,
-                Data = _objectMapper.Map<CryptoGiftState, CryptoGiftDto>(State)
+                Message = "You have grabbed the crypto gift ~"
             };
         }
         PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(identityCode);
-        if (State.Items.Any(item => item.Index.Equals(preGrabBucketItemDto.Index)))
+        if (State.Items.Any(item => !GrabbedStatus.Expired.Equals(item.GrabbedStatus)
+                                    && item.Index.Equals(preGrabBucketItemDto.Index)))
         {
             return new GrainResultDto<CryptoGiftDto>
             {
                 Success = false,
-                Data = _objectMapper.Map<CryptoGiftState, CryptoGiftDto>(State)
+                Message = "The crypto gift has been grabbed by others, please try again ~"
             };
         }
         State.Items.Add(new PreGrabItem()
