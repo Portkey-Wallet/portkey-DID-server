@@ -214,7 +214,6 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var registryChainGuardianSet = new HashSet<string>();
             var nonRegistryChainGuardianSet = new HashSet<string>();
             var holderInfoOutputs = new List<GetHolderInfoOutput>();
-            _logger.LogInformation("balance check ChainInfos:{0}", JsonConvert.SerializeObject(_chainOptions.ChainInfos));
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
                 GetHolderInfoOutput info;
@@ -259,7 +258,6 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var originalChainId = await GetOriginalChainIdAsync(holderInfoOutput?.CreateChainId ?? 0, input.CaHash);
             if (input.CheckTransferSafeChainId == originalChainId)
             {
-                _logger.LogInformation("balance check cahash:{0} input.CheckTransferSafeChainId == originalChainId return", input.CaHash);
                 return await GetOriginChainCheckAsync(registryChainGuardianCount, input.CaHash);
             }
 
@@ -283,13 +281,11 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
-                _logger.LogInformation("balance check cahash:{0} token in assert:{1}", input.CaHash, JsonConvert.SerializeObject(token));
                 // when token is NFT, TokenInfo == null
                 if (token.TokenInfo == null) continue;
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
                     token.Balance >= t)
                 {
-                    _logger.LogInformation("balance check cahash:{0} token.Balance >= t return", input.CaHash);
                     return new TokenBalanceTransferCheckAsyncResultDto
                     {
                         IsTransferSafe = false, IsOriginChainSafe = false, AccelerateGuardians = accelerateGuardians
