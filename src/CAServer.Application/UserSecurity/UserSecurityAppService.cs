@@ -15,6 +15,7 @@ using CAServer.UserAssets.Provider;
 using CAServer.UserSecurity.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -213,7 +214,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var registryChainGuardianSet = new HashSet<string>();
             var nonRegistryChainGuardianSet = new HashSet<string>();
             var holderInfoOutputs = new List<GetHolderInfoOutput>();
-
+            _logger.LogInformation("balance check ChainInfos:{0}", JsonConvert.SerializeObject(_chainOptions.ChainInfos));
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
                 GetHolderInfoOutput info;
@@ -268,6 +269,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             if (registryChainGuardianCount > 1)
             {
+                _logger.LogInformation("balance check cahash:{0} registryChainGuardianCount > 1 return", input.CaHash);
                 return new TokenBalanceTransferCheckAsyncResultDto
                 {
                     IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing,
@@ -281,14 +283,18 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
+                _logger.LogInformation("balance check cahash:{0} token in assert:{1}", input.CaHash, JsonConvert.SerializeObject(token));
                 // when token is NFT, TokenInfo == null
                 if (token.TokenInfo == null) continue;
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
                     token.Balance >= t)
+                {
+                    _logger.LogInformation("balance check cahash:{0} token.Balance >= t return", input.CaHash);
                     return new TokenBalanceTransferCheckAsyncResultDto
                     {
                         IsTransferSafe = false, IsOriginChainSafe = false, AccelerateGuardians = accelerateGuardians
                     };
+                }
             }
 
             return new TokenBalanceTransferCheckAsyncResultDto
