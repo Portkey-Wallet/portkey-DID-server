@@ -70,7 +70,12 @@ public class CryptoGiftController : CAServerController
     [HttpGet("detail")]
     public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync([Required] Guid id)
     {
-        return await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id);
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        var result = await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id);
+        sw.Stop();
+        _logger.LogInformation($"statistics id:{id} GetCryptoGiftDetail cost:{sw.ElapsedMilliseconds}ms");
+        return result;
     }
     
     [HttpGet("login/detail")]
