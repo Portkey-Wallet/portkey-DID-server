@@ -15,6 +15,7 @@ using CAServer.UserAssets.Provider;
 using CAServer.UserSecurity.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -213,7 +214,6 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var registryChainGuardianSet = new HashSet<string>();
             var nonRegistryChainGuardianSet = new HashSet<string>();
             var holderInfoOutputs = new List<GetHolderInfoOutput>();
-
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
                 GetHolderInfoOutput info;
@@ -285,10 +285,12 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 if (token.TokenInfo == null) continue;
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
                     token.Balance >= t)
+                {
                     return new TokenBalanceTransferCheckAsyncResultDto
                     {
                         IsTransferSafe = false, IsOriginChainSafe = false, AccelerateGuardians = accelerateGuardians
                     };
+                }
             }
 
             return new TokenBalanceTransferCheckAsyncResultDto
@@ -317,7 +319,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             // when token is NFT, TokenInfo == null
             if (token.TokenInfo == null) continue;
             if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
-                token.Balance > t)
+                token.Balance >= t)
                 return new TokenBalanceTransferCheckAsyncResultDto
                 {
                     IsTransferSafe = false, IsOriginChainSafe = false
