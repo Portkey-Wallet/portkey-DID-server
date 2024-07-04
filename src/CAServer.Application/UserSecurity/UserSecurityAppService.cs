@@ -284,7 +284,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 // when token is NFT, TokenInfo == null
                 if (token.TokenInfo == null) continue;
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
-                    token.Balance > t)
+                    token.Balance >= t)
                     return new TokenBalanceTransferCheckAsyncResultDto
                     {
                         IsTransferSafe = false, IsOriginChainSafe = false, AccelerateGuardians = accelerateGuardians
