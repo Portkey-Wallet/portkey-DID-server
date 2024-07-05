@@ -52,7 +52,7 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
         //var userInfo = await _contactAppService.GetImInfoAsync(_chatBotOptions.RelationId);
         var index = new ContactIndex
         {
-            Id = Guid.NewGuid(),
+            
             Name = "",
             Avatar = _chatBotOptions.Avatar,
             ImInfo = new ImInfo
@@ -85,6 +85,7 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
                     continue;
                 }
 
+                index.Id = Guid.NewGuid();
                 index.UserId = holder.UserId;
                 await _contactIndexRepository.AddAsync(index);
                 _logger.LogDebug("Add ChatBot to ES,entity is {entity}", JsonConvert.SerializeObject(index));
