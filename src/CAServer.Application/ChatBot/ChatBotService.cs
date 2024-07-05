@@ -6,7 +6,9 @@ using CAServer.Contacts;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using ImInfo = CAServer.Entities.Es.ImInfo;
@@ -23,16 +25,18 @@ public class ChatBotService : CAServerAppService, IChatBotAppService
     private readonly ChatBotOptions _chatBotOptions;
     private readonly IContactAppService _contactAppService;
     private readonly INESTRepository<ContactIndex, Guid> _contactIndexRepository;
+    private readonly ILogger<ChatBotService> _logger;
 
 
     public ChatBotService(ICacheProvider cacheProvider, IContactProvider contactProvider,
         IOptionsSnapshot<ChatBotOptions> chatBotOptions, IContactAppService contactAppService,
-        INESTRepository<ContactIndex, Guid> contactIndexRepository)
+        INESTRepository<ContactIndex, Guid> contactIndexRepository, ILogger<ChatBotService> logger)
     {
         _cacheProvider = cacheProvider;
         _contactProvider = contactProvider;
         _contactAppService = contactAppService;
         _contactIndexRepository = contactIndexRepository;
+        _logger = logger;
         _chatBotOptions = chatBotOptions.Value;
     }
 
@@ -41,6 +45,7 @@ public class ChatBotService : CAServerAppService, IChatBotAppService
         var initTimes = await _cacheProvider.Get(InitChatBotContactTimesCacheKey);
         if (initTimes.HasValue)
         {
+            _logger.LogDebug("Add ChatBot has been finished.");
             return;
         }
 
@@ -63,6 +68,7 @@ public class ChatBotService : CAServerAppService, IChatBotAppService
             ModificationTime = DateTime.UtcNow,
             ContactType = 1
         };
+
         while (true)
         {
             var result = await _contactProvider.GetAllCaHolderAsync(skip, limit);
@@ -75,7 +81,7 @@ public class ChatBotService : CAServerAppService, IChatBotAppService
             {
                 index.UserId = holder.UserId;
                 await _contactIndexRepository.AddAsync(index);
-                
+                _logger.LogDebug("Add ChatBot to ES,entity is {entity}", JsonConvert.SerializeObject(index));
             }
 
             skip += limit;
