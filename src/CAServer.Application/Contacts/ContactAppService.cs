@@ -17,6 +17,7 @@ using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -45,6 +46,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly ChainOptions _chainOptions;
     private readonly ChatBotOptions _chatBotOptions;
     private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
+    private readonly ILogger<ContactAppService> _logger;
+    
 
     public ContactAppService(IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
@@ -57,7 +60,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         IImRequestProvider imRequestProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IContractProvider contractProvider, 
-        IOptionsSnapshot<ChatBotOptions> chatBotOptions, INESTRepository<ContactIndex, Guid> contactRepository)
+        IOptionsSnapshot<ChatBotOptions> chatBotOptions, INESTRepository<ContactIndex, Guid> contactRepository, ILogger<ContactAppService> logger)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -70,6 +73,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _imRequestProvider = imRequestProvider;
         _contractProvider = contractProvider;
         _contactRepository = contactRepository;
+        _logger = logger;
         _chatBotOptions = chatBotOptions.Value;
         _chainOptions = chainOptions.Value;
     }
@@ -249,7 +253,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
-
+        foreach (var index in contactList)
+        {
+            _logger.LogDebug("User Contact is {contact}",JsonConvert.SerializeObject(index));
+        }
         var contactDtoList = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList);
 
 

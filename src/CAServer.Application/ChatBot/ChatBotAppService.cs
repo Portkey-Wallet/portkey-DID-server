@@ -52,7 +52,7 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
         //var userInfo = await _contactAppService.GetImInfoAsync(_chatBotOptions.RelationId);
         var index = new ContactIndex
         {
-            
+            Index = "",
             Name = "",
             Avatar = _chatBotOptions.Avatar,
             ImInfo = new ImInfo
@@ -81,7 +81,8 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
                     await _contactProvider.GetContactByRelationIdAsync(holder.UserId, _chatBotOptions.RelationId);
                 if (chatBot != null)
                 {
-                    _logger.LogDebug("ChatBot has added. contactIndex is {index}",JsonConvert.SerializeObject(chatBot));
+                    _logger.LogDebug("ChatBot has added. contactIndex is {index}",
+                        JsonConvert.SerializeObject(chatBot));
                     continue;
                 }
 
@@ -93,5 +94,8 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
 
             skip += limit;
         }
+
+        var expire = TimeSpan.FromDays(1);
+        await _cacheProvider.Set(InitChatBotContactTimesCacheKey, "Init", expire);
     }
 }
