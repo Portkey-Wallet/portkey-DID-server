@@ -77,6 +77,14 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
 
             foreach (var holder in result)
             {
+                var chatBot =
+                    await _contactProvider.GetContactByRelationIdAsync(holder.UserId, _chatBotOptions.RelationId);
+                if (chatBot != null)
+                {
+                    _logger.LogDebug("ChatBot has added.");
+                    continue;
+                }
+
                 index.UserId = holder.UserId;
                 await _contactIndexRepository.AddAsync(index);
                 _logger.LogDebug("Add ChatBot to ES,entity is {entity}", JsonConvert.SerializeObject(index));
