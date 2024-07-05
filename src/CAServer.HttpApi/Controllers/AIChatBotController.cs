@@ -20,15 +20,8 @@ public class AIChatBotController
         _chatBotAppService = chatBotAppService;
     }
 
-    [HttpGet("enable")]
-    public async Task<string> EnableChatBot(ChatBotEnableDto input)
-    {
-        return await _chatBotAppService.EnableChatBotAsync(input);
-    }
     
-    [HttpGet("disable")]
-    public async Task<string> DisableChatBot(ChatBotEnableDto input)
-    {
-        return await _chatBotAppService.DisableChatBotAsync(input);
-    }
+
+    
+    
 }

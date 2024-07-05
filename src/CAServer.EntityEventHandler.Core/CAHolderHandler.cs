@@ -11,6 +11,7 @@ using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.Logging;
@@ -43,6 +44,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly IGuardianAppService _guardianAppService;
     private readonly IUserProfilePictureProvider _userProfilePictureProvider;
     private readonly Random _random;
+    private readonly ChatBotOptions _chatBotOptions;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -55,7 +57,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         INESTRepository<GuardianIndex, string> guardianRepository,
         IGuardianAppService guardianAppService,
-        IUserProfilePictureProvider userProfilePictureProvider)
+        IUserProfilePictureProvider userProfilePictureProvider, ChatBotOptions chatBotOptions)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -69,6 +71,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _guardianRepository = guardianRepository;
         _guardianAppService = guardianAppService;
         _userProfilePictureProvider = userProfilePictureProvider;
+        _chatBotOptions = chatBotOptions;
         _random = new Random();
     }
 
@@ -135,6 +138,26 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             }
             var index = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
             await _caHolderRepository.AddAsync(index);
+            
+            //Add Bot Contact
+            var botContact = new ContactIndex()
+            {
+                Id = Guid.NewGuid(),
+                Name = _chatBotOptions.Name,
+                Avatar = _chatBotOptions.Avatar,
+                ImInfo = new ImInfo
+                {
+                    RelationId = _chatBotOptions.RelationId,
+                    PortkeyId = _chatBotOptions.PortkeyId
+                },
+                IsDeleted = false,
+                CreateTime = DateTime.UtcNow,
+                ModificationTime = DateTime.UtcNow,
+                ContactType = 1
+
+            };
+            await _contactRepository.AddAsync(botContact);
+            
 
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
         }

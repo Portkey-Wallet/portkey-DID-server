@@ -6,4 +6,6 @@ public class ContactGetListDto : PagedResultRequestDto
 {
     public string Filter { get; set; }
     public string Sort {get; set; }
+
+    public bool IsTransfer { get; set; }
 }

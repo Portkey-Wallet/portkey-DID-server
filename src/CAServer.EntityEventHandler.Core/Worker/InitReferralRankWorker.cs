@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace CAServer.EntityEventHandler.Core.Worker;
+//namespace CAServer.EntityEventHandler.Core.Worker;
 
 // public class InitReferralRankWorker : AsyncPeriodicBackgroundWorkerBase
 // {
