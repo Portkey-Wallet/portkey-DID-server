@@ -550,7 +550,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     }
 
 
-    private async Task ImRemarkAsync(string relationId, Guid userId, string name)
+    public async Task ImRemarkAsync(string relationId, Guid userId, string name)
     {
         if (_hostInfoOptions.Environment == Environment.Development)
         {
