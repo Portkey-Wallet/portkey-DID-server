@@ -17,6 +17,7 @@ public class ContactListDto
     public bool IsImputation { get; set; }
     public DateTime CreateTime { get; set; }
     public long ModificationTime { get; set; }
+    public int ContactType { get; set; }
 }
 
 public class CaHolderDto
