@@ -17,24 +17,22 @@ namespace CAServer.ChatBot;
 
 [RemoteService(false)]
 [DisableAuditing]
-public class ChatBotService : CAServerAppService, IChatBotAppService
+public class ChatBotAppService : CAServerAppService, IChatBotAppService
 {
     private readonly ICacheProvider _cacheProvider;
     private const string InitChatBotContactTimesCacheKey = "Portkey:InitChatBotContactTimes";
     private readonly IContactProvider _contactProvider;
     private readonly ChatBotOptions _chatBotOptions;
-    private readonly IContactAppService _contactAppService;
     private readonly INESTRepository<ContactIndex, Guid> _contactIndexRepository;
-    private readonly ILogger<ChatBotService> _logger;
+    private readonly ILogger<ChatBotAppService> _logger;
 
 
-    public ChatBotService(ICacheProvider cacheProvider, IContactProvider contactProvider,
-        IOptionsSnapshot<ChatBotOptions> chatBotOptions, IContactAppService contactAppService,
-        INESTRepository<ContactIndex, Guid> contactIndexRepository, ILogger<ChatBotService> logger)
+    public ChatBotAppService(ICacheProvider cacheProvider, IContactProvider contactProvider,
+        IOptionsSnapshot<ChatBotOptions> chatBotOptions,
+        INESTRepository<ContactIndex, Guid> contactIndexRepository, ILogger<ChatBotAppService> logger)
     {
         _cacheProvider = cacheProvider;
         _contactProvider = contactProvider;
-        _contactAppService = contactAppService;
         _contactIndexRepository = contactIndexRepository;
         _logger = logger;
         _chatBotOptions = chatBotOptions.Value;

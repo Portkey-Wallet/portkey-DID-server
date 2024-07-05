@@ -11,8 +11,10 @@ public class InitAddChatBotContactsWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly IChatBotAppService _chatBotAppService;
     private readonly ILogger<InitAddChatBotContactsWorker> _logger;
-    
-    public InitAddChatBotContactsWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory, IChatBotAppService chatBotAppService, ILogger<InitAddChatBotContactsWorker> logger) : base(timer, serviceScopeFactory)
+
+    public InitAddChatBotContactsWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+        IChatBotAppService chatBotAppService, ILogger<InitAddChatBotContactsWorker> logger) : base(timer,
+        serviceScopeFactory)
     {
         _chatBotAppService = chatBotAppService;
         _logger = logger;
