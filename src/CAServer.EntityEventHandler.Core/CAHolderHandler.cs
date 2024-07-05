@@ -15,6 +15,7 @@ using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -57,7 +58,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         INESTRepository<GuardianIndex, string> guardianRepository,
         IGuardianAppService guardianAppService,
-        IUserProfilePictureProvider userProfilePictureProvider, ChatBotOptions chatBotOptions)
+        IUserProfilePictureProvider userProfilePictureProvider, IOptionsSnapshot<ChatBotOptions> chatBotOptions)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -71,7 +72,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _guardianRepository = guardianRepository;
         _guardianAppService = guardianAppService;
         _userProfilePictureProvider = userProfilePictureProvider;
-        _chatBotOptions = chatBotOptions;
+        _chatBotOptions = chatBotOptions.Value;
         _random = new Random();
     }
 
