@@ -81,7 +81,7 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
                     await _contactProvider.GetContactByRelationIdAsync(holder.UserId, _chatBotOptions.RelationId);
                 if (chatBot != null)
                 {
-                    _logger.LogDebug("ChatBot has added.");
+                    _logger.LogDebug("ChatBot has added. contactIndex is {index}",JsonConvert.SerializeObject(chatBot));
                     continue;
                 }
 
