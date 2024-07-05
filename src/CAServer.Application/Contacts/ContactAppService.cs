@@ -132,7 +132,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactIndex.Name = input.Name;
             await _contactRepository.UpdateAsync(contactIndex);
             await ImRemarkAsync(contactIndex?.ImInfo?.RelationId, userId, input.Name);
-            return new ContactResultDto();
+            return ObjectMapper.Map<ContactIndex, ContactResultDto>(contactIndex);
         }
 
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
@@ -253,10 +253,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
-        foreach (var index in contactList)
-        {
-            _logger.LogDebug("User Contact is {contact}",JsonConvert.SerializeObject(index));
-        }
         var contactDtoList = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList);
 
 
