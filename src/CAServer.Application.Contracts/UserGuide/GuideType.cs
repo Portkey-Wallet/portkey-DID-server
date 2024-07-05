@@ -6,5 +6,6 @@ public enum GuideType
     JoinOfficialGroup = 1,
     CloseJoinOfficialGroup = 2,
     FinishChat = 3,
-    FinishAiChat = 4
+    AiChat = 4,
+    FinishAiChat = 5
 }

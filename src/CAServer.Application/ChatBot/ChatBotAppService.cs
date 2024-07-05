@@ -52,7 +52,7 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
         //var userInfo = await _contactAppService.GetImInfoAsync(_chatBotOptions.RelationId);
         var index = new ContactIndex
         {
-            Id = GuidGenerator.Create(),
+            Id = Guid.NewGuid(),
             Name = "",
             Avatar = _chatBotOptions.Avatar,
             ImInfo = new ImInfo
