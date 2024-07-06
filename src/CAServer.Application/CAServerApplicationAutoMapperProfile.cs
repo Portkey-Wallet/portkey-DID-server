@@ -7,6 +7,7 @@ using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -94,6 +95,8 @@ using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 using Google.Protobuf.Collections;
 using static Google.Protobuf.WellKnownTypes.TimeExtensions;
+using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
+using NoncePayload = CAServer.CAAccount.Dtos.Zklogin.NoncePayload;
 
 namespace CAServer;
 
@@ -372,7 +375,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature));
-
+            
         CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
             {
                 dest.ManagerInfo = new Account.ManagerInfo();

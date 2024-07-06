@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Commons;
 
 namespace CAServer.Dtos;
@@ -33,9 +34,10 @@ public class RecoveryGuardian : IValidatableObject
 {
     public GuardianIdentifierType Type { get; set; }
     [Required] public string Identifier { get; set; }
-    [Required] public string VerifierId { get; set; }
-    [Required] public string VerificationDoc { get; set; }
-    [Required] public string Signature { get; set; }
+    public string VerifierId { get; set; }
+    public string VerificationDoc { get; set; }
+    public string Signature { get; set; }
+    public ZkJwtAuthInfoRequestDto ZkJwtAuthInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)

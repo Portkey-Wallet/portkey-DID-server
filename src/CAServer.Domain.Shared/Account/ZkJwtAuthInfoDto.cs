@@ -8,8 +8,7 @@ public class ZkJwtAuthInfoDto
 	// salt used to generate the identifier_hash, it has to be 16 bytes
 	public string Salt { get; set;}
 	
-	// head is the original jwt head in base64url format
-	public string Header { get; set;}
+	public string Kid { get; set;}
 	
 	// the identifier of the circuit
 	public string CircuitId { get; set;}

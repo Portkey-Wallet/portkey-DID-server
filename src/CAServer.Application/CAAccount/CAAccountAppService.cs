@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
@@ -22,6 +23,7 @@ using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using CAServer.Verifier;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -33,6 +35,7 @@ using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
+using Enum = System.Enum;
 
 namespace CAServer.CAAccount;
 
@@ -57,6 +60,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public const double MinBanlance = 0.05 * 100000000;
     private readonly IVerifierServerClient _verifierServerClient;
     private readonly IIpInfoAppService _ipInfoAppService;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -71,7 +75,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IAppleAuthProvider appleAuthProvider,
         IOptionsSnapshot<ManagerCountLimitOptions> managerCountLimitOptions,
         IVerifierServerClient verifierServerClient,
-        IIpInfoAppService ipInfoAppService)
+        IIpInfoAppService ipInfoAppService,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -87,6 +92,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
         _ipInfoAppService = ipInfoAppService;
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
     }
     
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -94,6 +100,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
+        SetZkLoginParams(input, registerDto, guardianGrainDto.IdentifierHash);
 
         _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
 
@@ -117,6 +124,35 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
+    private void SetZkLoginParams(RegisterRequestDto input, RegisterDto registerDto, string identifierHash)
+    {
+        if (input.ZkJwtAuthInfo == null)
+        {
+            registerDto.GuardianInfo.ZkJwtAuthInfo.IdentifierHash = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Issuer = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Kid = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Nonce = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.ZkProof = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Salt = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.IdentifierHash = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.ManagerAddress = "";
+            registerDto.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp = 0;
+        }
+        else
+        {
+            registerDto.GuardianInfo.ZkJwtAuthInfo.IdentifierHash = identifierHash;
+            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(input.ZkJwtAuthInfo.Jwt);
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Issuer = jwtToken.Payload.Iss; //jwtToken.Issuer;
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Kid = jwtToken.Header.Kid;
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Nonce = input.ZkJwtAuthInfo.Nonce;
+            registerDto.GuardianInfo.ZkJwtAuthInfo.ZkProof = input.ZkJwtAuthInfo.ZkProof;
+            registerDto.GuardianInfo.ZkJwtAuthInfo.Salt = input.ZkJwtAuthInfo.Salt;
+            registerDto.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.IdentifierHash = identifierHash;
+            registerDto.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.ManagerAddress = input.Manager;
+            registerDto.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        }
+    }
+
     private GuardianGrainDto GetGuardian(string guardianIdentifier)
     {
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
@@ -136,7 +172,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         var recoveryDto = ObjectMapper.Map<RecoveryRequestDto, RecoveryDto>(input);
-
+        SetRecoveryZkLoginParams(input, recoveryDto);
         recoveryDto.LoginGuardianIdentifierHash = guardianGrainDto.IdentifierHash;
         if (string.IsNullOrWhiteSpace(recoveryDto.LoginGuardianIdentifierHash))
         {
@@ -180,6 +216,46 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         await _distributedEventBus.PublishAsync(recoverCreateEto);
 
         return new AccountResultDto(recoveryDto.Id.ToString());
+    }
+
+    private void SetRecoveryZkLoginParams(RecoveryRequestDto input, RecoveryDto recoveryDto)
+    {
+        var current = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        foreach (var recoveryGuardian in input.GuardiansApproved)
+        {
+            var guardianInfo = recoveryDto.GuardianApproved.FirstOrDefault(guardian =>
+                guardian.IdentifierHash.Equals(recoveryGuardian.Identifier)
+                && ((int)guardian.Type) == ((int)recoveryGuardian.Type));
+            if (guardianInfo == null)
+            {
+                _logger.LogWarning("recoveryGuardian:{0} not exist in RecoveryDto", JsonConvert.SerializeObject(recoveryGuardian));
+                continue;
+            }
+            if (recoveryGuardian.ZkJwtAuthInfo != null)
+            {
+                var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(recoveryGuardian.ZkJwtAuthInfo.Jwt);
+                guardianInfo.ZkJwtAuthInfo.Kid = jwtToken.Header.Kid;
+                guardianInfo.ZkJwtAuthInfo.Issuer = jwtToken.Payload.Iss; //jwtToken.Issuer which one is right
+                guardianInfo.ZkJwtAuthInfo.IdentifierHash = guardianInfo.IdentifierHash;
+                guardianInfo.ZkJwtAuthInfo.Salt = recoveryGuardian.ZkJwtAuthInfo.Salt;
+                guardianInfo.ZkJwtAuthInfo.ZkProof = recoveryGuardian.ZkJwtAuthInfo.Salt;
+                guardianInfo.ZkJwtAuthInfo.Nonce = recoveryGuardian.ZkJwtAuthInfo.Nonce;
+                guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.ManagerAddress = input.Manager;
+                guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.IdentifierHash = guardianInfo.IdentifierHash;
+                guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp = current;
+            } else
+            {
+                guardianInfo.ZkJwtAuthInfo.Kid = "";
+                guardianInfo.ZkJwtAuthInfo.Issuer = "";
+                guardianInfo.ZkJwtAuthInfo.IdentifierHash = "";
+                guardianInfo.ZkJwtAuthInfo.Salt = "";
+                guardianInfo.ZkJwtAuthInfo.ZkProof = "";
+                guardianInfo.ZkJwtAuthInfo.Nonce = "";
+                guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.ManagerAddress = "";
+                guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.IdentifierHash = "";
+                guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp = 0;
+            }
+        }
     }
 
     public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()

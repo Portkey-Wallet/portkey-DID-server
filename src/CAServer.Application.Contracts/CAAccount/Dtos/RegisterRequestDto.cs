@@ -18,14 +18,14 @@ public class RegisterRequestDto : IValidatableObject
 
     [Required] public string ExtraData { get; set; }
     [Required] public string ChainId { get; set; }
-    [Required] public string VerifierId { get; set; }
-    [Required] public string VerificationDoc { get; set; }
-    [Required] public string Signature { get; set; }
+    public string VerifierId { get; set; }
+    public string VerificationDoc { get; set; }
+    public string Signature { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
     
-    public ZkJwtAuthInfoDto ZkJwtAuthInfo { get; set; }
+    public ZkJwtAuthInfoRequestDto ZkJwtAuthInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)

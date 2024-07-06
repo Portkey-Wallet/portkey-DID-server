@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using AElf;
 using AElf.Types;
@@ -8,6 +9,8 @@ using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
+using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 using Portkey.Contracts.CA;
 
 namespace CAServer.ContractEventHandler.Core;
@@ -23,9 +26,37 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                 IdentifierHash = Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
                 VerificationInfo = new VerificationInfo
                 {
-                    Id = Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
-                    Signature = ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
-                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                    Id = e.GuardianInfo.VerificationInfo.Id.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
+                    Signature = e.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace() 
+                        ? ByteString.Empty : ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
+                        ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkOidcInfo = new ZkJwtAuthInfo
+                {
+                    IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                    Salt = e.GuardianInfo.ZkJwtAuthInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkJwtAuthInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkJwtAuthInfo.ZkProof,
+                    Issuer = e.GuardianInfo.ZkJwtAuthInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkJwtAuthInfo.Kid,
+                    NoncePayload = new NoncePayload
+                    {
+                        AddManagerAddress = new AddManager
+                        {
+                            IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
+                                ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                            ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
+                                ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
+                            Timestamp = new Timestamp
+                            {
+                                Seconds = e.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp / 1000,
+                                Nanos = (int)((e.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                            }
+                        }
+                    }
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -42,9 +73,37 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                     IdentifierHash = Hash.LoadFromHex(g.IdentifierHash),
                     VerificationInfo = new VerificationInfo
                     {
-                        Id = Hash.LoadFromHex(g.VerificationInfo.Id),
-                        Signature = ByteStringHelper.FromHexString(g.VerificationInfo.Signature),
-                        VerificationDoc = g.VerificationInfo.VerificationDoc
+                        Id = g.VerificationInfo.Id.IsNullOrWhiteSpace()
+                            ? Hash.Empty : Hash.LoadFromHex(g.VerificationInfo.Id),
+                        Signature = g.VerificationInfo.Signature.IsNullOrWhiteSpace() 
+                            ? ByteString.Empty : ByteStringHelper.FromHexString(g.VerificationInfo.Signature),
+                        VerificationDoc = g.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
+                            ? string.Empty : g.VerificationInfo.VerificationDoc
+                    },
+                    ZkOidcInfo = new ZkJwtAuthInfo
+                    {
+                        IdentifierHash = g.IdentifierHash.IsNullOrWhiteSpace()
+                            ? Hash.Empty : Hash.LoadFromHex(g.IdentifierHash),
+                        Salt = g.ZkJwtAuthInfo.Salt.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Salt,
+                        Nonce = g.ZkJwtAuthInfo.Nonce.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Nonce,
+                        ZkProof = g.ZkJwtAuthInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Nonce,
+                        Issuer = g.ZkJwtAuthInfo.Issuer.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Issuer,
+                        Kid = g.ZkJwtAuthInfo.Kid.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Kid,
+                        NoncePayload = new NoncePayload
+                        {
+                            AddManagerAddress = new AddManager
+                            {
+                                IdentifierHash = g.IdentifierHash.IsNullOrWhiteSpace()
+                                    ? Hash.Empty : Hash.LoadFromHex(g.IdentifierHash),
+                                ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
+                                    ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
+                                Timestamp = new Timestamp
+                                {
+                                    Seconds = g.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp / 1000,
+                                    Nanos = (int)((g.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                                }
+                            }
+                        }
                     }
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
