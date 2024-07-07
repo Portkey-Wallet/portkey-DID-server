@@ -16,20 +16,26 @@ namespace CAServer.EntityEventHandler.Core.Worker;
 public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
-    private readonly INESTRepository<CryptoGiftNumStatsIndex, string> _cryptoGiftNumIndexRepository;
-    private readonly INESTRepository<CryptoGiftDetailStatsIndex, string> _cryptoGiftDetailRepository;
+    private readonly INESTRepository<CryptoGiftNewUsersOnlyNumStatsIndex, string> _newUsersOnlyNumStatsRepository;
+    private readonly INESTRepository<CryptoGiftOldUsersNumStatsIndex, string> _oldUsersNumStatsRepository;
+    private readonly INESTRepository<CryptoGiftNewUsersOnlyDetailStatsIndex, string> _newUsersOnlyDetailRepository;
+    private readonly INESTRepository<CryptoGiftOldUsersDetailStatsIndex, string> _oldUsersDetailRepository;
     private readonly ILogger<CryptoGiftStatisticsWorker> _logger;
     
     public CryptoGiftStatisticsWorker(
         ICryptoGiftAppService cryptoGiftAppService,
-        INESTRepository<CryptoGiftNumStatsIndex, string> cryptoGiftNumIndexRepository,
-        INESTRepository<CryptoGiftDetailStatsIndex, string> cryptoGiftDetailRepository,
+        INESTRepository<CryptoGiftNewUsersOnlyNumStatsIndex, string> newUsersOnlyNumStatsRepository,
+        INESTRepository<CryptoGiftNewUsersOnlyDetailStatsIndex, string> newUsersOnlyDetailRepository,
+        INESTRepository<CryptoGiftOldUsersNumStatsIndex, string> oldUsersNumStatsRepository,
+        INESTRepository<CryptoGiftOldUsersDetailStatsIndex, string> oldUsersDetailRepository,
         ILogger<CryptoGiftStatisticsWorker> logger,
         AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory) : base(timer, serviceScopeFactory)
     {
         _cryptoGiftAppService = cryptoGiftAppService;
-        _cryptoGiftNumIndexRepository = cryptoGiftNumIndexRepository;
-        _cryptoGiftDetailRepository = cryptoGiftDetailRepository;
+        _newUsersOnlyNumStatsRepository = newUsersOnlyNumStatsRepository;
+        _oldUsersNumStatsRepository = oldUsersNumStatsRepository;
+        _newUsersOnlyDetailRepository = newUsersOnlyDetailRepository;
+        _oldUsersDetailRepository = oldUsersDetailRepository;
         _logger = logger;
         Timer.Period = WorkerConst.CryptoGiftStatisticsPeriod;
     }
@@ -53,50 +59,95 @@ public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
         await SaveCryptoGiftDetailStatsAsync(oldUsersCryptoGiftClaimStatistics, false, joinedSymbols, current);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
-        var nums = await _cryptoGiftNumIndexRepository.GetListAsync();
-        _logger.LogInformation("CryptoGiftStatisticsWorker SaveCryptoGiftNumberStats:{0}", JsonConvert.SerializeObject(nums));
-        var details = await _cryptoGiftDetailRepository.GetListAsync();
-        _logger.LogInformation("CryptoGiftStatisticsWorker SaveCryptoGiftDetailStats:{0}", JsonConvert.SerializeObject(details));
+        var nums = await _newUsersOnlyNumStatsRepository.GetListAsync();
+        _logger.LogInformation("CryptoGiftStatisticsWorker newUsersOnlyNumStats:{0}", JsonConvert.SerializeObject(nums));
+        var oldNums = await _oldUsersNumStatsRepository.GetListAsync();
+        _logger.LogInformation("CryptoGiftStatisticsWorker oldUsersNumStats:{0}", JsonConvert.SerializeObject(oldNums));
+        var details = await _newUsersOnlyDetailRepository.GetListAsync();
+        _logger.LogInformation("CryptoGiftStatisticsWorker newUsersOnlyDetail:{0}", JsonConvert.SerializeObject(details));
+        var oldDetails = await _oldUsersDetailRepository.GetListAsync();
+        _logger.LogInformation("CryptoGiftStatisticsWorker oldUsersDetail:{0}", JsonConvert.SerializeObject(oldDetails));
     }
 
     private async Task SaveCryptoGiftDetailStatsAsync(List<CryptoGiftClaimDto> details,
         bool newUsersOnly, string joinedSymbols, long current)
     {
-        foreach (var dto in details)
+        if (newUsersOnly)
         {
-            await _cryptoGiftDetailRepository.AddOrUpdateAsync(new CryptoGiftDetailStatsIndex
+            foreach (var dto in details)
             {
-                Id = string.Join(":", new List<string>(){dto.CaAddress, newUsersOnly.ToString()}),
-                IsNewUsersOnly = newUsersOnly,
-                Symbols = joinedSymbols,
-                CaAddress = dto.CaAddress,
-                Number = dto.Number,
-                Count = dto.Count,
-                Grabbed = dto.Grabbed,
-                CreateTime = current
-            });
+                await _newUsersOnlyDetailRepository.AddOrUpdateAsync(new CryptoGiftNewUsersOnlyDetailStatsIndex
+                {
+                    Id = dto.CaAddress,
+                    Symbols = joinedSymbols,
+                    CaAddress = dto.CaAddress,
+                    Number = dto.Number,
+                    Count = dto.Count,
+                    Grabbed = dto.Grabbed,
+                    CreateTime = current
+                });
+            }
+        }
+        else
+        {
+            foreach (var dto in details)
+            {
+                await _oldUsersDetailRepository.AddOrUpdateAsync(new CryptoGiftOldUsersDetailStatsIndex
+                {
+                    Id = dto.CaAddress,
+                    Symbols = joinedSymbols,
+                    CaAddress = dto.CaAddress,
+                    Number = dto.Number,
+                    Count = dto.Count,
+                    Grabbed = dto.Grabbed,
+                    CreateTime = current
+                });
+            }
         }
     }
 
     private async Task SaveCryptoGiftNumberStatsAsync(List<CryptoGiftSentNumberDto> numberDtos, bool newUsersOnly, string joinedSymbols, long current)
     {
-        foreach (var cryptoGiftSentNumberDto in numberDtos)
+        if (newUsersOnly)
         {
-            try
+            foreach (var cryptoGiftSentNumberDto in numberDtos)
             {
-                await _cryptoGiftNumIndexRepository.AddOrUpdateAsync(new CryptoGiftNumStatsIndex
+                try
                 {
-                    Id = string.Join(":", new List<string>(){cryptoGiftSentNumberDto.Date, newUsersOnly.ToString()}),
-                    Date = cryptoGiftSentNumberDto.Date,
-                    IsNewUsersOnly = newUsersOnly,
-                    Number = cryptoGiftSentNumberDto.Number,
-                    Symbols = joinedSymbols,
-                    CreateTime = current
-                });
+                    await _newUsersOnlyNumStatsRepository.AddOrUpdateAsync(new CryptoGiftNewUsersOnlyNumStatsIndex
+                    {
+                        Id = string.Join(":", new List<string>(){cryptoGiftSentNumberDto.Date, newUsersOnly.ToString()}),
+                        Date = cryptoGiftSentNumberDto.Date,
+                        Number = cryptoGiftSentNumberDto.Number,
+                        Symbols = joinedSymbols,
+                        CreateTime = current
+                    });
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "add or update crypto gift error, cryptoGiftSentNumberDto:{0}", JsonConvert.SerializeObject(cryptoGiftSentNumberDto));
+                }
             }
-            catch (Exception e)
+        }
+        else
+        {
+            foreach (var cryptoGiftSentNumberDto in numberDtos)
             {
-                _logger.LogError(e, "add or update crypto gift error, cryptoGiftSentNumberDto:{0}", JsonConvert.SerializeObject(cryptoGiftSentNumberDto));
+                try
+                {
+                    await _oldUsersNumStatsRepository.AddOrUpdateAsync(new CryptoGiftOldUsersNumStatsIndex
+                    {
+                        Id = cryptoGiftSentNumberDto.Date,
+                        Date = cryptoGiftSentNumberDto.Date,
+                        Number = cryptoGiftSentNumberDto.Number,
+                        Symbols = joinedSymbols,
+                        CreateTime = current
+                    });
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "add or update crypto gift error, cryptoGiftSentNumberDto:{0}", JsonConvert.SerializeObject(cryptoGiftSentNumberDto));
+                }
             }
         }
     }
