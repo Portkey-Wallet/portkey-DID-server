@@ -39,6 +39,7 @@ public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
         var current = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var symbols = new string[] { "ELF", "USDT", "SGR-1" };
         var joinedSymbols = string.Join(",", symbols);
+        _logger.LogInformation("CryptoGiftStatisticsWorker is starting--------------");
         var newUsersNumberDtos = await _cryptoGiftAppService.ComputeCryptoGiftNumber(true, symbols, 1719590400000);
         await SaveCryptoGiftNumberStatsAsync(newUsersNumberDtos, true, joinedSymbols, current);
         
@@ -53,9 +54,9 @@ public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
 
         await Task.Delay(TimeSpan.FromSeconds(10));
         var nums = await _cryptoGiftNumIndexRepository.GetListAsync();
-        _logger.LogInformation("SaveCryptoGiftNumberStatsAsync:{0}", JsonConvert.SerializeObject(nums));
+        _logger.LogInformation("CryptoGiftStatisticsWorker SaveCryptoGiftNumberStats:{0}", JsonConvert.SerializeObject(nums));
         var details = await _cryptoGiftDetailRepository.GetListAsync();
-        _logger.LogInformation("SaveCryptoGiftDetailStatsAsync:{0}", JsonConvert.SerializeObject(details));
+        _logger.LogInformation("CryptoGiftStatisticsWorker SaveCryptoGiftDetailStats:{0}", JsonConvert.SerializeObject(details));
     }
 
     private async Task SaveCryptoGiftDetailStatsAsync(List<CryptoGiftClaimDto> details,
