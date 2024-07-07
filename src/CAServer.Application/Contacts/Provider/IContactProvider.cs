@@ -42,6 +42,7 @@ public interface IContactProvider
 
     Task<List<CAHolderIndex>> GetAllCaHolderAsync(int skip, int limit);
     Task<ContactIndex> GetContactByIdAsync(Guid id);
+    Task<ContactIndex> GetContactByPortKeyIdAsync(Guid userId, string toString);
 }
 
 public class ContactProvider : IContactProvider, ISingletonDependency
@@ -328,6 +329,17 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(k=>k.Id).Value(id)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var res = await _contactRepository.GetAsync(Filter);
+        return res;
+    }
+
+    public async Task<ContactIndex> GetContactByPortKeyIdAsync(Guid userId, string portkeyId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(k=>k.UserId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.ImInfo.PortkeyId).Value(portkeyId)));
 
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
         var res = await _contactRepository.GetAsync(Filter);

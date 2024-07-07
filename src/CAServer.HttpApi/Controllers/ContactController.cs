@@ -30,7 +30,7 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.CreateAsync(input);
     }
-    
+
     [HttpPut("{id}")]
     public async Task<ContactResultDto> UpdateAsync(Guid id, CreateUpdateContactDto input)
     {
@@ -78,17 +78,28 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.GetContactAsync(contactUserId);
     }
-    
+
     [HttpPost("getContactList")]
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
         return await _contactAppService.GetContactListAsync(input);
     }
-    
+
     [HttpGet("getContactsByUserId")]
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
         return await _contactAppService.GetContactsByUserIdAsync(userId);
     }
-    
+
+    [HttpPost("getContactsByRelationId")]
+    public async Task<ContactResultDto> GetContactsByRelationIdAsync(ContactProfileRequestDto dto)
+    {
+        return await _contactAppService.GetContactsByRelationIdAsync(dto.UserId, dto.RelationId);
+    }
+
+    [HttpGet("getContactsByPortkeyId")]
+    public async Task<ContactResultDto> GetContactsByPortkeyId(Guid userId, Guid portKeyId)
+    {
+        return await _contactAppService.GetContactsByPortkeyIdAsync(userId, portKeyId);
+    }
 }

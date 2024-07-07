@@ -581,6 +581,18 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
     }
 
+    public async Task<ContactResultDto> GetContactsByRelationIdAsync(Guid userId, string relationId)
+    {
+        var index = await _contactProvider.GetContactByRelationIdAsync(userId, relationId);
+        return  ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
+    }
+
+    public async Task<ContactResultDto> GetContactsByPortkeyIdAsync(Guid userId, Guid portKeyId)
+    {
+        var index = await _contactProvider.GetContactByPortKeyIdAsync(userId, portKeyId.ToString());
+        return  ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
+    }
+
     private async Task FollowAsync(string address, Guid userId)
     {
         try
