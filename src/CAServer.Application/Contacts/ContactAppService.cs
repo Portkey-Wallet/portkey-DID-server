@@ -47,7 +47,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly ChatBotOptions _chatBotOptions;
     private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
     private readonly ILogger<ContactAppService> _logger;
-    
+
 
     public ContactAppService(IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
@@ -59,8 +59,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions,
         IImRequestProvider imRequestProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
-        IContractProvider contractProvider, 
-        IOptionsSnapshot<ChatBotOptions> chatBotOptions, INESTRepository<ContactIndex, Guid> contactRepository, ILogger<ContactAppService> logger)
+        IContractProvider contractProvider,
+        IOptionsSnapshot<ChatBotOptions> chatBotOptions, INESTRepository<ContactIndex, Guid> contactRepository,
+        ILogger<ContactAppService> logger)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -87,7 +88,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
-        
+
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
         await CheckContactAsync(contactDto);
@@ -130,7 +131,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         if (contactIndex.ContactType == 1)
         {
             contactIndex.Name = input.Name;
+            contactIndex.Index = GetIndex(input.Name);
             await _contactRepository.UpdateAsync(contactIndex);
+            _logger.LogDebug("Update contact is {contact}", JsonConvert.SerializeObject(contactIndex));
             await ImRemarkAsync(contactIndex?.ImInfo?.RelationId, userId, input.Name);
             return ObjectMapper.Map<ContactIndex, ContactResultDto>(contactIndex);
         }
@@ -207,6 +210,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             await ImRemarkAsync(contact.ImInfo.RelationId, userId, "");
             // _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
         }
+
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
 
         var result = await contactGrain.DeleteContactAsync(userId);
@@ -423,7 +427,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             var chainIds = contact.Addresses.Select(t => t.ChainId);
             var needAddChainIds = _chainOptions.ChainInfos.Keys.Except(chainIds).ToList();
-            
+
             foreach (var chainId in needAddChainIds)
             {
                 contact.Addresses.Add(new ContactAddressDto()
@@ -729,7 +733,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     [Monitor]
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
-        var contacts= await _contactProvider.GetContactsAsync(userId);
+        var contacts = await _contactProvider.GetContactsAsync(userId);
         return ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
     }
 
@@ -772,4 +776,16 @@ public class ContactAppService : CAServerAppService, IContactAppService
             return null;
         }
     }
+    
+    private string GetIndex(string name)
+    {
+        var firstChar = char.ToUpperInvariant(name[0]);
+        if (firstChar >= 'A' && firstChar <= 'Z')
+        {
+            return firstChar.ToString();
+        }
+
+        return "#";
+    }
+    
 }
