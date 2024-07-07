@@ -164,6 +164,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                     Name = _chatBotOptions.Name,
                 },
                 IsDeleted = false,
+                IsImputation = false,
                 CreateTime = DateTime.UtcNow,
                 ModificationTime = DateTime.UtcNow,
                 ContactType = 1
