@@ -116,7 +116,7 @@ public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
                 {
                     await _newUsersOnlyNumStatsRepository.AddOrUpdateAsync(new CryptoGiftNewUsersOnlyNumStatsIndex
                     {
-                        Id = string.Join(":", new List<string>(){cryptoGiftSentNumberDto.Date, newUsersOnly.ToString()}),
+                        Id = cryptoGiftSentNumberDto.Date,
                         Date = cryptoGiftSentNumberDto.Date,
                         Number = cryptoGiftSentNumberDto.Number,
                         Symbols = joinedSymbols,
