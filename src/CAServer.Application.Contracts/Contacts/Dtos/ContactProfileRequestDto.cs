@@ -8,5 +8,4 @@ public class ContactProfileRequestDto
     
     public string RelationId { get; set; }
     
-    public Guid PortkeyId { get; set; }
 }

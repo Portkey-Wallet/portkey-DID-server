@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Contacts;
-using CAServer.Monitor.Interceptor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -15,7 +14,7 @@ namespace CAServer.Controllers;
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
 [IgnoreAntiforgeryToken]
-[Authorize]
+//[Authorize]
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
@@ -97,7 +96,7 @@ public class ContactController : CAServerController
         return await _contactAppService.GetContactsByRelationIdAsync(dto.UserId, dto.RelationId);
     }
 
-    [HttpGet("getContactsByPortkeyId")]
+    [HttpPost("getContactsByPortkeyId")]
     public async Task<ContactResultDto> GetContactsByPortkeyId(Guid userId, Guid portKeyId)
     {
         return await _contactAppService.GetContactsByPortkeyIdAsync(userId, portKeyId);
