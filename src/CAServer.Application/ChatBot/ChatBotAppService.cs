@@ -40,19 +40,19 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
 
     public async Task InitAddChatBotContactAsync()
     {
-        var initTimes = await _cacheProvider.Get(InitChatBotContactTimesCacheKey);
-        if (initTimes.HasValue)
-        {
-            _logger.LogDebug("Add ChatBot has been finished.");
-            return;
-        }
+        // var initTimes = await _cacheProvider.Get(InitChatBotContactTimesCacheKey);
+        // if (initTimes.HasValue)
+        // {
+        //     _logger.LogDebug("Add ChatBot has been finished.");
+        //     return;
+        // }
 
         var skip = 0;
         var limit = 100;
         //var userInfo = await _contactAppService.GetImInfoAsync(_chatBotOptions.RelationId);
         var index = new ContactIndex
         {
-            Index = "",
+            Index = "A",
             Name = "",
             Avatar = _chatBotOptions.Avatar,
             ImInfo = new ImInfo
@@ -83,6 +83,8 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
                 {
                     _logger.LogDebug("ChatBot has added. contactIndex is {index}",
                         JsonConvert.SerializeObject(chatBot));
+                    await _contactIndexRepository.AddOrUpdateAsync(index);
+                    _logger.LogDebug("update index add index,index is {index}", JsonConvert.SerializeObject(index));
                     continue;
                 }
 
@@ -97,5 +99,16 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
 
         var expire = TimeSpan.FromDays(1);
         await _cacheProvider.Set(InitChatBotContactTimesCacheKey, "Init", expire);
+    }
+
+    private string SetIndex(string name)
+    {
+        var firstChar = char.ToUpperInvariant(name[0]);
+        if (firstChar >= 'A' && firstChar <= 'Z')
+        {
+            return firstChar.ToString();
+        }
+
+        return "#";
     }
 }

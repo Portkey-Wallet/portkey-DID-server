@@ -155,6 +155,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 Id = Guid.NewGuid(),
                 UserId = eventData.UserId,
                 Name = "",
+                Index = "A",
                 Avatar = _chatBotOptions.Avatar,
                 ImInfo = new ImInfo
                 {
