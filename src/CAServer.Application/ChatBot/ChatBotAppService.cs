@@ -83,6 +83,8 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
                 {
                     _logger.LogDebug("ChatBot has added. contactIndex is {index}",
                         JsonConvert.SerializeObject(chatBot));
+                    index.UserId = holder.UserId;
+                    index.Id = chatBot.Id;
                     await _contactIndexRepository.AddOrUpdateAsync(index);
                     _logger.LogDebug("update index add index,index is {index}", JsonConvert.SerializeObject(index));
                     continue;
