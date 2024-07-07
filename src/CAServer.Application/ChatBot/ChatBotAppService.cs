@@ -40,12 +40,12 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
 
     public async Task InitAddChatBotContactAsync()
     {
-        // var initTimes = await _cacheProvider.Get(InitChatBotContactTimesCacheKey);
-        // if (initTimes.HasValue)
-        // {
-        //     _logger.LogDebug("Add ChatBot has been finished.");
-        //     return;
-        // }
+        var initTimes = await _cacheProvider.Get(InitChatBotContactTimesCacheKey);
+        if (initTimes.HasValue)
+        {
+            _logger.LogDebug("Add ChatBot has been finished.");
+            return;
+        }
 
         var skip = 0;
         var limit = 100;
@@ -81,12 +81,9 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
                     await _contactProvider.GetContactByRelationIdAsync(holder.UserId, _chatBotOptions.RelationId);
                 if (chatBot != null)
                 {
-                    _logger.LogDebug("ChatBot has added. contactIndex is {index}",
-                        JsonConvert.SerializeObject(chatBot));
                     index.UserId = holder.UserId;
                     index.Id = chatBot.Id;
                     await _contactIndexRepository.AddOrUpdateAsync(index);
-                    _logger.LogDebug("update index add index,index is {index}", JsonConvert.SerializeObject(index));
                     continue;
                 }
 
@@ -101,16 +98,5 @@ public class ChatBotAppService : CAServerAppService, IChatBotAppService
 
         var expire = TimeSpan.FromDays(1);
         await _cacheProvider.Set(InitChatBotContactTimesCacheKey, "Init", expire);
-    }
-
-    private string SetIndex(string name)
-    {
-        var firstChar = char.ToUpperInvariant(name[0]);
-        if (firstChar >= 'A' && firstChar <= 'Z')
-        {
-            return firstChar.ToString();
-        }
-
-        return "#";
     }
 }
