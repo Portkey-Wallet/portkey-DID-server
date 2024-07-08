@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
@@ -16,6 +17,7 @@ using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -42,6 +44,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly IImRequestProvider _imRequestProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ChainOptions _chainOptions;
+    private readonly ChatBotOptions _chatBotOptions;
+    private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
+    private readonly ILogger<ContactAppService> _logger;
+
 
     public ContactAppService(IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
@@ -53,7 +59,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions,
         IImRequestProvider imRequestProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
-        IContractProvider contractProvider)
+        IContractProvider contractProvider,
+        IOptionsSnapshot<ChatBotOptions> chatBotOptions, INESTRepository<ContactIndex, Guid> contactRepository,
+        ILogger<ContactAppService> logger)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -65,6 +73,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _httpClientService = httpClientService;
         _imRequestProvider = imRequestProvider;
         _contractProvider = contractProvider;
+        _contactRepository = contactRepository;
+        _logger = logger;
+        _chatBotOptions = chatBotOptions.Value;
         _chainOptions = chainOptions.Value;
     }
 
@@ -77,7 +88,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
-        
+
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
         await CheckContactAsync(contactDto);
@@ -116,6 +127,16 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<ContactResultDto> UpdateAsync(Guid id, CreateUpdateContactDto input)
     {
         var userId = CurrentUser.GetId();
+        var contactIndex = await _contactProvider.GetContactByIdAsync(id);
+        if (contactIndex.ContactType == 1)
+        {
+            contactIndex.Name = input.Name;
+            contactIndex.Index = GetIndex(input.Name);
+            await _contactRepository.UpdateAsync(contactIndex);
+            _logger.LogDebug("Update contact is {contact}", JsonConvert.SerializeObject(contactIndex));
+            await ImRemarkAsync(contactIndex?.ImInfo?.RelationId, userId, input.Name);
+            return ObjectMapper.Map<ContactIndex, ContactResultDto>(contactIndex);
+        }
 
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
         var contactResult = await contactGrain.GetContactAsync();
@@ -181,6 +202,15 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task DeleteAsync(Guid id)
     {
         var userId = CurrentUser.GetId();
+        var contact = await _contactProvider.GetContactByIdAsync(id);
+        if (contact.ContactType == 1)
+        {
+            contact.IsDeleted = true;
+            await _contactRepository.AddOrUpdateAsync(contact);
+            await ImRemarkAsync(contact.ImInfo.RelationId, userId, "");
+            // _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
+        }
+
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
 
         var result = await contactGrain.DeleteContactAsync(userId);
@@ -211,22 +241,22 @@ public class ContactAppService : CAServerAppService, IContactAppService
     [Monitor]
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
-        var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
+        // var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
+        //
+        // var result = await contactGrain.GetContactAsync();
+        // if (!result.Success)
+        // {
+        //     throw new UserFriendlyException(result.Message);
+        // }
 
-        var result = await contactGrain.GetContactAsync();
-        if (!result.Success)
-        {
-            throw new UserFriendlyException(result.Message);
-        }
-
-        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+        var result = await _contactProvider.GetContactByIdAsync(id);
+        return ObjectMapper.Map<ContactIndex, ContactResultDto>(result);
     }
 
     [Monitor]
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
-
         var contactDtoList = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList);
 
 
@@ -397,7 +427,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             var chainIds = contact.Addresses.Select(t => t.ChainId);
             var needAddChainIds = _chainOptions.ChainInfos.Keys.Except(chainIds).ToList();
-            
+
             foreach (var chainId in needAddChainIds)
             {
                 contact.Addresses.Add(new ContactAddressDto()
@@ -475,7 +505,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return ObjectMapper.Map<CAHolderIndex, HolderInfoWithAvatar>(caHolder);
     }
 
-    private async Task<ImInfoDto> GetImInfoAsync(string relationId)
+    public async Task<ImInfoDto> GetImInfoAsync(string relationId)
     {
         if (relationId.IsNullOrWhiteSpace()) return null;
         if (_hostInfoOptions.Environment == Environment.Development) return null;
@@ -524,7 +554,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     }
 
 
-    private async Task ImRemarkAsync(string relationId, Guid userId, string name)
+    public async Task ImRemarkAsync(string relationId, Guid userId, string name)
     {
         if (_hostInfoOptions.Environment == Environment.Development)
         {
@@ -549,6 +579,18 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 userId.ToString(), relationId, name,
                 _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
+    }
+
+    public async Task<ContactResultDto> GetContactsByRelationIdAsync(Guid userId, string relationId)
+    {
+        var index = await _contactProvider.GetContactByRelationIdAsync(userId, relationId);
+        return  ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
+    }
+
+    public async Task<ContactResultDto> GetContactsByPortkeyIdAsync(Guid userId, Guid portKeyId)
+    {
+        var index = await _contactProvider.GetContactByPortKeyIdAsync(userId, portKeyId.ToString());
+        return  ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
     }
 
     private async Task FollowAsync(string address, Guid userId)
@@ -703,7 +745,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     [Monitor]
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
-        var contacts= await _contactProvider.GetContactsAsync(userId);
+        var contacts = await _contactProvider.GetContactsAsync(userId);
         return ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
     }
 
@@ -746,4 +788,16 @@ public class ContactAppService : CAServerAppService, IContactAppService
             return null;
         }
     }
+    
+    private string GetIndex(string name)
+    {
+        var firstChar = char.ToUpperInvariant(name[0]);
+        if (firstChar >= 'A' && firstChar <= 'Z')
+        {
+            return firstChar.ToString();
+        }
+
+        return "#";
+    }
+    
 }
