@@ -28,6 +28,13 @@ public class BalanceController : CAServerController
          await _balanceAppService.GetBalanceInfoAsync(chainId);
          return "ok";
     }
+    
+    [HttpGet("getAddress")]
+    public async Task<string> GetAddressAsync()
+    {
+        await _balanceAppService.Statistic();
+        return "ok";
+    }
 
     [HttpGet("activities")]
     public async Task<Dictionary<string, int>> GetActivityCountByDayAsync()

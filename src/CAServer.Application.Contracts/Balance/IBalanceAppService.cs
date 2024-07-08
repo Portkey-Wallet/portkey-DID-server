@@ -8,4 +8,5 @@ public interface IBalanceAppService
     public Task GetBalanceInfoAsync(string chainId);
     
     public Task<Dictionary<string,int>> GetActivityCountByDayAsync();
+    Task Statistic();
 }

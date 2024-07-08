@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using CAServer.Common;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
+using CAServer.Vote;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver.Linq;
@@ -165,7 +167,7 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         var dic = new Dictionary<string, int>();
 
         var transactions = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
-            string.Empty, new List<string>(), 0, 1000000);
+            string.Empty, new List<string>(), 0, 1000000, 0, 0);
 
         var data = transactions.CaHolderTransaction.Data
             .Where(t => t.Status.Equals("MINED", StringComparison.OrdinalIgnoreCase))
@@ -236,24 +238,27 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         (decimal)(balance / Math.Pow(10, decimals));
 
     private async Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,
-        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
+        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount,
+        long startTime, long endTime)
     {
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
             Query = @"
-			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{id,chainId,blockHeight,methodName,status,timestamp},totalRecordCount
+			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!,$startTime:Long!,$endTime:Long!) {
+                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount,startTime:$startTime,endTime:$endTime}){
+                        data{id,chainId,blockHeight,methodName,status,timestamp,fromAddress},totalRecordCount
                     }
                 }",
             Variables = new
             {
                 caAddressInfos = caAddressInfos, chainId = inputChainId, symbol = symbolOpt,
                 methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
-                startBlockHeight = 0, endBlockHeight = 0
+                startBlockHeight = 0, endBlockHeight = 0,
+                startTime = startTime, endTime = endTime
             }
         });
     }
+
 
     // 1694448000
     // 1695657600
@@ -270,5 +275,67 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         var time_tricks = tricks_1970 + begtime;
         var dt = new DateTime(time_tricks);
         return dt;
+    }
+
+    public async Task Statistic()
+    {
+        var list = await Beauty();
+        var resDa = new List<string>();
+        var transactions = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
+            string.Empty, new List<string>() { "CreateCAHolder" }, 0, 6000, 1718640000, 1719936000);
+
+        var data = transactions.CaHolderTransaction.Data.Where(t => t.MethodName == "CreateCAHolder")
+            .Select(t => t.FromAddress)
+            .ToList();
+        resDa.AddRange(data);
+        var skip = 0;
+        var res = 6000;
+        while (!data.IsNullOrEmpty())
+        {
+            skip += res;
+            transactions = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
+                string.Empty, new List<string>() { "CreateCAHolder" }, skip, res, 1718640000, 1719936000);
+            data = transactions.CaHolderTransaction.Data.Where(t => t.MethodName == "CreateCAHolder")
+                .Select(t => t.FromAddress)
+                .ToList();
+            resDa.AddRange(data);
+        }
+
+        var result = list.Intersect(resDa).ToList();
+        foreach (var item in result)
+        {
+            Console.WriteLine(item);
+        }
+    }
+
+    public async Task<List<string>> Beauty()
+    {
+        var sr = new StreamReader(@"address.txt");
+        var list = new List<string>();
+
+        int line = 0;
+        string nextLine;
+        while ((nextLine = sr.ReadLine()) != null)
+        {
+            try
+            {
+                nextLine = nextLine.Replace(" ", "");
+                var lineData = nextLine.Split('_');
+                if (lineData.Length >= 1)
+                {
+                    list.Add(lineData[1]);
+                }
+
+                line++;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("GetVote handle next line error, " + e.Message);
+            }
+        }
+
+        sr.Close();
+
+        return list;
     }
 }
