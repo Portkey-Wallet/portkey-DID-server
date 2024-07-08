@@ -1,3 +1,5 @@
+using System;
+
 namespace CAServer.EntityEventHandler.Core.Worker;
 
 public class WorkerConst
@@ -6,4 +8,6 @@ public class WorkerConst
     public const int MaxOlderBlockHeightFromNow = 100000;
     public const int CryptoGiftExpiredTimePeriod = 60000;
     public const int CryptoGiftStatisticsPeriod = 60000;
+    public const int InitReferralTimePeriod = 30000;
+    public const int ReferralTimePeriod = 20000;
 }

@@ -62,6 +62,7 @@ public static class CommonConstant
     public const string AelfSymbol = "ELF";
     public const string SgrCoingeckoId = "schrodinger-2";
     public const string SgrSymbol = "SGR";
+    public const string SgrSymbolName = "SGR-1";
 
     public const string CryptoGiftProjectCode = "20000";
 
@@ -110,4 +111,6 @@ public static class CommonConstant
     
     public const string ActivitiesStartVersion = "1.17.0";
     public const string NftToFtStartVersion = "1.18.0";
+
+    public const string ReferralKey = "Portkey:ReferralBank";
 }
