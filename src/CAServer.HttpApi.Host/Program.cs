@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Commons;
 using CAServer.Hubs;
 using CAServer.Nightingale;
@@ -7,6 +8,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
 
@@ -40,6 +43,8 @@ public class Program
             app.MapHub<CAHub>("ca");
             //app.MapHub<DataReportingHub>("dataReporting");
             await app.InitializeApplicationAsync();
+            var esOpt = app.Services.GetRequiredService<IOptions<EsEndpointOption>>();
+            Log.Information("es config: {esUri}", JsonConvert.SerializeObject(esOpt));
             await app.RunAsync();
             return 0;
         }
