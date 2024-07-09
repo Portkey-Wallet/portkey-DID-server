@@ -29,6 +29,7 @@ public class FacebookAuthController : CAServerController
     [HttpGet("receive")]
     public async Task<IActionResult> ReceiveAsync(string code)
     {
+        _logger.LogDebug("=========================Get Code is {code}",code);
         var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Receive);
         var result = response.Data;
         if (string.IsNullOrEmpty(response.Code))
