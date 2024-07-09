@@ -13,7 +13,7 @@ using aelf = global::AElf.CSharp.Core;
 namespace AetherLink.Contracts.Oracle {
 
   #region Events
-  internal partial class AdminTransferRequested : aelf::IEvent<AdminTransferRequested>
+  public partial class AdminTransferRequested : aelf::IEvent<AdminTransferRequested>
   {
     public global::System.Collections.Generic.IEnumerable<AdminTransferRequested> GetIndexed()
     {
@@ -32,7 +32,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class AdminTransferred : aelf::IEvent<AdminTransferred>
+  public partial class AdminTransferred : aelf::IEvent<AdminTransferred>
   {
     public global::System.Collections.Generic.IEnumerable<AdminTransferred> GetIndexed()
     {
@@ -51,7 +51,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class ConfigSet : aelf::IEvent<ConfigSet>
+  public partial class ConfigSet : aelf::IEvent<ConfigSet>
   {
     public global::System.Collections.Generic.IEnumerable<ConfigSet> GetIndexed()
     {
@@ -76,7 +76,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class ProvingKeyRegistered : aelf::IEvent<ProvingKeyRegistered>
+  public partial class ProvingKeyRegistered : aelf::IEvent<ProvingKeyRegistered>
   {
     public global::System.Collections.Generic.IEnumerable<ProvingKeyRegistered> GetIndexed()
     {
@@ -95,7 +95,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class ProvingKeyDeregistered : aelf::IEvent<ProvingKeyDeregistered>
+  public partial class ProvingKeyDeregistered : aelf::IEvent<ProvingKeyDeregistered>
   {
     public global::System.Collections.Generic.IEnumerable<ProvingKeyDeregistered> GetIndexed()
     {
@@ -114,7 +114,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class OracleRequestSent : aelf::IEvent<OracleRequestSent>
+  public partial class OracleRequestSent : aelf::IEvent<OracleRequestSent>
   {
     public global::System.Collections.Generic.IEnumerable<OracleRequestSent> GetIndexed()
     {
@@ -136,7 +136,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class RequestStarted : aelf::IEvent<RequestStarted>
+  public partial class RequestStarted : aelf::IEvent<RequestStarted>
   {
     public global::System.Collections.Generic.IEnumerable<RequestStarted> GetIndexed()
     {
@@ -160,7 +160,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class RequestProcessed : aelf::IEvent<RequestProcessed>
+  public partial class RequestProcessed : aelf::IEvent<RequestProcessed>
   {
     public global::System.Collections.Generic.IEnumerable<RequestProcessed> GetIndexed()
     {
@@ -182,7 +182,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class Transmitted : aelf::IEvent<Transmitted>
+  public partial class Transmitted : aelf::IEvent<Transmitted>
   {
     public global::System.Collections.Generic.IEnumerable<Transmitted> GetIndexed()
     {
@@ -203,7 +203,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class CoordinatorSet : aelf::IEvent<CoordinatorSet>
+  public partial class CoordinatorSet : aelf::IEvent<CoordinatorSet>
   {
     public global::System.Collections.Generic.IEnumerable<CoordinatorSet> GetIndexed()
     {
@@ -223,7 +223,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class SubscriptionCreated : aelf::IEvent<SubscriptionCreated>
+  public partial class SubscriptionCreated : aelf::IEvent<SubscriptionCreated>
   {
     public global::System.Collections.Generic.IEnumerable<SubscriptionCreated> GetIndexed()
     {
@@ -242,7 +242,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class SubscriptionConsumerAdded : aelf::IEvent<SubscriptionConsumerAdded>
+  public partial class SubscriptionConsumerAdded : aelf::IEvent<SubscriptionConsumerAdded>
   {
     public global::System.Collections.Generic.IEnumerable<SubscriptionConsumerAdded> GetIndexed()
     {
@@ -261,7 +261,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class SubscriptionCanceled : aelf::IEvent<SubscriptionCanceled>
+  public partial class SubscriptionCanceled : aelf::IEvent<SubscriptionCanceled>
   {
     public global::System.Collections.Generic.IEnumerable<SubscriptionCanceled> GetIndexed()
     {
@@ -281,7 +281,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class SubscriptionOwnerTransferRequested : aelf::IEvent<SubscriptionOwnerTransferRequested>
+  public partial class SubscriptionOwnerTransferRequested : aelf::IEvent<SubscriptionOwnerTransferRequested>
   {
     public global::System.Collections.Generic.IEnumerable<SubscriptionOwnerTransferRequested> GetIndexed()
     {
@@ -301,7 +301,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class SubscriptionOwnerTransferred : aelf::IEvent<SubscriptionOwnerTransferred>
+  public partial class SubscriptionOwnerTransferred : aelf::IEvent<SubscriptionOwnerTransferred>
   {
     public global::System.Collections.Generic.IEnumerable<SubscriptionOwnerTransferred> GetIndexed()
     {
@@ -321,7 +321,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class SubscriptionConsumerRemoved : aelf::IEvent<SubscriptionConsumerRemoved>
+  public partial class SubscriptionConsumerRemoved : aelf::IEvent<SubscriptionConsumerRemoved>
   {
     public global::System.Collections.Generic.IEnumerable<SubscriptionConsumerRemoved> GetIndexed()
     {
@@ -340,7 +340,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class SubscriptionConfigSet : aelf::IEvent<SubscriptionConfigSet>
+  public partial class SubscriptionConfigSet : aelf::IEvent<SubscriptionConfigSet>
   {
     public global::System.Collections.Generic.IEnumerable<SubscriptionConfigSet> GetIndexed()
     {
@@ -358,7 +358,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class Paused : aelf::IEvent<Paused>
+  public partial class Paused : aelf::IEvent<Paused>
   {
     public global::System.Collections.Generic.IEnumerable<Paused> GetIndexed()
     {
@@ -376,7 +376,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class Unpaused : aelf::IEvent<Unpaused>
+  public partial class Unpaused : aelf::IEvent<Unpaused>
   {
     public global::System.Collections.Generic.IEnumerable<Unpaused> GetIndexed()
     {
@@ -394,7 +394,7 @@ namespace AetherLink.Contracts.Oracle {
     }
   }
 
-  internal partial class RequestCancelled : aelf::IEvent<RequestCancelled>
+  public partial class RequestCancelled : aelf::IEvent<RequestCancelled>
   {
     public global::System.Collections.Generic.IEnumerable<RequestCancelled> GetIndexed()
     {
@@ -416,7 +416,7 @@ namespace AetherLink.Contracts.Oracle {
   /// <summary>
   /// the contract definition: a gRPC service definition.
   /// </summary>
-  internal static partial class OracleContractContainer
+  public static partial class OracleContractContainer
   {
     static readonly string __ServiceName = "OracleContract";
 
@@ -778,52 +778,275 @@ namespace AetherLink.Contracts.Oracle {
     }
     #endregion
 
-    public class OracleContractReferenceState : global::AElf.Sdk.CSharp.State.ContractReferenceState
-    {
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.InitializeInput, global::Google.Protobuf.WellKnownTypes.Empty> Initialize { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> TransferAdmin { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> AcceptAdmin { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> Pause { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> Unpause { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> CreateSubscription { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> CreateSubscriptionWithConsumer { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.CancelSubscriptionInput, global::Google.Protobuf.WellKnownTypes.Empty> CancelSubscription { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Int64Value, global::Google.Protobuf.WellKnownTypes.Empty> AdminCancelSubscription { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.ProposeSubscriptionOwnerTransferInput, global::Google.Protobuf.WellKnownTypes.Empty> ProposeSubscriptionOwnerTransfer { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Int64Value, global::Google.Protobuf.WellKnownTypes.Empty> AcceptSubscriptionOwnerTransfer { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.AddConsumerInput, global::Google.Protobuf.WellKnownTypes.Empty> AddConsumer { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.RemoveConsumerInput, global::Google.Protobuf.WellKnownTypes.Empty> RemoveConsumer { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> AddCoordinator { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.SetCoordinatorStatusInput, global::Google.Protobuf.WellKnownTypes.Empty> SetCoordinatorStatus { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.SetConfigInput, global::Google.Protobuf.WellKnownTypes.Empty> SetConfig { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.SubscriptionConfig, global::Google.Protobuf.WellKnownTypes.Empty> SetSubscriptionConfig { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Int64Value, global::Google.Protobuf.WellKnownTypes.Empty> SetMaxOracleCount { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.RegisterProvingKeyInput, global::Google.Protobuf.WellKnownTypes.Empty> RegisterProvingKey { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.DeregisterProvingKeyInput, global::Google.Protobuf.WellKnownTypes.Empty> DeregisterProvingKey { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.SendRequestInput, global::Google.Protobuf.WellKnownTypes.Empty> SendRequest { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.StartRequestInput, global::Google.Protobuf.WellKnownTypes.Empty> StartRequest { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.FulfillInput, global::Google.Protobuf.WellKnownTypes.Empty> Fulfill { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.TransmitInput, global::Google.Protobuf.WellKnownTypes.Empty> Transmit { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.CancelRequestInput, global::Google.Protobuf.WellKnownTypes.Empty> CancelRequest { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AElf.Types.Address> GetAdmin { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.BoolValue> IsPaused { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AetherLink.Contracts.Oracle.GetConfigOutput> GetConfig { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AetherLink.Contracts.Oracle.SubscriptionConfig> GetSubscriptionConfig { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Int32Value, global::AetherLink.Contracts.Oracle.Coordinator> GetCoordinatorByIndex { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AetherLink.Contracts.Oracle.CoordinatorList> GetCoordinators { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Int64Value> GetMaxOracleCount { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AetherLink.Contracts.Oracle.GetLatestConfigDetailsOutput> GetLatestConfigDetails { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Int64Value> GetLatestRound { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AetherLink.Contracts.Oracle.AddressList> GetTransmitters { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Address, global::AetherLink.Contracts.Oracle.Oracle> GetOracle { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AetherLink.Contracts.Oracle.HashList> GetProvingKeyHashes { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.StringValue, global::AElf.Types.Address> GetOracleByProvingKeyHash { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.StringValue, global::AElf.Types.Hash> GetHashFromKey { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Int64Value, global::Google.Protobuf.WellKnownTypes.BoolValue> IsPendingRequestExists { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Int64Value, global::AetherLink.Contracts.Oracle.Subscription> GetSubscription { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.Oracle.GetConsumerInput, global::AetherLink.Contracts.Oracle.Consumer> GetConsumer { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Int64Value> GetSubscriptionCount { get; set; }
-    }
+    /// <summary>Base class for the contract of OracleContract</summary>
+    // public abstract partial class OracleContractBase : AElf.Sdk.CSharp.CSharpSmartContract<AetherLink.Contracts.Oracle.OracleContractState>
+    // {
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::AetherLink.Contracts.Oracle.InitializeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferAdmin(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AcceptAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Pause(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Unpause(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty CreateSubscription(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty CreateSubscriptionWithConsumer(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty CancelSubscription(global::AetherLink.Contracts.Oracle.CancelSubscriptionInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AdminCancelSubscription(global::Google.Protobuf.WellKnownTypes.Int64Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty ProposeSubscriptionOwnerTransfer(global::AetherLink.Contracts.Oracle.ProposeSubscriptionOwnerTransferInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AcceptSubscriptionOwnerTransfer(global::Google.Protobuf.WellKnownTypes.Int64Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AddConsumer(global::AetherLink.Contracts.Oracle.AddConsumerInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveConsumer(global::AetherLink.Contracts.Oracle.RemoveConsumerInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AddCoordinator(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetCoordinatorStatus(global::AetherLink.Contracts.Oracle.SetCoordinatorStatusInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetConfig(global::AetherLink.Contracts.Oracle.SetConfigInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetSubscriptionConfig(global::AetherLink.Contracts.Oracle.SubscriptionConfig input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetMaxOracleCount(global::Google.Protobuf.WellKnownTypes.Int64Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RegisterProvingKey(global::AetherLink.Contracts.Oracle.RegisterProvingKeyInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty DeregisterProvingKey(global::AetherLink.Contracts.Oracle.DeregisterProvingKeyInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SendRequest(global::AetherLink.Contracts.Oracle.SendRequestInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty StartRequest(global::AetherLink.Contracts.Oracle.StartRequestInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Fulfill(global::AetherLink.Contracts.Oracle.FulfillInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Transmit(global::AetherLink.Contracts.Oracle.TransmitInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty CancelRequest(global::AetherLink.Contracts.Oracle.CancelRequestInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.BoolValue IsPaused(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.GetConfigOutput GetConfig(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.SubscriptionConfig GetSubscriptionConfig(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.Coordinator GetCoordinatorByIndex(global::Google.Protobuf.WellKnownTypes.Int32Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.CoordinatorList GetCoordinators(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Int64Value GetMaxOracleCount(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.GetLatestConfigDetailsOutput GetLatestConfigDetails(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Int64Value GetLatestRound(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.AddressList GetTransmitters(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.Oracle GetOracle(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.HashList GetProvingKeyHashes(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetOracleByProvingKeyHash(global::Google.Protobuf.WellKnownTypes.StringValue input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Hash GetHashFromKey(global::Google.Protobuf.WellKnownTypes.StringValue input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.BoolValue IsPendingRequestExists(global::Google.Protobuf.WellKnownTypes.Int64Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.Subscription GetSubscription(global::Google.Protobuf.WellKnownTypes.Int64Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.Oracle.Consumer GetConsumer(global::AetherLink.Contracts.Oracle.GetConsumerInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Int64Value GetSubscriptionCount(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    // }
+    //
+    // public static aelf::ServerServiceDefinition BindService(OracleContractBase serviceImpl)
+    // {
+    //   return aelf::ServerServiceDefinition.CreateBuilder()
+    //       .AddDescriptors(Descriptors)
+    //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
+    //       .AddMethod(__Method_TransferAdmin, serviceImpl.TransferAdmin)
+    //       .AddMethod(__Method_AcceptAdmin, serviceImpl.AcceptAdmin)
+    //       .AddMethod(__Method_Pause, serviceImpl.Pause)
+    //       .AddMethod(__Method_Unpause, serviceImpl.Unpause)
+    //       .AddMethod(__Method_CreateSubscription, serviceImpl.CreateSubscription)
+    //       .AddMethod(__Method_CreateSubscriptionWithConsumer, serviceImpl.CreateSubscriptionWithConsumer)
+    //       .AddMethod(__Method_CancelSubscription, serviceImpl.CancelSubscription)
+    //       .AddMethod(__Method_AdminCancelSubscription, serviceImpl.AdminCancelSubscription)
+    //       .AddMethod(__Method_ProposeSubscriptionOwnerTransfer, serviceImpl.ProposeSubscriptionOwnerTransfer)
+    //       .AddMethod(__Method_AcceptSubscriptionOwnerTransfer, serviceImpl.AcceptSubscriptionOwnerTransfer)
+    //       .AddMethod(__Method_AddConsumer, serviceImpl.AddConsumer)
+    //       .AddMethod(__Method_RemoveConsumer, serviceImpl.RemoveConsumer)
+    //       .AddMethod(__Method_AddCoordinator, serviceImpl.AddCoordinator)
+    //       .AddMethod(__Method_SetCoordinatorStatus, serviceImpl.SetCoordinatorStatus)
+    //       .AddMethod(__Method_SetConfig, serviceImpl.SetConfig)
+    //       .AddMethod(__Method_SetSubscriptionConfig, serviceImpl.SetSubscriptionConfig)
+    //       .AddMethod(__Method_SetMaxOracleCount, serviceImpl.SetMaxOracleCount)
+    //       .AddMethod(__Method_RegisterProvingKey, serviceImpl.RegisterProvingKey)
+    //       .AddMethod(__Method_DeregisterProvingKey, serviceImpl.DeregisterProvingKey)
+    //       .AddMethod(__Method_SendRequest, serviceImpl.SendRequest)
+    //       .AddMethod(__Method_StartRequest, serviceImpl.StartRequest)
+    //       .AddMethod(__Method_Fulfill, serviceImpl.Fulfill)
+    //       .AddMethod(__Method_Transmit, serviceImpl.Transmit)
+    //       .AddMethod(__Method_CancelRequest, serviceImpl.CancelRequest)
+    //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
+    //       .AddMethod(__Method_IsPaused, serviceImpl.IsPaused)
+    //       .AddMethod(__Method_GetConfig, serviceImpl.GetConfig)
+    //       .AddMethod(__Method_GetSubscriptionConfig, serviceImpl.GetSubscriptionConfig)
+    //       .AddMethod(__Method_GetCoordinatorByIndex, serviceImpl.GetCoordinatorByIndex)
+    //       .AddMethod(__Method_GetCoordinators, serviceImpl.GetCoordinators)
+    //       .AddMethod(__Method_GetMaxOracleCount, serviceImpl.GetMaxOracleCount)
+    //       .AddMethod(__Method_GetLatestConfigDetails, serviceImpl.GetLatestConfigDetails)
+    //       .AddMethod(__Method_GetLatestRound, serviceImpl.GetLatestRound)
+    //       .AddMethod(__Method_GetTransmitters, serviceImpl.GetTransmitters)
+    //       .AddMethod(__Method_GetOracle, serviceImpl.GetOracle)
+    //       .AddMethod(__Method_GetProvingKeyHashes, serviceImpl.GetProvingKeyHashes)
+    //       .AddMethod(__Method_GetOracleByProvingKeyHash, serviceImpl.GetOracleByProvingKeyHash)
+    //       .AddMethod(__Method_GetHashFromKey, serviceImpl.GetHashFromKey)
+    //       .AddMethod(__Method_IsPendingRequestExists, serviceImpl.IsPendingRequestExists)
+    //       .AddMethod(__Method_GetSubscription, serviceImpl.GetSubscription)
+    //       .AddMethod(__Method_GetConsumer, serviceImpl.GetConsumer)
+    //       .AddMethod(__Method_GetSubscriptionCount, serviceImpl.GetSubscriptionCount).Build();
+    // }
+
   }
 }
 #endregion

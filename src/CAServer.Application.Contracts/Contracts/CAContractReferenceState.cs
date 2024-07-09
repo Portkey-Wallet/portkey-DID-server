@@ -5,5 +5,7 @@ namespace Portkey.Contracts.CA;
 
 public partial class CAContractState : ContractState
 {
-    internal OracleContractContainer.OracleContractReferenceState OracleContract { get; set; }
+    // internal OracleContractContainer.OracleContractReferenceState OracleContract { get; set; }
+    
+    // internal OracleContractContainer.OracleContractStub OracleContractStub { get; set; }
 }
