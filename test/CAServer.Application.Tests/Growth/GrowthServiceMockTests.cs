@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using AElf;
 using CAServer.CAActivity.Provider;
 using CAServer.Cache;
@@ -10,6 +11,8 @@ using CAServer.Growth.Provider;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets.Provider;
 using Moq;
+using NSubstitute.Extensions;
+using NSubstitute.ReturnsExtensions;
 using Portkey.Contracts.CA;
 using StackExchange.Redis;
 
@@ -106,19 +109,20 @@ public partial class GrowthServiceTest
 
         provider.Setup(t => t.AddReferralRecordAsync(It.IsAny<ReferralRecordIndex>())).ReturnsAsync(true);
 
-        provider.Setup(t => t.GetAllGrowthInfosAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync((int skip,int limit)=>skip==100?
-            
-        new List<GrowthIndex>()
-            {
-                new GrowthIndex()
+        provider.Setup(t => t.GetAllGrowthInfosAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            (int skip, int limit) => skip == 100
+                ? new List<GrowthIndex>()
                 {
-                    CaHash = "MockCaHash",
-                    InviteCode = "MockInviteCode",
-                    ReferralCode = "MockReferralCode"
+                    new GrowthIndex()
+                    {
+                        CaHash = "MockCaHash",
+                        InviteCode = "MockInviteCode",
+                        ReferralCode = "MockReferralCode"
+                    }
                 }
-            }:new List<GrowthIndex>());
-        
-        
+                : new List<GrowthIndex>());
+
+
         return provider.Object;
     }
 
@@ -137,8 +141,29 @@ public partial class GrowthServiceTest
                         CaAddress = "MockCaAddress"
                     }
                 }
-                
             });
         return provider.Object;
     }
+
+    // public ICacheProvider MockCacheProvider()
+    // {
+    //     var entries = new SortedSetEntry[1];
+    //
+    //     var provider = new Mock<ICacheProvider>();
+    //     provider.Setup(t => t.GetSortedSetLengthAsync(It.IsAny<string>())).ReturnsAsync(1);
+    //
+    //     // provider.Setup(t => t.AddScoreAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<double>()))
+    //     //     .ReturnsForAll();
+    //
+    //     provider.Setup(t => t.GetRankAsync(It.IsAny<string>(), It.IsAny<string>(), true))
+    //         .ReturnsAsync(1);
+    //
+    //     provider.Setup(t => t.GetScoreAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(1);
+    //
+    //     provider.Setup(t => t.GetTopAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), true))
+    //         .ReturnsAsync(entries);
+    //
+    //
+    //     return provider.Object;
+    // }
 }
