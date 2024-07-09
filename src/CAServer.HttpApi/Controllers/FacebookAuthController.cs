@@ -27,10 +27,10 @@ public class FacebookAuthController : CAServerController
     }
 
     [HttpGet("receive")]
-    public async Task<IActionResult> ReceiveAsync(string code)
+    public async Task<IActionResult> ReceiveAsync(string id_token)
     {
-        _logger.LogDebug("=========================Get Code is {code}",code);
-        var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Receive);
+        _logger.LogDebug("=========================Get Code is {code}",id_token);
+        var response = await _facebookAuthAppService.ReceiveAsync(id_token, ApplicationType.Receive);
         var result = response.Data;
         if (string.IsNullOrEmpty(response.Code))
         {
