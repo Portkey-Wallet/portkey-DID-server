@@ -31,9 +31,12 @@ public class FacebookAuthController : CAServerController
     [HttpGet("receive")]
     public async Task<IActionResult> ReceiveAsync(string code)
     {
-        var querys = _httpContextAccessor.HttpContext.Request.QueryString;
-        _logger.LogInformation("facebook request params:{querys}", querys.Value);
-        _logger.LogDebug("=========================Get Code is {code}",code);
+        if (string.IsNullOrEmpty(code))
+        {
+            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback";
+            return Redirect(redirectUrl);
+        }
+
         var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Receive);
         var result = response.Data;
         if (result != null)
@@ -55,6 +58,11 @@ public class FacebookAuthController : CAServerController
     [HttpGet("unifyReceive")]
     public async Task<IActionResult> UnifyReceiveAsync(string code)
     {
+        if (string.IsNullOrEmpty(code))
+        {
+            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback";
+            return Redirect(redirectUrl);
+        }
         var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.UnifyReceive);
         var result = response.Data;
         if (result != null)
