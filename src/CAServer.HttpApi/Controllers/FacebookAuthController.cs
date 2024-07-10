@@ -33,7 +33,7 @@ public class FacebookAuthController : CAServerController
     {
         if (string.IsNullOrEmpty(code))
         {
-            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback";
+            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback?type=Facebook";
             return Redirect(redirectUrl);
         }
 
@@ -60,7 +60,7 @@ public class FacebookAuthController : CAServerController
     {
         if (string.IsNullOrEmpty(code))
         {
-            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback";
+            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback?type=Facebook";
             return Redirect(redirectUrl);
         }
         var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.UnifyReceive);
