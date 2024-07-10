@@ -131,7 +131,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         if (contactIndex.ContactType == 1)
         {
             contactIndex.Name = input.Name;
-            contactIndex.Index = GetIndex(input.Name);
+            contactIndex.Index =
+                GetIndex(string.IsNullOrWhiteSpace(input.Name) ? contactIndex.ImInfo.Name : input.Name);
             await _contactRepository.UpdateAsync(contactIndex);
             _logger.LogDebug("Update contact is {contact}", JsonConvert.SerializeObject(contactIndex));
             await ImRemarkAsync(contactIndex?.ImInfo?.RelationId, userId, input.Name);
@@ -584,13 +585,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<ContactResultDto> GetContactsByRelationIdAsync(Guid userId, string relationId)
     {
         var index = await _contactProvider.GetContactByRelationIdAsync(userId, relationId);
-        return  ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
+        return ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
     }
 
     public async Task<ContactResultDto> GetContactsByPortkeyIdAsync(Guid userId, Guid portKeyId)
     {
         var index = await _contactProvider.GetContactByPortKeyIdAsync(userId, portKeyId.ToString());
-        return  ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
+        return ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
     }
 
     private async Task FollowAsync(string address, Guid userId)
@@ -788,7 +789,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             return null;
         }
     }
-    
+
     private string GetIndex(string name)
     {
         var firstChar = char.ToUpperInvariant(name[0]);
@@ -799,5 +800,4 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         return "#";
     }
-    
 }
