@@ -586,6 +586,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<ContactResultDto> GetContactsByRelationIdAsync(Guid userId, string relationId)
     {
         var index = await _contactProvider.GetContactByRelationIdAsync(userId, relationId);
+        _logger.LogDebug("Get Contact from ES {contact}",JsonConvert.SerializeObject(index));
         return ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
     }
 
