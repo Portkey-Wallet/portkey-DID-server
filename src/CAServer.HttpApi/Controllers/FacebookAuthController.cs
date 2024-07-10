@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using CAServer.Facebook;
 using CAServer.Verifier;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,18 +18,23 @@ public class FacebookAuthController : CAServerController
     private readonly IFacebookAuthAppService _facebookAuthAppService;
     private readonly FacebookOptions _facebookOptions;
     private readonly ILogger<FacebookAuthController> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public FacebookAuthController(IFacebookAuthAppService facebookAuthAppService,
-        IOptionsSnapshot<FacebookOptions> facebookOptions, ILogger<FacebookAuthController> logger)
+        IOptionsSnapshot<FacebookOptions> facebookOptions, ILogger<FacebookAuthController> logger, IHttpContextAccessor httpContextAccessor)
     {
         _facebookAuthAppService = facebookAuthAppService;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
         _facebookOptions = facebookOptions.Value;
     }
 
     [HttpGet("receive")]
     public async Task<IActionResult> ReceiveAsync(string code)
     {
+        var querys = _httpContextAccessor.HttpContext.Request.QueryString;
+        _logger.LogInformation("facebook request params:{querys}", querys.Value);
+        _logger.LogDebug("=========================Get Code is {code}",code);
         var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Receive);
         var result = response.Data;
         if (string.IsNullOrEmpty(response.Code))
