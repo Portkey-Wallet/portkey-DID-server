@@ -44,28 +44,27 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
             PublicKey = publicKey,
             HexMsg = hexMsg,
         };
-        //todo cancel comments before online, the signature server didnt' deploy in test1 env
-        // var resp = await _httpProvider.InvokeAsync<CommonResponseDto<SignResponseDto>>(HttpMethod.Post,
-        //     Uri(GetSecurityUri), 
-        //     body: JsonConvert.SerializeObject(signatureSend),
-        //     header: SecurityServerHeader()
-        //     );
+
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<SignResponseDto>>(HttpMethod.Post,
+            Uri(GetSecurityUri), 
+            body: JsonConvert.SerializeObject(signatureSend),
+            header: SecurityServerHeader()
+            );
         
-        // AssertHelper.IsTrue(resp?.Success ?? false, "Signature response failed");
-        // AssertHelper.NotEmpty(resp!.Data?.Signature, "Signature response empty");
-        // return resp.Data!.Signature;
-        return "";
+        AssertHelper.IsTrue(resp?.Success ?? false, "Signature response failed");
+        AssertHelper.NotEmpty(resp!.Data?.Signature, "Signature response empty");
+        return resp.Data!.Signature;
     }
     
-    // public Dictionary<string, string> SecurityServerHeader(params string[] signValues)
-    // {
-    //     var signString = string.Join(CommonConstant.EmptyString, signValues);
-    //     return new Dictionary<string, string>
-    //     {
-    //         ["appid"] = _signatureServerOptions.CurrentValue.AppId,
-    //         ["signature"] = EncryptionHelper.EncryptHex(signString, _signatureServerOptions.CurrentValue.AppSecret)
-    //     };
-    // }
+    public Dictionary<string, string> SecurityServerHeader(params string[] signValues)
+    {
+        var signString = string.Join(CommonConstant.EmptyString, signValues);
+        return new Dictionary<string, string>
+        {
+            ["appid"] = _signatureServerOptions.CurrentValue.AppId,
+            ["signature"] = EncryptionHelper.EncryptHex(signString, _signatureServerOptions.CurrentValue.AppSecret)
+        };
+    }
 }
 
 public class SendSignatureDto
