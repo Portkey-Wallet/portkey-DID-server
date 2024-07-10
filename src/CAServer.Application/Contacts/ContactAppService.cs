@@ -204,6 +204,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         var userId = CurrentUser.GetId();
         var contact = await _contactProvider.GetContactByIdAsync(id);
+        _logger.LogDebug("Delete Data is {data}", JsonConvert.SerializeObject(contact));
         if (contact.ContactType == 1)
         {
             contact.IsDeleted = true;
