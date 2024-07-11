@@ -16,4 +16,7 @@ public class ZkJwtAuthInfoRequestDto
 	
     // nonce associated with the jwt
     public string Nonce { get; set;}
+    
+    //the unique circuit 
+    public string CircuitId { get; set; }
 }

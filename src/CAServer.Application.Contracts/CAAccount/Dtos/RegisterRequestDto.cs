@@ -57,8 +57,51 @@ public class RegisterRequestDto : IValidatableObject
         {
             yield return new ValidationResult(
                 "Invalid ReferralCode.",
-                new[] { "LoginGuardianIdentifier" }
+                new[] { "ReferralInfo" }
             );
+        }
+
+        if (ZkJwtAuthInfo != null)
+        {
+            if (ZkJwtAuthInfo.ZkProof.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkJwtAuthInfo ZkProof.",
+                    new[] { "ZkProof" }
+                );
+            }
+
+            if (ZkJwtAuthInfo.Jwt.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkJwtAuthInfo Jwt.",
+                    new[] { "Jwt" }
+                );
+            }
+
+            if (ZkJwtAuthInfo.Salt.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkJwtAuthInfo Salt.",
+                    new[] { "Salt" }
+                );
+            }
+            
+            if (ZkJwtAuthInfo.Nonce.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkJwtAuthInfo Nonce.",
+                    new[] { "Nonce" }
+                );
+            }
+            
+            if (ZkJwtAuthInfo.CircuitId.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkJwtAuthInfo CircuitId.",
+                    new[] { "CircuitId" }
+                );
+            }
         }
     }
 }

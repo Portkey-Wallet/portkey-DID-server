@@ -27,6 +27,55 @@ public class RecoveryRequestDto : IValidatableObject
                 new[] { "LoginGuardianIdentifier" }
             );
         }
+
+        if (!GuardiansApproved.IsNullOrEmpty())
+        {
+            foreach (var recoveryGuardian in GuardiansApproved)
+            {
+                if (recoveryGuardian.ZkJwtAuthInfo != null)
+                {
+                    if (recoveryGuardian.ZkJwtAuthInfo.ZkProof.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkJwtAuthInfo ZkProof.",
+                            new[] { "ZkProof" }
+                        );
+                    }
+
+                    if (recoveryGuardian.ZkJwtAuthInfo.Jwt.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkJwtAuthInfo Jwt.",
+                            new[] { "Jwt" }
+                        );
+                    }
+
+                    if (recoveryGuardian.ZkJwtAuthInfo.Salt.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkJwtAuthInfo Salt.",
+                            new[] { "Salt" }
+                        );
+                    }
+            
+                    if (recoveryGuardian.ZkJwtAuthInfo.Nonce.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkJwtAuthInfo Nonce.",
+                            new[] { "Nonce" }
+                        );
+                    }
+            
+                    if (recoveryGuardian.ZkJwtAuthInfo.CircuitId.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkJwtAuthInfo CircuitId.",
+                            new[] { "CircuitId" }
+                        );
+                    }
+                }
+            }
+        }
     }
 }
 
