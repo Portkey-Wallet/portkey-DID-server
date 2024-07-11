@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CAServer.Contacts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver.Linq;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 
@@ -14,7 +15,7 @@ namespace CAServer.Controllers;
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
 [IgnoreAntiforgeryToken]
-//[Authorize]
+[Authorize]
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
@@ -57,6 +58,20 @@ public class ContactController : CAServerController
     [HttpGet("list")]
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
+        var result =  await _contactAppService.GetListAsync(input);
+        var headers = Request.Headers;
+        var platform = headers["platform"];
+        var version = headers["version"];
+        if (platform == "app")
+        {
+            var curVersion = new Version(version);
+            var oldVersion = new Version("1.20.0");
+            if (curVersion >= oldVersion)
+            {
+                return result;
+            }
+        }
+        // result.Items.Where(t=>t.ImInfo.RelationId != )
         return await _contactAppService.GetListAsync(input);
     }
 

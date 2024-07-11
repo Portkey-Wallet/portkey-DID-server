@@ -135,7 +135,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactIndex.Index =
                 GetIndex(string.IsNullOrWhiteSpace(input.Name) ? contactIndex.ImInfo.Name : input.Name);
             await _contactRepository.UpdateAsync(contactIndex);
-            
+
             _logger.LogDebug("Update contact is {contact}", JsonConvert.SerializeObject(contactIndex));
             await ImRemarkAsync(contactIndex?.ImInfo?.RelationId, userId, input.Name);
             return ObjectMapper.Map<ContactIndex, ContactResultDto>(contactIndex);
@@ -213,6 +213,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contact.ModificationTime = DateTime.UtcNow;
             await _contactRepository.AddOrUpdateAsync(contact);
             await ImRemarkAsync(contact.ImInfo.RelationId, userId, "");
+            var updatedContact = await _contactProvider.GetContactByIdAsync(id);
+            _logger.LogDebug("After Delete contact is {contact}", JsonConvert.SerializeObject(updatedContact));
             return;
             // _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
         }
@@ -590,7 +592,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<ContactResultDto> GetContactsByRelationIdAsync(Guid userId, string relationId)
     {
         var index = await _contactProvider.GetContactByRelationIdAsync(userId, relationId);
-        _logger.LogDebug("Get Contact from ES {contact}",JsonConvert.SerializeObject(index));
+        _logger.LogDebug("Get Contact from ES {contact}", JsonConvert.SerializeObject(index));
         return ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
     }
 
