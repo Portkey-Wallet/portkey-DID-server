@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver.Linq;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using ILogger = Google.Apis.Logging.ILogger;
@@ -64,11 +65,15 @@ public class ContactController : CAServerController
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         var result = await _contactAppService.GetListAsync(input);
+        foreach (var item in result.Items)
+        {
+            _logger.LogDebug("item is {item}",JsonConvert.SerializeObject(item));
+        }
         var headers = Request.Headers;
         var platform = headers["platform"];
         var version = headers["version"];
         _logger.LogDebug("platform is {platform},version is {version}",platform,version);
-        if (string.IsNullOrEmpty(platform) && string.IsNullOrEmpty(version))
+        if (!string.IsNullOrEmpty(platform) && !string.IsNullOrEmpty(version))
         {
             var curVersion = new Version(version.ToString().Replace("v",""));
             var preVersion = new Version("v1.20.00".Replace("v",""));
@@ -79,6 +84,10 @@ public class ContactController : CAServerController
         }
 
         var contactListDtos = result.Items.Where(t=>t.ImInfo.RelationId != "jkhct-2aaaa-aaaaa-aaczq-cai").ToList();
+        foreach (var dto in contactListDtos)
+        {
+            _logger.LogDebug("item is {item}",JsonConvert.SerializeObject(dto));
+        }
         result.Items = contactListDtos;
         return result;
     }
