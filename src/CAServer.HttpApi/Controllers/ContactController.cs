@@ -71,14 +71,14 @@ public class ContactController : CAServerController
         if (string.IsNullOrEmpty(platform) && string.IsNullOrEmpty(version))
         {
             var curVersion = new Version(version);
-            var preVersion = new Version("1.20.0");
+            var preVersion = new Version("v1.19.00");
             if (platform == "app" && curVersion >= preVersion)
             {
                 return result;
             }
         }
 
-        var contactListDtos = result.Items.Where(t=>t.ImInfo.RelationId != "").ToList();
+        var contactListDtos = result.Items.Where(t=>t.ImInfo.RelationId != "jkhct-2aaaa-aaaaa-aaczq-cai").ToList();
         result.Items = contactListDtos;
         return result;
     }
