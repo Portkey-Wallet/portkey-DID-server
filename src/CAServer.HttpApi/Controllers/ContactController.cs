@@ -76,7 +76,7 @@ public class ContactController : CAServerController
         if (!string.IsNullOrEmpty(platform) && !string.IsNullOrEmpty(version))
         {
             var curVersion = new Version(version.ToString().Replace("v",""));
-            var preVersion = new Version("v1.20.00".Replace("v",""));
+            var preVersion = new Version("v1.19.00".Replace("v",""));
             if (platform == "app" && curVersion >= preVersion)
             {
                 return result;
