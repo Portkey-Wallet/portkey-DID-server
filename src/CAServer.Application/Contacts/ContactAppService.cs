@@ -208,6 +208,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         if (contact.ContactType == 1)
         {
             contact.IsDeleted = true;
+            contact.ModificationTime = DateTime.UtcNow;
             await _contactRepository.AddOrUpdateAsync(contact);
             await ImRemarkAsync(contact.ImInfo.RelationId, userId, "");
             // _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
