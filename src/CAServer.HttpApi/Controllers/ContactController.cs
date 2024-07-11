@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Contacts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver.Linq;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using ILogger = Google.Apis.Logging.ILogger;
 
 namespace CAServer.Controllers;
 
@@ -19,10 +22,12 @@ namespace CAServer.Controllers;
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
+    private readonly ILogger<ContactController> _logger;
 
-    public ContactController(IContactAppService contactAppService)
+    public ContactController(IContactAppService contactAppService, ILogger<ContactController> logger)
     {
         _contactAppService = contactAppService;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -58,21 +63,24 @@ public class ContactController : CAServerController
     [HttpGet("list")]
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
-        var result =  await _contactAppService.GetListAsync(input);
+        var result = await _contactAppService.GetListAsync(input);
         var headers = Request.Headers;
         var platform = headers["platform"];
         var version = headers["version"];
-        if (platform == "app")
+        _logger.LogDebug("platform is {platform},version is {version}",platform,version);
+        if (string.IsNullOrEmpty(platform) && string.IsNullOrEmpty(version))
         {
             var curVersion = new Version(version);
-            var oldVersion = new Version("1.20.0");
-            if (curVersion >= oldVersion)
+            var preVersion = new Version("1.20.0");
+            if (platform == "app" && curVersion >= preVersion)
             {
                 return result;
             }
         }
-        // result.Items.Where(t=>t.ImInfo.RelationId != )
-        return await _contactAppService.GetListAsync(input);
+
+        var contactListDtos = result.Items.Where(t=>t.ImInfo.RelationId != "").ToList();
+        result.Items = contactListDtos;
+        return result;
     }
 
     [HttpGet("isImputation")]
