@@ -89,6 +89,7 @@ public class ContactController : CAServerController
             _logger.LogDebug("item is {item}",JsonConvert.SerializeObject(dto));
         }
         result.Items = contactListDtos;
+        result.TotalCount = contactListDtos.Count;
         return result;
     }
 
