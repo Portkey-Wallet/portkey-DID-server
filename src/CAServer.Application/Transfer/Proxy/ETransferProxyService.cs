@@ -65,12 +65,14 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             var wrapDto = await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
                 request);
             var list = ReRangeList(wrapDto.Data.NetworkList, isMainChain, request.Symbol);
-            wrapDto.Data.NetworkList = list;
+            var resultList = list.Where(t => t.Status == "Health").ToList();
+            wrapDto.Data.NetworkList = resultList;
             return wrapDto;
         }
         
         var networkList = await GetAllNetworkAsync(request);
-        var reRangeList = ReRangeList(networkList, isMainChain, request.Symbol);
+        var newNetworkList = networkList.Where(t => t.Status == "Health").ToList();
+        var reRangeList = ReRangeList(newNetworkList, isMainChain, request.Symbol);
         return new ResponseWrapDto<GetNetworkListDto>
         {
             
