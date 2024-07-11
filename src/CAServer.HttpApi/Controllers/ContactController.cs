@@ -70,8 +70,8 @@ public class ContactController : CAServerController
         _logger.LogDebug("platform is {platform},version is {version}",platform,version);
         if (string.IsNullOrEmpty(platform) && string.IsNullOrEmpty(version))
         {
-            var curVersion = new Version(version);
-            var preVersion = new Version("v1.19.00");
+            var curVersion = new Version(version.ToString().Replace("v",""));
+            var preVersion = new Version("v1.20.00".Replace("v",""));
             if (platform == "app" && curVersion >= preVersion)
             {
                 return result;
