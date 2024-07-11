@@ -130,10 +130,12 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var contactIndex = await _contactProvider.GetContactByIdAsync(id);
         if (contactIndex.ContactType == 1)
         {
+            contactIndex.ModificationTime = DateTime.UtcNow;
             contactIndex.Name = input.Name;
             contactIndex.Index =
                 GetIndex(string.IsNullOrWhiteSpace(input.Name) ? contactIndex.ImInfo.Name : input.Name);
             await _contactRepository.UpdateAsync(contactIndex);
+            
             _logger.LogDebug("Update contact is {contact}", JsonConvert.SerializeObject(contactIndex));
             await ImRemarkAsync(contactIndex?.ImInfo?.RelationId, userId, input.Name);
             return ObjectMapper.Map<ContactIndex, ContactResultDto>(contactIndex);
