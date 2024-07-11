@@ -213,6 +213,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contact.ModificationTime = DateTime.UtcNow;
             await _contactRepository.AddOrUpdateAsync(contact);
             await ImRemarkAsync(contact.ImInfo.RelationId, userId, "");
+            return;
             // _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
         }
 
