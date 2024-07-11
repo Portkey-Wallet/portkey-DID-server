@@ -91,8 +91,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
+        
         await CheckContactAsync(contactDto);
-
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
             await contactGrain.AddContactAsync(userId,
@@ -103,8 +103,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException(result.Message);
         }
 
+        var dto = ObjectMapper.Map<ContactGrainDto, ContactCreateEto>(result.Data);
+        if (input.RelationId == _chatBotOptions.RelationId)
+        {
+            dto.ContactType = 1;
+        }
         // follow
-        await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactCreateEto>(result.Data));
+        await _distributedEventBus.PublishAsync(dto);
         var contactResultDto = ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
         var imageMap = _variablesOptions.ImageMap;
 
