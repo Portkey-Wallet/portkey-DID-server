@@ -328,7 +328,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(k=>k.Id).Value(id)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
         var res = await _contactRepository.GetAsync(Filter);
