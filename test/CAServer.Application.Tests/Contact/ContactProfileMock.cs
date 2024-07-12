@@ -10,7 +10,7 @@ using Org.BouncyCastle.Bcpg;
 
 namespace CAServer.Contact;
 
-public partial class ContactTest
+public partial class ContactProfileTest
 {
     private IContactProvider GetMockContactProvider()
     {
