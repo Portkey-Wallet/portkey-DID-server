@@ -88,6 +88,15 @@ public class CryptoGiftGran : Orleans.Grain<CryptoGiftState>, ICryptoGiftGran
                 Message = "You have grabbed the crypto gift ~"
             };
         }
+
+        if (State.BucketNotClaimed.Count == 0)
+        {
+            return new GrainResultDto<CryptoGiftDto>
+            {
+                Success = false,
+                Message = "there was no quota left ~"
+            };
+        }
         PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(identityCode);
         if (State.Items.Any(item => !GrabbedStatus.Expired.Equals(item.GrabbedStatus)
                                     && item.Index.Equals(preGrabBucketItemDto.Index)))
