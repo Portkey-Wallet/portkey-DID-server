@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Contacts;
+using CAServer.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -24,11 +26,14 @@ public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
     private readonly ILogger<ContactController> _logger;
+    private readonly ChatBotOptions _botOptions;
 
-    public ContactController(IContactAppService contactAppService, ILogger<ContactController> logger)
+    public ContactController(IContactAppService contactAppService, ILogger<ContactController> logger,
+        IOptionsSnapshot<ChatBotOptions> botOptions)
     {
         _contactAppService = contactAppService;
         _logger = logger;
+        _botOptions = botOptions.Value;
     }
 
     [HttpPost]
@@ -67,27 +72,24 @@ public class ContactController : CAServerController
         var result = await _contactAppService.GetListAsync(input);
         foreach (var item in result.Items)
         {
-            _logger.LogDebug("item is {item}",JsonConvert.SerializeObject(item));
+            _logger.LogDebug("item is {item}", JsonConvert.SerializeObject(item));
         }
+
         var headers = Request.Headers;
         var platform = headers["platform"];
         var version = headers["version"];
-        _logger.LogDebug("platform is {platform},version is {version}",platform,version);
+        _logger.LogDebug("platform is {platform},version is {version}", platform, version);
         if (!string.IsNullOrEmpty(platform) && !string.IsNullOrEmpty(version))
         {
-            var curVersion = new Version(version.ToString().Replace("v",""));
-            var preVersion = new Version("v1.19.00".Replace("v",""));
+            var curVersion = new Version(version.ToString().Replace("v", ""));
+            var preVersion = new Version(_botOptions.Version.Replace("v", ""));
             if (platform == "app" && curVersion >= preVersion)
             {
                 return result;
             }
         }
 
-        var contactListDtos = result.Items.Where(t=>t.ImInfo.RelationId != "jkhct-2aaaa-aaaaa-aaczq-cai").ToList();
-        foreach (var dto in contactListDtos)
-        {
-            _logger.LogDebug("item is {item}",JsonConvert.SerializeObject(dto));
-        }
+        var contactListDtos = result.Items.Where(t => t.ImInfo.RelationId != _botOptions.RelationId).ToList();
         result.Items = contactListDtos;
         result.TotalCount = contactListDtos.Count;
         return result;

@@ -8,5 +8,6 @@ public class ChatBotOptions
     public string RelationId { get; set; }
 
     public string PortkeyId { get; set; }
+    public string Version { get; set; }
 
 }
