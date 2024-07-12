@@ -83,7 +83,7 @@ public class ContactController : CAServerController
         {
             var curVersion = new Version(version.ToString().Replace("v", ""));
             var preVersion = new Version(_botOptions.Version.Replace("v", ""));
-            if (platform == "app" && curVersion >= preVersion)
+            if (platform != "extension" && curVersion >= preVersion)
             {
                 return result;
             }
