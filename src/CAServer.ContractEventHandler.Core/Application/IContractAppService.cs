@@ -267,7 +267,7 @@ public class ContractAppService : IContractAppService
         }
 
         //Speed up registration
-        // _ = CreateHolderInfoOnNonCreateChainAsync(outputGetHolderInfo, createHolderDto);
+         _ = CreateHolderInfoOnNonCreateChainAsync(outputGetHolderInfo, createHolderDto);
 
         registerResult.CaAddress = outputGetHolderInfo.CaAddress.ToBase58();
         registerResult.RegisterSuccess = true;
