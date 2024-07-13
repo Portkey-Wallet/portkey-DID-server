@@ -17,4 +17,6 @@ public class ContactState
     public bool IsImputation { get; set; }
     public DateTime CreateTime { get; set; }
     public DateTime ModificationTime { get; set; }
+
+    public int ContactType { get; set; }
 }

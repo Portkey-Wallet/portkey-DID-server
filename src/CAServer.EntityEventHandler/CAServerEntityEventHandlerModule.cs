@@ -66,6 +66,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
         Configure<ReferralRefreshTimeOptions>(configuration.GetSection("ReferralRefreshTime"));
         Configure<ActivityDateRangeOptions>(configuration.GetSection("ActivityDateRange"));
+        Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
@@ -191,6 +192,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftStatisticsWorker>());
         //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitReferralRankWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ReferralRankWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitAddChatBotContactsWorker>());
         
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);

@@ -15,6 +15,7 @@ namespace CAServer.EntityEventHandler.Core.Worker;
 
 public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
 {
+    private const long TwoDaysMilliSeconds = 172800000;
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
     private readonly INESTRepository<CryptoGiftNewUsersOnlyNumStatsIndex, string> _newUsersOnlyNumStatsRepository;
     private readonly INESTRepository<CryptoGiftOldUsersNumStatsIndex, string> _oldUsersNumStatsRepository;
@@ -43,13 +44,14 @@ public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         var current = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        var startTime = current - TwoDaysMilliSeconds;
         var symbols = new string[] { "ELF", "USDT", "SGR-1" };
         var joinedSymbols = string.Join(",", symbols);
-        _logger.LogInformation("CryptoGiftStatisticsWorker is starting--------------");
-        var newUsersNumberDtos = await _cryptoGiftAppService.ComputeCryptoGiftNumber(true, symbols, 1719590400000);
+        // _logger.LogInformation("CryptoGiftStatisticsWorker is starting--------------");
+        var newUsersNumberDtos = await _cryptoGiftAppService.ComputeCryptoGiftNumber(true, symbols, startTime);
         await SaveCryptoGiftNumberStatsAsync(newUsersNumberDtos, true, joinedSymbols, current);
         
-        var oldUsersNumberDtos = await _cryptoGiftAppService.ComputeCryptoGiftNumber(false, symbols, 1719590400000);
+        var oldUsersNumberDtos = await _cryptoGiftAppService.ComputeCryptoGiftNumber(false, symbols, startTime);
         await SaveCryptoGiftNumberStatsAsync(oldUsersNumberDtos, false, joinedSymbols, current);
 
         var newUsersCryptoGiftClaimStatistics = await _cryptoGiftAppService.ComputeCryptoGiftClaimStatistics(true, symbols, 1719590400000);
@@ -58,15 +60,15 @@ public class CryptoGiftStatisticsWorker : AsyncPeriodicBackgroundWorkerBase
         var oldUsersCryptoGiftClaimStatistics = await _cryptoGiftAppService.ComputeCryptoGiftClaimStatistics(false, symbols, 1719590400000);
         await SaveCryptoGiftDetailStatsAsync(oldUsersCryptoGiftClaimStatistics, false, joinedSymbols, current);
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
-        var nums = await _newUsersOnlyNumStatsRepository.GetListAsync();
-        _logger.LogInformation("CryptoGiftStatisticsWorker newUsersOnlyNumStats:{0}", JsonConvert.SerializeObject(nums));
-        var oldNums = await _oldUsersNumStatsRepository.GetListAsync();
-        _logger.LogInformation("CryptoGiftStatisticsWorker oldUsersNumStats:{0}", JsonConvert.SerializeObject(oldNums));
-        var details = await _newUsersOnlyDetailRepository.GetListAsync();
-        _logger.LogInformation("CryptoGiftStatisticsWorker newUsersOnlyDetail:{0}", JsonConvert.SerializeObject(details));
-        var oldDetails = await _oldUsersDetailRepository.GetListAsync();
-        _logger.LogInformation("CryptoGiftStatisticsWorker oldUsersDetail:{0}", JsonConvert.SerializeObject(oldDetails));
+        // await Task.Delay(TimeSpan.FromSeconds(10));
+        // var nums = await _newUsersOnlyNumStatsRepository.GetListAsync();
+        // _logger.LogInformation("CryptoGiftStatisticsWorker newUsersOnlyNumStats:{0}", JsonConvert.SerializeObject(nums));
+        // var oldNums = await _oldUsersNumStatsRepository.GetListAsync();
+        // _logger.LogInformation("CryptoGiftStatisticsWorker oldUsersNumStats:{0}", JsonConvert.SerializeObject(oldNums));
+        // var details = await _newUsersOnlyDetailRepository.GetListAsync();
+        // _logger.LogInformation("CryptoGiftStatisticsWorker newUsersOnlyDetail:{0}", JsonConvert.SerializeObject(details));
+        // var oldDetails = await _oldUsersDetailRepository.GetListAsync();
+        // _logger.LogInformation("CryptoGiftStatisticsWorker oldUsersDetail:{0}", JsonConvert.SerializeObject(oldDetails));
     }
 
     private async Task SaveCryptoGiftDetailStatsAsync(List<CryptoGiftClaimDto> details,

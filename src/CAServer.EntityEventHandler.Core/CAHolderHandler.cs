@@ -5,15 +5,18 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAAccount.Provider;
+using CAServer.Contacts;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -21,6 +24,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using GuardianInfoBase = CAServer.Guardian.GuardianInfoBase;
 using GuardianType = CAServer.Account.GuardianType;
+using ImInfo = CAServer.Entities.Es.ImInfo;
 using IObjectMapper = Volo.Abp.ObjectMapping.IObjectMapper;
 
 namespace CAServer.EntityEventHandler.Core;
@@ -43,6 +47,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly IGuardianAppService _guardianAppService;
     private readonly IUserProfilePictureProvider _userProfilePictureProvider;
     private readonly Random _random;
+    private readonly ChatBotOptions _chatBotOptions;
+    private readonly IContactAppService _contactAppService;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -55,7 +61,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         INESTRepository<GuardianIndex, string> guardianRepository,
         IGuardianAppService guardianAppService,
-        IUserProfilePictureProvider userProfilePictureProvider)
+        IUserProfilePictureProvider userProfilePictureProvider, IOptionsSnapshot<ChatBotOptions> chatBotOptions,
+        IContactAppService contactAppService)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -69,6 +76,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _guardianRepository = guardianRepository;
         _guardianAppService = guardianAppService;
         _userProfilePictureProvider = userProfilePictureProvider;
+        _contactAppService = contactAppService;
+        _chatBotOptions = chatBotOptions.Value;
         _random = new Random();
     }
 
@@ -94,8 +103,10 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GenerateNewAccountFormat error, userId={0}, caHash={1}", eventData.UserId, eventData.CaHash);
+            _logger.LogError(e, "GenerateNewAccountFormat error, userId={0}, caHash={1}", eventData.UserId,
+                eventData.CaHash);
         }
+
         try
         {
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
@@ -126,6 +137,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.IdentifierHash = identifierHash;
                 caHolderGrainDto.Avatar = picture;
             }
+
             var result = await grain.AddHolderWithAvatarAsync(caHolderGrainDto);
             if (!result.Success)
             {
@@ -133,9 +145,34 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                     eventData.UserId, eventData.CaHash);
                 return;
             }
+
             var index = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
             await _caHolderRepository.AddAsync(index);
 
+            //Add Bot Contact
+            var botContact = new ContactIndex()
+            {
+                Id = Guid.NewGuid(),
+                UserId = eventData.UserId,
+                Name = "",
+                Index = "K",
+                Avatar = _chatBotOptions.Avatar,
+                ImInfo = new ImInfo
+                {
+                    RelationId = _chatBotOptions.RelationId,
+                    PortkeyId = _chatBotOptions.PortkeyId,
+                    Name = _chatBotOptions.Name,
+                },
+                IsDeleted = false,
+                IsImputation = false,
+                CreateTime = DateTime.UtcNow,
+                ModificationTime = DateTime.UtcNow,
+                ContactType = 1
+            };
+            await _contactRepository.AddOrUpdateAsync(botContact);
+            _logger.LogDebug("new register account add chatBot.register is {register},ChatBot is {chatBot}",
+                JsonConvert.SerializeObject(eventData), JsonConvert.SerializeObject(botContact));
+            await _contactAppService.ImRemarkAsync(_chatBotOptions.RelationId, eventData.UserId, _chatBotOptions.Name);
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
         }
         catch (Exception ex)
@@ -154,18 +191,20 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return null;
         }
+
         GuardianInfoBase guardianInfoBase = guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardianInfoBase == null || !guardianInfoBase.Type.Equals(((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL) + ""))
         {
             return null;
         }
+
         var list = new List<string>();
         list.Add(guardianInfoBase.IdentifierHash);
         var hashDic = await GetIdentifiersAsync(list);
         guardianInfoBase.GuardianIdentifier = hashDic[guardianInfoBase.IdentifierHash];
         return guardianInfoBase;
     }
-    
+
     private async Task<Dictionary<string, string>> GetIdentifiersAsync(List<string> identifierHashList)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>
@@ -201,6 +240,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return nickname;
         }
+
         //email  according to GuardianType
         try
         {
@@ -210,6 +250,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 {
                     return nickname;
                 }
+
                 return GetEmailFormat(nickname, guardianIdentifier, string.Empty, string.Empty);
             }
         }
@@ -221,7 +262,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         return nickname;
     }
 
-    private async Task<Tuple<string, string>> GenerateNewAccountFormatForThirdParty(string nickname, CreateUserEto eventData)
+    private async Task<Tuple<string, string>> GenerateNewAccountFormatForThirdParty(string nickname,
+        CreateUserEto eventData)
     {
         if (eventData.ChainId.IsNullOrEmpty() || eventData.CaHash.IsNullOrEmpty())
         {
@@ -238,35 +280,44 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "call GetGuardianIdentifiersAsync error, ChainId={1},CaHash={2}",  eventData.ChainId, eventData.CaHash);
+            _logger.LogError(e, "call GetGuardianIdentifiersAsync error, ChainId={1},CaHash={2}", eventData.ChainId,
+                eventData.CaHash);
         }
 
         if (guardianResultDto == null)
         {
             return new Tuple<string, string>(nickname, string.Empty);
         }
+
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardian == null)
         {
             return new Tuple<string, string>(nickname, string.Empty);
         }
+
         string address = string.Empty;
         if (!guardianResultDto.CaAddress.IsNullOrEmpty())
         {
             address = guardianResultDto.CaAddress;
         }
+
         if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type) || "Facebook".Equals(guardian.Type))
         {
-            return new Tuple<string, string>(GetFirstNameFormat(nickname, guardian.FirstName, address), guardian.IdentifierHash);
+            return new Tuple<string, string>(GetFirstNameFormat(nickname, guardian.FirstName, address),
+                guardian.IdentifierHash);
         }
 
         if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
         {
-            return new Tuple<string, string>(GetEmailFormat(nickname, guardian.GuardianIdentifier, guardian.FirstName, address), guardian.IdentifierHash);
+            return new Tuple<string, string>(
+                GetEmailFormat(nickname, guardian.GuardianIdentifier, guardian.FirstName, address),
+                guardian.IdentifierHash);
         }
-        return new Tuple<string, string>(GetEmailFormat(nickname, guardian.ThirdPartyEmail, guardian.FirstName, address), guardian.IdentifierHash);
+
+        return new Tuple<string, string>(
+            GetEmailFormat(nickname, guardian.ThirdPartyEmail, guardian.FirstName, address), guardian.IdentifierHash);
     }
-    
+
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
     {
         try
@@ -300,13 +351,15 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     {
         if (guardianIdentifier.IsNullOrEmpty())
         {
-            return GetFirstNameFormat( nickname,  firstName,  address);
+            return GetFirstNameFormat(nickname, firstName, address);
         }
+
         int index = guardianIdentifier.LastIndexOf("@");
         if (index < 0)
         {
             return nickname;
         }
+
         string frontPart = guardianIdentifier.Substring(0, index);
         string backPart = guardianIdentifier.Substring(index);
         int frontLength = frontPart.Length;
@@ -319,22 +372,25 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             return frontPart + "***" + backPart;
         }
     }
-    
+
     private string GetFirstNameFormat(string nickname, string firstName, string address)
     {
         if (firstName.IsNullOrEmpty() && address.IsNullOrEmpty())
         {
             return nickname;
         }
-        if (!firstName.IsNullOrEmpty() && Regex.IsMatch(firstName,"^\\w+$"))
+
+        if (!firstName.IsNullOrEmpty() && Regex.IsMatch(firstName, "^\\w+$"))
         {
             return firstName + "***";
         }
+
         if (!address.IsNullOrEmpty())
         {
             int length = address.Length;
             return address.Substring(0, 3) + "***" + address.Substring(length - 3);
         }
+
         return nickname;
     }
 

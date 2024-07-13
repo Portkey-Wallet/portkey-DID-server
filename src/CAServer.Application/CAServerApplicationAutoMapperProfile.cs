@@ -113,6 +113,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactAddressDto, ContactAddress>().ReverseMap();
         CreateMap<ContactAddressDto, ContactAddressEto>();
         CreateMap<CreateUpdateContactDto, ContactGrainDto>();
+        CreateMap<ContactIndex, ContactResultDto>();
         CreateMap<ContactGrainDto, ContactResultDto>()
             .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
 

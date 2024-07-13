@@ -200,7 +200,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId)
     {
-        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(5));
+        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(1));
         if (handle == null)
         {
             throw new UserFriendlyException("please take a break for a while~");
@@ -260,11 +260,11 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
 
         var preGrabbedAmount = GetPreGrabbedAmount(cryptoGiftDto);
-        if (long.Parse(redPackageDetailDto.GrabbedAmount) + preGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        if (long.Parse(redPackageDetailDto.GrabbedAmount) + preGrabbedAmount > cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
-        if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        if (cryptoGiftDto.PreGrabbedAmount > cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
@@ -476,6 +476,13 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             }
         }
         
+        if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status))
+        {
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.FullyClaimed, redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
+                0, 0);
+        }
+        
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
              || RedPackageStatus.Claimed.Equals(redPackageDetailDto.Status))
             && long.Parse(redPackageDetailDto.GrabbedAmount) + GetPreGrabbedAmount(cryptoGiftDto) >= cryptoGiftDto.TotalAmount)
@@ -490,14 +497,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                     caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
                     remainingWaitingSeconds, 0);
             }
-        }
-        
-        if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status)
-                    || cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
-        {
-            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.FullyClaimed, redPackageDetailDto,
-                caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
-                0, 0);
         }
         
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
