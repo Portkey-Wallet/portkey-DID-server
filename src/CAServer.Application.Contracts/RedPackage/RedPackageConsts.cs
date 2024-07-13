@@ -27,6 +27,7 @@ public class RedPackageConsts
     public const string RedPackageCancelled = "RedPackage has been Cancelled";
     public const string RedPackageNotSet = "RedPackage has not been Init";
     public const string RedPackageUserGrabbed = "User has Grabbed before";
+    public const string RedPackageGrabbedByOthers = "User has Grabbed by others";
 }
 
 public static class TransferConstant

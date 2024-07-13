@@ -32,7 +32,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly IUserAssetsProvider _userAssetsProvider;
     private const int RankLimit = 50;
     private const string InitReferralTimesCache = "InitReferralTimesCacheKey";
-    private const int ExpireTime = 24;
+    private const string ReferralCalculateTimesCache = "Portkey:ReferralCalculateTimesCache";
+    private const int ExpireTime = 360;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -69,17 +70,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        var growthInfo = await _growthProvider.GetGrowthInfoByCaHashAsync(caHolder.CaHash);
-        if (growthInfo == null)
-        {
-            return 0;
-        }
-
-        // Get First invite users
-        var indexerReferralInfo =
-            await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string> { growthInfo.InviteCode },
-                new List<string> { MethodName.CreateCAHolder }, 0, 0);
-        return indexerReferralInfo.ReferralInfo.Count;
+        var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash , 0 ,
+            Int16.MaxValue);
+        return growthInfo?.Count ?? 0;
     }
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
@@ -117,8 +110,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task CalculateReferralRankAsync()
     {
+        var startTime = 0L;
+        var referralTimes =  await _cacheProvider.Get(ReferralCalculateTimesCache);
+        if (!referralTimes.HasValue)
+        {
+            //_activityDateRangeOptions.ActivityDateRanges.TryGetValue(ActivityEnums.Invition.ToString(),out var dateRange);
+            startTime = StringToTimeStamp(CommonConstant.DefaultReferralActivityStartTime);
+        }
+        else
+        {
+            startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 30000;
+        }
+        
         var endTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        var startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 30000;
+        
         var indexerReferralInfo =
             await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(),
                 new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
@@ -170,6 +175,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
                 score + 1);
         }
+        var expire = TimeSpan.FromDays(ExpireTime);
+        await _cacheProvider.Set(ReferralCalculateTimesCache, "Init", expire);
     }
 
 
@@ -490,5 +497,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
         return dtDateTime;
+    }
+
+    private long StringToTimeStamp(string dateString)
+    {
+        var dateTime = DateTime.Parse(dateString);
+        return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
     }
 }

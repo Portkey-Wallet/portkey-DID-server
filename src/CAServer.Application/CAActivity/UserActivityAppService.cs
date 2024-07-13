@@ -967,7 +967,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
         {
             var nftTransactionName =
-                transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName
+                (transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName or CryptoGiftConstants.CreateCryptoBox 
+                    or CryptoGiftConstants.TransferCryptoBoxes or CryptoGiftConstants.RefundCryptoBox)
                     ? activityDto.TransactionName
                     : typeName;
 

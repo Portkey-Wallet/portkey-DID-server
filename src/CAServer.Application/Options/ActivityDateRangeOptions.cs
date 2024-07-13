@@ -4,7 +4,7 @@ namespace CAServer.Options;
 
 public class ActivityDateRangeOptions
 {
-    public Dictionary<int, ActivityDateRange> ActivityDateRanges { get; set; }
+    public Dictionary<string, ActivityDateRange> ActivityDateRanges { get; set; }
 }
 
 public class ActivityDateRange

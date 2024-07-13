@@ -517,9 +517,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             await _distributedEventBus.PublishAsync(new PayRedPackageEto()
             {
-                RedPackageId = input.Id
+                RedPackageId = input.Id,
+                DisplayType = RedPackageDisplayType.CryptoGift,
+                ReceiverId = userId
             });
-            _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0}", input.Id);
+            _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0} receiverId:{1}", input.Id, userId);
         }
 
         var res = new GrabRedPackageOutputDto()
@@ -580,9 +582,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             {
                 await _distributedEventBus.PublishAsync(new PayRedPackageEto()
                 {
-                    RedPackageId = input.Id
+                    RedPackageId = input.Id,
+                    DisplayType = RedPackageDisplayType.Common,
+                    ReceiverId = CurrentUser.Id.Value
                 });
-                _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0}", input.Id);
+                _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0} receiverId:{1}", input.Id, CurrentUser.Id.Value);
             }
 
             var res = new GrabRedPackageOutputDto()

@@ -4,6 +4,7 @@ using CAServer.Contacts;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Security;
+using Microsoft.Extensions.DependencyInjection;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Users;
@@ -12,7 +13,7 @@ using Xunit;
 namespace CAServer.Contact;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class ContactProfileTest : CAServerApplicationTestBase
+public partial class ContactProfileTest : CAServerApplicationTestBase
 {
     
     private Guid DefaultId = new("3fe8e56b-e700-123e-8cb4-d014b485c1a9");
@@ -27,6 +28,13 @@ public class ContactProfileTest : CAServerApplicationTestBase
         _contactAppService = GetRequiredService<IContactAppService>();
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        base.AfterAddApplication(services);
+        services.AddSingleton(GetMockContactProvider());
+   
     }
     
     [Fact]
