@@ -25,6 +25,7 @@ public class RegisterRequestDto : IValidatableObject
     public ReferralInfo ReferralInfo { get; set; }
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
     
+    public string AccessToken { get; set; }
     public ZkJwtAuthInfoRequestDto ZkJwtAuthInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(

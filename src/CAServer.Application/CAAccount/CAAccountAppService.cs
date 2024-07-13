@@ -23,7 +23,6 @@ using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using CAServer.Verifier;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -62,6 +61,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IVerifierServerClient _verifierServerClient;
     private readonly IIpInfoAppService _ipInfoAppService;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly IVerifierAppService _verifierAppService;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -77,7 +77,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IOptionsSnapshot<ManagerCountLimitOptions> managerCountLimitOptions,
         IVerifierServerClient verifierServerClient,
         IIpInfoAppService ipInfoAppService,
-        JwtSecurityTokenHandler jwtSecurityTokenHandler)
+        JwtSecurityTokenHandler jwtSecurityTokenHandler,
+        IVerifierAppService verifierAppService)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -94,10 +95,17 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _chainOptions = chainOptions.Value;
         _ipInfoAppService = ipInfoAppService;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _verifierAppService = verifierAppService;
     }
     
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
+        //just deal with google guardian, todo apple guardian and facebook guardian
+        if (input.Type.Equals(GuardianIdentifierType.Google))
+        {
+            await _verifierAppService.GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.AccessToken,
+                input.ZkJwtAuthInfo.Salt);
+        }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;

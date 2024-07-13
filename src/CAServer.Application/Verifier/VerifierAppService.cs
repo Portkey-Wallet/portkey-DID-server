@@ -699,4 +699,42 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new Exception("Invalid token");
         }
     }
+    
+    private async Task<Tuple<string, bool>> GetIdentifierHashAsync(string guardianIdentifier, string salt)
+    {
+        var guardianGrainResult = GetGuardian(guardianIdentifier);
+
+        _logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
+            JsonConvert.SerializeObject(guardianGrainResult));
+
+        if (guardianGrainResult.Success)
+        {
+            return Tuple.Create(guardianGrainResult.Data.IdentifierHash, true);
+        }
+
+        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt.GetBytes(Encoding.UTF8));
+
+        return Tuple.Create(identifierHash.ToHex(), false);
+    }
+    
+    public async Task GenerateGuardianAndUserInfoForGoogleZkLoginAsync(string accessToken, string salt)
+    {
+        try
+        {
+            var userInfo = await GetUserInfoFromGoogleAsync(accessToken);
+            var hashInfo = await GetIdentifierHashAsync(userInfo.Id, salt);
+            if (!hashInfo.Item2)
+            {
+                await AddGuardianAsync(userInfo.Id, salt, hashInfo.Item1);
+            }
+
+            await AddUserInfoAsync(
+                ObjectMapper.Map<GoogleUserInfoDto, Dtos.UserExtraInfo>(userInfo));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{Message}", e.Message);
+            throw new UserFriendlyException(e.Message);
+        }
+    }
 }

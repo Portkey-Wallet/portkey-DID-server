@@ -152,7 +152,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ChainGrainDto, ChainCreateEto>();
         CreateMap<ChainGrainDto, ChainUpdateEto>();
         CreateMap<ChainGrainDto, ChainDeleteEto>();
-
+        CreateMap<GoogleUserInfoDto, Verifier.Dtos.UserExtraInfo>();
         CreateMap<VerificationSignatureRequestDto, VierifierCodeRequestInput>();
 
         CreateMap<ChainDto, ChainUpdateEto>();
