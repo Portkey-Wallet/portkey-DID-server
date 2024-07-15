@@ -110,10 +110,10 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
         _logger.LogInformation("CallTransactionAsync PrivateKey:{0} addressFromPrivateKey:{1}", _contractOptions.CommonPrivateKeyForCallTx, addressFromPrivateKey);
-        var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
-            MonitorAelfClientType.GenerateTransactionAsync.ToString());
         _logger.LogInformation("CallTransactionAsync addressFromPrivateKey:{0} contractAddress:{1} methodName:{2} param:{3}", 
             addressFromPrivateKey, contractAddress, methodName, JsonConvert.SerializeObject(param));
+        var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction =
             await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
         _indicatorScope.End(generateIndicator);
