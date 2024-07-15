@@ -67,7 +67,12 @@ public class CAAccountController : CAServerController
     [HttpGet("registerInfo")]
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
-        return await _guardianAppService.GetRegisterInfoAsync(requestDto);
+        // return await _guardianAppService.GetRegisterInfoAsync(requestDto);
+        //todo check the failed reason 
+        return new RegisterInfoResultDto()
+        {
+            OriginChainId = "AELF"
+        };
     }
 
     [HttpGet("transactionFee")]
