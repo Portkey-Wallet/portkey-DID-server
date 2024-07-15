@@ -712,9 +712,28 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             return Tuple.Create(guardianGrainResult.Data.IdentifierHash, true);
         }
 
-        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt.GetBytes(Encoding.UTF8));
+        var identifierHash = GetHashForZk(Encoding.UTF8.GetBytes(guardianIdentifier), salt.GetBytes(Encoding.UTF8));
 
         return Tuple.Create(identifierHash.ToHex(), false);
+    }
+    
+    private Hash GetHashForZk(byte[] identifier, byte[] salt)
+    {
+        const int maxIdentifierLength = 256;
+        const int maxSaltLength = 16;
+
+        if (identifier.Length > maxIdentifierLength)
+        {
+            throw new Exception("Identifier is too long");
+        }
+        //zk salt is define by front end
+        // if (salt.Length != maxSaltLength)
+        // {
+        //     throw new Exception($"Salt has to be {maxSaltLength} bytes.");
+        // }
+
+        var hash = HashHelper.ComputeFrom(identifier);
+        return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
     
     public async Task GenerateGuardianAndUserInfoForGoogleZkLoginAsync(string accessToken, string salt)
