@@ -109,7 +109,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         await client.IsConnectedAsync();
 
         string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
-
+        _logger.LogInformation("CallTransactionAsync PrivateKey:{0} addressFromPrivateKey:{1}", _contractOptions.CommonPrivateKeyForCallTx, addressFromPrivateKey);
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction =
