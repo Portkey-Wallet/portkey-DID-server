@@ -105,7 +105,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _logger.LogInformation("RegisterRequest started.......................");
         if (input.Type.Equals(GuardianIdentifierType.Google))
         {
-            await _verifierAppService.GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.AccessToken,
+            await _verifierAppService.GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.LoginGuardianIdentifier, input.AccessToken,
                 input.ZkLoginInfo.Salt);
         }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);

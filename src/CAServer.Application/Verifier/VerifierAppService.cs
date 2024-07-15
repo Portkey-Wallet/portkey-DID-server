@@ -736,12 +736,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
     
-    public async Task GenerateGuardianAndUserInfoForGoogleZkLoginAsync(string accessToken, string salt)
+    public async Task GenerateGuardianAndUserInfoForGoogleZkLoginAsync(string guardianIdentifier, string accessToken, string salt)
     {
         try
         {
+            var hashInfo = await GetIdentifierHashAsync(guardianIdentifier, salt);
             var userInfo = await GetUserInfoFromGoogleAsync(accessToken);
-            var hashInfo = await GetIdentifierHashAsync(userInfo.Id, salt);
             _logger.LogInformation($"RegisterRequest userInfo:{JsonConvert.SerializeObject(userInfo)} hashInfo:{JsonConvert.SerializeObject(hashInfo)}");
             if (!hashInfo.Item2)
             {
