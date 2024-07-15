@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
@@ -14,8 +17,10 @@ using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Etos;
 using CAServer.Grains;
+using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.IpInfo;
@@ -23,6 +28,8 @@ using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using CAServer.Verifier;
+using CAServer.Verifier.Dtos;
+using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -62,6 +69,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IIpInfoAppService _ipInfoAppService;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IVerifierAppService _verifierAppService;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -78,7 +86,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IVerifierServerClient verifierServerClient,
         IIpInfoAppService ipInfoAppService,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
-        IVerifierAppService verifierAppService)
+        IVerifierAppService verifierAppService,
+        IHttpClientFactory httpClientFactory)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -96,6 +105,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _ipInfoAppService = ipInfoAppService;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _verifierAppService = verifierAppService;
+        _httpClientFactory = httpClientFactory;
     }
     
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -104,7 +114,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _logger.LogInformation("RegisterRequest started.......................");
         if (input.Type.Equals(GuardianIdentifierType.Google))
         {
-            await _verifierAppService.GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.AccessToken,
+            await GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.AccessToken,
                 input.ZkLoginInfo.Salt);
         }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
@@ -133,6 +143,132 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp();
         await _distributedEventBus.PublishAsync(registerCreateEto);
         return new AccountResultDto(registerDto.Id.ToString());
+    }
+    
+    public async Task GenerateGuardianAndUserInfoForGoogleZkLoginAsync(string accessToken, string salt)
+    {
+        try
+        {
+            var userInfo = await GetUserInfoFromGoogleAsync(accessToken);
+            var hashInfo = await GetIdentifierHashAsync(userInfo.Id, salt);
+            _logger.LogInformation($"RegisterRequest userInfo:{JsonConvert.SerializeObject(userInfo)} hashInfo:{JsonConvert.SerializeObject(hashInfo)}");
+            if (!hashInfo.Item2)
+            {
+                await AddGuardianAsync(userInfo.Id, salt, hashInfo.Item1);
+            }
+
+            await AddUserInfoAsync(
+                ObjectMapper.Map<GoogleUserInfoDto, Verifier.Dtos.UserExtraInfo>(userInfo));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{Message}", e.Message);
+            throw new UserFriendlyException(e.Message);
+        }
+    }
+    
+    private async Task<GoogleUserInfoDto> GetUserInfoFromGoogleAsync(string accessToken)
+    {
+        var requestUrl = $"https://www.googleapis.com/oauth2/v2/userinfo?access_token={accessToken}";
+
+        var client = _httpClientFactory.CreateClient();
+        _logger.LogInformation("{message}", $"GetUserInfo from google {requestUrl}");
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
+
+        var result = await response.Content.ReadAsStringAsync();
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            _logger.LogError("{Message}", response.ToString());
+            throw new Exception("Invalid token");
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("{Message}", response.ToString());
+            throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
+        }
+
+        _logger.LogInformation("GetUserInfo from google: {userInfo}", result);
+        var googleUserInfo = JsonConvert.DeserializeObject<GoogleUserInfoDto>(result);
+        if (googleUserInfo == null)
+        {
+            throw new Exception("Get userInfo from google fail.");
+        }
+
+        return googleUserInfo;
+    }
+    
+    private async Task<Tuple<string, bool>> GetIdentifierHashAsync(string guardianIdentifier, string salt)
+    {
+        var guardianGrainResult = GetGuardianByGuardianIdentifier(guardianIdentifier);
+
+        _logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
+            JsonConvert.SerializeObject(guardianGrainResult));
+
+        if (guardianGrainResult.Success)
+        {
+            return Tuple.Create(guardianGrainResult.Data.IdentifierHash, true);
+        }
+
+        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt.GetBytes(Encoding.UTF8));
+
+        return Tuple.Create(identifierHash.ToHex(), false);
+    }
+    
+    private Hash GetHash(byte[] identifier, byte[] salt)
+    {
+        const int maxIdentifierLength = 256;
+        const int maxSaltLength = 16;
+
+        if (identifier.Length > maxIdentifierLength)
+        {
+            throw new Exception("Identifier is too long");
+        }
+
+        if (salt.Length != maxSaltLength)
+        {
+            throw new Exception($"Salt has to be {maxSaltLength} bytes.");
+        }
+
+        var hash = HashHelper.ComputeFrom(identifier);
+        return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
+    }
+    
+    private async Task AddGuardianAsync(string guardianIdentifier, string salt, string identifierHash)
+    {
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrainDto = await guardianGrain.AddGuardianAsync(guardianIdentifier, salt, identifierHash);
+
+        _logger.LogInformation("AddGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
+        if (guardianGrainDto.Success)
+        {
+            _logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
+                JsonConvert.SerializeObject(guardianGrainDto.Data));
+
+            await _distributedEventBus.PublishAsync(
+                ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data));
+        }
+    }
+    
+    private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)
+    {
+        var userExtraInfoGrainId =
+            GrainIdHelper.GenerateGrainId("UserExtraInfo", userExtraInfo.Id);
+        var userExtraInfoGrain = _clusterClient.GetGrain<IUserExtraInfoGrain>(userExtraInfoGrainId);
+
+        var grainDto = await userExtraInfoGrain.AddOrUpdateAsync(
+            ObjectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>(userExtraInfo));
+
+        grainDto.Id = userExtraInfo.Id;
+
+        Logger.LogInformation("Add or update user extra info success, Publish to MQ: {data}",
+            JsonConvert.SerializeObject(userExtraInfo));
+
+        var userExtraInfoEto = ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto);
+        _logger.LogDebug("Publish user extra info to mq: {data}", JsonConvert.SerializeObject(userExtraInfoEto));
+        await _distributedEventBus.PublishAsync(userExtraInfoEto);
     }
 
     private void SetZkLoginParams(RegisterRequestDto input, RegisterDto registerDto, string identifierHash)
@@ -242,6 +378,14 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         await _distributedEventBus.PublishAsync(recoverCreateEto);
 
         return new AccountResultDto(recoveryDto.Id.ToString());
+    }
+    
+    private GrainResultDto<GuardianGrainDto> GetGuardianByGuardianIdentifier(string guardianIdentifier)
+    {
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
+
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        return guardianGrain.GetGuardianAsync(guardianIdentifier).Result;
     }
 
     private void SetRecoveryZkLoginParams(RecoveryRequestDto input, RecoveryDto recoveryDto)
