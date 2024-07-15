@@ -104,7 +104,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         {
             return null;
         }
-
+        _logger.LogInformation("CallTransactionAsync chainInfo:{0}", JsonConvert.SerializeObject(chainInfo));
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
