@@ -32,44 +32,44 @@ public class RecoveryRequestDto : IValidatableObject
         {
             foreach (var recoveryGuardian in GuardiansApproved)
             {
-                if (recoveryGuardian.ZkJwtAuthInfo != null)
+                if (recoveryGuardian.ZkLoginInfo != null)
                 {
-                    if (recoveryGuardian.ZkJwtAuthInfo.ZkProof.IsNullOrEmpty())
+                    if (recoveryGuardian.ZkLoginInfo.ZkProof.IsNullOrEmpty())
                     {
                         yield return new ValidationResult(
-                            "Invalid ZkJwtAuthInfo ZkProof.",
+                            "Invalid ZkLoginInfo ZkProof.",
                             new[] { "ZkProof" }
                         );
                     }
 
-                    if (recoveryGuardian.ZkJwtAuthInfo.Jwt.IsNullOrEmpty())
+                    if (recoveryGuardian.ZkLoginInfo.Jwt.IsNullOrEmpty())
                     {
                         yield return new ValidationResult(
-                            "Invalid ZkJwtAuthInfo Jwt.",
+                            "Invalid ZkLoginInfo Jwt.",
                             new[] { "Jwt" }
                         );
                     }
 
-                    if (recoveryGuardian.ZkJwtAuthInfo.Salt.IsNullOrEmpty())
+                    if (recoveryGuardian.ZkLoginInfo.Salt.IsNullOrEmpty())
                     {
                         yield return new ValidationResult(
-                            "Invalid ZkJwtAuthInfo Salt.",
+                            "Invalid ZkLoginInfo Salt.",
                             new[] { "Salt" }
                         );
                     }
             
-                    if (recoveryGuardian.ZkJwtAuthInfo.Nonce.IsNullOrEmpty())
+                    if (recoveryGuardian.ZkLoginInfo.Nonce.IsNullOrEmpty())
                     {
                         yield return new ValidationResult(
-                            "Invalid ZkJwtAuthInfo Nonce.",
+                            "Invalid ZkLoginInfo Nonce.",
                             new[] { "Nonce" }
                         );
                     }
             
-                    if (recoveryGuardian.ZkJwtAuthInfo.CircuitId.IsNullOrEmpty())
+                    if (recoveryGuardian.ZkLoginInfo.CircuitId.IsNullOrEmpty())
                     {
                         yield return new ValidationResult(
-                            "Invalid ZkJwtAuthInfo CircuitId.",
+                            "Invalid ZkLoginInfo CircuitId.",
                             new[] { "CircuitId" }
                         );
                     }
@@ -86,7 +86,7 @@ public class RecoveryGuardian : IValidatableObject
     public string VerifierId { get; set; }
     public string VerificationDoc { get; set; }
     public string Signature { get; set; }
-    public ZkJwtAuthInfoRequestDto ZkJwtAuthInfo { get; set; }
+    public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)

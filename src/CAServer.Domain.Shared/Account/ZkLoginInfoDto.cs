@@ -1,6 +1,6 @@
 namespace CAServer.CAAccount.Dtos.Zklogin;
 
-public class ZkJwtAuthInfoDto
+public class ZkLoginInfoDto
 {
 	// the type may be changed if we decide to use Poseidon hash function later
 	public string IdentifierHash { get; set;}

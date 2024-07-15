@@ -105,7 +105,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         if (input.Type.Equals(GuardianIdentifierType.Google))
         {
             await _verifierAppService.GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.AccessToken,
-                input.ZkJwtAuthInfo.Salt);
+                input.ZkLoginInfo.Salt);
         }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
@@ -137,46 +137,46 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private void SetZkLoginParams(RegisterRequestDto input, RegisterDto registerDto, string identifierHash)
     {
-        if (input.ZkJwtAuthInfo == null)
+        if (input.ZkLoginInfo == null)
         {
             SetDefaultZkJwtAuthInfo(registerDto.GuardianInfo);
         }
         else
         {
             var current = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            DoSetZkJwtAuthInfo(input.ZkJwtAuthInfo.Jwt, input.ZkJwtAuthInfo.Nonce, input.ZkJwtAuthInfo.ZkProof,
-                input.ZkJwtAuthInfo.Salt, input.ZkJwtAuthInfo.CircuitId,
+            DoSetZkJwtAuthInfo(input.ZkLoginInfo.Jwt, input.ZkLoginInfo.Nonce, input.ZkLoginInfo.ZkProof,
+                input.ZkLoginInfo.Salt, input.ZkLoginInfo.CircuitId,
                 input.Manager, identifierHash, current, registerDto.GuardianInfo);
         }
     }
 
     private void DoSetZkJwtAuthInfo(string jwt, string nonce, string zkProof, string salt, string circuitId, string manager, string identifierHash, long current, GuardianInfo guardianInfo)
     {
-        guardianInfo.ZkJwtAuthInfo.IdentifierHash = identifierHash;
+        guardianInfo.ZkLoginInfo.IdentifierHash = identifierHash;
         var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwt);
-        guardianInfo.ZkJwtAuthInfo.Issuer = jwtToken.Payload.Iss; //jwtToken.Issuer;
-        guardianInfo.ZkJwtAuthInfo.Kid = jwtToken.Header.Kid;
-        guardianInfo.ZkJwtAuthInfo.Nonce = nonce;
-        guardianInfo.ZkJwtAuthInfo.ZkProof = zkProof;
-        guardianInfo.ZkJwtAuthInfo.Salt = salt;
-        guardianInfo.ZkJwtAuthInfo.CircuitId = circuitId;
-        guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.IdentifierHash = identifierHash;
-        guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.ManagerAddress = manager;
-        guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp = current;
+        guardianInfo.ZkLoginInfo.Issuer = jwtToken.Payload.Iss; //jwtToken.Issuer;
+        guardianInfo.ZkLoginInfo.Kid = jwtToken.Header.Kid;
+        guardianInfo.ZkLoginInfo.Nonce = nonce;
+        guardianInfo.ZkLoginInfo.ZkProof = zkProof;
+        guardianInfo.ZkLoginInfo.Salt = salt;
+        guardianInfo.ZkLoginInfo.CircuitId = circuitId;
+        guardianInfo.ZkLoginInfo.NoncePayload.AddManager.IdentifierHash = identifierHash;
+        guardianInfo.ZkLoginInfo.NoncePayload.AddManager.ManagerAddress = manager;
+        guardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp = current;
     }
 
     private static void SetDefaultZkJwtAuthInfo(GuardianInfo guardianInfo)
     {
-        guardianInfo.ZkJwtAuthInfo.IdentifierHash = "";
-        guardianInfo.ZkJwtAuthInfo.Issuer = "";
-        guardianInfo.ZkJwtAuthInfo.Kid = "";
-        guardianInfo.ZkJwtAuthInfo.Nonce = "";
-        guardianInfo.ZkJwtAuthInfo.ZkProof = "";
-        guardianInfo.ZkJwtAuthInfo.Salt = "";
-        guardianInfo.ZkJwtAuthInfo.CircuitId = "";
-        guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.IdentifierHash = "";
-        guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.ManagerAddress = "";
-        guardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp = 0;
+        guardianInfo.ZkLoginInfo.IdentifierHash = "";
+        guardianInfo.ZkLoginInfo.Issuer = "";
+        guardianInfo.ZkLoginInfo.Kid = "";
+        guardianInfo.ZkLoginInfo.Nonce = "";
+        guardianInfo.ZkLoginInfo.ZkProof = "";
+        guardianInfo.ZkLoginInfo.Salt = "";
+        guardianInfo.ZkLoginInfo.CircuitId = "";
+        guardianInfo.ZkLoginInfo.NoncePayload.AddManager.IdentifierHash = "";
+        guardianInfo.ZkLoginInfo.NoncePayload.AddManager.ManagerAddress = "";
+        guardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp = 0;
     }
 
     private GuardianGrainDto GetGuardian(string guardianIdentifier)
@@ -257,11 +257,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 _logger.LogWarning("recoveryGuardian:{0} not exist in RecoveryDto", JsonConvert.SerializeObject(recoveryGuardian));
                 continue;
             }
-            if (recoveryGuardian.ZkJwtAuthInfo != null)
+            if (recoveryGuardian.ZkLoginInfo != null)
             {
-                DoSetZkJwtAuthInfo(recoveryGuardian.ZkJwtAuthInfo.Jwt, recoveryGuardian.ZkJwtAuthInfo.Nonce,
-                    recoveryGuardian.ZkJwtAuthInfo.ZkProof, recoveryGuardian.ZkJwtAuthInfo.Salt,
-                    recoveryGuardian.ZkJwtAuthInfo.CircuitId, input.Manager, guardianInfo.IdentifierHash, current, guardianInfo);
+                DoSetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt, recoveryGuardian.ZkLoginInfo.Nonce,
+                    recoveryGuardian.ZkLoginInfo.ZkProof, recoveryGuardian.ZkLoginInfo.Salt,
+                    recoveryGuardian.ZkLoginInfo.CircuitId, input.Manager, guardianInfo.IdentifierHash, current, guardianInfo);
             } else
             {
                 SetDefaultZkJwtAuthInfo(guardianInfo);

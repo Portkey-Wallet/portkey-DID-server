@@ -266,8 +266,9 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ProjectDelegationFee> __Marshaller_ca_ProjectDelegationFee = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ProjectDelegationFee.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SetCheckOperationDetailsInSignatureEnabledInput> __Marshaller_ca_SetCheckOperationDetailsInSignatureEnabledInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SetCheckOperationDetailsInSignatureEnabledInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetCheckOperationDetailsInSignatureEnabledOutput> __Marshaller_ca_GetCheckOperationDetailsInSignatureEnabledOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetCheckOperationDetailsInSignatureEnabledOutput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.JwtIssuerInput> __Marshaller_ca_JwtIssuerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.JwtIssuerInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput> __Marshaller_ca_JwtIssuerAndEndpointInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.BoolValue> __Marshaller_google_protobuf_BoolValue = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.BoolValue.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.KidPublicKeyInput> __Marshaller_ca_KidPublicKeyInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.KidPublicKeyInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.StartOracleDataFeedsTaskRequest> __Marshaller_ca_StartOracleDataFeedsTaskRequest = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.StartOracleDataFeedsTaskRequest.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Consumer.StartOracleRequestInput> __Marshaller_oracle_StartOracleRequestInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Consumer.StartOracleRequestInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput> __Marshaller_oracle_HandleOracleFulfillmentInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput.Parser.ParseFrom);
@@ -568,19 +569,26 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_Empty,
         __Marshaller_ca_GetCheckOperationDetailsInSignatureEnabledOutput);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CA.JwtIssuerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddJwtIssuer = new aelf::Method<global::Portkey.Contracts.CA.JwtIssuerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddJwtIssuer = new aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
         "AddJwtIssuer",
-        __Marshaller_ca_JwtIssuerInput,
+        __Marshaller_ca_JwtIssuerAndEndpointInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CA.JwtIssuerInput, global::Google.Protobuf.WellKnownTypes.BoolValue> __Method_IsValidIssuer = new aelf::Method<global::Portkey.Contracts.CA.JwtIssuerInput, global::Google.Protobuf.WellKnownTypes.BoolValue>(
+    static readonly aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.BoolValue> __Method_IsValidIssuer = new aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.BoolValue>(
         aelf::MethodType.View,
         __ServiceName,
         "IsValidIssuer",
-        __Marshaller_ca_JwtIssuerInput,
+        __Marshaller_ca_JwtIssuerAndEndpointInput,
         __Marshaller_google_protobuf_BoolValue);
+
+    static readonly aelf::Method<global::Portkey.Contracts.CA.KidPublicKeyInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddKidPublicKey = new aelf::Method<global::Portkey.Contracts.CA.KidPublicKeyInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "AddKidPublicKey",
+        __Marshaller_ca_KidPublicKeyInput,
+        __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::Portkey.Contracts.CA.StartOracleDataFeedsTaskRequest, global::Google.Protobuf.WellKnownTypes.Empty> __Method_StartOracleDataFeedsTask = new aelf::Method<global::Portkey.Contracts.CA.StartOracleDataFeedsTaskRequest, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
@@ -827,10 +835,10 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_Empty,
         __Marshaller_caimpl_GetVerifierServersOutput);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CA.VerifyingKey, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddVerifyingKey = new aelf::Method<global::Portkey.Contracts.CA.VerifyingKey, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Portkey.Contracts.CA.VerifyingKey, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddOrUpdateVerifyingKey = new aelf::Method<global::Portkey.Contracts.CA.VerifyingKey, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
-        "AddVerifyingKey",
+        "AddOrUpdateVerifyingKey",
         __Marshaller_caimpl_VerifyingKey,
         __Marshaller_google_protobuf_Empty);
 
@@ -1060,12 +1068,17 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddJwtIssuer(global::Portkey.Contracts.CA.JwtIssuerInput input)
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddJwtIssuer(global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput input)
       {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.BoolValue IsValidIssuer(global::Portkey.Contracts.CA.JwtIssuerInput input)
+      public virtual global::Google.Protobuf.WellKnownTypes.BoolValue IsValidIssuer(global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddKidPublicKey(global::Portkey.Contracts.CA.KidPublicKeyInput input)
       {
         throw new global::System.NotImplementedException();
       }
@@ -1245,7 +1258,7 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddVerifyingKey(global::Portkey.Contracts.CA.VerifyingKey input)
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddOrUpdateVerifyingKey(global::Portkey.Contracts.CA.VerifyingKey input)
       {
         throw new global::System.NotImplementedException();
       }
@@ -1305,6 +1318,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_GetCheckOperationDetailsInSignatureEnabled, serviceImpl.GetCheckOperationDetailsInSignatureEnabled)
           .AddMethod(__Method_AddJwtIssuer, serviceImpl.AddJwtIssuer)
           .AddMethod(__Method_IsValidIssuer, serviceImpl.IsValidIssuer)
+          .AddMethod(__Method_AddKidPublicKey, serviceImpl.AddKidPublicKey)
           .AddMethod(__Method_StartOracleDataFeedsTask, serviceImpl.StartOracleDataFeedsTask)
           .AddMethod(__Method_StartOracleRequest, serviceImpl.StartOracleRequest)
           .AddMethod(__Method_HandleOracleFulfillment, serviceImpl.HandleOracleFulfillment)
@@ -1340,7 +1354,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_RemoveVerifierServerEndPoints, serviceImpl.RemoveVerifierServerEndPoints)
           .AddMethod(__Method_RemoveVerifierServer, serviceImpl.RemoveVerifierServer)
           .AddMethod(__Method_GetVerifierServers, serviceImpl.GetVerifierServers)
-          .AddMethod(__Method_AddVerifyingKey, serviceImpl.AddVerifyingKey)
+          .AddMethod(__Method_AddOrUpdateVerifyingKey, serviceImpl.AddOrUpdateVerifyingKey)
           .AddMethod(__Method_GetVerifyingKey, serviceImpl.GetVerifyingKey)
           .AddMethod(__Method_SetOracleAddress, serviceImpl.SetOracleAddress).Build();
     }

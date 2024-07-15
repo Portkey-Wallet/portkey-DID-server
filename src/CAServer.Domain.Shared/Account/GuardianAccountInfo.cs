@@ -8,7 +8,7 @@ public class GuardianInfo
     public GuardianType Type { get; set; }
     public VerificationInfo VerificationInfo { get; set; }
     
-    public ZkJwtAuthInfoDto ZkJwtAuthInfo { get; set; }
+    public ZkLoginInfoDto ZkLoginInfo { get; set; }
 }
 
 public class VerificationInfo

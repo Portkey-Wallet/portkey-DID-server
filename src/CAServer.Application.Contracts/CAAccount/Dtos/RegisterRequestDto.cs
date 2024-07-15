@@ -26,7 +26,7 @@ public class RegisterRequestDto : IValidatableObject
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
     
     public string AccessToken { get; set; }
-    public ZkJwtAuthInfoRequestDto ZkJwtAuthInfo { get; set; }
+    public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
@@ -62,44 +62,44 @@ public class RegisterRequestDto : IValidatableObject
             );
         }
 
-        if (ZkJwtAuthInfo != null)
+        if (ZkLoginInfo != null)
         {
-            if (ZkJwtAuthInfo.ZkProof.IsNullOrEmpty())
+            if (ZkLoginInfo.ZkProof.IsNullOrEmpty())
             {
                 yield return new ValidationResult(
-                    "Invalid ZkJwtAuthInfo ZkProof.",
+                    "Invalid ZkLoginInfo ZkProof.",
                     new[] { "ZkProof" }
                 );
             }
 
-            if (ZkJwtAuthInfo.Jwt.IsNullOrEmpty())
+            if (ZkLoginInfo.Jwt.IsNullOrEmpty())
             {
                 yield return new ValidationResult(
-                    "Invalid ZkJwtAuthInfo Jwt.",
+                    "Invalid ZkLoginInfo Jwt.",
                     new[] { "Jwt" }
                 );
             }
 
-            if (ZkJwtAuthInfo.Salt.IsNullOrEmpty())
+            if (ZkLoginInfo.Salt.IsNullOrEmpty())
             {
                 yield return new ValidationResult(
-                    "Invalid ZkJwtAuthInfo Salt.",
+                    "Invalid ZkLoginInfo Salt.",
                     new[] { "Salt" }
                 );
             }
             
-            if (ZkJwtAuthInfo.Nonce.IsNullOrEmpty())
+            if (ZkLoginInfo.Nonce.IsNullOrEmpty())
             {
                 yield return new ValidationResult(
-                    "Invalid ZkJwtAuthInfo Nonce.",
+                    "Invalid ZkLoginInfo Nonce.",
                     new[] { "Nonce" }
                 );
             }
             
-            if (ZkJwtAuthInfo.CircuitId.IsNullOrEmpty())
+            if (ZkLoginInfo.CircuitId.IsNullOrEmpty())
             {
                 yield return new ValidationResult(
-                    "Invalid ZkJwtAuthInfo CircuitId.",
+                    "Invalid ZkLoginInfo CircuitId.",
                     new[] { "CircuitId" }
                 );
             }

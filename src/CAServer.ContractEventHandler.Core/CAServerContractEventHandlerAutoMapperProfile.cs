@@ -33,15 +33,15 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
                         ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
-                ZkOidcInfo = new ZkJwtAuthInfo
+                ZkLoginInfo = new ZkLoginInfo
                 {
                     IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
                         ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
-                    Salt = e.GuardianInfo.ZkJwtAuthInfo.Salt,
-                    Nonce = e.GuardianInfo.ZkJwtAuthInfo.Nonce,
-                    ZkProof = e.GuardianInfo.ZkJwtAuthInfo.ZkProof,
-                    Issuer = e.GuardianInfo.ZkJwtAuthInfo.Issuer,
-                    Kid = e.GuardianInfo.ZkJwtAuthInfo.Kid,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Kid,
                     NoncePayload = new NoncePayload
                     {
                         AddManagerAddress = new AddManager
@@ -52,8 +52,8 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                                 ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
                             Timestamp = new Timestamp
                             {
-                                Seconds = e.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp / 1000,
-                                Nanos = (int)((e.GuardianInfo.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
+                                Nanos = (int)((e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
                             }
                         }
                     }
@@ -80,15 +80,15 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                         VerificationDoc = g.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
                             ? string.Empty : g.VerificationInfo.VerificationDoc
                     },
-                    ZkOidcInfo = new ZkJwtAuthInfo
+                    ZkLoginInfo = new ZkLoginInfo
                     {
                         IdentifierHash = g.IdentifierHash.IsNullOrWhiteSpace()
                             ? Hash.Empty : Hash.LoadFromHex(g.IdentifierHash),
-                        Salt = g.ZkJwtAuthInfo.Salt.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Salt,
-                        Nonce = g.ZkJwtAuthInfo.Nonce.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Nonce,
-                        ZkProof = g.ZkJwtAuthInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Nonce,
-                        Issuer = g.ZkJwtAuthInfo.Issuer.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Issuer,
-                        Kid = g.ZkJwtAuthInfo.Kid.IsNullOrEmpty() ? string.Empty : g.ZkJwtAuthInfo.Kid,
+                        Salt = g.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Salt,
+                        Nonce = g.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
+                        ZkProof = g.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
+                        Issuer = g.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Issuer,
+                        Kid = g.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Kid,
                         NoncePayload = new NoncePayload
                         {
                             AddManagerAddress = new AddManager
@@ -99,8 +99,8 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                                     ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
                                 Timestamp = new Timestamp
                                 {
-                                    Seconds = g.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp / 1000,
-                                    Nanos = (int)((g.ZkJwtAuthInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                                    Seconds = g.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
+                                    Nanos = (int)((g.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
                                 }
                             }
                         }
