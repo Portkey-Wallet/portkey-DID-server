@@ -757,4 +757,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new UserFriendlyException(e.Message);
         }
     }
+
+    public async Task<GuardianEto> MyAddGuardianAsync(string guardianIdentifier, string salt)
+    {
+        var identifierHash = GetHashForZk(Encoding.UTF8.GetBytes(guardianIdentifier), salt.GetBytes(Encoding.UTF8));
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrainDto = await guardianGrain.AddGuardianAsync(guardianIdentifier, salt, identifierHash.ToHex());
+        return ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data);
+    }
 }

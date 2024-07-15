@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Google;
+using CAServer.Guardian;
 using CAServer.IpWhiteList;
 using CAServer.Switch;
 using CAServer.Verifier;
@@ -309,5 +310,11 @@ public class CAVerifierController : CAServerController
         {
             throw new UserFriendlyException("OperationType is invalid");
         }
+    }
+
+    [HttpGet("my/test")]
+    public async Task<GuardianEto> MyAddGuardianAsync(string guardianIdentifier, string salt)
+    {
+        return await _verifierAppService.MyAddGuardianAsync(guardianIdentifier, salt);
     }
 }

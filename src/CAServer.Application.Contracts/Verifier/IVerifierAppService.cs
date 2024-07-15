@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.Dtos;
+using CAServer.Guardian;
 using CAServer.Verifier.Dtos;
 
 namespace CAServer.Verifier;
@@ -18,4 +19,6 @@ public interface IVerifierAppService
     public Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto);
     Task<VerificationCodeResponse> VerifyTwitterTokenAsync(VerifyTokenRequestDto requestDto);
     Task GenerateGuardianAndUserInfoForGoogleZkLoginAsync(string guardianIdentifier, string accessToken, string salt);
+
+    public Task<GuardianEto> MyAddGuardianAsync(string guardianIdentifier, string salt);
 }
