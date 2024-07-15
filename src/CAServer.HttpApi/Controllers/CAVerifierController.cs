@@ -269,7 +269,13 @@ public class CAVerifierController : CAServerController
     [HttpPost("getVerifierServer")]
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)
     {
-        return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
+        // return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
+        return new GetVerifierServerResponse()
+        {
+            Id = "e8c0652f79ef46f4775135ab146708bb14e806844dde5a680e4be3f96d46b6b8",
+            ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Gauss.png",
+            Name = "Gauss"
+        };
     }
     
 
