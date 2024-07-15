@@ -101,12 +101,14 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         //just deal with google guardian, todo apple guardian and facebook guardian
+        _logger.LogInformation("RegisterRequest started.......................");
         if (input.Type.Equals(GuardianIdentifierType.Google))
         {
             await _verifierAppService.GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.AccessToken,
                 input.ZkJwtAuthInfo.Salt);
         }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
+        _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
         SetZkLoginParams(input, registerDto, guardianGrainDto.IdentifierHash);

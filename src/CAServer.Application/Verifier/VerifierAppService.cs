@@ -723,6 +723,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userInfo = await GetUserInfoFromGoogleAsync(accessToken);
             var hashInfo = await GetIdentifierHashAsync(userInfo.Id, salt);
+            _logger.LogInformation($"RegisterRequest userInfo:{JsonConvert.SerializeObject(userInfo)} hashInfo:{JsonConvert.SerializeObject(hashInfo)}");
             if (!hashInfo.Item2)
             {
                 await AddGuardianAsync(userInfo.Id, salt, hashInfo.Item1);
