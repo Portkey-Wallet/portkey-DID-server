@@ -469,6 +469,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             throw new UserFriendlyException("Invalidate address");
         }
 
+        if (address.Contains('_'))
+        {
+            address = address.Split("_")[1];
+        }
+
         var result = new CAHolderExistsResponseDto();
         var caAddresses = new List<string>
         {
