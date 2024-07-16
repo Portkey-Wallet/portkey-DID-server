@@ -569,10 +569,10 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_Empty,
         __Marshaller_ca_GetCheckOperationDetailsInSignatureEnabledOutput);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddJwtIssuer = new aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddOrUpdateJwtIssuer = new aelf::Method<global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
-        "AddJwtIssuer",
+        "AddOrUpdateJwtIssuer",
         __Marshaller_ca_JwtIssuerAndEndpointInput,
         __Marshaller_google_protobuf_Empty);
 
@@ -1068,7 +1068,7 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddJwtIssuer(global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput input)
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddOrUpdateJwtIssuer(global::Portkey.Contracts.CA.JwtIssuerAndEndpointInput input)
       {
         throw new global::System.NotImplementedException();
       }
@@ -1316,7 +1316,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_GetProjectDelegationFee, serviceImpl.GetProjectDelegationFee)
           .AddMethod(__Method_SetCheckOperationDetailsInSignatureEnabled, serviceImpl.SetCheckOperationDetailsInSignatureEnabled)
           .AddMethod(__Method_GetCheckOperationDetailsInSignatureEnabled, serviceImpl.GetCheckOperationDetailsInSignatureEnabled)
-          .AddMethod(__Method_AddJwtIssuer, serviceImpl.AddJwtIssuer)
+          .AddMethod(__Method_AddOrUpdateJwtIssuer, serviceImpl.AddOrUpdateJwtIssuer)
           .AddMethod(__Method_IsValidIssuer, serviceImpl.IsValidIssuer)
           .AddMethod(__Method_AddKidPublicKey, serviceImpl.AddKidPublicKey)
           .AddMethod(__Method_StartOracleDataFeedsTask, serviceImpl.StartOracleDataFeedsTask)

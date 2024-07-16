@@ -80,6 +80,7 @@ using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using CoinGecko.Entities.Response.Coins;
+using Google.Protobuf;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.AutoMapper;
@@ -134,6 +135,52 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RegisterDto, CAAccountEto>();
         CreateMap<RecoveryDto, RecoveryGrainDto>();
         CreateMap<RecoveryGrainDto, AccountRecoverCreateEto>();
+        CreateMap<AccountRegisterCreateEto, CreateHolderDto>()
+            .ForMember(d => d.GuardianInfo, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
+            {
+                Type = (Portkey.Contracts.CA.GuardianType)(int)e.GuardianInfo.Type,
+                IdentifierHash = Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
+                    Signature = e.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace() 
+                        ? ByteString.Empty : ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
+                        ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = new ZkLoginInfo
+                {
+                    IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Kid,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    NoncePayload = new NoncePayload
+                    {
+                        AddManagerAddress = new AddManager
+                        {
+                            IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
+                                ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                            ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
+                                ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
+                            Timestamp = new Timestamp
+                            {
+                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
+                                Nanos = (int)((e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                            }
+                        }
+                    }
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = Address.FromBase58(e.ManagerInfo.Address),
+                ExtraData = e.ManagerInfo.ExtraData
+            }));
 
         CreateMap<RecoveryDto, CAAccountRecoveryEto>();
         CreateMap<RegisterGrainDto, AccountRegisterCompletedEto>();

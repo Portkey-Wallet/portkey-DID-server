@@ -42,6 +42,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                     ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.ZkProof,
                     Issuer = e.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Issuer,
                     Kid = e.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Kid,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.CircuitId,
                     NoncePayload = new NoncePayload
                     {
                         AddManagerAddress = new AddManager
@@ -89,6 +90,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                         ZkProof = g.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
                         Issuer = g.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Issuer,
                         Kid = g.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Kid,
+                        CircuitId = g.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.CircuitId,
                         NoncePayload = new NoncePayload
                         {
                             AddManagerAddress = new AddManager

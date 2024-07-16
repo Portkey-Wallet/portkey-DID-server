@@ -38,6 +38,14 @@ namespace Portkey.Contracts.CA {
     {
       return new List<VerifyingKeyAdded>
       {
+      new VerifyingKeyAdded
+      {
+        CircuitId = CircuitId
+      },
+      new VerifyingKeyAdded
+      {
+        VerifyingKey = VerifyingKey
+      },
       };
     }
 
@@ -45,7 +53,6 @@ namespace Portkey.Contracts.CA {
     {
       return new VerifyingKeyAdded
       {
-        CircuitId = CircuitId,
       };
     }
   }
