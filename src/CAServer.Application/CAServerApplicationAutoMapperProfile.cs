@@ -7,7 +7,6 @@ using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
-using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -15,7 +14,6 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
-using CAServer.CryptoGift.Dtos;
 using CAServer.DataReporting.Dtos;
 using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
@@ -27,7 +25,6 @@ using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
-using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
@@ -94,9 +91,9 @@ using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 using Google.Protobuf.Collections;
-using static Google.Protobuf.WellKnownTypes.TimeExtensions;
+using Google.Protobuf.WellKnownTypes;
+using Enum = System.Enum;
 using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
-using NoncePayload = CAServer.CAAccount.Dtos.Zklogin.NoncePayload;
 
 namespace CAServer;
 
@@ -291,6 +288,25 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = new ZkLoginInfo()
+                {
+                    IdentifierHash = e.GuardianInfo.IdentifierHash,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    NoncePayload = new NoncePayload()
+                    {
+                        AddManagerAddress = new AddManager()
+                        {
+                            IdentifierHash = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.IdentifierHash,
+                            ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                            Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                        }
+                    }
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -313,6 +329,25 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = new ZkLoginInfo()
+                {
+                    IdentifierHash = e.GuardianInfo.IdentifierHash,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    NoncePayload = new NoncePayload()
+                    {
+                        AddManagerAddress = new AddManager()
+                        {
+                            IdentifierHash = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.IdentifierHash,
+                            ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                            Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                        }
+                    }
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -333,6 +368,31 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         Id = g.VerificationInfo.Id,
                         Signature = g.VerificationInfo.Signature,
                         VerificationDoc = g.VerificationInfo.VerificationDoc
+                    },
+                    ZkLoginInfo = new ZkLoginInfo()
+                    {
+                        IdentifierHash = g.ZkLoginInfo == null ? Hash.Empty : g.ZkLoginInfo.IdentifierHash,
+                        Issuer = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Issuer,
+                        Kid = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Kid,
+                        Nonce = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Nonce,
+                        ZkProof = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.ZkProof,
+                        Salt = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Salt,
+                        CircuitId = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.CircuitId,
+                        NoncePayload = new NoncePayload()
+                        {
+                            AddManagerAddress = new AddManager()
+                            {
+                                IdentifierHash = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
+                                                                       || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null 
+                                    ? Hash.Empty : g.ZkLoginInfo.NoncePayload.AddManagerAddress.IdentifierHash,
+                                ManagerAddress = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
+                                                                       || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null 
+                                    ? new Address() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                                Timestamp = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
+                                                                  || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null
+                                    ? new Timestamp() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                            }
+                        }
                     }
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
