@@ -5,8 +5,12 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
+using AutoMapper.Internal.Mappers;
 using CAServer.CAAccount;
 using CAServer.Commons;
+using CAServer.Dtos;
+using CAServer.Etos;
+using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
@@ -20,8 +24,8 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
-using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
+using IObjectMapper = Volo.Abp.ObjectMapping.IObjectMapper;
 
 namespace CAServer.ContractService;
 
@@ -61,7 +65,8 @@ public class ContractService : IContractService, ISingletonDependency
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
             _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
-
+            _logger.LogInformation("SendTransactionToChain ownAddress:{0} contractAddress:{1} methodName:{2} param:{3}",
+                ownAddress, chainInfo.ContractAddress, methodName, JsonConvert.SerializeObject(param));
             var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.GenerateTransactionAsync.ToString());
 
@@ -172,6 +177,18 @@ public class ContractService : IContractService, ISingletonDependency
             _logger.LogError(e, "ForwardTransactionToChainAsync error,chain:{chain}", chainId);
             return new TransactionInfoDto();
         }
+    }
+    
+    public async Task<TransactionResultDto> TestCreateHolderInfoAsync(RegisterDto registerDto)
+    {
+        var registerGrainDto = _objectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto);
+        var registerCreateEto = _objectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(registerGrainDto);
+        CreateHolderDto createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(registerCreateEto);
+        var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
+        _logger.LogInformation("TestCreateHolderInfoAsync param:{0}", JsonConvert.SerializeObject(param));
+        var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
+        _logger.LogInformation("TestCreateHolderInfoAsync result:{0}", JsonConvert.SerializeObject(result));
+        return result.TransactionResultDto;
     }
 
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)

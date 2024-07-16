@@ -11,6 +11,7 @@ using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.CAAccount.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.ContractService;
 using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Etos;
@@ -63,6 +64,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IIpInfoAppService _ipInfoAppService;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IVerifierAppService _verifierAppService;
+    private readonly IContractService _contractService;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -79,7 +81,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IVerifierServerClient verifierServerClient,
         IIpInfoAppService ipInfoAppService,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
-        IVerifierAppService verifierAppService)
+        IVerifierAppService verifierAppService,
+        IContractService contractService)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -97,6 +100,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _ipInfoAppService = ipInfoAppService;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _verifierAppService = verifierAppService;
+        _contractService = contractService;
     }
     
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -693,5 +697,10 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 chainId);
 
         return output?.CaHash?.ToHex();
+    }
+
+    public async Task TestCreateHolderInfoAsync(RegisterDto registerDto)
+    {
+        await _contractService.TestCreateHolderInfoAsync(registerDto);
     }
 }
