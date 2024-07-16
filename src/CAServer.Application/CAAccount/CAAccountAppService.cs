@@ -131,6 +131,10 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var registerCreateEto = ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data);
+        if (result.Data.GuardianInfo.ZkLoginInfo != null)
+        {
+            registerCreateEto.GuardianInfo.ZkLoginInfo = result.Data.GuardianInfo.ZkLoginInfo;
+        }
         registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp();
         await _distributedEventBus.PublishAsync(registerCreateEto);
         return new AccountResultDto(registerDto.Id.ToString());

@@ -194,8 +194,6 @@ public class ContractAppService : IContractAppService
             }
             createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(message);
             _logger.LogInformation("CreateHolderInfo createHolderDto:{0}", JsonConvert.SerializeObject(createHolderDto));
-            //todo how to deal with the circuit_id
-            // createHolderDto.ZkJwtAuthInfoDto.CircuitId = ;
         }
         catch (Exception e)
         {
