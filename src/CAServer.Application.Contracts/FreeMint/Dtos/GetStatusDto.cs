@@ -4,5 +4,5 @@ namespace CAServer.FreeMint.Dtos;
 
 public class GetStatusDto
 {
-    public FreeMintStatus Status { get; set; }
+    public string Status { get; set; }
 }

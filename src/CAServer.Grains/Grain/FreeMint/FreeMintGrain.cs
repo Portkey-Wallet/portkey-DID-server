@@ -46,12 +46,12 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         var result = new GrainResultDto<GetRecentStatusDto>();
         var statusDto = new GetRecentStatusDto
         {
-            Status = FreeMintStatus.NONE
+            Status = FreeMintStatus.NONE.ToString()
         };
 
         if (!string.IsNullOrEmpty(State.Id) && !State.MintInfos.IsNullOrEmpty())
         {
-            statusDto.Status = State.MintInfos.Last().Status;
+            statusDto.Status = State.MintInfos.Last().Status.ToString();
             statusDto.ItemId = State.MintInfos.Last().ItemId;
         }
 
@@ -74,7 +74,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         result.Success = true;
         result.Data = new GetRecentStatusDto()
         {
-            Status = itemInfo.Status,
+            Status = itemInfo.Status.ToString(),
             ItemId = itemInfo.ItemId
         };
 

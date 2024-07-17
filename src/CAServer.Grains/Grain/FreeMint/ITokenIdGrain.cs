@@ -5,7 +5,7 @@ using Volo.Abp;
 
 namespace CAServer.Grains.Grain.FreeMint;
 
-public interface ITokenIdGrain
+public interface ITokenIdGrain : IGrainWithStringKey
 {
     Task<string> GenerateTokenId();
     Task<GrainResultDto> CheckUseTokenId(string tokenId);
@@ -28,7 +28,7 @@ public class TokenIdGrain : Grain<TokenIdState>, ITokenIdGrain
 
     public async Task<string> GenerateTokenId()
     {
-        if (this.GetPrimaryKeyString() != CommonConstant.InviteCodeGrainId)
+        if (this.GetPrimaryKeyString() != CommonConstant.FreeMintTokenIdGrainId)
         {
             throw new UserFriendlyException("invalid grain id");
         }

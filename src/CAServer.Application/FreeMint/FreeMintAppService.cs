@@ -1,4 +1,7 @@
+using System;
 using System.Threading.Tasks;
+using CAServer.Commons;
+using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.FreeMint;
 using CAServer.Options;
@@ -39,25 +42,32 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         {
             CollectionInfo = _freeMintOptions.CollectionInfo
         };
-        mintInfoDto.TokenId = "1";
 
+        var grain = _clusterClient.GetGrain<ITokenIdGrain>(CommonConstant.FreeMintTokenIdGrainId);
+        mintInfoDto.TokenId = await grain.GenerateTokenId();
         return mintInfoDto;
     }
 
-    public Task<ConfirmDto> ConfirmAsync(ConfirmRequestDto requestDto)
+    public async Task<ConfirmDto> ConfirmAsync(ConfirmRequestDto requestDto)
     {
         var collectionInfo = _freeMintOptions.CollectionInfo;
-        
+
         // set grain info , status->pending
         // set status in es
         // send transaction
         // 
-        throw new System.NotImplementedException();
+        return new ConfirmDto()
+        {
+            ItemId = Guid.NewGuid().ToString()
+        };
     }
 
-    public Task<ConfirmDto> MintAgainAsync(MintAgainRequestDto requestDto)
+    public async Task<ConfirmDto> MintAgainAsync(MintAgainRequestDto requestDto)
     {
-        throw new System.NotImplementedException();
+        return new ConfirmDto()
+        {
+            ItemId = requestDto.ItemId
+        };
     }
 
     public async Task<GetStatusDto> GetStatusAsync(string itemId)
@@ -68,15 +78,42 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         {
             throw new UserFriendlyException(statusResult.Message);
         }
-        
+
         return new GetStatusDto
         {
             Status = statusResult.Data.Status
         };
     }
 
-    public Task<GetNftItemDetailDto> GetNftItemDetailAsync(string itemId)
+    public async Task<GetNftItemDetailDto> GetNftItemDetailAsync(string itemId)
     {
-        throw new System.NotImplementedException();
+        return new GetNftItemDetailDto()
+        {
+            Symbol = "FREEMINT-11",
+            ChainId = "tDVW",
+            TokenId = "11",
+            Alias = "a1",
+            Balance = "1",
+            TotalSupply = 1,
+            CirculatingSupply = 1,
+            ImageUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
+            TokenContractAddress = "ASh2Wt7nSEmYqnGxPPzp4pnVDU4uhj1XW9Se5VeZcX2UDdyjx",
+            ImageLargeUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/1008xAUTO/1718204222065-Activity%20Icon.png",
+            Decimals = "0",
+            CollectionSymbol = "FREEMINT-0",
+            TokenName = "a1",
+            Status = FreeMintStatus.SUCCESS
+        };
+    }
+
+    public async Task<GetItemInfoDto> GetItemInfoAsync(string itemId)
+    {
+        return new GetItemInfoDto()
+        {
+            ImageUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
+            Name = "test",
+            TokenId = "10",
+            Description = "mock data"
+        };
     }
 }

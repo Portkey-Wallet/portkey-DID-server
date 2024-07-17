@@ -115,4 +115,8 @@ public static class CommonConstant
     public const string ReferralKey = "Portkey:ReferralBank";
 
     public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
+    
+    
+    public const int InitTokenId = 10;
+    public const string FreeMintTokenIdGrainId = "FreeMint-TokenId";
 }

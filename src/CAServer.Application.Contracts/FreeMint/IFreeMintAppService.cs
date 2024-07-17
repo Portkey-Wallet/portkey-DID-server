@@ -11,4 +11,5 @@ public interface IFreeMintAppService
     Task<ConfirmDto> MintAgainAsync(MintAgainRequestDto requestDto);
     Task<GetStatusDto> GetStatusAsync(string itemId);
     Task<GetNftItemDetailDto> GetNftItemDetailAsync(string itemId);
+    Task<GetItemInfoDto> GetItemInfoAsync(string itemId);
 }
