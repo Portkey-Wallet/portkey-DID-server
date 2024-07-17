@@ -14,16 +14,19 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.CryptoGift.Dtos;
 using CAServer.DataReporting.Dtos;
 using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
@@ -33,6 +36,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State;
 using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Growth.Etos;
@@ -109,6 +113,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactAddressDto, ContactAddress>().ReverseMap();
         CreateMap<ContactAddressDto, ContactAddressEto>();
         CreateMap<CreateUpdateContactDto, ContactGrainDto>();
+        CreateMap<ContactIndex, ContactResultDto>();
         CreateMap<ContactGrainDto, ContactResultDto>()
             .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
 
@@ -621,6 +626,16 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
+        CreateMap<RedPackageIndex, CryptoGiftHistoryItemDto>()
+            .ForMember(dest => dest.Id, src => src.MapFrom(m => m.RedPackageId));
+        CreateMap<PreGrabItem, PreGrabbedItemDto>()
+            .ForMember(dest => dest.Username, src => src.MapFrom(m => "Pending Deposit"));
+        CreateMap<PreGrabbedItemDto, GrabItemDto>();
+        CreateMap<RedPackageDetailDto, CryptoGiftHistoryItemDto>()
+            .ForMember(dest => dest.Label, src => src.MapFrom(m => ETransferConstant.SgrName.Equals(m.Symbol) ? ETransferConstant.SgrDisplayName : null))
+            .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
+            .ForMember(dest => dest.Decimals, src => src.MapFrom(m => m.Decimal))
+            .ForMember(dest => dest.DisplayStatus, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));

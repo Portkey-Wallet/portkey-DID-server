@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using CAServer.Facebook;
+using CAServer.Facebook.Dtos;
 using CAServer.Verifier;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,22 +18,28 @@ public class FacebookAuthController : CAServerController
 {
     private readonly IFacebookAuthAppService _facebookAuthAppService;
     private readonly FacebookOptions _facebookOptions;
-    private readonly ILogger<FacebookAuthController> _logger;
+
 
     public FacebookAuthController(IFacebookAuthAppService facebookAuthAppService,
-        IOptionsSnapshot<FacebookOptions> facebookOptions, ILogger<FacebookAuthController> logger)
+        IOptionsSnapshot<FacebookOptions> facebookOptions)
     {
         _facebookAuthAppService = facebookAuthAppService;
-        _logger = logger;
+
         _facebookOptions = facebookOptions.Value;
     }
 
     [HttpGet("receive")]
     public async Task<IActionResult> ReceiveAsync(string code)
     {
+        if (string.IsNullOrEmpty(code))
+        {
+            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback?type=Facebook";
+            return Redirect(redirectUrl);
+        }
+
         var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Receive);
         var result = response.Data;
-        if (string.IsNullOrEmpty(response.Code))
+        if (result != null)
         {
             var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback?userId="
                                                                + result.UserId + "&token=" + result.AccessToken +
@@ -50,9 +58,14 @@ public class FacebookAuthController : CAServerController
     [HttpGet("unifyReceive")]
     public async Task<IActionResult> UnifyReceiveAsync(string code)
     {
+        if (string.IsNullOrEmpty(code))
+        {
+            var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback?type=Facebook";
+            return Redirect(redirectUrl);
+        }
         var response = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.UnifyReceive);
         var result = response.Data;
-        if (string.IsNullOrEmpty(response.Code))
+        if (result != null)
         {
             var redirectUrl = _facebookOptions.FacebookAuthUrl + "/auth-callback?userId=" + result.UserId + "&token=" +
                               result.AccessToken + "&expiresTime=" + result.ExpiresTime + "&type=Facebook";
@@ -60,7 +73,7 @@ public class FacebookAuthController : CAServerController
         }
 
         var errorRedirectUrl = _facebookOptions.FacebookAuthUrl + "/auth-callback?code=" + response.Code + "&message=" +
-                          response.Message + "&type=Facebook";
+                               response.Message + "&type=Facebook";
         return Redirect(errorRedirectUrl);
     }
 }

@@ -30,16 +30,18 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private readonly INickNameAppService _nickNameAppService;
     private readonly IGrowthProvider _growthProvider;
     private readonly GrowthOptions _growthOptions;
+    private readonly ActivityDateRangeOptions _activityDateRangeOptions;
 
     public GrowthAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         IRedDotAppService redDotAppService, INickNameAppService nickNameAppService,
-        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider)
+        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider, IOptionsSnapshot<ActivityDateRangeOptions> activityDataRangeOptions)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _redDotAppService = redDotAppService;
         _nickNameAppService = nickNameAppService;
         _growthProvider = growthProvider;
+        _activityDateRangeOptions = activityDataRangeOptions.Value;
         _growthOptions = growthOptions.Value;
     }
 
@@ -148,6 +150,22 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         return
             $"{_growthOptions.RedirectUrl}?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}&networkType={_growthOptions.NetworkType ?? string.Empty}";
     }
+
+    public async Task<ActivityDateRangeResponseDto> GetActivityDateRangeAsync(ActivityEnums activityEnum)
+    {
+        
+        _activityDateRangeOptions.ActivityDateRanges.TryGetValue(activityEnum.ToString(),out var dateRange);
+        if (dateRange != null)
+        {
+            return new ActivityDateRangeResponseDto
+            {
+                StartDate = dateRange.StartDate,
+                EndDate = dateRange.EndDate
+            };
+        }
+        return new ActivityDateRangeResponseDto();
+    }
+    
 
     private async Task<string> GetCaHashAsync()
     {

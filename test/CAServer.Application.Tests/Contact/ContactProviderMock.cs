@@ -114,6 +114,11 @@ public partial class ContactTest
                 }
             });
 
+        provider.Setup(t => t.GetContactByIdAsync(It.IsAny<Guid>())).ReturnsAsync(new ContactIndex()
+        {
+                Name = "Name"
+        });
+
         return provider.Object;
     }
 }

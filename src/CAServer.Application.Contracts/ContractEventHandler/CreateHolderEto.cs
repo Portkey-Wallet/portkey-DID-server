@@ -18,4 +18,5 @@ public class CreateHolderEto : ContractServiceEto
     public string RegisterMessage { get; set; }
     public bool? RegisterSuccess { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
+    public string IpAddress { get; set; }
 }

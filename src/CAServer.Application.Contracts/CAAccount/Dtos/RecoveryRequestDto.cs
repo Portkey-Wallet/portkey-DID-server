@@ -6,7 +6,7 @@ using CAServer.Commons;
 
 namespace CAServer.Dtos;
 
-public class RecoveryRequestDto
+public class RecoveryRequestDto : IValidatableObject
 {
     [Required] public string LoginGuardianIdentifier { get; set; }
 
@@ -16,6 +16,17 @@ public class RecoveryRequestDto
     [Required] public string ChainId { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode } && ReferralInfo.ReferralCode.IsNullOrEmpty())
+        {
+            yield return new ValidationResult(
+                "Invalid ReferralCode.",
+                new[] { "LoginGuardianIdentifier" }
+            );
+        }
+    }
 }
 
 public class RecoveryGuardian : IValidatableObject

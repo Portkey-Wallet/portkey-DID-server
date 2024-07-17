@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Commons;
 using CAServer.Contacts.Provider;
+using CAServer.CryptoGift;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
+using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
@@ -17,11 +20,13 @@ using CAServer.UserAssets.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
 using Volo.Abp.Users;
@@ -44,6 +49,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly IpfsOptions _ipfsOptions;
     private readonly NftToFtOptions _nftToFtOptions;
+    private readonly ICryptoGiftAppService _cryptoGiftAppService;
+    private readonly IdentityUserManager _userManager;
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -53,7 +60,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IContactProvider contactProvider,
         IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger,
         ITokenAppService tokenAppService, IUserAssetsProvider userAssetsProvider,
-        IOptionsSnapshot<IpfsOptions> ipfsOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
+        IOptionsSnapshot<IpfsOptions> ipfsOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
+        ICryptoGiftAppService cryptoGiftAppService, IdentityUserManager userManager)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -68,6 +76,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _userAssetsProvider = userAssetsProvider;
         _nftToFtOptions = nftToFtOptions.Value;
         _ipfsOptions = ipfsOptions.Value;
+        _cryptoGiftAppService = cryptoGiftAppService;
+        _userManager = userManager;
     }
 
     public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol, string chainId)
@@ -167,11 +177,15 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             {
                 throw new UserFriendlyException("auth fail");
             }
-
-            var relationToken = _httpContextAccessor.HttpContext?.Request?.Headers[ImConstant.RelationAuthHeader];
-            if (string.IsNullOrEmpty(relationToken))
+            
+            StringValues? relationToken = null;
+            if (input.RedPackageDisplayType == null || RedPackageDisplayType.Common.Equals(input.RedPackageDisplayType))
             {
-                throw new UserFriendlyException("Relation token not found");
+                relationToken = _httpContextAccessor.HttpContext?.Request?.Headers[ImConstant.RelationAuthHeader];
+                if (string.IsNullOrEmpty(relationToken))
+                {
+                    throw new UserFriendlyException("Relation token not found");
+                }
             }
 
             var portkeyToken = _httpContextAccessor.HttpContext?.Request?.Headers[CommonConstant.AuthHeader];
@@ -180,6 +194,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 throw new UserFriendlyException("PortkeyToken token not found");
             }
 
+            var sessionId = Guid.NewGuid(); //Guid of ES 
+            input.SessionId = sessionId;
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
                 CurrentUser.Id.Value, _redPackageOptions.ExpireTimeMs);
@@ -190,7 +206,16 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 throw new UserFriendlyException(createResult.Message);
             }
 
-            var sessionId = Guid.NewGuid();
+            if (RedPackageDisplayType.CryptoGift.Equals(input.RedPackageDisplayType))
+            {
+                var cryptoGiftGran = _clusterClient.GetGrain<ICryptoGiftGran>(input.Id);
+                var cryptoGiftCreateResult = await cryptoGiftGran.CreateCryptoGift(input, createResult.Data.BucketNotClaimed,
+                    createResult.Data.BucketClaimed, CurrentUser.Id.Value);
+                if (!cryptoGiftCreateResult.Success)
+                {
+                    throw new UserFriendlyException(cryptoGiftCreateResult.Message);
+                }
+            }
 
             var redPackageIndex = _objectMapper.Map<RedPackageDetailDto, RedPackageIndex>(createResult.Data);
             redPackageIndex.Id = sessionId;
@@ -201,8 +226,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             redPackageIndex.Message = input.Message;
             redPackageIndex.AssetType = input.AssetType;
             await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
-            _logger.LogInformation("SendRedPackageAsync AddOrUpdateAsync redPackageIndex is {redPackageIndex}",
-                redPackageIndex);
             _ = _distributedEventBus.PublishAsync(new RedPackageCreateEto()
             {
                 UserId = CurrentUser.Id,
@@ -286,7 +309,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
-    public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount, int maxResultCount)
+    public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, RedPackageDisplayType displayType, int skipCount, int maxResultCount)
     {
         if (CurrentUser.Id == null || id == Guid.Empty)
         {
@@ -305,7 +328,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
 
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(id);
-        var detail = (await grain.GetRedPackage(skipCount, maxResultCount, CurrentUser.Id.Value)).Data;
+        var detail =  (await grain.GetRedPackage(skipCount, maxResultCount, CurrentUser.Id.Value, displayType)).Data;
         _logger.LogInformation("GetRedPackage detail: " + JsonConvert.SerializeObject(detail));
         try
         {
@@ -338,7 +361,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
 
         CheckLuckKing(detail);
-
+        CheckIsMe(detail); //check if the sender is the grabber
+        
         await BuildAvatarAndNameAsync(detail);
 
         if (detail.Status == RedPackageStatus.Expired)
@@ -352,11 +376,30 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             detail.IsRedPackageFullyClaimed = true;
         }
 
+        detail.DisplayStatus = RedPackageDisplayStatus.GetDisplayStatus(detail.Status);
+
         SetSeedStatusAndTypeForDetail(detail);
 
         TryUpdateImageUrlForDetail(detail);
 
+        await CryptoGiftHandler(id, displayType, detail, skipCount, maxResultCount);
         return detail;
+    }
+
+    private async Task CryptoGiftHandler(Guid id, RedPackageDisplayType displayType, RedPackageDetailDto detail,
+        int skipCount, int maxResultCount)
+    {
+        if (!RedPackageDisplayType.CryptoGift.Equals(displayType))
+        {
+            return;
+        }
+        var preGrabbedDto = await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(id);
+        foreach (var grabItemDto in detail.Items)
+        {
+            grabItemDto.DisplayType = CryptoGiftDisplayType.Common;
+        }
+        detail.Items.AddRange(_objectMapper.Map<List<PreGrabbedItemDto>, List<GrabItemDto>>(preGrabbedDto.Items));
+        detail.Items = detail.Items.Skip(skipCount).Take(maxResultCount).ToList();
     }
 
     private void SetSeedStatusAndTypeForDetail(RedPackageDetailDto detail)
@@ -436,6 +479,87 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         };
     }
 
+    public async Task<GrabRedPackageOutputDto> LoggedGrabRedPackageAsync(GrabRedPackageInputDto input)
+    {
+        if (input.CaHash.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("caHash is required~");
+        }
+        var user = await _userManager.FindByNameAsync(input.CaHash);
+        if (user == null)
+        {
+            throw new UserFriendlyException("user doesn't exist~");
+        }
+        var userId = user.Id;
+        if (Guid.Empty.Equals(userId))
+        {
+            return new GrabRedPackageOutputDto()
+            {
+                Result = RedPackageGrabStatus.Fail,
+                ErrorMessage = RedPackageConsts.UserNotExist
+            };
+        }
+        
+        var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
+        var redPackageResultDto= await grain.GetRedPackage(input.Id);
+        if (!redPackageResultDto.Success || redPackageResultDto.Data == null)
+        {
+            return new GrabRedPackageOutputDto()
+                        {
+                            Result = RedPackageGrabStatus.Fail,
+                            ErrorMessage = RedPackageConsts.UserNotExist
+                        };
+        }
+        await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(redPackageResultDto.Data, input.CaHash);
+        var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id);
+        var result = await grain.GrabRedPackageWithIdentityInfo(userId, input.UserCaAddress, ipAddress, identity);
+        if (result.Success)
+        {
+            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            {
+                RedPackageId = input.Id,
+                DisplayType = RedPackageDisplayType.CryptoGift,
+                ReceiverId = userId
+            });
+            _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0} receiverId:{1}", input.Id, userId);
+        }
+
+        var res = new GrabRedPackageOutputDto()
+        {
+            Result = result.Data.Result,
+            ErrorMessage = result.Data.ErrorMessage,
+            ErrorCode = result.Data.ErrorMessage.Equals(RedPackageConsts.RedPackageUserGrabbed) ? 10001 : 0,
+            Amount = result.Data.Amount,
+            Decimal = result.Data.Decimal,
+            Status = result.Data.Status
+        };
+        //add the crypto gift logic
+        if (result.Success)
+        {
+            try
+            {
+                await PreGrabCryptoGiftAfterLogging(input.Id, userId, RedPackageDisplayType.CryptoGift,
+                    result.Data.BucketItem.Index, result.Data.Decimal, ipAddress, identity);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "pre grab crypto gift after logging error");
+                return new GrabRedPackageOutputDto()
+                {
+                    Result = RedPackageGrabStatus.Fail,
+                    ErrorMessage = "pre grab crypto gift after logging error"
+                };
+            }
+        }
+        if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
+        {
+            res.Result = RedPackageGrabStatus.Success;
+            res.ErrorMessage = "";
+        }
+
+        return res;
+    }
+
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
         Stopwatch watcher = Stopwatch.StartNew();
@@ -451,15 +575,18 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                     ErrorMessage = RedPackageConsts.UserNotExist
                 };
             }
-
+            
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
             if (result.Success)
             {
                 await _distributedEventBus.PublishAsync(new PayRedPackageEto()
                 {
-                    RedPackageId = input.Id
+                    RedPackageId = input.Id,
+                    DisplayType = RedPackageDisplayType.Common,
+                    ReceiverId = CurrentUser.Id.Value
                 });
+                _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0} receiverId:{1}", input.Id, CurrentUser.Id.Value);
             }
 
             var res = new GrabRedPackageOutputDto()
@@ -486,12 +613,40 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
+    private async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, RedPackageDisplayType displayType,
+        int index, int amountDecimal, string ipAddress, string identityCode)
+    {
+        if (!Enum.IsDefined(displayType) || !RedPackageDisplayType.CryptoGift.Equals(displayType))
+        {
+            return;
+        }
+
+        await _cryptoGiftAppService.PreGrabCryptoGiftAfterLogging(redPackageId, userId, index, amountDecimal, ipAddress, identityCode);
+    }
+    
     private void CheckLuckKing(RedPackageDetailDto input)
     {
         if (input.Type != RedPackageType.Random || input.Grabbed != input.Count)
         {
             input.Items?.ForEach(item => item.IsLuckyKing = false);
             input.LuckKingId = Guid.Empty;
+        }
+    }
+
+    private void CheckIsMe(RedPackageDetailDto input)
+    {
+        if (input == null)
+        {
+            return;
+        }
+        foreach (var grabItemDto in input.Items)
+        {
+            var isMe = input.SenderId.Equals(grabItemDto.UserId);
+            grabItemDto.IsMe = isMe;
+            if (isMe)
+            {
+                break;
+            }
         }
     }
 

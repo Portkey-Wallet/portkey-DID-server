@@ -3,12 +3,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Client.Dto;
+using AElf.Indexing.Elasticsearch;
+using CAServer.Contacts.Provider;
+using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
+using CAServer.RedPackage.Dtos;
 using Hangfire;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.Caching;
@@ -34,6 +41,8 @@ public class PayRedPackageService : IPayRedPackageService
     private readonly string _lockKeyPrefix = "CAServer:ContractEventHandler:PayRedPackage:";
     private readonly string _lockPayRedPackagePrefix = "CAServer:ContractEventHandler:LockPayRedPackage:";
     private readonly string _payRedPackageRecurringPrefix = "CAServer:ContractEventHandler:RedPackageRecurring:";
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
+    private readonly IContactProvider _contactProvider;
 
     public PayRedPackageService(ILogger<PayRedPackageService> logger,
         IClusterClient clusterClient,
@@ -41,7 +50,9 @@ public class PayRedPackageService : IPayRedPackageService
         IContractProvider contractProvider,
         IOptionsSnapshot<GrabRedPackageOptions> grabRedPackageOptions,
         IDistributedCache<PayRedPackageRecurring> distributedCache,
-        IAbpDistributedLock distributedLock, IDistributedCache<string> payDistributedCache)
+        IAbpDistributedLock distributedLock, IDistributedCache<string> payDistributedCache,
+        INESTRepository<RedPackageIndex, Guid> redPackageRepository,
+        IContactProvider contactProvider)
     {
         _logger = logger;
         _clusterClient = clusterClient;
@@ -51,6 +62,8 @@ public class PayRedPackageService : IPayRedPackageService
         _payDistributedCache = payDistributedCache;
         _packageAccount = packageAccount.Value;
         _grabRedPackageOptions = grabRedPackageOptions.Value;
+        _redPackageRepository = redPackageRepository;
+        _contactProvider = contactProvider;
     }
 
     public async Task PayRedPackageAsync(Guid redPackageId)
@@ -64,7 +77,7 @@ public class PayRedPackageService : IPayRedPackageService
                 var payRecurringCount = 0;
                 var recurringKey = _payRedPackageRecurringPrefix + redPackageId;
                 var recurringInfo = await _distributedCache.GetAsync(recurringKey);
-
+                _logger.LogInformation("redPackageId:{0} get the recurringInfo result:{1}", redPackageId, recurringInfo);
                 if (recurringInfo != null)
                 {
                     var totalPayRecurringCount = recurringInfo.TotalPayRecurringCount;
@@ -136,6 +149,7 @@ public class PayRedPackageService : IPayRedPackageService
             }
 
             var grabItems = redPackageDetail.Data.Items.Where(t => !t.PaymentCompleted).ToList();
+            await FilterGrabItems(redPackageId, redPackageDetail.Data.RedPackageDisplayType, redPackageDetail.Data.ChainId, grabItems);
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
             _logger.LogInformation("red package payRedPackageFrom, payRedPackageFrom is {payRedPackageFrom} ",
                 payRedPackageFrom);
@@ -151,11 +165,11 @@ public class PayRedPackageService : IPayRedPackageService
             var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
             _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
                 JsonConvert.SerializeObject(res));
-
             if (res.TransactionResultDto.Status != TransactionState.Mined)
             {
                 _logger.LogError("PayRedPackageAsync fail: " + "\n{res}",
                     JsonConvert.SerializeObject(res, Formatting.Indented));
+                await UpdateSendRedPackageTransactionInfo(redPackageDetail.Data.SessionId, res.TransactionResultDto, false);
                 return;
             }
 
@@ -163,7 +177,7 @@ public class PayRedPackageService : IPayRedPackageService
             await grain.UpdateRedPackage(grabItems);
             _logger.LogInformation("PayRedPackageAsync end and the redPackage id is {redPackageId}",
                 redPackageId.ToString());
-
+            await UpdateSendRedPackageTransactionInfo(redPackageDetail.Data.SessionId, res.TransactionResultDto, true);
             watcher.Stop();
             _logger.LogInformation("#monitor# payRedPackage:{redPackage}, {cost}, {endTime}:", redPackageId.ToString(),
                 watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
@@ -172,6 +186,69 @@ public class PayRedPackageService : IPayRedPackageService
         {
             _logger.LogError(e, "PayRedPackage error, packageId:{redPackageId}", redPackageId);
         }
+    }
+    
+    private async Task FilterGrabItems(Guid redPackageId, RedPackageDisplayType displayType,
+        string chainId, List<GrabItemDto> grabItems)
+    {
+        if (!RedPackageDisplayType.CryptoGift.Equals(displayType))
+        {
+            return;
+        }
+        if (grabItems.IsNullOrEmpty())
+        {
+            return;
+        }
+        foreach (var grabItemDto in grabItems.ToList())
+        {
+            bool existed = false;
+            try
+            {
+                var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>() {grabItemDto.CaAddress}, chainId);
+                _logger.LogInformation("redPackageId:{0} filter caholder of cross chain logic chainId:{1} caAddress:{3} guardiansDto:{4}", redPackageId, chainId, grabItemDto.CaAddress, JsonConvert.SerializeObject(guardiansDto)); 
+                existed = guardiansDto.CaHolderInfo.Any(guardian => guardian.CaAddress.Equals(grabItemDto.CaAddress) && guardian.ChainId.Equals(chainId));
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation("redPackageId:{0} chainId:{1} caAddress:{3} query guardians error", redPackageId, chainId, grabItemDto.CaAddress);
+            }
+            if (!existed)
+            {
+                grabItems.Remove(grabItemDto);
+            }
+        }
+    }
+
+    private async Task UpdateSendRedPackageTransactionInfo(Guid sessionId, TransactionResultDto transactionResultDto, bool transactionSucceed)
+    {
+        var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
+        if (redPackageIndex == null)
+        {
+            _logger.LogError("RedPackage PagedResultEto not found: {Message}",
+                JsonConvert.SerializeObject(transactionResultDto));
+            return;
+        }
+
+        if (redPackageIndex.PayedTransactionIds.IsNullOrEmpty())
+        {
+            redPackageIndex.PayedTransactionIds = transactionResultDto.TransactionId;
+        }
+        else
+        {
+            redPackageIndex.PayedTransactionIds = redPackageIndex.PayedTransactionIds + "," + transactionResultDto.TransactionId;
+        }
+        if (redPackageIndex.PayedTransactionDtoList == null)
+        {
+            redPackageIndex.PayedTransactionDtoList = new List<RedPackageIndex.PayedTransactionDto>();
+        }
+        redPackageIndex.PayedTransactionDtoList.Add(new RedPackageIndex.PayedTransactionDto()
+        {
+            PayedTransactionId = transactionResultDto.TransactionId,
+            PayedTransactionStatus = transactionSucceed ? RedPackageTransactionStatus.Success : RedPackageTransactionStatus.Fail,
+            PayedTransactionResult = transactionResultDto.Status
+        });
+        await _redPackageRepository.UpdateAsync(redPackageIndex);
+        _logger.LogInformation("redPackageId:{0} PayedRedPackage UpdateRedPackageEs successfully", redPackageIndex.RedPackageId);
     }
 
     private void RemoveRedPackageJob(Guid redPackageId)

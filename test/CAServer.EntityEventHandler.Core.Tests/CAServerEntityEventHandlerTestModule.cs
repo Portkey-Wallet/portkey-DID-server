@@ -1,9 +1,11 @@
 ﻿using AElf.Indexing.Elasticsearch.Options;
+using CAServer.Cache;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Tests.Token;
 using CAServer.Options;
 using CAServer.Orleans.TestBase;
+using CAServer.Redis;
 using CAServer.Search;
 using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +40,7 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         context.Services.AddSingleton<IUserTokenAppService, UserTokenAppService>();
         context.Services.AddSingleton<ISearchAppService, MockSearchAppService>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
+        context.Services.AddSingleton<ICacheProvider,RedisCacheProvider>(); 
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem
         {

@@ -6,8 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ValidateOriginChainId;
@@ -76,6 +78,7 @@ public class ContractAppService : IContractAppService
     private readonly PayRedPackageAccount _packageAccount;
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
     private const int AcceleratedThreadCount = 3;
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -86,7 +89,8 @@ public class ContractAppService : IContractAppService
         IUserAssetsProvider userAssetsProvider,
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount,
-        IRedPackageCreateResultService redPackageCreateResultService)
+        IRedPackageCreateResultService redPackageCreateResultService,
+        INESTRepository<RedPackageIndex, Guid> redPackageRepository)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -105,6 +109,7 @@ public class ContractAppService : IContractAppService
         _userAssetsProvider = userAssetsProvider;
         _packageAccount = packageAccount.Value;
         _redPackageCreateResultService = redPackageCreateResultService;
+        _redPackageRepository = redPackageRepository;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -170,13 +175,19 @@ public class ContractAppService : IContractAppService
         {
             Id = message.Id,
             Context = message.Context,
-            GrainId = message.GrainId
+            GrainId = message.GrainId,
+            ReferralInfo = message.ReferralInfo,
+            IpAddress = message.IpAddress
         };
 
         CreateHolderDto createHolderDto;
 
         try
         {
+            if (message.ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode })
+            {
+                message.ReferralInfo = null;
+            }
             createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(message);
         }
         catch (Exception e)
@@ -256,7 +267,7 @@ public class ContractAppService : IContractAppService
         }
 
         //Speed up registration
-        _ = CreateHolderInfoOnNonCreateChainAsync(outputGetHolderInfo, createHolderDto);
+         _ = CreateHolderInfoOnNonCreateChainAsync(outputGetHolderInfo, createHolderDto);
 
         registerResult.CaAddress = outputGetHolderInfo.CaAddress.ToBase58();
         registerResult.RegisterSuccess = true;
@@ -280,13 +291,19 @@ public class ContractAppService : IContractAppService
         {
             Id = message.Id,
             Context = message.Context,
-            GrainId = message.GrainId
+            GrainId = message.GrainId,
+            ReferralInfo = message.ReferralInfo,
+            IpAddress = message.IpAddress
         };
 
         SocialRecoveryDto socialRecoveryDto;
 
         try
         {
+            if (message.ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode })
+            {
+                message.ReferralInfo = null;
+            }
             socialRecoveryDto = _objectMapper.Map<AccountRecoverCreateEto, SocialRecoveryDto>(message);
         }
         catch (Exception e)
@@ -499,17 +516,20 @@ public class ContractAppService : IContractAppService
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
             _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom:{payRedPackageFrom} ",
                 payRedPackageFrom);
-
+            _logger.Info($"redPackageId:{redPackageId} refunding status:{redPackageDetailDto.Status}");
             if (redPackageDetailDto.Status.Equals(RedPackageStatus.Expired) &&
                 !redPackageDetailDto.IsRedPackageFullyClaimed)
             {
                 var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetailDto,
                     payRedPackageFrom);
+                _logger.Info($"redPackageId:{redPackageId} refunding transaction status:{res.TransactionResultDto.Status}");
                 if (res.TransactionResultDto.Status == TransactionState.Mined)
                 {
                     await grain.UpdateRedPackageExpire();
+                    await UpdateRefundRedPackageTransactionInfo(redPackageDetailDto.SessionId, res.TransactionResultDto,true);
                     return true;
                 }
+                await UpdateRefundRedPackageTransactionInfo(redPackageDetailDto.SessionId, res.TransactionResultDto,false);
 
                 _logger.LogError("Refund red package fail {message}", res.TransactionResultDto.Error);
             }
@@ -520,6 +540,23 @@ public class ContractAppService : IContractAppService
         }
 
         return false;
+    }
+    
+    private async Task UpdateRefundRedPackageTransactionInfo(Guid sessionId, TransactionResultDto transactionResultDto, bool transactionSucceed)
+    {
+        var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
+        if (redPackageIndex == null)
+        {
+            _logger.LogError("RedPackage RefundResultEto not found: {Message}",
+                JsonConvert.SerializeObject(transactionResultDto));
+            return;
+        }
+
+        redPackageIndex.RefundedTransactionId = transactionResultDto.TransactionId;
+        redPackageIndex.RefundedTransactionResult = transactionResultDto.Status;
+        redPackageIndex.RefundedTransactionStatus = transactionSucceed ? RedPackageTransactionStatus.Success : RedPackageTransactionStatus.Fail;
+        await _redPackageRepository.UpdateAsync(redPackageIndex);
+        _logger.LogInformation("redPackageId:{0} RefundedRedPackage UpdateRedPackageEs successfully", redPackageIndex.RedPackageId);
     }
 
     private async Task ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,

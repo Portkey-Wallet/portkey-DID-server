@@ -17,6 +17,7 @@ using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
@@ -32,6 +33,7 @@ using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
+using Error = CAServer.CAAccount.Dtos.Error;
 
 namespace CAServer.CAAccount;
 
@@ -55,6 +57,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public const string DefaultSymbol = "ELF";
     public const double MinBanlance = 0.05 * 100000000;
     private readonly IVerifierServerClient _verifierServerClient;
+    private readonly IIpInfoAppService _ipInfoAppService;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -68,7 +71,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         INickNameAppService caHolderAppService,
         IAppleAuthProvider appleAuthProvider,
         IOptionsSnapshot<ManagerCountLimitOptions> managerCountLimitOptions,
-        IVerifierServerClient verifierServerClient)
+        IVerifierServerClient verifierServerClient,
+        IIpInfoAppService ipInfoAppService)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -83,8 +87,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _verifierServerClient = verifierServerClient;
         _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
+        _ipInfoAppService = ipInfoAppService;
     }
-    
+
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
@@ -107,8 +112,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             throw new UserFriendlyException(result.Message);
         }
 
-        await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
+        var registerCreateEto = ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data);
+        registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp();
+        await _distributedEventBus.PublishAsync(registerCreateEto);
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
@@ -170,8 +176,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
 
-        await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data));
+        var recoverCreateEto = ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data);
+        recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp();
+        await _distributedEventBus.PublishAsync(recoverCreateEto);
 
         return new AccountResultDto(recoveryDto.Id.ToString());
     }
@@ -445,13 +452,53 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             validateDevice = false;
         }
-        var validateGuardian = await ValidateGuardianAsync(holderInfo,type);
+
+        var validateGuardian = await ValidateGuardianAsync(holderInfo, type);
         return new CancelCheckResultDto
         {
             ValidatedDevice = validateDevice,
             ValidatedAssets = validateAssets,
             ValidatedGuardian = validateGuardian,
         };
+    }
+
+    public async Task<CAHolderExistsResponseDto> VerifyCaHolderExistByAddressAsync(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            throw new UserFriendlyException("Invalidate address");
+        }
+
+        if (address.Contains('_'))
+        {
+            address = address.Split("_")[1];
+        }
+
+        var result = new CAHolderExistsResponseDto();
+        var caAddresses = new List<string>
+        {
+            address
+        };
+        var caHolderInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
+        if (caHolderInfo == null || caHolderInfo.CaHolderManagerInfo.Count == 0)
+        {
+            result.Data = new Dtos.Data
+            {
+                Result = false
+            };
+            result.Error = new Error
+            {
+                Code = 0,
+                Message = "No CaHolder is found."
+            };
+            return result;
+        }
+
+        result.Data = new Dtos.Data
+        {
+            Result = true
+        };
+        return result;
     }
 
     public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
@@ -510,17 +557,18 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
 
             var value = (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type);
-            var guardian = guardians.FirstOrDefault(t=>(int)t.Type == value);
+            var guardian = guardians.FirstOrDefault(t => (int)t.Type == value);
             if (guardian == null)
             {
                 throw new Exception(ResponseMessage.LoginGuardianNotExists);
             }
         }
 
-        
 
         var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && (int)t.Type == (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
+            holderInfo?.GuardianList.Guardians.FirstOrDefault(t =>
+                t.IsLoginGuardian && (int)t.Type ==
+                (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
         if (currentGuardian != null)
         {
             var caHolderDto =
@@ -529,7 +577,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
                 t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
             await tasks.WhenAll();
-            if (tasks.Count(t =>!t.Result.IsDeleted) > 1)
+            if (tasks.Count(t => !t.Result.IsDeleted) > 1)
             {
                 validateGuardian = false;
             }

@@ -27,6 +27,7 @@ using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Portkey.Contracts.CA;
+using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Identity;
@@ -44,6 +45,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
     private IAbpDistributedLock _distributedLock;
     private readonly string _lockKeyPrefix = "CAServer:Auth:SignatureGrantHandler:";
     private ISignatureProvider _signatureProvider;
+    private IDistributedCache<string> _distributedCache;
 
     public async Task<IActionResult> HandleAsync(ExtensionGrantContext context)
     {
@@ -97,7 +99,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
 
         var userManager = context.HttpContext.RequestServices.GetRequiredService<IdentityUserManager>();
         _distributedEventBus = context.HttpContext.RequestServices.GetRequiredService<IDistributedEventBus>();
-
+        _distributedCache = context.HttpContext.RequestServices.GetRequiredService<IDistributedCache<string>>();
         var user = await userManager.FindByNameAsync(caHash);
         if (user == null)
         {
@@ -110,6 +112,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
 
             user = await userManager.GetByIdAsync(userId);
         }
+        await _distributedCache.SetAsync($"UserLoginHandler:{caHash}", user.Id.ToString());
 
         var userClaimsPrincipalFactory = context.HttpContext.RequestServices
             .GetRequiredService<IUserClaimsPrincipalFactory<IdentityUser>>();
@@ -128,8 +131,10 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             Id = user.Id,
             UserId = user.Id,
             CaHash = caHash,
-            CreateTime = DateTime.UtcNow
+            CreateTime = DateTime.UtcNow,
+            FromCaServer = true
         });
+        _logger.LogInformation("userId:{0} time:{1} sent login message", user.Id, DateTimeOffset.Now.ToUnixTimeMilliseconds());
         return new SignInResult(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme, claimsPrincipal);
     }
 
