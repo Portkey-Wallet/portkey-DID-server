@@ -1,7 +1,9 @@
 using System.Threading.Tasks;
 using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.FreeMint;
+using CAServer.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -14,11 +16,15 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<FreeMintAppService> _logger;
+    private readonly FreeMintOptions _freeMintOptions;
 
-    public FreeMintAppService(ILogger<FreeMintAppService> logger, IClusterClient clusterClient)
+    public FreeMintAppService(ILogger<FreeMintAppService> logger, IClusterClient clusterClient,
+        IOptionsSnapshot<FreeMintOptions> freeMintOptions)
     {
         _logger = logger;
         _clusterClient = clusterClient;
+
+        _freeMintOptions = freeMintOptions.Value;
     }
 
     public async Task<GetRecentStatusDto> GetRecentStatusAsync()
@@ -27,13 +33,25 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         return (await grain.GetRecentStatus()).Data;
     }
 
-    public Task<GetMintInfoDto> GetMintInfoAsync()
+    public async Task<GetMintInfoDto> GetMintInfoAsync()
     {
-        throw new System.NotImplementedException();
+        var mintInfoDto = new GetMintInfoDto()
+        {
+            CollectionInfo = _freeMintOptions.CollectionInfo
+        };
+        mintInfoDto.TokenId = "1";
+
+        return mintInfoDto;
     }
 
     public Task<ConfirmDto> ConfirmAsync(ConfirmRequestDto requestDto)
     {
+        var collectionInfo = _freeMintOptions.CollectionInfo;
+        
+        // set grain info , status->pending
+        // set status in es
+        // send transaction
+        // 
         throw new System.NotImplementedException();
     }
 
@@ -42,9 +60,19 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         throw new System.NotImplementedException();
     }
 
-    public Task<GetStatusDto> GetStatusAsync(string itemId)
+    public async Task<GetStatusDto> GetStatusAsync(string itemId)
     {
-        throw new System.NotImplementedException();
+        var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
+        var statusResult = await grain.GetMintStatus(itemId);
+        if (!statusResult.Success)
+        {
+            throw new UserFriendlyException(statusResult.Message);
+        }
+        
+        return new GetStatusDto
+        {
+            Status = statusResult.Data.Status
+        };
     }
 
     public Task<GetNftItemDetailDto> GetNftItemDetailAsync(string itemId)

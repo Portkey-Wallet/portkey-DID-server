@@ -48,7 +48,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         {
             Status = FreeMintStatus.NONE
         };
-        
+
         if (!string.IsNullOrEmpty(State.Id) && !State.MintInfos.IsNullOrEmpty())
         {
             statusDto.Status = State.MintInfos.Last().Status;
@@ -60,18 +60,47 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         return Task.FromResult(result);
     }
 
-    public Task<GrainResultDto<GetRecentStatusDto>> Mint()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<GrainResultDto<GetRecentStatusDto>> Mint(ItemMintInfo itemMintInfo)
+    public Task<GrainResultDto<GetRecentStatusDto>> GetMintStatus(string itemId)
     {
         var result = new GrainResultDto<GetRecentStatusDto>();
-        
-        
+        var itemInfo = State.MintInfos.FirstOrDefault(t => t.ItemId == itemId);
+
+        if (string.IsNullOrEmpty(State.Id) || itemInfo == null)
+        {
+            result.Message = "Mint Nft Item info not exist.";
+            return Task.FromResult(result);
+        }
+
         result.Success = true;
-        //result.Data = _objectMapper.Map<FreeMintState, FreeMintGrainDto>(State);
+        result.Data = new GetRecentStatusDto()
+        {
+            Status = itemInfo.Status,
+            ItemId = itemInfo.ItemId
+        };
+
+        return Task.FromResult(result);
+    }
+
+    public Task<GrainResultDto<ItemMintInfo>> SaveMintInfo(MintNftDto mintNftDto)
+    {
+        var result = new GrainResultDto<ItemMintInfo>();
+        if (State.Id.IsNullOrEmpty())
+        {
+            State.Id = mintNftDto.UserId.ToString();
+            State.UserId = mintNftDto.UserId;
+            State.CollectionInfo = mintNftDto.CollectionInfo;
+        }
+
+        // send transaction in service like redpack
+        // transaction info no need to save in grain
+        var nftInfo = new ItemMintInfo()
+        {
+
+        };
+        State.MintInfos.Add(nftInfo);
+
+        result.Success = true;
+        result.Data = nftInfo;
         return Task.FromResult(result);
     }
 }

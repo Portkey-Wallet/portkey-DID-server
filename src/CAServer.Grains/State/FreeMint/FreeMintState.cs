@@ -8,7 +8,8 @@ public class FreeMintState
     public string Id { get; set; }
     public Guid UserId { get; set; }
     public FreeMintCollectionInfo CollectionInfo { get; set; }
-    public List<ItemMintInfo> MintInfos { get; set; }
+    public List<ItemMintInfo> MintInfos { get; set; } = new();
+    public int UnUsedTokenId { get; set; }
 }
 
 public class ItemMintInfo
