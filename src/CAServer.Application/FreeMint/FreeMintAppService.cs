@@ -26,7 +26,6 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
     {
         _logger = logger;
         _clusterClient = clusterClient;
-
         _freeMintOptions = freeMintOptions.Value;
     }
 
@@ -43,16 +42,31 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
             CollectionInfo = _freeMintOptions.CollectionInfo
         };
 
-        var grain = _clusterClient.GetGrain<ITokenIdGrain>(CommonConstant.FreeMintTokenIdGrainId);
-        mintInfoDto.TokenId = await grain.GenerateTokenId();
+        var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
+        var resultDto = await grain.GetTokenId();
+        mintInfoDto.TokenId = resultDto.Data;
         return mintInfoDto;
     }
 
     public async Task<ConfirmDto> ConfirmAsync(ConfirmRequestDto requestDto)
     {
         var collectionInfo = _freeMintOptions.CollectionInfo;
+        var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
 
         // set grain info , status->pending
+        var confirmInfo = ObjectMapper.Map<ConfirmRequestDto, ConfirmGrainDto>(requestDto);
+        var saveResult = await grain.SaveMintInfo(new MintNftDto()
+        {
+            CollectionInfo = collectionInfo,
+            ConfirmInfo = confirmInfo
+        });
+
+        if (!saveResult.Success)
+        {
+            throw new UserFriendlyException(saveResult.Message);
+        }
+        
+        // eto
         // set status in es
         // send transaction
         // 
@@ -96,9 +110,11 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
             Balance = "1",
             TotalSupply = 1,
             CirculatingSupply = 1,
-            ImageUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
+            ImageUrl =
+                "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
             TokenContractAddress = "ASh2Wt7nSEmYqnGxPPzp4pnVDU4uhj1XW9Se5VeZcX2UDdyjx",
-            ImageLargeUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/1008xAUTO/1718204222065-Activity%20Icon.png",
+            ImageLargeUrl =
+                "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/1008xAUTO/1718204222065-Activity%20Icon.png",
             Decimals = "0",
             CollectionSymbol = "FREEMINT-0",
             TokenName = "a1",
@@ -110,7 +126,8 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
     {
         return new GetItemInfoDto()
         {
-            ImageUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
+            ImageUrl =
+                "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
             Name = "test",
             TokenId = "10",
             Description = "mock data"
