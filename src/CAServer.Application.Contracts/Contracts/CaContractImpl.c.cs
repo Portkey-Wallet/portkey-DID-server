@@ -849,6 +849,13 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_StringValue,
         __Marshaller_caimpl_VerifyingKey);
 
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> __Method_InitZkNonceList = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "InitZkNonceList",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_google_protobuf_Empty);
+
     static readonly aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetOracleAddress = new aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
@@ -1268,6 +1275,11 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty InitZkNonceList(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty SetOracleAddress(global::AElf.Types.Address input)
       {
         throw new global::System.NotImplementedException();
@@ -1356,6 +1368,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_GetVerifierServers, serviceImpl.GetVerifierServers)
           .AddMethod(__Method_AddOrUpdateVerifyingKey, serviceImpl.AddOrUpdateVerifyingKey)
           .AddMethod(__Method_GetVerifyingKey, serviceImpl.GetVerifyingKey)
+          .AddMethod(__Method_InitZkNonceList, serviceImpl.InitZkNonceList)
           .AddMethod(__Method_SetOracleAddress, serviceImpl.SetOracleAddress).Build();
     }
 
