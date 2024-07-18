@@ -19,4 +19,7 @@ public class ZkLoginInfoRequestDto
     
     //the unique circuit 
     public string CircuitId { get; set; }
+    
+    //the timestamp of generating zk nonce, used to verify nonce and nonce payload
+    public long Timestamp { get; set; }
 }

@@ -93,6 +93,7 @@ using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.IdentityModel.Tokens;
 using Enum = System.Enum;
 using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
 
@@ -163,7 +164,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     {
                         AddManagerAddress = new AddManager
                         {
-                            IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
+                            CaHash = e.CaHash.IsNullOrWhiteSpace()
                                 ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
                             ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
                                 ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
@@ -349,7 +350,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     {
                         AddManagerAddress = new AddManager()
                         {
-                            IdentifierHash = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.IdentifierHash,
+                            CaHash = e.CaHash,
                             ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
                             Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
                         }
@@ -390,7 +391,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     {
                         AddManagerAddress = new AddManager()
                         {
-                            IdentifierHash = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.IdentifierHash,
+                            CaHash = e.CaHash,
                             ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
                             Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
                         }
@@ -429,9 +430,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         {
                             AddManagerAddress = new AddManager()
                             {
-                                IdentifierHash = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
-                                                                       || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null 
-                                    ? Hash.Empty : g.ZkLoginInfo.NoncePayload.AddManagerAddress.IdentifierHash,
+                                CaHash = e.CaHash.IsNullOrEmpty() ? Hash.Empty : e.CaHash,
                                 ManagerAddress = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
                                                                        || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null 
                                     ? new Address() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
