@@ -162,6 +162,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private ZkLoginInfoDto GetZkJwtAuthInfo(string jwt, string nonce, string zkProof, string salt, string circuitId, string manager, string identifierHash, long current)
     {
         var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwt);
+        Dtos.Zklogin.InternalRapidSnarkProofRepr proofRepr = JsonConvert.DeserializeObject<Dtos.Zklogin.InternalRapidSnarkProofRepr>(zkProof);
         return new ZkLoginInfoDto()
             {
                 IdentifierHash = identifierHash,
@@ -169,6 +170,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 Kid = jwtToken.Header.Kid,
                 Nonce = nonce,
                 ZkProof = zkProof,
+                ZkProofPiA = proofRepr.PiA,
+                ZkProofPiB1 = proofRepr.PiB[0],
+                ZkProofPiB2 = proofRepr.PiB[1],
+                ZkProofPiB3 = proofRepr.PiB[2],
+                ZkProofPiC = proofRepr.PiC,
                 Salt = salt,
                 CircuitId = circuitId,
                 NoncePayload = new NoncePayload()
@@ -192,6 +198,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             Kid = "",
             Nonce = "",
             ZkProof = "",
+            ZkProofPiA = new List<string>(),
+            ZkProofPiB1 = new List<string>(),
+            ZkProofPiB2 = new List<string>(),
+            ZkProofPiB3 = new List<string>(),
+            ZkProofPiC = new List<string>(),
             Salt = "",
             CircuitId = "",
             NoncePayload = new NoncePayload()

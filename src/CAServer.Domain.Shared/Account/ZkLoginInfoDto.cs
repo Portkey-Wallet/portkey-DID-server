@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CAServer.CAAccount.Dtos.Zklogin;
 
 public class ZkLoginInfoDto
@@ -15,6 +17,16 @@ public class ZkLoginInfoDto
 	
 	// zk_proof is the serialized zk proof
 	public string ZkProof { get; set;}
+	
+	public List<string> ZkProofPiA { get; set; }
+	
+	public List<string> ZkProofPiB1 { get; set; }
+	
+	public List<string> ZkProofPiB2 { get; set; }
+	
+	public List<string> ZkProofPiB3 { get; set; }
+	
+	public List<string> ZkProofPiC { get; set; }
 	
 	// the issuer of the jwt
 	public string Issuer { get; set;}

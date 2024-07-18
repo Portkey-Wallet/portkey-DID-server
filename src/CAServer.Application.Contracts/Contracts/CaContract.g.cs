@@ -27,62 +27,62 @@ namespace Portkey.Contracts.CA {
             "ChFjYV9jb250cmFjdC5wcm90bxICY2EaD2FlbGYvY29yZS5wcm90bxoSYWVs",
             "Zi9vcHRpb25zLnByb3RvGhtnb29nbGUvcHJvdG9idWYvZW1wdHkucHJvdG8a",
             "H2dvb2dsZS9wcm90b2J1Zi90aW1lc3RhbXAucHJvdG8aFGF1dGhvcml0eV9p",
-            "bmZvLnByb3RvGgthY3MxMi5wcm90bxoKYWNzMi5wcm90byIjCgtJc3N1ZXJB",
-            "ZGRlZBIOCgZpc3N1ZXIYASABKAk6BKC7GAEiUgoRVmVyaWZ5aW5nS2V5QWRk",
-            "ZWQSGQoKY2lyY3VpdF9pZBgBIAEoCUIFiI/1AQESHAoNdmVyaWZ5aW5nX2tl",
-            "eRgCIAEoCUIFiI/1AQE6BKC7GAEizAEKCkhvbGRlckluZm8SJgoPY3JlYXRv",
-            "cl9hZGRyZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNzEiYKDW1hbmFnZXJfaW5m",
-            "b3MYAiADKAsyDy5jYS5NYW5hZ2VySW5mbxInCg1ndWFyZGlhbl9saXN0GAMg",
-            "ASgLMhAuY2EuR3VhcmRpYW5MaXN0EiwKEmp1ZGdlbWVudF9zdHJhdGVneRgE",
-            "IAEoCzIQLmNhLlN0cmF0ZWd5Tm9kZRIXCg9jcmVhdGVfY2hhaW5faWQYBSAB",
-            "KAUizgIKDERlbGVnYXRlSW5mbxIQCghjaGFpbl9pZBgBIAEoBRIgCgxwcm9q",
-            "ZWN0X2hhc2gYAiABKAsyCi5hZWxmLkhhc2gSIwoPaWRlbnRpZmllcl9oYXNo",
-            "GAMgASgLMgouYWVsZi5IYXNoEi0KCXRpbWVzdGFtcBgEIAEoCzIaLmdvb2ds",
-            "ZS5wcm90b2J1Zi5UaW1lc3RhbXASFwoPZXhwaXJhdGlvbl90aW1lGAUgASgF",
-            "EjYKC2RlbGVnYXRpb25zGAYgAygLMiEuY2EuRGVsZWdhdGVJbmZvLkRlbGVn",
-            "YXRpb25zRW50cnkSHQoVaXNfdW5saW1pdGVkX2RlbGVnYXRlGAcgASgIEhIK",
-            "CXNpZ25hdHVyZRjoByABKAkaMgoQRGVsZWdhdGlvbnNFbnRyeRILCgNrZXkY",
-            "ASABKAkSDQoFdmFsdWUYAiABKAM6AjgBIkEKC01hbmFnZXJJbmZvEh4KB2Fk",
-            "ZHJlc3MYASABKAsyDS5hZWxmLkFkZHJlc3MSEgoKZXh0cmFfZGF0YRgCIAEo",
-            "CSIvCgxHdWFyZGlhbkxpc3QSHwoJZ3VhcmRpYW5zGAEgAygLMgwuY2EuR3Vh",
-            "cmRpYW4i3wEKCEd1YXJkaWFuEh4KBHR5cGUYASABKA4yEC5jYS5HdWFyZGlh",
-            "blR5cGUSHwoLdmVyaWZpZXJfaWQYAiABKAsyCi5hZWxmLkhhc2gSIwoPaWRl",
-            "bnRpZmllcl9oYXNoGAMgASgLMgouYWVsZi5IYXNoEgwKBHNhbHQYBCABKAkS",
-            "GQoRaXNfbG9naW5fZ3VhcmRpYW4YBSABKAgSJgoNemtfbG9naW5faW5mbxgG",
-            "IAEoCzIPLmNhLlprTG9naW5JbmZvEhwKFG1hbnVhbGx5U3VwcG9ydEZvclpr",
-            "GAcgASgIIisKCENBU2VydmVyEgwKBG5hbWUYASABKAkSEQoJZW5kX3BvaW50",
-            "GAIgASgJIjAKDENBU2VydmVyTGlzdBIgCgpjYV9zZXJ2ZXJzGAEgAygLMgwu",
-            "Y2EuQ0FTZXJ2ZXIiNAoOQ29udHJvbGxlckxpc3QSIgoLY29udHJvbGxlcnMY",
-            "ASADKAsyDS5hZWxmLkFkZHJlc3MiOQoPTWFuYWdlckluZm9MaXN0EiYKDW1h",
-            "bmFnZXJfaW5mb3MYASADKAsyDy5jYS5NYW5hZ2VySW5mbyI4ChFMb2dpbkd1",
-            "YXJkaWFuTGlzdBIjCg9sb2dpbl9ndWFyZGlhbnMYASADKAsyCi5hZWxmLkhh",
-            "c2giOAoPSW5pdGlhbGl6ZUlucHV0EiUKDmNvbnRyYWN0X2FkbWluGAEgASgL",
-            "Mg0uYWVsZi5BZGRyZXNzIjEKD0NvbnRyb2xsZXJJbnB1dBIeCgdhZGRyZXNz",
-            "GAEgASgLMg0uYWVsZi5BZGRyZXNzIjQKEENvbnRyb2xsZXJPdXRwdXQSIAoJ",
-            "YWRkcmVzc2VzGAEgAygLMg0uYWVsZi5BZGRyZXNzIiwKCkFkbWluSW5wdXQS",
-            "HgoHYWRkcmVzcxgBIAEoCzINLmFlbGYuQWRkcmVzcyItCgtBZG1pbk91dHB1",
-            "dBIeCgdhZGRyZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNzIu0BChNDcmVhdGVD",
-            "QUhvbGRlcklucHV0EisKEWd1YXJkaWFuX2FwcHJvdmVkGAEgASgLMhAuY2Eu",
-            "R3VhcmRpYW5JbmZvEiUKDG1hbmFnZXJfaW5mbxgCIAEoCzIPLmNhLk1hbmFn",
-            "ZXJJbmZvEiwKEmp1ZGdlbWVudF9zdHJhdGVneRgDIAEoCzIQLmNhLlN0cmF0",
-            "ZWd5Tm9kZRIVCg1yZWZlcnJhbF9jb2RlGAQgASgJEhQKDHByb2plY3RfY29k",
-            "ZRgFIAEoCRInCg1kZWxlZ2F0ZV9pbmZvGAYgASgLMhAuY2EuRGVsZWdhdGVJ",
-            "bmZvIuABCiZSZXBvcnRQcmVDcm9zc0NoYWluU3luY0hvbGRlckluZm9JbnB1",
-            "dBIrChFndWFyZGlhbl9hcHByb3ZlZBgBIAEoCzIQLmNhLkd1YXJkaWFuSW5m",
-            "bxIlCgxtYW5hZ2VyX2luZm8YAiABKAsyDy5jYS5NYW5hZ2VySW5mbxIsChJq",
-            "dWRnZW1lbnRfc3RyYXRlZ3kYAyABKAsyEC5jYS5TdHJhdGVneU5vZGUSGwoH",
-            "Y2FfaGFzaBgEIAEoCzIKLmFlbGYuSGFzaBIXCg9jcmVhdGVfY2hhaW5faWQY",
-            "BSABKAUirAEKDEd1YXJkaWFuSW5mbxIeCgR0eXBlGAEgASgOMhAuY2EuR3Vh",
-            "cmRpYW5UeXBlEiMKD2lkZW50aWZpZXJfaGFzaBgCIAEoCzIKLmFlbGYuSGFz",
-            "aBIvChF2ZXJpZmljYXRpb25faW5mbxgDIAEoCzIULmNhLlZlcmlmaWNhdGlv",
-            "bkluZm8SJgoNemtfbG9naW5faW5mbxgEIAEoCzIPLmNhLlprTG9naW5JbmZv",
-            "IlcKEFZlcmlmaWNhdGlvbkluZm8SFgoCaWQYASABKAsyCi5hZWxmLkhhc2gS",
-            "EQoJc2lnbmF0dXJlGAIgASgMEhgKEHZlcmlmaWNhdGlvbl9kb2MYAyABKAki",
-            "uwEKC1prTG9naW5JbmZvEiMKD2lkZW50aWZpZXJfaGFzaBgBIAEoCzIKLmFl",
-            "bGYuSGFzaBIMCgRzYWx0GAIgASgJEgsKA2tpZBgDIAEoCRISCgpjaXJjdWl0",
-            "X2lkGAQgASgJEhAKCHprX3Byb29mGAUgASgJEg4KBmlzc3VlchgGIAEoCRIN",
-            "CgVub25jZRgHIAEoCRInCg1ub25jZV9wYXlsb2FkGAggASgLMhAuY2EuTm9u",
-            "Y2VQYXlsb2FkIn8KDE5vbmNlUGF5bG9hZBItChNhZGRfbWFuYWdlcl9hZGRy",
+            "bmZvLnByb3RvGgthY3MxMi5wcm90bxoKYWNzMi5wcm90byLMAQoKSG9sZGVy",
+            "SW5mbxImCg9jcmVhdG9yX2FkZHJlc3MYASABKAsyDS5hZWxmLkFkZHJlc3MS",
+            "JgoNbWFuYWdlcl9pbmZvcxgCIAMoCzIPLmNhLk1hbmFnZXJJbmZvEicKDWd1",
+            "YXJkaWFuX2xpc3QYAyABKAsyEC5jYS5HdWFyZGlhbkxpc3QSLAoSanVkZ2Vt",
+            "ZW50X3N0cmF0ZWd5GAQgASgLMhAuY2EuU3RyYXRlZ3lOb2RlEhcKD2NyZWF0",
+            "ZV9jaGFpbl9pZBgFIAEoBSLOAgoMRGVsZWdhdGVJbmZvEhAKCGNoYWluX2lk",
+            "GAEgASgFEiAKDHByb2plY3RfaGFzaBgCIAEoCzIKLmFlbGYuSGFzaBIjCg9p",
+            "ZGVudGlmaWVyX2hhc2gYAyABKAsyCi5hZWxmLkhhc2gSLQoJdGltZXN0YW1w",
+            "GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIXCg9leHBpcmF0",
+            "aW9uX3RpbWUYBSABKAUSNgoLZGVsZWdhdGlvbnMYBiADKAsyIS5jYS5EZWxl",
+            "Z2F0ZUluZm8uRGVsZWdhdGlvbnNFbnRyeRIdChVpc191bmxpbWl0ZWRfZGVs",
+            "ZWdhdGUYByABKAgSEgoJc2lnbmF0dXJlGOgHIAEoCRoyChBEZWxlZ2F0aW9u",
+            "c0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoAzoCOAEiQQoLTWFu",
+            "YWdlckluZm8SHgoHYWRkcmVzcxgBIAEoCzINLmFlbGYuQWRkcmVzcxISCgpl",
+            "eHRyYV9kYXRhGAIgASgJIi8KDEd1YXJkaWFuTGlzdBIfCglndWFyZGlhbnMY",
+            "ASADKAsyDC5jYS5HdWFyZGlhbiLfAQoIR3VhcmRpYW4SHgoEdHlwZRgBIAEo",
+            "DjIQLmNhLkd1YXJkaWFuVHlwZRIfCgt2ZXJpZmllcl9pZBgCIAEoCzIKLmFl",
+            "bGYuSGFzaBIjCg9pZGVudGlmaWVyX2hhc2gYAyABKAsyCi5hZWxmLkhhc2gS",
+            "DAoEc2FsdBgEIAEoCRIZChFpc19sb2dpbl9ndWFyZGlhbhgFIAEoCBImCg16",
+            "a19sb2dpbl9pbmZvGAYgASgLMg8uY2EuWmtMb2dpbkluZm8SHAoUbWFudWFs",
+            "bHlTdXBwb3J0Rm9yWmsYByABKAgiKwoIQ0FTZXJ2ZXISDAoEbmFtZRgBIAEo",
+            "CRIRCgllbmRfcG9pbnQYAiABKAkiMAoMQ0FTZXJ2ZXJMaXN0EiAKCmNhX3Nl",
+            "cnZlcnMYASADKAsyDC5jYS5DQVNlcnZlciI0Cg5Db250cm9sbGVyTGlzdBIi",
+            "Cgtjb250cm9sbGVycxgBIAMoCzINLmFlbGYuQWRkcmVzcyI5Cg9NYW5hZ2Vy",
+            "SW5mb0xpc3QSJgoNbWFuYWdlcl9pbmZvcxgBIAMoCzIPLmNhLk1hbmFnZXJJ",
+            "bmZvIjgKEUxvZ2luR3VhcmRpYW5MaXN0EiMKD2xvZ2luX2d1YXJkaWFucxgB",
+            "IAMoCzIKLmFlbGYuSGFzaCI4Cg9Jbml0aWFsaXplSW5wdXQSJQoOY29udHJh",
+            "Y3RfYWRtaW4YASABKAsyDS5hZWxmLkFkZHJlc3MiMQoPQ29udHJvbGxlcklu",
+            "cHV0Eh4KB2FkZHJlc3MYASABKAsyDS5hZWxmLkFkZHJlc3MiNAoQQ29udHJv",
+            "bGxlck91dHB1dBIgCglhZGRyZXNzZXMYASADKAsyDS5hZWxmLkFkZHJlc3Mi",
+            "LAoKQWRtaW5JbnB1dBIeCgdhZGRyZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNz",
+            "Ii0KC0FkbWluT3V0cHV0Eh4KB2FkZHJlc3MYASABKAsyDS5hZWxmLkFkZHJl",
+            "c3Mi7QEKE0NyZWF0ZUNBSG9sZGVySW5wdXQSKwoRZ3VhcmRpYW5fYXBwcm92",
+            "ZWQYASABKAsyEC5jYS5HdWFyZGlhbkluZm8SJQoMbWFuYWdlcl9pbmZvGAIg",
+            "ASgLMg8uY2EuTWFuYWdlckluZm8SLAoSanVkZ2VtZW50X3N0cmF0ZWd5GAMg",
+            "ASgLMhAuY2EuU3RyYXRlZ3lOb2RlEhUKDXJlZmVycmFsX2NvZGUYBCABKAkS",
+            "FAoMcHJvamVjdF9jb2RlGAUgASgJEicKDWRlbGVnYXRlX2luZm8YBiABKAsy",
+            "EC5jYS5EZWxlZ2F0ZUluZm8i4AEKJlJlcG9ydFByZUNyb3NzQ2hhaW5TeW5j",
+            "SG9sZGVySW5mb0lucHV0EisKEWd1YXJkaWFuX2FwcHJvdmVkGAEgASgLMhAu",
+            "Y2EuR3VhcmRpYW5JbmZvEiUKDG1hbmFnZXJfaW5mbxgCIAEoCzIPLmNhLk1h",
+            "bmFnZXJJbmZvEiwKEmp1ZGdlbWVudF9zdHJhdGVneRgDIAEoCzIQLmNhLlN0",
+            "cmF0ZWd5Tm9kZRIbCgdjYV9oYXNoGAQgASgLMgouYWVsZi5IYXNoEhcKD2Ny",
+            "ZWF0ZV9jaGFpbl9pZBgFIAEoBSKsAQoMR3VhcmRpYW5JbmZvEh4KBHR5cGUY",
+            "ASABKA4yEC5jYS5HdWFyZGlhblR5cGUSIwoPaWRlbnRpZmllcl9oYXNoGAIg",
+            "ASgLMgouYWVsZi5IYXNoEi8KEXZlcmlmaWNhdGlvbl9pbmZvGAMgASgLMhQu",
+            "Y2EuVmVyaWZpY2F0aW9uSW5mbxImCg16a19sb2dpbl9pbmZvGAQgASgLMg8u",
+            "Y2EuWmtMb2dpbkluZm8iVwoQVmVyaWZpY2F0aW9uSW5mbxIWCgJpZBgBIAEo",
+            "CzIKLmFlbGYuSGFzaBIRCglzaWduYXR1cmUYAiABKAwSGAoQdmVyaWZpY2F0",
+            "aW9uX2RvYxgDIAEoCSK0AgoLWmtMb2dpbkluZm8SIwoPaWRlbnRpZmllcl9o",
+            "YXNoGAEgASgLMgouYWVsZi5IYXNoEgwKBHNhbHQYAiABKAkSCwoDa2lkGAMg",
+            "ASgJEhIKCmNpcmN1aXRfaWQYBCABKAkSEAoIemtfcHJvb2YYBSABKAkSDgoG",
+            "aXNzdWVyGAYgASgJEg0KBW5vbmNlGAcgASgJEicKDW5vbmNlX3BheWxvYWQY",
+            "CCABKAsyEC5jYS5Ob25jZVBheWxvYWQSFQoNemtfcHJvb2ZfcGlfYRgJIAMo",
+            "CRIXCg96a19wcm9vZl9waV9iXzEYCiADKAkSFwoPemtfcHJvb2ZfcGlfYl8y",
+            "GAsgAygJEhcKD3prX3Byb29mX3BpX2JfMxgMIAMoCRIVCg16a19wcm9vZl9w",
+            "aV9jGA0gAygJIn8KDE5vbmNlUGF5bG9hZBItChNhZGRfbWFuYWdlcl9hZGRy",
             "ZXNzGAEgASgLMg4uY2EuQWRkTWFuYWdlckgAEjMKFnJlbW92ZV9tYW5hZ2Vy",
             "X2FkZHJlc3MYAiABKAsyES5jYS5SZW1vdmVNYW5hZ2VySABCCwoJb3BlcmF0",
             "aW9uIogBCgpBZGRNYW5hZ2VyEi0KCXRpbWVzdGFtcBgBIAEoCzIaLmdvb2ds",
@@ -346,8 +346,6 @@ namespace Portkey.Contracts.CA {
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, global::AuthorityInfoReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::AElf.Standards.ACS2.Acs2Reflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Portkey.Contracts.CA.GuardianType), typeof(global::Portkey.Contracts.CA.StrategyValueType), typeof(global::Portkey.Contracts.CA.StrategyName), typeof(global::Portkey.Contracts.CA.OperationType), }, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.IssuerAdded), global::Portkey.Contracts.CA.IssuerAdded.Parser, new[]{ "Issuer" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.VerifyingKeyAdded), global::Portkey.Contracts.CA.VerifyingKeyAdded.Parser, new[]{ "CircuitId", "VerifyingKey" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.HolderInfo), global::Portkey.Contracts.CA.HolderInfo.Parser, new[]{ "CreatorAddress", "ManagerInfos", "GuardianList", "JudgementStrategy", "CreateChainId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.DelegateInfo), global::Portkey.Contracts.CA.DelegateInfo.Parser, new[]{ "ChainId", "ProjectHash", "IdentifierHash", "Timestamp", "ExpirationTime", "Delegations", "IsUnlimitedDelegate", "Signature" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.ManagerInfo), global::Portkey.Contracts.CA.ManagerInfo.Parser, new[]{ "Address", "ExtraData" }, null, null, null, null),
@@ -367,7 +365,7 @@ namespace Portkey.Contracts.CA {
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.ReportPreCrossChainSyncHolderInfoInput), global::Portkey.Contracts.CA.ReportPreCrossChainSyncHolderInfoInput.Parser, new[]{ "GuardianApproved", "ManagerInfo", "JudgementStrategy", "CaHash", "CreateChainId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.GuardianInfo), global::Portkey.Contracts.CA.GuardianInfo.Parser, new[]{ "Type", "IdentifierHash", "VerificationInfo", "ZkLoginInfo" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.VerificationInfo), global::Portkey.Contracts.CA.VerificationInfo.Parser, new[]{ "Id", "Signature", "VerificationDoc" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.ZkLoginInfo), global::Portkey.Contracts.CA.ZkLoginInfo.Parser, new[]{ "IdentifierHash", "Salt", "Kid", "CircuitId", "ZkProof", "Issuer", "Nonce", "NoncePayload" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.ZkLoginInfo), global::Portkey.Contracts.CA.ZkLoginInfo.Parser, new[]{ "IdentifierHash", "Salt", "Kid", "CircuitId", "ZkProof", "Issuer", "Nonce", "NoncePayload", "ZkProofPiA", "ZkProofPiB1", "ZkProofPiB2", "ZkProofPiB3", "ZkProofPiC" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.NoncePayload), global::Portkey.Contracts.CA.NoncePayload.Parser, new[]{ "AddManagerAddress", "RemoveManagerAddress" }, new[]{ "Operation" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.AddManager), global::Portkey.Contracts.CA.AddManager.Parser, new[]{ "Timestamp", "IdentifierHash", "ManagerAddress" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.RemoveManager), global::Portkey.Contracts.CA.RemoveManager.Parser, new[]{ "Timestamp", "IdentifierHash", "ManagerAddress" }, null, null, null, null),
@@ -481,424 +479,6 @@ namespace Portkey.Contracts.CA {
 
   #region Messages
   /// <summary>
-  /// Events
-  /// </summary>
-  public sealed partial class IssuerAdded : pb::IMessage<IssuerAdded>
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      , pb::IBufferMessage
-  #endif
-  {
-    private static readonly pb::MessageParser<IssuerAdded> _parser = new pb::MessageParser<IssuerAdded>(() => new IssuerAdded());
-    private pb::UnknownFieldSet _unknownFields;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pb::MessageParser<IssuerAdded> Parser { get { return _parser; } }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[0]; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    pbr::MessageDescriptor pb::IMessage.Descriptor {
-      get { return Descriptor; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public IssuerAdded() {
-      OnConstruction();
-    }
-
-    partial void OnConstruction();
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public IssuerAdded(IssuerAdded other) : this() {
-      issuer_ = other.issuer_;
-      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public IssuerAdded Clone() {
-      return new IssuerAdded(this);
-    }
-
-    /// <summary>Field number for the "issuer" field.</summary>
-    public const int IssuerFieldNumber = 1;
-    private string issuer_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string Issuer {
-      get { return issuer_; }
-      set {
-        issuer_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override bool Equals(object other) {
-      return Equals(other as IssuerAdded);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public bool Equals(IssuerAdded other) {
-      if (ReferenceEquals(other, null)) {
-        return false;
-      }
-      if (ReferenceEquals(other, this)) {
-        return true;
-      }
-      if (Issuer != other.Issuer) return false;
-      return Equals(_unknownFields, other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override int GetHashCode() {
-      int hash = 1;
-      if (Issuer.Length != 0) hash ^= Issuer.GetHashCode();
-      if (_unknownFields != null) {
-        hash ^= _unknownFields.GetHashCode();
-      }
-      return hash;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override string ToString() {
-      return pb::JsonFormatter.ToDiagnosticString(this);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void WriteTo(pb::CodedOutputStream output) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      output.WriteRawMessage(this);
-    #else
-      if (Issuer.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(Issuer);
-      }
-      if (_unknownFields != null) {
-        _unknownFields.WriteTo(output);
-      }
-    #endif
-    }
-
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (Issuer.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(Issuer);
-      }
-      if (_unknownFields != null) {
-        _unknownFields.WriteTo(ref output);
-      }
-    }
-    #endif
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public int CalculateSize() {
-      int size = 0;
-      if (Issuer.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(Issuer);
-      }
-      if (_unknownFields != null) {
-        size += _unknownFields.CalculateSize();
-      }
-      return size;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(IssuerAdded other) {
-      if (other == null) {
-        return;
-      }
-      if (other.Issuer.Length != 0) {
-        Issuer = other.Issuer;
-      }
-      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(pb::CodedInputStream input) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      input.ReadRawMessage(this);
-    #else
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
-            break;
-          case 10: {
-            Issuer = input.ReadString();
-            break;
-          }
-        }
-      }
-    #endif
-    }
-
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
-            break;
-          case 10: {
-            Issuer = input.ReadString();
-            break;
-          }
-        }
-      }
-    }
-    #endif
-
-  }
-
-  public sealed partial class VerifyingKeyAdded : pb::IMessage<VerifyingKeyAdded>
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      , pb::IBufferMessage
-  #endif
-  {
-    private static readonly pb::MessageParser<VerifyingKeyAdded> _parser = new pb::MessageParser<VerifyingKeyAdded>(() => new VerifyingKeyAdded());
-    private pb::UnknownFieldSet _unknownFields;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pb::MessageParser<VerifyingKeyAdded> Parser { get { return _parser; } }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[1]; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    pbr::MessageDescriptor pb::IMessage.Descriptor {
-      get { return Descriptor; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public VerifyingKeyAdded() {
-      OnConstruction();
-    }
-
-    partial void OnConstruction();
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public VerifyingKeyAdded(VerifyingKeyAdded other) : this() {
-      circuitId_ = other.circuitId_;
-      verifyingKey_ = other.verifyingKey_;
-      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public VerifyingKeyAdded Clone() {
-      return new VerifyingKeyAdded(this);
-    }
-
-    /// <summary>Field number for the "circuit_id" field.</summary>
-    public const int CircuitIdFieldNumber = 1;
-    private string circuitId_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string CircuitId {
-      get { return circuitId_; }
-      set {
-        circuitId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    /// <summary>Field number for the "verifying_key" field.</summary>
-    public const int VerifyingKeyFieldNumber = 2;
-    private string verifyingKey_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string VerifyingKey {
-      get { return verifyingKey_; }
-      set {
-        verifyingKey_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override bool Equals(object other) {
-      return Equals(other as VerifyingKeyAdded);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public bool Equals(VerifyingKeyAdded other) {
-      if (ReferenceEquals(other, null)) {
-        return false;
-      }
-      if (ReferenceEquals(other, this)) {
-        return true;
-      }
-      if (CircuitId != other.CircuitId) return false;
-      if (VerifyingKey != other.VerifyingKey) return false;
-      return Equals(_unknownFields, other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override int GetHashCode() {
-      int hash = 1;
-      if (CircuitId.Length != 0) hash ^= CircuitId.GetHashCode();
-      if (VerifyingKey.Length != 0) hash ^= VerifyingKey.GetHashCode();
-      if (_unknownFields != null) {
-        hash ^= _unknownFields.GetHashCode();
-      }
-      return hash;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override string ToString() {
-      return pb::JsonFormatter.ToDiagnosticString(this);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void WriteTo(pb::CodedOutputStream output) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      output.WriteRawMessage(this);
-    #else
-      if (CircuitId.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(CircuitId);
-      }
-      if (VerifyingKey.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(VerifyingKey);
-      }
-      if (_unknownFields != null) {
-        _unknownFields.WriteTo(output);
-      }
-    #endif
-    }
-
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (CircuitId.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(CircuitId);
-      }
-      if (VerifyingKey.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(VerifyingKey);
-      }
-      if (_unknownFields != null) {
-        _unknownFields.WriteTo(ref output);
-      }
-    }
-    #endif
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public int CalculateSize() {
-      int size = 0;
-      if (CircuitId.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(CircuitId);
-      }
-      if (VerifyingKey.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(VerifyingKey);
-      }
-      if (_unknownFields != null) {
-        size += _unknownFields.CalculateSize();
-      }
-      return size;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(VerifyingKeyAdded other) {
-      if (other == null) {
-        return;
-      }
-      if (other.CircuitId.Length != 0) {
-        CircuitId = other.CircuitId;
-      }
-      if (other.VerifyingKey.Length != 0) {
-        VerifyingKey = other.VerifyingKey;
-      }
-      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(pb::CodedInputStream input) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      input.ReadRawMessage(this);
-    #else
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
-            break;
-          case 10: {
-            CircuitId = input.ReadString();
-            break;
-          }
-          case 18: {
-            VerifyingKey = input.ReadString();
-            break;
-          }
-        }
-      }
-    #endif
-    }
-
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
-            break;
-          case 10: {
-            CircuitId = input.ReadString();
-            break;
-          }
-          case 18: {
-            VerifyingKey = input.ReadString();
-            break;
-          }
-        }
-      }
-    }
-    #endif
-
-  }
-
-  /// <summary>
   ///Data structure
   /// </summary>
   public sealed partial class HolderInfo : pb::IMessage<HolderInfo>
@@ -915,7 +495,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[2]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1268,7 +848,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[3]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[1]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1738,7 +1318,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[4]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[2]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1973,7 +1553,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[5]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2151,7 +1731,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[6]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[4]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2589,7 +2169,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[7]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2815,7 +2395,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[8]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2993,7 +2573,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[9]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[7]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3171,7 +2751,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[10]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[8]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3349,7 +2929,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[11]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[9]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3530,7 +3110,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[12]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[10]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3728,7 +3308,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[13]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[11]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3926,7 +3506,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[14]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[12]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4104,7 +3684,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[15]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[13]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4302,7 +3882,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[16]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[14]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4500,7 +4080,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[17]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[15]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4910,7 +4490,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[18]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[16]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5283,7 +4863,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[19]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[17]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5610,7 +5190,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[20]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[18]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5882,7 +5462,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[21]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[19]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5910,6 +5490,11 @@ namespace Portkey.Contracts.CA {
       issuer_ = other.issuer_;
       nonce_ = other.nonce_;
       noncePayload_ = other.noncePayload_ != null ? other.noncePayload_.Clone() : null;
+      zkProofPiA_ = other.zkProofPiA_.Clone();
+      zkProofPiB1_ = other.zkProofPiB1_.Clone();
+      zkProofPiB2_ = other.zkProofPiB2_.Clone();
+      zkProofPiB3_ = other.zkProofPiB3_.Clone();
+      zkProofPiC_ = other.zkProofPiC_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -6039,6 +5624,61 @@ namespace Portkey.Contracts.CA {
       }
     }
 
+    /// <summary>Field number for the "zk_proof_pi_a" field.</summary>
+    public const int ZkProofPiAFieldNumber = 9;
+    private static readonly pb::FieldCodec<string> _repeated_zkProofPiA_codec
+        = pb::FieldCodec.ForString(74);
+    private readonly pbc::RepeatedField<string> zkProofPiA_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<string> ZkProofPiA {
+      get { return zkProofPiA_; }
+    }
+
+    /// <summary>Field number for the "zk_proof_pi_b_1" field.</summary>
+    public const int ZkProofPiB1FieldNumber = 10;
+    private static readonly pb::FieldCodec<string> _repeated_zkProofPiB1_codec
+        = pb::FieldCodec.ForString(82);
+    private readonly pbc::RepeatedField<string> zkProofPiB1_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<string> ZkProofPiB1 {
+      get { return zkProofPiB1_; }
+    }
+
+    /// <summary>Field number for the "zk_proof_pi_b_2" field.</summary>
+    public const int ZkProofPiB2FieldNumber = 11;
+    private static readonly pb::FieldCodec<string> _repeated_zkProofPiB2_codec
+        = pb::FieldCodec.ForString(90);
+    private readonly pbc::RepeatedField<string> zkProofPiB2_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<string> ZkProofPiB2 {
+      get { return zkProofPiB2_; }
+    }
+
+    /// <summary>Field number for the "zk_proof_pi_b_3" field.</summary>
+    public const int ZkProofPiB3FieldNumber = 12;
+    private static readonly pb::FieldCodec<string> _repeated_zkProofPiB3_codec
+        = pb::FieldCodec.ForString(98);
+    private readonly pbc::RepeatedField<string> zkProofPiB3_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<string> ZkProofPiB3 {
+      get { return zkProofPiB3_; }
+    }
+
+    /// <summary>Field number for the "zk_proof_pi_c" field.</summary>
+    public const int ZkProofPiCFieldNumber = 13;
+    private static readonly pb::FieldCodec<string> _repeated_zkProofPiC_codec
+        = pb::FieldCodec.ForString(106);
+    private readonly pbc::RepeatedField<string> zkProofPiC_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<string> ZkProofPiC {
+      get { return zkProofPiC_; }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -6062,6 +5702,11 @@ namespace Portkey.Contracts.CA {
       if (Issuer != other.Issuer) return false;
       if (Nonce != other.Nonce) return false;
       if (!object.Equals(NoncePayload, other.NoncePayload)) return false;
+      if(!zkProofPiA_.Equals(other.zkProofPiA_)) return false;
+      if(!zkProofPiB1_.Equals(other.zkProofPiB1_)) return false;
+      if(!zkProofPiB2_.Equals(other.zkProofPiB2_)) return false;
+      if(!zkProofPiB3_.Equals(other.zkProofPiB3_)) return false;
+      if(!zkProofPiC_.Equals(other.zkProofPiC_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -6077,6 +5722,11 @@ namespace Portkey.Contracts.CA {
       if (Issuer.Length != 0) hash ^= Issuer.GetHashCode();
       if (Nonce.Length != 0) hash ^= Nonce.GetHashCode();
       if (noncePayload_ != null) hash ^= NoncePayload.GetHashCode();
+      hash ^= zkProofPiA_.GetHashCode();
+      hash ^= zkProofPiB1_.GetHashCode();
+      hash ^= zkProofPiB2_.GetHashCode();
+      hash ^= zkProofPiB3_.GetHashCode();
+      hash ^= zkProofPiC_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -6127,6 +5777,11 @@ namespace Portkey.Contracts.CA {
         output.WriteRawTag(66);
         output.WriteMessage(NoncePayload);
       }
+      zkProofPiA_.WriteTo(output, _repeated_zkProofPiA_codec);
+      zkProofPiB1_.WriteTo(output, _repeated_zkProofPiB1_codec);
+      zkProofPiB2_.WriteTo(output, _repeated_zkProofPiB2_codec);
+      zkProofPiB3_.WriteTo(output, _repeated_zkProofPiB3_codec);
+      zkProofPiC_.WriteTo(output, _repeated_zkProofPiC_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -6169,6 +5824,11 @@ namespace Portkey.Contracts.CA {
         output.WriteRawTag(66);
         output.WriteMessage(NoncePayload);
       }
+      zkProofPiA_.WriteTo(ref output, _repeated_zkProofPiA_codec);
+      zkProofPiB1_.WriteTo(ref output, _repeated_zkProofPiB1_codec);
+      zkProofPiB2_.WriteTo(ref output, _repeated_zkProofPiB2_codec);
+      zkProofPiB3_.WriteTo(ref output, _repeated_zkProofPiB3_codec);
+      zkProofPiC_.WriteTo(ref output, _repeated_zkProofPiC_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -6203,6 +5863,11 @@ namespace Portkey.Contracts.CA {
       if (noncePayload_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(NoncePayload);
       }
+      size += zkProofPiA_.CalculateSize(_repeated_zkProofPiA_codec);
+      size += zkProofPiB1_.CalculateSize(_repeated_zkProofPiB1_codec);
+      size += zkProofPiB2_.CalculateSize(_repeated_zkProofPiB2_codec);
+      size += zkProofPiB3_.CalculateSize(_repeated_zkProofPiB3_codec);
+      size += zkProofPiC_.CalculateSize(_repeated_zkProofPiC_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -6245,6 +5910,11 @@ namespace Portkey.Contracts.CA {
         }
         NoncePayload.MergeFrom(other.NoncePayload);
       }
+      zkProofPiA_.Add(other.zkProofPiA_);
+      zkProofPiB1_.Add(other.zkProofPiB1_);
+      zkProofPiB2_.Add(other.zkProofPiB2_);
+      zkProofPiB3_.Add(other.zkProofPiB3_);
+      zkProofPiC_.Add(other.zkProofPiC_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -6296,6 +5966,26 @@ namespace Portkey.Contracts.CA {
               NoncePayload = new global::Portkey.Contracts.CA.NoncePayload();
             }
             input.ReadMessage(NoncePayload);
+            break;
+          }
+          case 74: {
+            zkProofPiA_.AddEntriesFrom(input, _repeated_zkProofPiA_codec);
+            break;
+          }
+          case 82: {
+            zkProofPiB1_.AddEntriesFrom(input, _repeated_zkProofPiB1_codec);
+            break;
+          }
+          case 90: {
+            zkProofPiB2_.AddEntriesFrom(input, _repeated_zkProofPiB2_codec);
+            break;
+          }
+          case 98: {
+            zkProofPiB3_.AddEntriesFrom(input, _repeated_zkProofPiB3_codec);
+            break;
+          }
+          case 106: {
+            zkProofPiC_.AddEntriesFrom(input, _repeated_zkProofPiC_codec);
             break;
           }
         }
@@ -6351,6 +6041,26 @@ namespace Portkey.Contracts.CA {
             input.ReadMessage(NoncePayload);
             break;
           }
+          case 74: {
+            zkProofPiA_.AddEntriesFrom(ref input, _repeated_zkProofPiA_codec);
+            break;
+          }
+          case 82: {
+            zkProofPiB1_.AddEntriesFrom(ref input, _repeated_zkProofPiB1_codec);
+            break;
+          }
+          case 90: {
+            zkProofPiB2_.AddEntriesFrom(ref input, _repeated_zkProofPiB2_codec);
+            break;
+          }
+          case 98: {
+            zkProofPiB3_.AddEntriesFrom(ref input, _repeated_zkProofPiB3_codec);
+            break;
+          }
+          case 106: {
+            zkProofPiC_.AddEntriesFrom(ref input, _repeated_zkProofPiC_codec);
+            break;
+          }
         }
       }
     }
@@ -6372,7 +6082,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[22]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[20]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -6657,7 +6367,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[23]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[21]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -6953,7 +6663,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[24]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[22]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -7249,7 +6959,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[25]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[23]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -7512,7 +7222,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[26]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[24]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -7775,7 +7485,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[27]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[25]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8001,7 +7711,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[28]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[26]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8244,7 +7954,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[29]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[27]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8433,7 +8143,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[30]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[28]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8622,7 +8332,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[31]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[29]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -8811,7 +8521,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[32]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[30]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9081,7 +8791,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[33]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[31]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9351,7 +9061,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[34]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[32]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9667,7 +9377,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[35]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[33]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -9983,7 +9693,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[36]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[34]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10299,7 +10009,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[37]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[35]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -10643,7 +10353,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[38]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[36]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11036,7 +10746,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[39]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[37]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11452,7 +11162,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[40]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[38]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -11696,7 +11406,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[41]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[39]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -12049,7 +11759,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[42]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[40]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -12393,7 +12103,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[43]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[41]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -12637,7 +12347,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[44]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[42]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -12835,7 +12545,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[45]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[43]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13105,7 +12815,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[46]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[44]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13329,7 +13039,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[47]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[45]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13555,7 +13265,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[48]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[46]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13744,7 +13454,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[49]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[47]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -13922,7 +13632,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[50]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[48]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14281,7 +13991,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[51]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[49]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14590,7 +14300,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[52]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[50]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14788,7 +14498,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[53]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[51]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -14966,7 +14676,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[54]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[52]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15190,7 +14900,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[55]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[53]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15462,7 +15172,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[56]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[54]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15651,7 +15361,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[57]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[55]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -15849,7 +15559,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[58]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[56]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -16038,7 +15748,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[59]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[57]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -16231,7 +15941,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[60]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[58]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -16604,7 +16314,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[61]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[59]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17017,7 +16727,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[62]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[60]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17310,7 +17020,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[63]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[61]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17603,7 +17313,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[64]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[62]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -17942,7 +17652,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[65]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[63]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -18318,7 +18028,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[66]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[64]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -18648,7 +18358,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[67]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[65]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -18978,7 +18688,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[68]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[66]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -19308,7 +19018,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[69]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[67]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -19638,7 +19348,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[70]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[68]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -19977,7 +19687,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[71]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[69]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -20313,7 +20023,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[72]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[70]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -20511,7 +20221,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[73]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[71]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -20709,7 +20419,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[74]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[72]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -21312,7 +21022,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[75]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[73]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -21510,7 +21220,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[76]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[74]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -21708,7 +21418,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[77]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[75]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -21906,7 +21616,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[78]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[76]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -22104,7 +21814,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[79]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[77]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -22302,7 +22012,7 @@ namespace Portkey.Contracts.CA {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[80]; }
+      get { return global::Portkey.Contracts.CA.CaContractReflection.Descriptor.MessageTypes[78]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

@@ -14,49 +14,6 @@ using aelf = global::AElf.CSharp.Core;
 namespace Portkey.Contracts.CA {
 
   #region Events
-  public partial class IssuerAdded : aelf::IEvent<IssuerAdded>
-  {
-    public global::System.Collections.Generic.IEnumerable<IssuerAdded> GetIndexed()
-    {
-      return new List<IssuerAdded>
-      {
-      };
-    }
-
-    public IssuerAdded GetNonIndexed()
-    {
-      return new IssuerAdded
-      {
-        Issuer = Issuer,
-      };
-    }
-  }
-
-  public partial class VerifyingKeyAdded : aelf::IEvent<VerifyingKeyAdded>
-  {
-    public global::System.Collections.Generic.IEnumerable<VerifyingKeyAdded> GetIndexed()
-    {
-      return new List<VerifyingKeyAdded>
-      {
-      new VerifyingKeyAdded
-      {
-        CircuitId = CircuitId
-      },
-      new VerifyingKeyAdded
-      {
-        VerifyingKey = VerifyingKey
-      },
-      };
-    }
-
-    public VerifyingKeyAdded GetNonIndexed()
-    {
-      return new VerifyingKeyAdded
-      {
-      };
-    }
-  }
-
   public partial class CAHolderCreated : aelf::IEvent<CAHolderCreated>
   {
     public global::System.Collections.Generic.IEnumerable<CAHolderCreated> GetIndexed()
