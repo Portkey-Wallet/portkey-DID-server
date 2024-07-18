@@ -35,6 +35,7 @@ namespace CAServer.Tokens;
 [DisableAuditing]
 public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppService
 {
+    private const string DefaultSymbolBalance = "0";
     private readonly ILogger<TokenDisplayAppService> _logger;
     private readonly ITokenAppService _tokenAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
@@ -229,7 +230,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 var balanceInUsd = CalculationHelper.GetBalanceInUsd(priceDict[token.Symbol], long.Parse(token.Balance),
                     token.Decimals);
                 token.Price = priceDict[token.Symbol];
-                token.BalanceInUsd = token.Price == 0 ? string.Empty : balanceInUsd.ToString();
+                token.BalanceInUsd = token.Price == 0 ? DefaultSymbolBalance : balanceInUsd.ToString();
             }
 
             dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
