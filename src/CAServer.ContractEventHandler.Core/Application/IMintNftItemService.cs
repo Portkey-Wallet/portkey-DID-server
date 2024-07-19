@@ -198,7 +198,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
 
     public async Task Issue(string symbol, string to)
     {
-        await Task.Delay(8000);
+        await Task.Delay(10000);
         var client = new AElfClient("https://tdvw-test-node.aelf.io"); //chain address 
         await client.IsConnectedAsync();
 
@@ -210,7 +210,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
         };
         var transaction =
             await client.GenerateTransactionAsync("DkEdTnymgzVqHmLcGWXiZZuA2A1MeRvC6728BN8yvdGJP7qpC",
-                "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+                "ASh2Wt7nSEmYqnGxPPzp4pnVDU4uhj1XW9Se5VeZcX2UDdyjx",
                 "Issue", input); // sender address, token address, method name, param
 
         var txWithSign = client.SignTransaction("3a3bf1c63ae8bcc855890e9b09585b93d18a3402d84b47102fd53b4a5b78dcac",
