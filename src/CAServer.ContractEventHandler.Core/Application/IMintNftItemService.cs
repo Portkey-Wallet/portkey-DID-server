@@ -164,7 +164,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
             Issuer = Address.FromBase58(address), //能issue的地址
             IssueChainId = ChainHelper.ConvertBase58ToChainId("tDVW"), // Issue给侧链地址
             IsBurnable = true,
-            Owner = Address.FromBase58("2ooUsE2vMmp4rBUuVNfH2yGboWkubrH7nd6Wfa8u7CgvRNb9XQ"), //能issue的地址
+            Owner = Address.FromBase58(address), //能issue的地址
             ExternalInfo = new ExternalInfo()
             {
                 Value =
@@ -220,5 +220,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()
         });
+
+        _logger.LogInformation("Issue TransId:{0}", result.TransactionId);
     }
 }
