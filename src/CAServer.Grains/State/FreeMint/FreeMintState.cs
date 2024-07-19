@@ -1,4 +1,3 @@
-using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
 
 namespace CAServer.Grains.State.FreeMint;
@@ -11,15 +10,4 @@ public class FreeMintState
     public List<ItemMintInfo> MintInfos { get; set; } = new();
     public string UnUsedTokenId { get; set; }
     public string PendingTokenId { get; set; }
-
-}
-
-public class ItemMintInfo
-{
-    public string ItemId { get; set; }
-    public string ImageUrl { get; set; }
-    public string Name { get; set; }
-    public string TokenId { get; set; }
-    public string Description { get; set; }
-    public FreeMintStatus Status { get; set; }
 }

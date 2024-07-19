@@ -804,5 +804,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TransactionReportDto, TransactionReportEto>();
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
         CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
+        CreateMap<FreeMintIndex, GetItemInfoDto>();
     }
 }

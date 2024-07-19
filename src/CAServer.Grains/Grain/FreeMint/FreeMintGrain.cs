@@ -91,6 +91,10 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
             State.UserId = this.GetPrimaryKey();
             State.CollectionInfo = mintNftDto.CollectionInfo;
         }
+        
+        // State.Id = this.GetPrimaryKey().ToString();
+        // State.UserId = this.GetPrimaryKey();
+        // State.CollectionInfo = mintNftDto.CollectionInfo;
 
         // send transaction in service like redpack
         // transaction info no need to save in grain
@@ -115,7 +119,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
             State.PendingTokenId = mintInfo.TokenId;
             return new GrainResultDto<ItemMintInfo>(mintInfo);
         }
-        
+
         var nftInfo = new ItemMintInfo()
         {
             ItemId = Guid.NewGuid().ToString(),
@@ -125,20 +129,20 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
             Description = mintNftDto.ConfirmInfo.Description,
             Status = FreeMintStatus.PENDING
         };
-        
+
         State.PendingTokenId = mintNftDto.ConfirmInfo.TokenId;
+        if (State.UnUsedTokenId == mintNftDto.ConfirmInfo.TokenId)
+        {
+            State.UnUsedTokenId = string.Empty;
+        }
         State.MintInfos.Add(nftInfo);
 
+        await WriteStateAsync();
         return new GrainResultDto<ItemMintInfo>(nftInfo);
     }
 
     public async Task<GrainResultDto<string>> GetTokenId()
     {
-        if (State.Id.IsNullOrEmpty())
-        {
-            State.Id = this.GetPrimaryKey().ToString();
-        }
-
         if (!State.UnUsedTokenId.IsNullOrEmpty())
         {
             return new GrainResultDto<string>(State.UnUsedTokenId);
@@ -152,8 +156,32 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         return new GrainResultDto<string>(State.UnUsedTokenId.ToString());
     }
 
-    private TokenIdGrain GetTokenIdGrain()
+    public async Task<GrainResultDto<ItemMintInfo>> ChangeMintStatus(string itemId, FreeMintStatus status)
     {
-        return GrainFactory.GetGrain<TokenIdGrain>(CommonConstant.FreeMintTokenIdGrainId);
+        var mintNftInfo = State.MintInfos.FirstOrDefault(t => t.ItemId == itemId);
+        if (mintNftInfo == null)
+        {
+            return new GrainResultDto<ItemMintInfo>
+            {
+                Message = "Mint Nft Item info not exist."
+            };
+        }
+
+        if (status == FreeMintStatus.NONE || status == FreeMintStatus.PENDING)
+        {
+            return new GrainResultDto<ItemMintInfo>
+            {
+                Message = $"Not allowed to change to {status.ToString()}."
+            };
+        }
+
+        mintNftInfo.Status = status;
+        State.PendingTokenId = string.Empty;
+        return new GrainResultDto<ItemMintInfo>(mintNftInfo);
+    }
+
+    private ITokenIdGrain GetTokenIdGrain()
+    {
+        return GrainFactory.GetGrain<ITokenIdGrain>(CommonConstant.FreeMintTokenIdGrainId);
     }
 }

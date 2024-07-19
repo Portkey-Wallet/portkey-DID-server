@@ -1,5 +1,5 @@
+using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
-using CAServer.Grains.State.FreeMint;
 using Orleans;
 
 namespace CAServer.Grains.Grain.FreeMint;
@@ -12,4 +12,6 @@ public interface IFreeMintGrain : IGrainWithGuidKey
 
     Task<GrainResultDto<ItemMintInfo>> SaveMintInfo(MintNftDto mintNftDto);
     Task<GrainResultDto<string>> GetTokenId();
+
+    Task<GrainResultDto<ItemMintInfo>> ChangeMintStatus(string itemId, FreeMintStatus status);
 }

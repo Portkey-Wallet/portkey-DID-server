@@ -1,8 +1,12 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
+using CAServer.FreeMint.Etos;
+using CAServer.FreeMint.Provider;
 using CAServer.Grains.Grain.FreeMint;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
@@ -10,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 
 namespace CAServer.FreeMint;
@@ -20,12 +25,17 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<FreeMintAppService> _logger;
     private readonly FreeMintOptions _freeMintOptions;
+    private readonly IFreeMintProvider _freeMintProvider;
+    private readonly IDistributedEventBus _distributedEventBus;
 
     public FreeMintAppService(ILogger<FreeMintAppService> logger, IClusterClient clusterClient,
-        IOptionsSnapshot<FreeMintOptions> freeMintOptions)
+        IOptionsSnapshot<FreeMintOptions> freeMintOptions, IFreeMintProvider freeMintProvider,
+        IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
         _clusterClient = clusterClient;
+        _freeMintProvider = freeMintProvider;
+        _distributedEventBus = distributedEventBus;
         _freeMintOptions = freeMintOptions.Value;
     }
 
@@ -66,13 +76,17 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
             throw new UserFriendlyException(saveResult.Message);
         }
         
-        // eto
-        // set status in es
-        // send transaction
-        // 
+        var eto = new FreeMintEto
+        {
+            UserId = CurrentUser.GetId(),
+            CollectionInfo = collectionInfo,
+            ConfirmInfo = saveResult.Data
+        };
+        
+        await _distributedEventBus.PublishAsync(eto);
         return new ConfirmDto()
         {
-            ItemId = Guid.NewGuid().ToString()
+            ItemId = saveResult.Data.ItemId
         };
     }
 
@@ -91,15 +105,9 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         };
     }
 
-    public async Task<GetItemInfoDto> GetItemInfoAsync(string itemId)
+    public async Task<GetItemInfoDto> GetItemInfoAsync([Required] string itemId)
     {
-        return new GetItemInfoDto()
-        {
-            ImageUrl =
-                "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
-            Name = "test",
-            TokenId = "10",
-            Description = "mock data"
-        };
+        var index = await _freeMintProvider.GetFreeMintItemAsync(itemId);
+        return ObjectMapper.Map<FreeMintIndex, GetItemInfoDto>(index);
     }
 }

@@ -12,6 +12,7 @@ namespace CAServer.Controllers;
 [ControllerName("FreeMint")]
 [Route("api/app/mint/")]
 [Authorize]
+[IgnoreAntiforgeryToken]
 public class FreeMintController : CAServerController
 {
     private readonly IFreeMintAppService _freeMintAppService;

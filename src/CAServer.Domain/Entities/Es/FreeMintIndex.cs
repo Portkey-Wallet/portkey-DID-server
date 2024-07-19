@@ -19,8 +19,8 @@ public class FreeMintIndex: CAServerEsEntity<string>, IIndexBuild
     [Keyword] public string Symbol { get; set; }
     public CollectionInfo CollectionInfo { get; set; }
     public List<MintTransactionInfo> TransactionInfos { get; set; } = new();
-    public long CreateTime { get; set; }
-    public long UpdateTime { get; set; }
+    public DateTime CreateTime { get; set; }
+    public DateTime UpdateTime { get; set; }
 }
 
 public class CollectionInfo
@@ -35,8 +35,8 @@ public class MintTransactionInfo
 {
     [Keyword] public string TransactionId { get; set; }
     public long BlockTime { get; set; }
-    public long BeginTime { get; set; }
-    public long EndTime { get; set; }
+    public DateTime BeginTime { get; set; }
+    public DateTime EndTime { get; set; }
     [Keyword] public string TransactionResult { get; set; }
     public string ErrorMessage { get; set; }
 }
