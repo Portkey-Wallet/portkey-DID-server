@@ -87,14 +87,14 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         var result = new GrainResultDto<ItemMintInfo>();
         if (State.Id.IsNullOrEmpty())
         {
-            State.Id = this.GetPrimaryKey().ToString();
-            State.UserId = this.GetPrimaryKey();
-            State.CollectionInfo = mintNftDto.CollectionInfo;
+            // State.Id = this.GetPrimaryKey().ToString();
+            // State.UserId = this.GetPrimaryKey();
+            // State.CollectionInfo = mintNftDto.CollectionInfo;
         }
         
-        // State.Id = this.GetPrimaryKey().ToString();
-        // State.UserId = this.GetPrimaryKey();
-        // State.CollectionInfo = mintNftDto.CollectionInfo;
+        State.Id = this.GetPrimaryKey().ToString();
+        State.UserId = this.GetPrimaryKey();
+        State.CollectionInfo = mintNftDto.CollectionInfo;
 
         // send transaction in service like redpack
         // transaction info no need to save in grain
@@ -106,6 +106,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         {
             // tokenId already used
             result.Message = "Token id already used.";
+            return result;
         }
 
         // failed, try again
