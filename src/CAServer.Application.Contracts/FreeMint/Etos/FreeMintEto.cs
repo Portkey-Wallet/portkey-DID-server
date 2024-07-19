@@ -1,15 +1,18 @@
+using System;
 using CAServer.FreeMint.Dtos;
 
-namespace CAServer.Grains.Grain.FreeMint;
+namespace CAServer.FreeMint.Etos;
 
-public class MintNftDto
+public class FreeMintEto
 {
+    public Guid UserId { get; set; }
     public FreeMintCollectionInfo CollectionInfo { get; set; }
-    public ConfirmGrainDto ConfirmInfo { get; set; }
+    public FreeMintNftItemInfo ConfirmInfo { get; set; }
 }
 
-public class ConfirmGrainDto
+public class FreeMintNftItemInfo
 {
+    public string ItemId { get; set; }
     public string ImageUrl { get; set; }
     public string Name { get; set; }
     public string TokenId { get; set; }

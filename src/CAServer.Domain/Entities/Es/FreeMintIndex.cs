@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using AElf.Indexing.Elasticsearch;
 using Nest;
 
@@ -17,11 +18,9 @@ public class FreeMintIndex: CAServerEsEntity<string>, IIndexBuild
     [Keyword] public string Status { get; set; }
     [Keyword] public string Symbol { get; set; }
     public CollectionInfo CollectionInfo { get; set; }
-    [Keyword] public string TransactionId { get; set; }
-    [Keyword] public string TransactionResult { get; set; }
-    [Keyword] public long CreateTime { get; set; }
-    [Keyword] public long EndTime { get; set; }
-    public string ErrorMessage { get; set; }
+    public List<MintTransactionInfo> TransactionInfos { get; set; } = new();
+    public long CreateTime { get; set; }
+    public long UpdateTime { get; set; }
 }
 
 public class CollectionInfo
@@ -30,4 +29,14 @@ public class CollectionInfo
     [Keyword] public string ImageUrl { get; set; }
     [Keyword] public string ChainId { get; set; }
     [Keyword] public string Symbol { get; set; }
+}
+
+public class MintTransactionInfo
+{
+    [Keyword] public string TransactionId { get; set; }
+    public long BlockTime { get; set; }
+    public long BeginTime { get; set; }
+    public long EndTime { get; set; }
+    [Keyword] public string TransactionResult { get; set; }
+    public string ErrorMessage { get; set; }
 }
