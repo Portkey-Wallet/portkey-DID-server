@@ -340,8 +340,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (res?.CaHolderNFTCollectionBalanceInfo?.Data == null ||
                 res.CaHolderNFTCollectionBalanceInfo.Data.Count == 0)
             {
+                _logger.LogInformation("[GetNFTCollectionsAsync] data from indexer is empty.");
                 return dto;
             }
+
+            _logger.LogInformation("[GetNFTCollectionsAsync] get from indexer: {0}",
+                JsonConvert.SerializeObject(res.CaHolderNFTCollectionBalanceInfo));
 
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
@@ -1382,7 +1386,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         foreach (var traitsValues in traitTypeValueCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
-                traitTypeValueCounts[traitsValues].ToString(),new DistributedCacheEntryOptions()
+                traitTypeValueCounts[traitsValues].ToString(), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.Now.AddHours(1)
                 });
@@ -1477,8 +1481,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return -1;
         }
     }
-    
-    
+
+
     private bool IsValidJson(string strInput)
     {
         try
@@ -1491,6 +1495,4 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return false;
         }
     }
-    
-    
 }
