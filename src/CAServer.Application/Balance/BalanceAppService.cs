@@ -281,8 +281,11 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
     {
         var list = await Beauty();
         var resDa = new List<string>();
+        var startTime = 1719396000;
+        var endTime = 1720454400;
+        
         var transactions = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
-            string.Empty, new List<string>() { "CreateCAHolder" }, 0, 6000, 1718640000, 1719936000);
+            string.Empty, new List<string>() { "CreateCAHolder" }, 0, 6000, startTime, endTime);
 
         var data = transactions.CaHolderTransaction.Data.Where(t => t.MethodName == "CreateCAHolder")
             .Select(t => t.FromAddress)
@@ -294,7 +297,7 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         {
             skip += res;
             transactions = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
-                string.Empty, new List<string>() { "CreateCAHolder" }, skip, res, 1718640000, 1719936000);
+                string.Empty, new List<string>() { "CreateCAHolder" }, skip, res, startTime, endTime);
             data = transactions.CaHolderTransaction.Data.Where(t => t.MethodName == "CreateCAHolder")
                 .Select(t => t.FromAddress)
                 .ToList();
@@ -319,11 +322,51 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         {
             try
             {
-                nextLine = nextLine.Replace(" ", "");
-                var lineData = nextLine.Split('_');
-                if (lineData.Length >= 1)
+                if (nextLine.Contains("ELF_"))
                 {
-                    list.Add(lineData[1]);
+                    nextLine = nextLine.Replace(" ", "");
+                    var lineData = nextLine.Split('_');
+                    if (lineData.Length >= 1)
+                    {
+                        list.Add(lineData[1]);
+                    }
+                }
+                
+                line++;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("GetVote handle next line error, " + e.Message);
+            }
+        }
+
+        sr.Close();
+
+        return list;
+    }
+    
+    public async Task<List<string>> Beauty2()
+    {
+        var sr = new StreamReader(@"address.txt");
+        var list = new List<string>();
+
+        int line = 0;
+        string nextLine;
+        while ((nextLine = sr.ReadLine()) != null)
+        {
+            try
+            {
+                if (!nextLine.IsNullOrEmpty() && nextLine.Contains("ELF"))
+                {
+                    var str = nextLine.Substring(nextLine.IndexOf("ELF_"));
+                    str = str.Replace(" ", "");
+                    str = str.Substring(0, str.LastIndexOf("_"));
+                    
+                    var lineData = str.Split('_');
+                    if (str.Length >= 1)
+                    {
+                        list.Add(lineData[1]);
+                    }
                 }
 
                 line++;
@@ -336,6 +379,6 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
 
         sr.Close();
 
-        return list;
+        return list.Distinct().ToList();
     }
 }
