@@ -11,6 +11,7 @@ using CAServer.Grains.Grain.FreeMint;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -75,15 +76,16 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         {
             throw new UserFriendlyException(saveResult.Message);
         }
-        
+
         var eto = new FreeMintEto
         {
             UserId = CurrentUser.GetId(),
             CollectionInfo = collectionInfo,
             ConfirmInfo = saveResult.Data
         };
-        
-        await _distributedEventBus.PublishAsync(eto);
+
+        await _distributedEventBus.PublishAsync(eto, false, false);
+        _logger.LogInformation("publish free mint eto, data:{data}", JsonConvert.SerializeObject(eto));
         return new ConfirmDto()
         {
             ItemId = saveResult.Data.ItemId
