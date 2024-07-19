@@ -50,7 +50,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
                     UpdateTime = DateTime.UtcNow,
                     Id = eventData.ConfirmInfo.ItemId
                 };
-                _objectMapper.Map(index, eventData.ConfirmInfo);
+                _objectMapper.Map(eventData.ConfirmInfo, index);
                 index.CollectionInfo =
                     _objectMapper.Map<FreeMintCollectionInfo, CollectionInfo>(eventData.CollectionInfo);
                 await _freeMintRepository.AddOrUpdateAsync(index);
