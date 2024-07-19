@@ -38,24 +38,13 @@ public class FreeMintController : CAServerController
     {
         return await _freeMintAppService.ConfirmAsync(requestDto);
     }
-    
-    [HttpPost("mintAgain")]
-    public async Task<ConfirmDto> MintAgainAsync(MintAgainRequestDto requestDto)
-    {
-        return await _freeMintAppService.MintAgainAsync(requestDto);
-    }
-    
+
     [HttpGet("status")]
     public async Task<GetStatusDto> GetStatusAsync(string itemId)
     {
         return await _freeMintAppService.GetStatusAsync(itemId);
     }
     
-    [HttpGet("detail")]
-    public async Task<GetNftItemDetailDto> GetNftItemDetailAsync(string itemId)
-    {
-        return await _freeMintAppService.GetNftItemDetailAsync(itemId);
-    }
     
     [HttpGet("itemInfo")]
     public async Task<GetItemInfoDto> GetItemInfoAsync(string itemId)

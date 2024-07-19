@@ -62,14 +62,6 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         };
     }
 
-    public async Task<ConfirmDto> MintAgainAsync(MintAgainRequestDto requestDto)
-    {
-        return new ConfirmDto()
-        {
-            ItemId = requestDto.ItemId
-        };
-    }
-
     public async Task<GetStatusDto> GetStatusAsync(string itemId)
     {
         var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
@@ -82,27 +74,6 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         return new GetStatusDto
         {
             Status = statusResult.Data.Status
-        };
-    }
-
-    public async Task<GetNftItemDetailDto> GetNftItemDetailAsync(string itemId)
-    {
-        return new GetNftItemDetailDto()
-        {
-            Symbol = "FREEMINT-11",
-            ChainId = "tDVW",
-            TokenId = "11",
-            Alias = "a1",
-            Balance = "1",
-            TotalSupply = 1,
-            CirculatingSupply = 1,
-            ImageUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/294xAUTO/1718204222065-Activity%20Icon.png",
-            TokenContractAddress = "ASh2Wt7nSEmYqnGxPPzp4pnVDU4uhj1XW9Se5VeZcX2UDdyjx",
-            ImageLargeUrl = "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/1008xAUTO/1718204222065-Activity%20Icon.png",
-            Decimals = "0",
-            CollectionSymbol = "FREEMINT-0",
-            TokenName = "a1",
-            Status = FreeMintStatus.SUCCESS
         };
     }
 
