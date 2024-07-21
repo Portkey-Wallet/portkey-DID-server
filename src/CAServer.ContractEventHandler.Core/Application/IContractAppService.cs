@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -79,6 +80,7 @@ public class ContractAppService : IContractAppService
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
     private const int AcceleratedThreadCount = 3;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -90,7 +92,8 @@ public class ContractAppService : IContractAppService
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount,
         IRedPackageCreateResultService redPackageCreateResultService,
-        INESTRepository<RedPackageIndex, Guid> redPackageRepository)
+        INESTRepository<RedPackageIndex, Guid> redPackageRepository,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -110,6 +113,7 @@ public class ContractAppService : IContractAppService
         _packageAccount = packageAccount.Value;
         _redPackageCreateResultService = redPackageCreateResultService;
         _redPackageRepository = redPackageRepository;
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -189,6 +193,7 @@ public class ContractAppService : IContractAppService
                 message.ReferralInfo = null;
             }
             createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(message);
+            _logger.LogInformation("CreateHolderInfo createHolderDto:{0}", JsonConvert.SerializeObject(createHolderDto));
         }
         catch (Exception e)
         {
@@ -305,6 +310,7 @@ public class ContractAppService : IContractAppService
                 message.ReferralInfo = null;
             }
             socialRecoveryDto = _objectMapper.Map<AccountRecoverCreateEto, SocialRecoveryDto>(message);
+            _logger.LogInformation("SocialRecovery socialRecoveryDto:{0}", JsonConvert.SerializeObject(socialRecoveryDto));
         }
         catch (Exception e)
         {
@@ -321,7 +327,7 @@ public class ContractAppService : IContractAppService
         }
 
         var resultSocialRecovery = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
-
+        _logger.LogInformation("SocialRecoveryAsync From contract reuslt:{}", JsonConvert.SerializeObject(resultSocialRecovery));
         var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");
         if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)

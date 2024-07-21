@@ -50,6 +50,7 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
             body: JsonConvert.SerializeObject(signatureSend),
             header: SecurityServerHeader()
             );
+        
         AssertHelper.IsTrue(resp?.Success ?? false, "Signature response failed");
         AssertHelper.NotEmpty(resp!.Data?.Signature, "Signature response empty");
         return resp.Data!.Signature;

@@ -123,6 +123,12 @@ public class CAAccountController : CAServerController
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         return await _caAccountService.RevokeValidateAsync(userId, type);
     }
+
+    [HttpPost("send/caholder/test")]
+    public async Task TestCreateHolderInfoAsync(RegisterDto registerDto)
+    {
+        await _caAccountService.TestCreateHolderInfoAsync(registerDto);
+    }
     
     [HttpGet("verify/caHolderExist")]
     public async Task<CAHolderExistsResponseDto> CaHolderExistByAddress(string address)

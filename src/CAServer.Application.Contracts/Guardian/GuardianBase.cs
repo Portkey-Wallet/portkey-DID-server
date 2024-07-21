@@ -32,4 +32,5 @@ public class GuardianInfoBase
     public bool IsLoginGuardian { get; set; }
     public string Type { get; set; }
     public string TransactionId { get; set; }
+    public bool ManuallySupportForZk { get; set; }
 }
