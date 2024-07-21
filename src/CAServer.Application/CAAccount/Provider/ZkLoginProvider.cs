@@ -66,13 +66,14 @@ public class ZkLoginProvider : CAServerAppService, IZkLoginProvider
             return false;
         }
 
-        return zkLoginInfo.IdentifierHash is null or ""
-               || zkLoginInfo.Salt is null or ""
-               || zkLoginInfo.Jwt is null or ""
-               || zkLoginInfo.Nonce is null or ""
-               || zkLoginInfo.ZkProof is null or ""
-               || zkLoginInfo.CircuitId is null or ""
-               || zkLoginInfo.Timestamp <= 0;
+        return zkLoginInfo != null
+               && zkLoginInfo.IdentifierHash is not (null or "")
+               && zkLoginInfo.Salt is not (null or "")
+               && zkLoginInfo.Jwt is not (null or "")
+               && zkLoginInfo.Nonce is not (null or "")
+               && zkLoginInfo.ZkProof is not (null or "")
+               && zkLoginInfo.CircuitId is not (null or "")
+               /*&& zkLoginInfo.Timestamp > 0*/;
     }
     
     public async Task GenerateGuardianAndUserInfoAsync(GuardianIdentifierType type, string accessToken, string guardianIdentifier, string identifierHash, string salt,
