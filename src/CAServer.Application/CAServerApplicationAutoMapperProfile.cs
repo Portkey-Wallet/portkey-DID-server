@@ -152,8 +152,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 },
                 ZkLoginInfo = new ZkLoginInfo
                 {
-                    IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
-                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.ZkLoginInfo.IdentifierHash),
                     Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Salt,
                     Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Nonce,
                     ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.ZkProof,
@@ -174,6 +174,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
                                 Nanos = (int)((e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
                             }
                         }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofPiC }
                     }
                 }
             }))
@@ -339,7 +347,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 },
                 ZkLoginInfo = new ZkLoginInfo()
                 {
-                    IdentifierHash = e.GuardianInfo.IdentifierHash,
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
                     Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
                     Kid = e.GuardianInfo.ZkLoginInfo.Kid,
                     Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
@@ -354,6 +362,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
                             ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
                             Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
                         }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
                 }
             }))
@@ -380,7 +396,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 },
                 ZkLoginInfo = new ZkLoginInfo()
                 {
-                    IdentifierHash = e.GuardianInfo.IdentifierHash,
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
                     Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
                     Kid = e.GuardianInfo.ZkLoginInfo.Kid,
                     Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
@@ -395,6 +411,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
                             ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
                             Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
                         }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
                 }
             }))
@@ -438,6 +462,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
                                                                   || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null
                                     ? new Timestamp() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
                             }
+                        },
+                        ZkProofInfo = g.ZkLoginInfo == null ? new ZkProofInfo() : new ZkProofInfo
+                        {
+                            ZkProofPiA = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                            ZkProofPiB1 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                            ZkProofPiB2 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                            ZkProofPiB3 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                            ZkProofPiC = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                         }
                     }
                 }).ToList()))

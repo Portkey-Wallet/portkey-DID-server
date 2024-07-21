@@ -35,12 +35,12 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                 },
                 ZkLoginInfo = new ZkLoginInfo
                 {
-                    IdentifierHash = e.GuardianInfo.IdentifierHash.IsNullOrWhiteSpace()
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
                         ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
                     Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Salt,
                     Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Nonce,
                     ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.ZkProof,
-                    ZkProofInfo = new ZkProofInfo
+                    ZkProofInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkProofInfo() : new ZkProofInfo
                     {
                         ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofPiA },
                         ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
@@ -91,12 +91,12 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                     },
                     ZkLoginInfo = new ZkLoginInfo
                     {
-                        IdentifierHash = g.IdentifierHash.IsNullOrWhiteSpace()
+                        IdentifierHash = g.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
                             ? Hash.Empty : Hash.LoadFromHex(g.IdentifierHash),
                         Salt = g.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Salt,
                         Nonce = g.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
                         ZkProof = g.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
-                        ZkProofInfo = new ZkProofInfo{
+                        ZkProofInfo = g.ZkLoginInfo == null ? new ZkProofInfo() : new ZkProofInfo{
                             ZkProofPiA = { g.ZkLoginInfo.ZkProofPiA },
                             ZkProofPiB1 = { g.ZkLoginInfo.ZkProofPiB1 },
                             ZkProofPiB2 = { g.ZkLoginInfo.ZkProofPiB2 },

@@ -118,8 +118,16 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
-        registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
-        SetZkLoginParams(input, registerDto, guardianGrainDto.IdentifierHash);
+        //todo remove the if condition before online
+        if (input.ZkLoginInfo != null)
+        {
+            registerDto.GuardianInfo.IdentifierHash = input.ZkLoginInfo.IdentifierHash;
+        }
+        else
+        {
+            registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
+        }
+        SetZkLoginParams(input, registerDto);
 
         _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
 
@@ -147,7 +155,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
-    private void SetZkLoginParams(RegisterRequestDto input, RegisterDto registerDto, string identifierHash)
+    private void SetZkLoginParams(RegisterRequestDto input, RegisterDto registerDto)
     {
         if (input.ZkLoginInfo == null)
         {
