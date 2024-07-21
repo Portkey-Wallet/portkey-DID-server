@@ -110,7 +110,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     {
         //just deal with google guardian, todo apple send the user extra info event
         _logger.LogInformation("RegisterRequest started.......................");
-        if (_zkLoginProvider.CanExecuteZk(input.Type, input.ZkLoginInfo))
+        if (input.ZkLoginInfo != null && _zkLoginProvider.CanExecuteZk(input.Type, input.ZkLoginInfo))
         {
             await _zkLoginProvider.GenerateGuardianAndUserInfoAsync(input.Type, input.AccessToken, input.LoginGuardianIdentifier, 
                 input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Salt, input.ChainId, input.VerifierId);
