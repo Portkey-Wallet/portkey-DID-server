@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -24,6 +25,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.EventBus.Distributed;
 using ChainOptions = CAServer.Options.ChainOptions;
 using IObjectMapper = Volo.Abp.ObjectMapping.IObjectMapper;
 
@@ -37,10 +39,11 @@ public class ContractService : IContractService, ISingletonDependency
     private readonly ILogger<ContractService> _logger;
     private readonly ISignatureProvider _signatureProvider;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly IDistributedEventBus _distributedEventBus;
 
     public ContractService(IOptions<ChainOptions> chainOptions, IOptions<ContractServiceOptions> contractGrainOptions,
         IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractService> logger,
-        IIndicatorScope indicatorScope)
+        IIndicatorScope indicatorScope, IDistributedEventBus distributedEventBus)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -48,6 +51,7 @@ public class ContractService : IContractService, ISingletonDependency
         _contractServiceOptions = contractGrainOptions.Value;
         _chainOptions = chainOptions.Value;
         _signatureProvider = signatureProvider;
+        _distributedEventBus = distributedEventBus;
     }
 
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
@@ -189,107 +193,15 @@ public class ContractService : IContractService, ISingletonDependency
             registerCreateEto.GuardianInfo.ZkLoginInfo = registerGrainDto.GuardianInfo.ZkLoginInfo;
         }
         _logger.LogInformation("........TestCreateHolderInfoAsync AccountRegisterCreateEto:{0}", JsonConvert.SerializeObject(registerCreateEto));
-        CreateHolderDto createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(registerCreateEto);
-        createHolderDto.GuardianInfo = new GuardianInfo()
-        {
-            IdentifierHash = Hash.LoadFromHex(registerCreateEto.GuardianInfo.IdentifierHash),
-            Type = (Portkey.Contracts.CA.GuardianType)(int)registerCreateEto.GuardianInfo.Type,
-            VerificationInfo = new VerificationInfo()
-            {
-                Id = Hash.LoadFromHex(registerCreateEto.GuardianInfo.VerificationInfo.Id),
-                Signature = registerCreateEto.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace() 
-                    ? ByteString.Empty : ByteStringHelper.FromHexString(registerCreateEto.GuardianInfo.VerificationInfo.Signature),
-                VerificationDoc = registerCreateEto.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
-                    ? string.Empty : registerCreateEto.GuardianInfo.VerificationInfo.VerificationDoc
-            },
-            ZkLoginInfo = registerCreateEto.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
-            {
-                IdentifierHash = registerCreateEto.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
-                    ? Hash.Empty : Hash.LoadFromHex(registerCreateEto.GuardianInfo.ZkLoginInfo.IdentifierHash),
-                Salt = registerCreateEto.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Salt,
-                Nonce = registerCreateEto.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Nonce,
-                ZkProof = registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProof,
-                Issuer = registerCreateEto.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Issuer,
-                Kid = registerCreateEto.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Kid,
-                CircuitId = registerCreateEto.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.CircuitId,
-                NoncePayload = new NoncePayload
-                {
-                    AddManagerAddress = new AddManager
-                    {
-                        CaHash = registerCreateEto.CaHash.IsNullOrWhiteSpace()
-                            ? Hash.Empty : Hash.LoadFromHex(registerCreateEto.GuardianInfo.IdentifierHash),
-                        ManagerAddress = registerCreateEto.ManagerInfo.Address.IsNullOrWhiteSpace()
-                            ? new Address() : Address.FromBase58(registerCreateEto.ManagerInfo.Address),
-                        Timestamp = new Timestamp
-                        {
-                            Seconds = registerCreateEto.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
-                            Nanos = (int)((registerCreateEto.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
-                        }
-                    }
-                },
-                ZkProofInfo = new ZkProofInfo
-                {
-                    ZkProofPiA = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiA },
-                    ZkProofPiB1 = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
-                    ZkProofPiB2 = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiB2 },
-                    ZkProofPiB3 = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiB3 },
-                    ZkProofPiC = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiC }
-                }
-            }
-        };
-        _logger.LogInformation("........TestCreateHolderInfoAsync CreateHolderDto:{0}", JsonConvert.SerializeObject(createHolderDto));
-        var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
-        param.GuardianApproved = new GuardianInfo()
-        {
-            IdentifierHash = Hash.LoadFromHex(registerCreateEto.GuardianInfo.IdentifierHash),
-            Type = (Portkey.Contracts.CA.GuardianType)(int)registerCreateEto.GuardianInfo.Type,
-            VerificationInfo = new VerificationInfo()
-            {
-                Id = Hash.LoadFromHex(registerCreateEto.GuardianInfo.VerificationInfo.Id),
-                Signature = registerCreateEto.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace() 
-                    ? ByteString.Empty : ByteStringHelper.FromHexString(registerCreateEto.GuardianInfo.VerificationInfo.Signature),
-                VerificationDoc = registerCreateEto.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
-                    ? string.Empty : registerCreateEto.GuardianInfo.VerificationInfo.VerificationDoc
-            },
-            ZkLoginInfo = registerCreateEto.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
-            {
-                IdentifierHash = registerCreateEto.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
-                    ? Hash.Empty : Hash.LoadFromHex(registerCreateEto.GuardianInfo.ZkLoginInfo.IdentifierHash),
-                Salt = registerCreateEto.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Salt,
-                Nonce = registerCreateEto.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Nonce,
-                ZkProof = registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProof,
-                Issuer = registerCreateEto.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Issuer,
-                Kid = registerCreateEto.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.Kid,
-                CircuitId = registerCreateEto.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : registerCreateEto.GuardianInfo.ZkLoginInfo.CircuitId,
-                NoncePayload = new NoncePayload
-                {
-                    AddManagerAddress = new AddManager
-                    {
-                        CaHash = registerCreateEto.CaHash.IsNullOrWhiteSpace()
-                            ? Hash.Empty : Hash.LoadFromHex(registerCreateEto.GuardianInfo.IdentifierHash),
-                        ManagerAddress = registerCreateEto.ManagerInfo.Address.IsNullOrWhiteSpace()
-                            ? new Address() : Address.FromBase58(registerCreateEto.ManagerInfo.Address),
-                        Timestamp = new Timestamp
-                        {
-                            Seconds = registerCreateEto.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
-                            Nanos = (int)((registerCreateEto.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
-                        }
-                    }
-                },
-                ZkProofInfo = new ZkProofInfo
-                {
-                    ZkProofPiA = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiA },
-                    ZkProofPiB1 = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
-                    ZkProofPiB2 = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiB2 },
-                    ZkProofPiB3 = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiB3 },
-                    ZkProofPiC = { registerCreateEto.GuardianInfo.ZkLoginInfo.ZkProofPiC }
-                }
-            }
-        };
-        _logger.LogInformation("........TestCreateHolderInfoAsync param:{0}", JsonConvert.SerializeObject(param));
-        var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
-        _logger.LogInformation("........TestCreateHolderInfoAsync result:{0}", JsonConvert.SerializeObject(result));
-        return result.TransactionResultDto;
+        await _distributedEventBus.PublishAsync(registerCreateEto);
+        // CreateHolderDto createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(registerCreateEto);
+        // _logger.LogInformation("........TestCreateHolderInfoAsync CreateHolderDto:{0}", JsonConvert.SerializeObject(createHolderDto));
+        // var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
+        // _logger.LogInformation("........TestCreateHolderInfoAsync param:{0}", JsonConvert.SerializeObject(param));
+        // var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
+        // _logger.LogInformation("........TestCreateHolderInfoAsync result:{0}", JsonConvert.SerializeObject(result));
+        // return result.TransactionResultDto;
+        return new TransactionResultDto();
     }
 
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
