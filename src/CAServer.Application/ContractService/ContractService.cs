@@ -182,12 +182,19 @@ public class ContractService : IContractService, ISingletonDependency
     public async Task<TransactionResultDto> TestCreateHolderInfoAsync(RegisterDto registerDto)
     {
         var registerGrainDto = _objectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto);
+        _logger.LogInformation("........TestCreateHolderInfoAsync RegisterGrainDto:{0}", JsonConvert.SerializeObject(registerGrainDto));
         var registerCreateEto = _objectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(registerGrainDto);
+        if (registerGrainDto.GuardianInfo.ZkLoginInfo != null)
+        {
+            registerCreateEto.GuardianInfo.ZkLoginInfo = registerGrainDto.GuardianInfo.ZkLoginInfo;
+        }
+        _logger.LogInformation("........TestCreateHolderInfoAsync AccountRegisterCreateEto:{0}", JsonConvert.SerializeObject(registerCreateEto));
         CreateHolderDto createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(registerCreateEto);
+        _logger.LogInformation("........TestCreateHolderInfoAsync CreateHolderDto:{0}", JsonConvert.SerializeObject(createHolderDto));
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
-        _logger.LogInformation("TestCreateHolderInfoAsync param:{0}", JsonConvert.SerializeObject(param));
+        _logger.LogInformation("........TestCreateHolderInfoAsync param:{0}", JsonConvert.SerializeObject(param));
         var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
-        _logger.LogInformation("TestCreateHolderInfoAsync result:{0}", JsonConvert.SerializeObject(result));
+        _logger.LogInformation("........TestCreateHolderInfoAsync result:{0}", JsonConvert.SerializeObject(result));
         return result.TransactionResultDto;
     }
 

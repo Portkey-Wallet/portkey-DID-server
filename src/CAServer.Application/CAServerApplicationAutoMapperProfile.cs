@@ -150,7 +150,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
                         ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
-                ZkLoginInfo = new ZkLoginInfo
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
                 {
                     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
                         ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.ZkLoginInfo.IdentifierHash),
