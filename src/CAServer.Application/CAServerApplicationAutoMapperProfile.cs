@@ -345,7 +345,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
-                ZkLoginInfo = new ZkLoginInfo()
+                ZkLoginInfo = new Portkey.Contracts.CA.ZkLoginInfo()
                 {
                     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
                     Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
