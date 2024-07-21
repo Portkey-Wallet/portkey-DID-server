@@ -154,7 +154,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     public async Task<ActivityDateRangeResponseDto> GetActivityDateRangeAsync(ActivityEnums activityEnum)
     {
         
-        _activityDateRangeOptions.ActivityDateRanges.TryGetValue(Convert.ToInt16(activityEnum),out var dateRange);
+        _activityDateRangeOptions.ActivityDateRanges.TryGetValue(activityEnum.ToString(),out var dateRange);
         if (dateRange != null)
         {
             return new ActivityDateRangeResponseDto

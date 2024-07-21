@@ -38,6 +38,8 @@ using Volo.Abp.Users;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 using Enum = System.Enum;
 using NoncePayload = CAServer.CAAccount.Dtos.Zklogin.NoncePayload;
+using Error = CAServer.CAAccount.Dtos.Error;
+
 
 namespace CAServer.CAAccount;
 
@@ -105,7 +107,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _contractService = contractService;
         _zkLoginProvider = zkLoginProvider;
     }
-    
+
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         //just deal with google guardian, todo apple send the user extra info event
@@ -585,13 +587,53 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             validateDevice = false;
         }
-        var validateGuardian = await ValidateGuardianAsync(holderInfo,type);
+
+        var validateGuardian = await ValidateGuardianAsync(holderInfo, type);
         return new CancelCheckResultDto
         {
             ValidatedDevice = validateDevice,
             ValidatedAssets = validateAssets,
             ValidatedGuardian = validateGuardian,
         };
+    }
+
+    public async Task<CAHolderExistsResponseDto> VerifyCaHolderExistByAddressAsync(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            throw new UserFriendlyException("Invalidate address");
+        }
+
+        if (address.Contains('_'))
+        {
+            address = address.Split("_")[1];
+        }
+
+        var result = new CAHolderExistsResponseDto();
+        var caAddresses = new List<string>
+        {
+            address
+        };
+        var caHolderInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
+        if (caHolderInfo == null || caHolderInfo.CaHolderManagerInfo.Count == 0)
+        {
+            result.Data = new Dtos.Data
+            {
+                Result = false
+            };
+            result.Error = new Error
+            {
+                Code = 0,
+                Message = "No CaHolder is found."
+            };
+            return result;
+        }
+
+        result.Data = new Dtos.Data
+        {
+            Result = true
+        };
+        return result;
     }
 
     public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
@@ -650,17 +692,18 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
 
             var value = (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type);
-            var guardian = guardians.FirstOrDefault(t=>(int)t.Type == value);
+            var guardian = guardians.FirstOrDefault(t => (int)t.Type == value);
             if (guardian == null)
             {
                 throw new Exception(ResponseMessage.LoginGuardianNotExists);
             }
         }
 
-        
 
         var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && (int)t.Type == (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
+            holderInfo?.GuardianList.Guardians.FirstOrDefault(t =>
+                t.IsLoginGuardian && (int)t.Type ==
+                (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
         if (currentGuardian != null)
         {
             var caHolderDto =
@@ -669,7 +712,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
                 t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
             await tasks.WhenAll();
-            if (tasks.Count(t =>!t.Result.IsDeleted) > 1)
+            if (tasks.Count(t => !t.Result.IsDeleted) > 1)
             {
                 validateGuardian = false;
             }

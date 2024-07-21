@@ -258,7 +258,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         string ipAddress, string identity)
     {
         var result = new GrainResultDto<GrabResultDto>();
-        var checkResult = CheckRedPackagePermissions(userId);
+        var checkResult = AutoTransferWrappedCheckRedPackagePermissions(userId, preGrabBucketItemDto);
         if (checkResult.Item1 == false)
         {
             result.Success = false;
@@ -370,6 +370,25 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         return result;
     }
 
+    private (bool, string) AutoTransferWrappedCheckRedPackagePermissions(Guid userId, PreGrabBucketItemDto preGrabBucketItemDto)
+    {
+        var checkResult = CheckRedPackagePermissions(userId);
+        if (checkResult.Item1)
+        {
+            if (State.BucketNotClaimed.Any(bucket => bucket.Index.Equals(preGrabBucketItemDto.Index))
+                && !State.BucketClaimed.Any(bucket => bucket.Index.Equals(preGrabBucketItemDto.Index)))
+            {
+                return (true, "");
+            }
+            else
+            {
+                return (false, RedPackageConsts.RedPackageGrabbedByOthers);
+            }
+        }
+
+        return checkResult;
+    }
+    
     private (bool, string) CheckRedPackagePermissions(Guid userId)
     {
         if (State.Items.Any(item => item.UserId == userId))

@@ -90,6 +90,8 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
         Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
         Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
+        Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
+        
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();

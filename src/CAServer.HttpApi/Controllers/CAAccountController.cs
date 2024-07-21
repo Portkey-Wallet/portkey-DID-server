@@ -129,4 +129,11 @@ public class CAAccountController : CAServerController
     {
         await _caAccountService.TestCreateHolderInfoAsync(registerDto);
     }
+    
+    [HttpGet("verify/caHolderExist")]
+    public async Task<CAHolderExistsResponseDto> CaHolderExistByAddress(string address)
+    {
+        return await _caAccountService.VerifyCaHolderExistByAddressAsync(address);
+    }
+    
 }

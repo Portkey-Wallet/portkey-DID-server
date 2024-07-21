@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -8,7 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
+using AElf.Types;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.CryptoGift.Dtos;
 using CAServer.Entities.Es;
@@ -20,13 +21,13 @@ using CAServer.Grains.State;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
+using CAServer.RedPackage.Etos;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -34,6 +35,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 using NftInfoDto = CAServer.UserAssets.Dtos.NftInfoDto;
@@ -58,6 +60,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     private readonly IDistributedCache<string> _distributedCache;
     private readonly IpfsOptions _ipfsOptions;
     private readonly ILogger<CryptoGiftAppService> _logger;
+    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IContractProvider _contractProvider;
+    private readonly INESTRepository<CryptoGiftNewUsersOnlyNumStatsIndex, string> _newUsersOnlyNumStatsRepository;
+    private readonly INESTRepository<CryptoGiftOldUsersNumStatsIndex, string> _oldUsersNumStatsRepository;
+    private readonly INESTRepository<CryptoGiftNewUsersOnlyDetailStatsIndex, string> _newUsersOnlyDetailRepository;
+    private readonly INESTRepository<CryptoGiftOldUsersDetailStatsIndex, string> _oldUsersDetailRepository;
 
     public CryptoGiftAppService(INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IClusterClient clusterClient,
@@ -70,7 +78,13 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IUserAssetsProvider userAssetsProvider,
         IDistributedCache<string> distributedCache,
         IOptionsSnapshot<IpfsOptions> ipfsOptions,
-        ILogger<CryptoGiftAppService> logger)
+        ILogger<CryptoGiftAppService> logger,
+        IDistributedEventBus distributedEventBus,
+        IContractProvider contractProvider,
+        INESTRepository<CryptoGiftNewUsersOnlyNumStatsIndex, string> newUsersOnlyNumStatsRepository,
+        INESTRepository<CryptoGiftNewUsersOnlyDetailStatsIndex, string> newUsersOnlyDetailRepository,
+        INESTRepository<CryptoGiftOldUsersNumStatsIndex, string> oldUsersNumStatsRepository,
+        INESTRepository<CryptoGiftOldUsersDetailStatsIndex, string> oldUsersDetailRepository)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
         _clusterClient = clusterClient;
@@ -84,6 +98,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _distributedCache = distributedCache;
         _ipfsOptions = ipfsOptions.Value;
         _logger = logger;
+        _distributedEventBus = distributedEventBus;
+        _contractProvider = contractProvider;
+        _newUsersOnlyNumStatsRepository = newUsersOnlyNumStatsRepository;
+        _oldUsersNumStatsRepository = oldUsersNumStatsRepository;
+        _newUsersOnlyDetailRepository = newUsersOnlyDetailRepository;
+        _oldUsersDetailRepository = oldUsersDetailRepository;
     }
 
     public async Task<CryptoGiftHistoryItemDto> GetFirstCryptoGiftHistoryDetailAsync(Guid senderId)
@@ -180,7 +200,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId)
     {
-        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(3));
+        await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(1));
         if (handle == null)
         {
             throw new UserFriendlyException("please take a break for a while~");
@@ -191,13 +211,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("portkey can't get your ip, grab failed~");
         }
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
-        _logger.LogInformation($"pre grab data sync error redPackageId:{redPackageId}," +
+        _logger.LogInformation($"pre grab data redPackageId:{redPackageId}," +
                                $"PreGrabCrypto identityCode:{identityCode}, ipAddress:{ipAddress}");
-        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-        });
-        
+        await _distributedCache.SetAsync(identityCode, "Claimed");
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         if (!redPackageDetail.Success || redPackageDetail.Data == null)
@@ -215,31 +231,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         CheckClaimCondition(redPackageDetailDto, cryptoGiftDto, identityCode);
         
-        PreGrabBucketItemDto preGrabBucketItemDto = GetBucket(cryptoGiftDto, identityCode);
-        cryptoGiftDto.Items.Add(new PreGrabItem()
+        var grabbedResult = await cryptoGiftGrain.GrabCryptoGift(identityCode, ipAddress, redPackageDetailDto.Decimal);
+        if (!grabbedResult.Success)
         {
-            Index = preGrabBucketItemDto.Index,
-            Amount = preGrabBucketItemDto.Amount,
-            Decimal = redPackageDetailDto.Decimal,
-            GrabbedStatus = GrabbedStatus.Created,
-            GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-            IpAddress = ipAddress,
-            IdentityCode = identityCode
-        });
-        cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
-        var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
+            throw new UserFriendlyException(grabbedResult.Message);
+        }
         return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
-    }
-    
-    private PreGrabBucketItemDto GetBucket(CryptoGiftDto cryptoGiftDto, string identityCode)
-    {
-        var random = new Random();
-        var index = random.Next(cryptoGiftDto.BucketNotClaimed.Count);
-        var bucket = cryptoGiftDto.BucketNotClaimed[index];
-        bucket.IdentityCode = identityCode;
-        cryptoGiftDto.BucketNotClaimed.Remove(bucket);
-        cryptoGiftDto.BucketClaimed.Add(bucket);
-        return bucket;
     }
 
     private static void CheckClaimCondition(RedPackageDetailDto redPackageDetailDto, CryptoGiftDto cryptoGiftDto,
@@ -262,28 +259,12 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             throw new UserFriendlyException("You have received a crypto gift, please complete the registration as soon as possible");
         }
 
-        long preGrabbedAmount = 0;
-        if (!redPackageDetailDto.Items.IsNullOrEmpty())
-        {
-            var preGrabItems = cryptoGiftDto.Items.Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus)
-                    || GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus)).ToList();
-            if (!preGrabItems.IsNullOrEmpty())
-            {
-                foreach (var preGrabItem in preGrabItems)
-                {
-                    if (redPackageDetailDto.Items.Any(red => red.Identity.Equals(preGrabItem.IdentityCode)))
-                    {
-                        continue;
-                    }
-                    preGrabbedAmount += preGrabItem.Amount;
-                }
-            }
-        }
-        if (long.Parse(redPackageDetailDto.GrabbedAmount) + preGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        var preGrabbedAmount = GetPreGrabbedAmount(cryptoGiftDto);
+        if (long.Parse(redPackageDetailDto.GrabbedAmount) + preGrabbedAmount > cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
-        if (cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
+        if (cryptoGiftDto.PreGrabbedAmount > cryptoGiftDto.TotalAmount)
         {
             throw new UserFriendlyException("Sorry, the crypto gift has been fully claimed");
         }
@@ -298,6 +279,17 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("You have claimed this crypto gift~");
         }
+    }
+
+    private static long GetPreGrabbedAmount(CryptoGiftDto cryptoGiftDto)
+    {
+        if (!cryptoGiftDto.Items.IsNullOrEmpty())
+        { 
+            return cryptoGiftDto.Items
+                .Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus))
+                .Sum(c => c.Amount);
+        }
+        return 0;
     }
 
     public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal, string ipAddress, string identityCode)
@@ -484,9 +476,16 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             }
         }
         
+        if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status))
+        {
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.FullyClaimed, redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
+                0, 0);
+        }
+        
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
              || RedPackageStatus.Claimed.Equals(redPackageDetailDto.Status))
-            && cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
+            && long.Parse(redPackageDetailDto.GrabbedAmount) + GetPreGrabbedAmount(cryptoGiftDto) >= cryptoGiftDto.TotalAmount)
         {
             var preGrabItem = cryptoGiftDto.Items
                 .Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus))
@@ -498,14 +497,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                     caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
                     remainingWaitingSeconds, 0);
             }
-        }
-        
-        if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status)
-                    || cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
-        {
-            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.FullyClaimed, redPackageDetailDto,
-                caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
-                0, 0);
         }
         
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
@@ -705,21 +696,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
                 sender, nftInfoDto, "Oops! This is an exclusive gift for new users", "", 0);
         }
         
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
-        CryptoGiftDto cryptoGiftDto;
-        var refreshCachedResult = await _distributedCache.GetAsync($"RefreshedPage:{caHash}:{redPackageId}");
-        if (refreshCachedResult.IsNullOrEmpty())
-        {
-            cryptoGiftDto = await GetCryptoGiftDtoAfterLoginAsync(redPackageId, receiverId, 0);
-        }
-        else
-        {
-            cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
-        }
-        await _distributedCache.SetAsync($"RefreshedPage:{caHash}:{redPackageId}", "true");
-        sw.Stop();
-        _logger.LogInformation($"statistics GetCryptoGiftDtoAfterLoginAsync cost:{sw.ElapsedMilliseconds} ms");
+        CryptoGiftDto cryptoGiftDto = await DoGetCryptoGiftAfterLogin(redPackageId);
         var preGrabClaimedItem = cryptoGiftDto.Items.FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
                                                        && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
         if (preGrabClaimedItem != null)
@@ -890,7 +867,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
     
-    public async Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress)
+    public async Task CryptoGiftTransferToRedPackage(Guid userId, string caHash, string caAddress, ReferralInfo referralInfo, bool isNewUser, string ipAddress)
     {
         _logger.LogInformation("CryptoGiftTransferToRedPackage userId:{0},caAddress:{1},referralInfo:{2},isNewUser:{3}", userId, caAddress, JsonConvert.SerializeObject(referralInfo), isNewUser);
         if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
@@ -946,17 +923,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             return;
         }
         var preGrabBucketItemDto = GetClaimedCryptoGift(userId, identityCode, redPackageId, cryptoGiftDto);
-        await _distributedCache.SetAsync($"CryptoGiftUpdatedResult:{userId}:{redPackageId}", JsonConvert.SerializeObject(new CryptoGiftCacheDto()
-        {
-            Success = true,
-            IsNewUser = isNewUser,
-            CryptoGiftDto = cryptoGiftDto
-        }), new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(600)
-        });
-        _logger.LogInformation($"Transfer cached succeed redPackageId:{redPackageId}");
-        
         //0 make sure the client is whether or not a new one, according to the new user rule
         if (!Enum.IsDefined(redPackageDetailDto.RedPackageDisplayType) || RedPackageDisplayType.Common.Equals(redPackageDetailDto.RedPackageDisplayType))
         {
@@ -969,16 +935,73 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         _logger.LogInformation("CryptoGiftTransferToRedPackage redPackageUpdateResult:{0}", JsonConvert.SerializeObject(redPackageUpdateResult));
         if (redPackageUpdateResult.Success)
         {
+            _logger.LogInformation("sent PayRedPackageEto RedPackageId:{0}", redPackageId);
             //2 crypto gift: amount/item
             _logger.LogInformation("CryptoGiftTransferToRedPackage GetClaimedCryptoGift:{0}", JsonConvert.SerializeObject(preGrabBucketItemDto));
             var updateCryptoGiftResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
             _logger.LogInformation("CryptoGiftTransferToRedPackage updateCryptoGiftResult:{0}", JsonConvert.SerializeObject(updateCryptoGiftResult));
+            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            {
+                RedPackageId = redPackageId,
+                DisplayType = RedPackageDisplayType.CryptoGift,
+                ReceiverId = userId
+            });
         }
         else
         {
             await UpdateCryptoGiftCacheResultFalse(userId, redPackageId);
         }
     }
+
+    // private async Task DelayTransferProcess(Guid redPackageId, string chainId, string caHash, string caAddress)
+    // {
+    //     var executed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
+    //     if (executed)
+    //     {
+    //         return;
+    //     }
+    //     var i = 1;
+    //     while (i <= _cryptoGiftProvider.GetTransferDelayedRetryTimes())
+    //     {
+    //         await Task.Delay(TimeSpan.FromSeconds(_cryptoGiftProvider.GetTransferDelayedIntervalSeconds() * i));
+    //         var succeed = await ExecutedDelayedTask(redPackageId, chainId, caHash, caAddress);
+    //         if (succeed)
+    //         {
+    //             return;
+    //         }
+    //         i++;
+    //     }
+    // }
+    
+    // private async Task<bool> ExecutedDelayedTask(Guid redPackageId, string chainId, string caHash, string caAddress)
+    // {
+    //     bool existed = false;
+    //     try
+    //     {
+    //         var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>() {caAddress}, chainId);
+    //         _logger.LogInformation("redPackageId:{0} executed delayed task chainId:{1} caHash:{2} caAddress:{3} guardiansDto:{4}", redPackageId, chainId, caHash, caAddress, JsonConvert.SerializeObject(guardiansDto)); 
+    //         existed = guardiansDto.CaHolderInfo.Any(guardian => guardian.CaHash.Equals(caHash)
+    //                                                                 && guardian.CaAddress.Equals(caAddress)
+    //                                                                 && guardian.ChainId.Equals(chainId));
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         _logger.LogError(e, "redPackageId:{0} executed delayed task error", redPackageId);
+    //     }
+    //     if (!existed)
+    //     {
+    //         return false;
+    //     }
+    //
+    //     await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+    //     {
+    //         RedPackageId = redPackageId,
+    //         DisplayType = RedPackageDisplayType.CryptoGift,
+    //         ReceiverId = userId
+    //     });
+    //     return true;
+    //
+    // }
 
     private async Task UpdateCryptoGiftCacheResultFalse(Guid userId, Guid redPackageId)
     {
@@ -1038,5 +1061,219 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         return new ValueTuple<string, string>(ipAddress, identityCode);
+    }
+    
+    public async Task<List<CryptoGiftSentNumberDto>> ComputeCryptoGiftNumber(bool newUsersOnly, string[] symbols, long createTime)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.IsNewUsersOnly).Value(newUsersOnly)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        mustQuery.Add(q=>
+            q.Terms(i => i.Field(f => f.Symbol).Terms(symbols)));
+        mustQuery.Add(q => 
+            q.Range(i => i.Field(f => f.CreateTime).GreaterThan(createTime)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        cryptoGiftIndices = cryptoGiftIndices.Where(crypto => crypto.CreateTime > createTime).ToList();
+        var cryptoGiftCountByDate = cryptoGiftIndices.GroupBy(crypto => ConvertTimestampToDate(crypto.CreateTime))
+            .Select(group => new CryptoGiftSentNumberDto { Date = group.Key, Number = group.Count()}).ToList();
+        return cryptoGiftCountByDate.OrderBy(c => c.Date).ToList();
+    }
+    
+    private static string ConvertTimestampToDate(long timestamp)
+    {
+        var dtDateTime = new DateTime(1970,1,1,0,0,0,0,System.DateTimeKind.Utc);
+        return dtDateTime.AddSeconds(timestamp / 1000).ToLocalTime().ToString("yyyy-MM-dd");
+    }
+
+    public async Task<List<CryptoGiftClaimDto>> ComputeCryptoGiftClaimStatistics(bool newUsersOnly, string[] symbols,
+        long createTime)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.IsNewUsersOnly).Value(newUsersOnly)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        mustQuery.Add(q=>
+            q.Terms(i => i.Field(f => f.Symbol).Terms(symbols)));
+        mustQuery.Add(q => 
+            q.Range(i => i.Field(f => f.CreateTime).GreaterThan(createTime)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        cryptoGiftIndices = cryptoGiftIndices.Where(crypto => crypto.CreateTime > createTime).ToList();
+        _logger.LogInformation("====================cryptoGiftIndices:{0} ", JsonConvert.SerializeObject(cryptoGiftIndices));
+        var details = new List<RedPackageDetailDto>();
+        foreach (var cryptoGiftIndex in cryptoGiftIndices)
+        {
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(cryptoGiftIndex.RedPackageId);
+            var redPackageDetail = await grain.GetRedPackage(cryptoGiftIndex.RedPackageId);
+            if (!redPackageDetail.Success || redPackageDetail.Data == null)
+            {
+                continue;
+            }
+            details.Add(redPackageDetail.Data);
+        }
+
+        _logger.LogInformation("====================redPackageDetail:{0} ", JsonConvert.SerializeObject(details));
+        var cryptoGiftClaimDtos = details.Select(detail => new CryptoGiftClaimDto()
+        {
+            UserId = detail.SenderId,
+            Number = 1,
+            Grabbed = detail.Grabbed,
+            Count = detail.Count,
+            ChainId = detail.ChainId
+        }).ToList();
+        IDictionary<string, string> groupToCaAddress = new Dictionary<string, string>();
+        var userIdChainId = cryptoGiftClaimDtos.GroupBy(c => c.UserId + "#" + c.ChainId)
+            .Select(group => new {Group = group.Key});
+        _logger.LogInformation("===========userIdChainId:{0}", JsonConvert.SerializeObject(userIdChainId));
+        foreach (var item in userIdChainId)
+        {
+            if (groupToCaAddress.TryGetValue(item.Group, out var value))
+            {
+                continue;
+            }
+
+            var split = item.Group.Split("#");
+            groupToCaAddress.Add(item.Group, await GetCaAddress(Guid.Parse(split[0]), split[1]));
+        }
+        _logger.LogInformation("===========groupToCaAddress:{0}", JsonConvert.SerializeObject(groupToCaAddress));
+        foreach (var cryptoGiftClaimDto in cryptoGiftClaimDtos)
+        {
+            var key = cryptoGiftClaimDto.UserId + "#" + cryptoGiftClaimDto.ChainId;
+            cryptoGiftClaimDto.CaAddress = groupToCaAddress[key];
+        }
+
+        return  cryptoGiftClaimDtos.GroupBy(crypto => crypto.CaAddress)
+            .Select(group => new CryptoGiftClaimDto()
+            {
+                CaAddress = group.Key,
+                Number = group.Count(),
+                Count = group.Sum(g => g.Count),
+                Grabbed = group.Sum(g => g.Grabbed)
+            }).ToList();
+    }
+
+    private async Task<string> GetCaAddress(Guid userId, string chainId)
+    {
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
+        var caHash = caHolderIndex.CaHash;
+        try
+        {
+            _logger.LogInformation("---------------GetCaAddress userId:{0} caHash:{1} chainId:{2}", userId, caHash, chainId);
+            var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
+            if (result != null)
+            {
+                return result.CaAddress.ToBase58();
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "get holder from chain error, userId:{userId}, caHash:{caHash}", userId.ToString(), caHash);
+        }
+
+        return string.Empty;
+    }
+
+    public async Task CryptoGiftHistoryStates()
+    {
+        var current = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        var symbols = new string[] { "ELF", "USDT", "SGR-1" };
+        var joinedSymbols = string.Join(",", symbols);
+        var newUsersNumberDtos = await ComputeCryptoGiftNumber(true, symbols, 1719590400000);
+        await SaveCryptoGiftNumberStatsAsync(newUsersNumberDtos, true, joinedSymbols, current);
+        
+        var oldUsersNumberDtos = await ComputeCryptoGiftNumber(false, symbols, 1719590400000);
+        await SaveCryptoGiftNumberStatsAsync(oldUsersNumberDtos, false, joinedSymbols, current);
+
+        var newUsersCryptoGiftClaimStatistics = await ComputeCryptoGiftClaimStatistics(true, symbols, 1719590400000);
+        await SaveCryptoGiftDetailStatsAsync(newUsersCryptoGiftClaimStatistics, true, joinedSymbols, current);
+        
+        var oldUsersCryptoGiftClaimStatistics = await ComputeCryptoGiftClaimStatistics(false, symbols, 1719590400000);
+        await SaveCryptoGiftDetailStatsAsync(oldUsersCryptoGiftClaimStatistics, false, joinedSymbols, current);
+    }
+    private async Task SaveCryptoGiftDetailStatsAsync(List<CryptoGiftClaimDto> details,
+        bool newUsersOnly, string joinedSymbols, long current)
+    {
+        if (newUsersOnly)
+        {
+            foreach (var dto in details)
+            {
+                await _newUsersOnlyDetailRepository.AddOrUpdateAsync(new CryptoGiftNewUsersOnlyDetailStatsIndex
+                {
+                    Id = dto.CaAddress,
+                    Symbols = joinedSymbols,
+                    CaAddress = dto.CaAddress,
+                    Number = dto.Number,
+                    Count = dto.Count,
+                    Grabbed = dto.Grabbed,
+                    CreateTime = current
+                });
+            }
+        }
+        else
+        {
+            foreach (var dto in details)
+            {
+                await _oldUsersDetailRepository.AddOrUpdateAsync(new CryptoGiftOldUsersDetailStatsIndex
+                {
+                    Id = dto.CaAddress,
+                    Symbols = joinedSymbols,
+                    CaAddress = dto.CaAddress,
+                    Number = dto.Number,
+                    Count = dto.Count,
+                    Grabbed = dto.Grabbed,
+                    CreateTime = current
+                });
+            }
+        }
+    }
+
+    private async Task SaveCryptoGiftNumberStatsAsync(List<CryptoGiftSentNumberDto> numberDtos, bool newUsersOnly, string joinedSymbols, long current)
+    {
+        if (newUsersOnly)
+        {
+            foreach (var cryptoGiftSentNumberDto in numberDtos)
+            {
+                try
+                {
+                    await _newUsersOnlyNumStatsRepository.AddOrUpdateAsync(new CryptoGiftNewUsersOnlyNumStatsIndex
+                    {
+                        Id = cryptoGiftSentNumberDto.Date,
+                        Date = cryptoGiftSentNumberDto.Date,
+                        Number = cryptoGiftSentNumberDto.Number,
+                        Symbols = joinedSymbols,
+                        CreateTime = current
+                    });
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "add or update crypto gift error, cryptoGiftSentNumberDto:{0}", JsonConvert.SerializeObject(cryptoGiftSentNumberDto));
+                }
+            }
+        }
+        else
+        {
+            foreach (var cryptoGiftSentNumberDto in numberDtos)
+            {
+                try
+                {
+                    await _oldUsersNumStatsRepository.AddOrUpdateAsync(new CryptoGiftOldUsersNumStatsIndex
+                    {
+                        Id = cryptoGiftSentNumberDto.Date,
+                        Date = cryptoGiftSentNumberDto.Date,
+                        Number = cryptoGiftSentNumberDto.Number,
+                        Symbols = joinedSymbols,
+                        CreateTime = current
+                    });
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "add or update crypto gift error, cryptoGiftSentNumberDto:{0}", JsonConvert.SerializeObject(cryptoGiftSentNumberDto));
+                }
+            }
+        }
     }
 }

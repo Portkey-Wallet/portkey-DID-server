@@ -88,6 +88,9 @@ public class CAServerApplicationModule : AbpModule
         Configure<TokenSpenderOptions>(configuration.GetSection("TokenSpender"));
         Configure<DepositOptions>(configuration.GetSection("Deposit"));
         Configure<NftToFtOptions>(configuration.GetSection("NftToFt"));
+        Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
+        Configure<FreeMintOptions>(configuration.GetSection("FreeMint"));
+        
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));

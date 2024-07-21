@@ -21,10 +21,13 @@ using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
+using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Grains.Grain.CryptoGift;
+using CAServer.Grains.Grain.FreeMint;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
@@ -115,6 +118,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactAddressDto, ContactAddress>().ReverseMap();
         CreateMap<ContactAddressDto, ContactAddressEto>();
         CreateMap<CreateUpdateContactDto, ContactGrainDto>();
+        CreateMap<ContactIndex, ContactResultDto>();
         CreateMap<ContactGrainDto, ContactResultDto>()
             .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
 
@@ -941,5 +945,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
+        CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
+        CreateMap<FreeMintIndex, GetItemInfoDto>();
     }
 }

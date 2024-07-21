@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.CryptoGift;
@@ -31,6 +32,7 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     
     public async Task HandleEventAsync(UserLoginEto eventData)
     {
+        
         await CryptoGiftTransferRedPackageHandler(eventData);
         
         try
@@ -47,8 +49,14 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     {
         try
         {
-            _logger.LogInformation("UserLoginHandler receive message:{0}", JsonConvert.SerializeObject(eventData));
-            
+            if (!eventData.FromCaServer.HasValue || !eventData.FromCaServer.Value)
+            {
+                _logger.LogInformation("UserLoginHandler userId:{0} caHash:{1} not from the caserver, ignored", eventData.UserId, eventData.CaHash);
+                return;
+            }
+            _logger.LogInformation("userId:{0} time:{1} received login message:{2}", eventData.UserId, DateTimeOffset.Now.ToUnixTimeMilliseconds(), JsonConvert.SerializeObject(eventData));
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             var cachedUserId = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.UserLoginPrefix, eventData.CaHash));
             if (cachedUserId.IsNullOrEmpty())
             {
@@ -68,7 +76,10 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
             {
                 return;
             }
-            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
+            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, eventData.CaHash, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser, cryptoGiftReferralDto.IpAddress);
+            sw.Stop();
+            _logger.LogInformation("userId:{0} time:{1} cost:{2}ms", 
+                eventData.UserId, DateTimeOffset.Now.ToUnixTimeMilliseconds(), sw.ElapsedMilliseconds);
         }
         catch (Exception e)
         {

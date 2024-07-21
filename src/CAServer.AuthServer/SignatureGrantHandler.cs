@@ -131,8 +131,10 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             Id = user.Id,
             UserId = user.Id,
             CaHash = caHash,
-            CreateTime = DateTime.UtcNow
+            CreateTime = DateTime.UtcNow,
+            FromCaServer = true
         });
+        _logger.LogInformation("userId:{0} time:{1} sent login message", user.Id, DateTimeOffset.Now.ToUnixTimeMilliseconds());
         return new SignInResult(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme, claimsPrincipal);
     }
 
