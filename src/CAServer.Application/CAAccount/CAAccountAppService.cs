@@ -65,6 +65,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IVerifierAppService _verifierAppService;
     private readonly IContractService _contractService;
+    private readonly IZkLoginProvider _zkLoginProvider;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -82,7 +83,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IIpInfoAppService ipInfoAppService,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IVerifierAppService verifierAppService,
-        IContractService contractService)
+        IContractService contractService,
+        IZkLoginProvider zkLoginProvider)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -101,16 +103,17 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _verifierAppService = verifierAppService;
         _contractService = contractService;
+        _zkLoginProvider = zkLoginProvider;
     }
     
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
-        //just deal with google guardian, todo apple guardian and facebook guardian
+        //just deal with google guardian, todo apple send the user extra info event
         _logger.LogInformation("RegisterRequest started.......................");
-        if (input.Type.Equals(GuardianIdentifierType.Google))
+        if (_zkLoginProvider.CanExecuteZk(input.Type, input.ZkLoginInfo))
         {
-            await _verifierAppService.GenerateGuardianAndUserInfoForGoogleZkLoginAsync(input.LoginGuardianIdentifier, input.AccessToken,
-                input.ZkLoginInfo.Salt);
+            await _zkLoginProvider.GenerateGuardianAndUserInfoAsync(input.Type, input.AccessToken, input.LoginGuardianIdentifier, 
+                input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Salt, input.ChainId, input.VerifierId);
         }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
@@ -152,17 +155,16 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
         else
         {
-            var current = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             registerDto.GuardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(input.ZkLoginInfo.Jwt, input.ZkLoginInfo.Nonce, input.ZkLoginInfo.ZkProof,
                 input.ZkLoginInfo.Salt, input.ZkLoginInfo.CircuitId,
-                input.Manager, identifierHash, current);
+                input.Manager, input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Timestamp);
         }
     }
 
-    private ZkLoginInfoDto GetZkJwtAuthInfo(string jwt, string nonce, string zkProof, string salt, string circuitId, string manager, string identifierHash, long current)
+    private ZkLoginInfoDto GetZkJwtAuthInfo(string jwt, string nonce, string zkProof, string salt, string circuitId, string manager, string identifierHash, long timestamp)
     {
         var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwt);
-        Dtos.Zklogin.InternalRapidSnarkProofRepr proofRepr = JsonConvert.DeserializeObject<Dtos.Zklogin.InternalRapidSnarkProofRepr>(zkProof);
+        InternalRapidSnarkProofRepr proofRepr = JsonConvert.DeserializeObject<InternalRapidSnarkProofRepr>(zkProof);
         return new ZkLoginInfoDto()
             {
                 IdentifierHash = identifierHash,
@@ -181,9 +183,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 {
                     AddManager = new Dtos.Zklogin.ManagerInfoDto()
                     {
-                        IdentifierHash = identifierHash,
+                        CaHash = string.Empty,
                         ManagerAddress = manager,
-                        Timestamp = current
+                        Timestamp = timestamp
                     }
                 }
             };
@@ -209,7 +211,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             {
                 AddManager = new Dtos.Zklogin.ManagerInfoDto()
                 {
-                    IdentifierHash = "",
+                    CaHash = "",
                     ManagerAddress = "",
                     Timestamp = 0
                 }
@@ -284,7 +286,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private void SetRecoveryZkLoginParams(RecoveryRequestDto input, RecoveryDto recoveryDto)
     {
-        var current = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         foreach (var recoveryGuardian in input.GuardiansApproved)
         {
             var guardianInfo = recoveryDto.GuardianApproved.FirstOrDefault(guardian =>
@@ -299,7 +300,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             {
                 guardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt, recoveryGuardian.ZkLoginInfo.Nonce,
                     recoveryGuardian.ZkLoginInfo.ZkProof, recoveryGuardian.ZkLoginInfo.Salt,
-                    recoveryGuardian.ZkLoginInfo.CircuitId, input.Manager, guardianInfo.IdentifierHash, current);
+                    recoveryGuardian.ZkLoginInfo.CircuitId, input.Manager, recoveryGuardian.ZkLoginInfo.IdentifierHash, recoveryGuardian.ZkLoginInfo.Timestamp);
             } else
             {
                 guardianInfo.ZkLoginInfo = GetDefaultZkJwtAuthInfo();

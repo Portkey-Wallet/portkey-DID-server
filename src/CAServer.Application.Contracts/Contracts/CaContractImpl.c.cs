@@ -223,6 +223,45 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class JwtIssuerCreated : aelf::IEvent<JwtIssuerCreated>
+  {
+    public global::System.Collections.Generic.IEnumerable<JwtIssuerCreated> GetIndexed()
+    {
+      return new List<JwtIssuerCreated>
+      {
+      };
+    }
+
+    public JwtIssuerCreated GetNonIndexed()
+    {
+      return new JwtIssuerCreated
+      {
+        Issuer = Issuer,
+        JwksEndpoint = JwksEndpoint,
+      };
+    }
+  }
+
+  public partial class OracleDataFeedsTaskStarted : aelf::IEvent<OracleDataFeedsTaskStarted>
+  {
+    public global::System.Collections.Generic.IEnumerable<OracleDataFeedsTaskStarted> GetIndexed()
+    {
+      return new List<OracleDataFeedsTaskStarted>
+      {
+      };
+    }
+
+    public OracleDataFeedsTaskStarted GetNonIndexed()
+    {
+      return new OracleDataFeedsTaskStarted
+      {
+        SubscriptionId = SubscriptionId,
+        RequestTypeIndex = RequestTypeIndex,
+        SpecificData = SpecificData,
+      };
+    }
+  }
+
   #endregion
   public static partial class CAContractImplContainer
   {
