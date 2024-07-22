@@ -16,6 +16,7 @@ using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -106,6 +107,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
+        _logger.LogInformation("GetGuardiansAsync guardianIdentifierHash:{0},caHash:{1},guardians:{2}",
+            guardianIdentifierHash, requestDto.CaHash, JsonConvert.SerializeObject(guardians));
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
 
         var originChainId = guardian == null
@@ -160,6 +163,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 var holderInfo =
                     await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                _logger.LogInformation("GetOriginChainIdAsync guardianIdentifierHash:{0},caHash:{1},chainId:{2},holderInfo:{3}",
+                    guardianIdentifierHash, caHash, chainId, JsonConvert.SerializeObject(holderInfo));
                 if (holderInfo.CreateChainId > 0)
                 {
                     return ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId);
