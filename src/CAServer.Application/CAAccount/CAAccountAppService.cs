@@ -772,7 +772,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var output =
             await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
                 chainId);
-
+        _logger.LogInformation("GetHolderInfoAsync loginGuardianIdentifierHash:{0},chainId:{1},output:{2}",
+            loginGuardianIdentifierHash, chainId, JsonConvert.SerializeObject(output));
         return output?.CaHash?.ToHex();
     }
 
