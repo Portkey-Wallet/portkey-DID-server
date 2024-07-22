@@ -307,8 +307,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 _logger.LogWarning("recoveryGuardian:{0} not exist in RecoveryDto", JsonConvert.SerializeObject(recoveryGuardian));
                 continue;
             }
-            var guardianGrain = GetGuardian(recoveryGuardian.Identifier);
-            guardianInfo.IdentifierHash = guardianGrain.IdentifierHash;
             if (recoveryGuardian.ZkLoginInfo != null)
             {
                 guardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt, recoveryGuardian.ZkLoginInfo.Nonce,
