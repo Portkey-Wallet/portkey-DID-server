@@ -142,7 +142,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
     private void SetTokenId(string tokenId)
     {
         State.PendingTokenId = tokenId;
-        //if (State.UnUsedTokenId == tokenId) history data
+        if (State.UnUsedTokenId == tokenId)
         {
             State.UnUsedTokenId = string.Empty;
         }
