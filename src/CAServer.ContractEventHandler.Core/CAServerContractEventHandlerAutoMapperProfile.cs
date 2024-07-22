@@ -94,7 +94,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                     ZkLoginInfo = new ZkLoginInfo
                     {
                         IdentifierHash = g.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
-                            ? Hash.Empty : Hash.LoadFromHex(g.IdentifierHash),
+                            ? Hash.Empty : Hash.LoadFromHex(g.ZkLoginInfo.IdentifierHash),
                         Salt = g.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Salt,
                         Nonce = g.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
                         ZkProof = g.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.ZkProof,
