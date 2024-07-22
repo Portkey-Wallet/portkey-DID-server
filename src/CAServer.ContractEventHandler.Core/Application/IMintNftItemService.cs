@@ -85,8 +85,9 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
 
             // test
             // send transaction
-            var tranId = await CreateNftItem(eventData.ConfirmInfo.Name, eventData.ConfirmInfo.TokenId,
-                index.CollectionInfo.CollectionName, "", eventData.ConfirmInfo.ImageUrl);
+            // var tranId = await CreateNftItem(eventData.ConfirmInfo.Name, eventData.ConfirmInfo.TokenId,
+            //     index.CollectionInfo.CollectionName, "", eventData.ConfirmInfo.ImageUrl);
+            var tranId = string.Empty;
 
             index.TransactionInfos.Add(new MintTransactionInfo()
             {
@@ -94,19 +95,19 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
                 EndTime = DateTime.UtcNow,
                 BlockTime = 1720454400,
                 TransactionId = tranId,
-                TransactionResult = "SUCCESS"
+                TransactionResult = "FAILED"
             });
 
             var holder = await GetCaHolderAsync(eventData.UserId);
 
             var gudto = await GetCaHolderInfoAsync(holder.CaHash);
-            await Issue($"{index.CollectionInfo.CollectionName}-{eventData.ConfirmInfo.TokenId}",
-                gudto.CaHolderInfo.First().CaAddress);
+            // await Issue($"{index.CollectionInfo.CollectionName}-{eventData.ConfirmInfo.TokenId}",
+            //     gudto.CaHolderInfo.First().CaAddress);
 
             var grain = _clusterClient.GetGrain<IFreeMintGrain>(eventData.UserId);
-            var changeResult = await grain.ChangeMintStatus(index.Id, FreeMintStatus.SUCCESS);
+            var changeResult = await grain.ChangeMintStatus(index.Id, FreeMintStatus.FAIL);
 
-            index.Status = FreeMintStatus.SUCCESS.ToString();
+            index.Status = FreeMintStatus.FAIL.ToString();
             await _freeMintRepository.AddOrUpdateAsync(index);
         }
         catch (Exception e)
