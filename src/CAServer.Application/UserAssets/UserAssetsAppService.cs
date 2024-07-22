@@ -344,9 +344,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return dto;
             }
 
-            _logger.LogInformation("[GetNFTCollectionsAsync] get from indexer: {0}",
-                JsonConvert.SerializeObject(res.CaHolderNFTCollectionBalanceInfo));
-
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
                 var nftCollection =
