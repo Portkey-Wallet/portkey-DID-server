@@ -10,4 +10,5 @@ public class FreeMintState
     public List<ItemMintInfo> MintInfos { get; set; } = new();
     public string UnUsedTokenId { get; set; }
     public string PendingTokenId { get; set; }
+    public List<string> TokenIds { get; set; } = new();
 }

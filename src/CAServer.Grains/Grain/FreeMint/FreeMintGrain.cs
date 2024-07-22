@@ -33,7 +33,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         var result = new GrainResultDto<FreeMintGrainDto>();
         if (string.IsNullOrEmpty(State.Id))
         {
-            result.Message = "Free mint info not exist.";
+            result.Message = "Free mint info not exists.";
             return Task.FromResult(result);
         }
 
@@ -85,27 +85,28 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
     public async Task<GrainResultDto<ItemMintInfo>> SaveMintInfo(MintNftDto mintNftDto)
     {
         var result = new GrainResultDto<ItemMintInfo>();
-        if (State.Id.IsNullOrEmpty())
-        {
-            // State.Id = this.GetPrimaryKey().ToString();
-            // State.UserId = this.GetPrimaryKey();
-            // State.CollectionInfo = mintNftDto.CollectionInfo;
-        }
-        
+
         State.Id = this.GetPrimaryKey().ToString();
         State.UserId = this.GetPrimaryKey();
         State.CollectionInfo = mintNftDto.CollectionInfo;
 
-        // send transaction in service like redpack
-        // transaction info no need to save in grain
-
         // check token id
+        if (!State.TokenIds.Contains(mintNftDto.ConfirmInfo.TokenId))
+        {
+            result.Message = "Invalid tokenId.";
+            return result;
+        }
         var mintInfo = State.MintInfos.FirstOrDefault(t => t.TokenId == mintNftDto.ConfirmInfo.TokenId);
-        // exists and not mint failed
+        // exists and mint failed
         if (mintInfo != null && mintInfo.Status != FreeMintStatus.FAIL)
         {
-            // tokenId already used
             result.Message = "Token id already used.";
+            return result;
+        }
+
+        if (!State.PendingTokenId.IsNullOrEmpty())
+        {
+            result.Message = "Exists pending mint.";
             return result;
         }
 
@@ -117,7 +118,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
             mintInfo.Description = mintNftDto.ConfirmInfo.Description;
             mintInfo.Status = FreeMintStatus.PENDING;
 
-            State.PendingTokenId = mintInfo.TokenId;
+            SetTokenId(mintInfo.TokenId);
             return new GrainResultDto<ItemMintInfo>(mintInfo);
         }
 
@@ -131,15 +132,20 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
             Status = FreeMintStatus.PENDING
         };
 
-        State.PendingTokenId = mintNftDto.ConfirmInfo.TokenId;
-        if (State.UnUsedTokenId == mintNftDto.ConfirmInfo.TokenId)
-        {
-            State.UnUsedTokenId = string.Empty;
-        }
+        SetTokenId(mintNftDto.ConfirmInfo.TokenId);
         State.MintInfos.Add(nftInfo);
 
         await WriteStateAsync();
         return new GrainResultDto<ItemMintInfo>(nftInfo);
+    }
+
+    private void SetTokenId(string tokenId)
+    {
+        State.PendingTokenId = tokenId;
+        if (State.UnUsedTokenId == tokenId)
+        {
+            State.UnUsedTokenId = string.Empty;
+        }
     }
 
     public async Task<GrainResultDto<string>> GetTokenId()
@@ -152,6 +158,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
         var tokenIdGrain = GetTokenIdGrain();
         var tokenId = await tokenIdGrain.GenerateTokenId();
         State.UnUsedTokenId = tokenId;
+        State.TokenIds.Add(tokenId);
 
         await WriteStateAsync();
         return new GrainResultDto<string>(State.UnUsedTokenId.ToString());
