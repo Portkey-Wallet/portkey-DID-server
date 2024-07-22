@@ -142,6 +142,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
         var guardianGrainDto = guardianGrain.GetGuardianAsync(guardianIdentifier).Result;
+        _logger.LogInformation("GetGuardianAsync guardianIdentifier:{0} guardianGrainDto:{1}", guardianIdentifier, JsonConvert.SerializeObject(guardianGrainDto));
         if (!guardianGrainDto.Success)
         {
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");

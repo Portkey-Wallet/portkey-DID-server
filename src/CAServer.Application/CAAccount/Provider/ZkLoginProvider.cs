@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Grains;
@@ -74,6 +75,30 @@ public class ZkLoginProvider : CAServerAppService, IZkLoginProvider
                && zkLoginInfo.ZkProof is not (null or "")
                && zkLoginInfo.CircuitId is not (null or "")
                /*&& zkLoginInfo.Timestamp > 0*/;
+    }
+    
+    private bool CanSupportZk(GuardianType type)
+    {
+        return GuardianType.GUARDIAN_TYPE_OF_GOOGLE.Equals(type)
+               || GuardianType.GUARDIAN_TYPE_OF_APPLE.Equals(type)
+               || GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.Equals(type);
+    }
+
+    public bool CanExecuteZk(GuardianType type, ZkLoginInfoDto zkLoginInfo)
+    {
+        if (!CanSupportZk(type))
+        {
+            return false;
+        }
+        return zkLoginInfo is not null
+               && zkLoginInfo.IdentifierHash is not (null or "")
+               && zkLoginInfo.Salt is not (null or "")
+               && zkLoginInfo.Nonce is not (null or "")
+               && zkLoginInfo.ZkProof is not (null or "")
+               && zkLoginInfo.CircuitId is not (null or "")
+               && zkLoginInfo.Issuer is not (null or "")
+               && zkLoginInfo.Kid is not (null or "")
+               && zkLoginInfo.NoncePayload is not null;
     }
     
     public async Task GenerateGuardianAndUserInfoAsync(GuardianIdentifierType type, string accessToken, string guardianIdentifier, string identifierHash, string salt,
