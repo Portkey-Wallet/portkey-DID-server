@@ -256,17 +256,29 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                              JsonConvert.SerializeObject(guardianGrainDto));
         }
 
-        var dic = input.GuardiansApproved.ToDictionary(k => k.VerificationDoc, v => v.Identifier);
-        recoveryDto.GuardianApproved?.ForEach(t =>
+        foreach (var guardianInfo in recoveryDto.GuardianApproved)
         {
-            if (dic.TryGetValue(t.VerificationInfo.VerificationDoc, out var identifier) &&
-                !string.IsNullOrWhiteSpace(identifier))
+            if (guardianInfo.ZkLoginInfo != null && _zkLoginProvider.CanExecuteZk(guardianInfo.Type, guardianInfo.ZkLoginInfo))
             {
-                var guardianGrain = GetGuardian(identifier);
-                t.IdentifierHash = guardianGrain.IdentifierHash;
+                guardianInfo.IdentifierHash = guardianInfo.ZkLoginInfo.IdentifierHash;
             }
-        });
+        }
 
+        var notSupportZkGuardians = input.GuardiansApproved
+            .Where(g => g.ZkLoginInfo is null || !_zkLoginProvider.CanExecuteZk(g.Type, g.ZkLoginInfo)).ToList();
+        if (!notSupportZkGuardians.IsNullOrEmpty())
+        {
+            var dic = notSupportZkGuardians.ToDictionary(k => k.VerificationDoc, v => v.Identifier);
+            recoveryDto.GuardianApproved?.ForEach(t =>
+            {
+                if (dic.TryGetValue(t.VerificationInfo.VerificationDoc, out var identifier) &&
+                    !string.IsNullOrWhiteSpace(identifier))
+                {
+                    var guardianGrain = GetGuardian(identifier);
+                    t.IdentifierHash = guardianGrain.IdentifierHash;
+                }
+            });
+        }
         _logger.LogInformation($"recover dto :{JsonConvert.SerializeObject(recoveryDto)}");
 
         var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.ChainId, input.Manager);
@@ -306,6 +318,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 _logger.LogWarning("recoveryGuardian:{0} not exist in RecoveryDto", JsonConvert.SerializeObject(recoveryGuardian));
                 continue;
             }
+            var guardianGrain = GetGuardian(recoveryGuardian.Identifier);
+            guardianInfo.IdentifierHash = guardianGrain.IdentifierHash;
             if (recoveryGuardian.ZkLoginInfo != null)
             {
                 guardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt, recoveryGuardian.ZkLoginInfo.Nonce,
