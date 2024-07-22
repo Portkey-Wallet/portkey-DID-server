@@ -240,7 +240,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
             throw new UserFriendlyException(guardianGrainDto.Message);
         }
-
+        _logger.LogInformation("....GetGuardian guardianIdentifier:{0}, guardianGrainDto:{1}", guardianIdentifier, JsonConvert.SerializeObject(guardianGrainDto.Data));
         return guardianGrainDto.Data;
     }
 
@@ -256,29 +256,18 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                              JsonConvert.SerializeObject(guardianGrainDto));
         }
 
-        foreach (var guardianInfo in recoveryDto.GuardianApproved)
+        // var dic = input.GuardiansApproved.ToDictionary(k => k.VerificationDoc, v => v.Identifier);
+        recoveryDto.GuardianApproved?.ForEach(t =>
         {
-            if (guardianInfo.ZkLoginInfo != null && _zkLoginProvider.CanExecuteZk(guardianInfo.Type, guardianInfo.ZkLoginInfo))
-            {
-                guardianInfo.IdentifierHash = guardianInfo.ZkLoginInfo.IdentifierHash;
-            }
-        }
-
-        var notSupportZkGuardians = input.GuardiansApproved
-            .Where(g => g.ZkLoginInfo is null || !_zkLoginProvider.CanExecuteZk(g.Type, g.ZkLoginInfo)).ToList();
-        if (!notSupportZkGuardians.IsNullOrEmpty())
-        {
-            var dic = notSupportZkGuardians.ToDictionary(k => k.VerificationDoc, v => v.Identifier);
-            recoveryDto.GuardianApproved?.ForEach(t =>
-            {
-                if (dic.TryGetValue(t.VerificationInfo.VerificationDoc, out var identifier) &&
-                    !string.IsNullOrWhiteSpace(identifier))
-                {
-                    var guardianGrain = GetGuardian(identifier);
-                    t.IdentifierHash = guardianGrain.IdentifierHash;
-                }
-            });
-        }
+            // if (dic.TryGetValue(t.VerificationInfo.VerificationDoc, out var identifier) &&
+            //     !string.IsNullOrWhiteSpace(identifier))
+            // {
+            
+            var guardianGrain = GetGuardian(t.IdentifierHash);
+            t.IdentifierHash = guardianGrain.IdentifierHash;
+            // }
+        });
+        
         _logger.LogInformation($"recover dto :{JsonConvert.SerializeObject(recoveryDto)}");
 
         var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.ChainId, input.Manager);
