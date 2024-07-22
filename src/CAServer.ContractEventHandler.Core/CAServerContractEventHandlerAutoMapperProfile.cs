@@ -97,7 +97,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                             ? Hash.Empty : Hash.LoadFromHex(g.IdentifierHash),
                         Salt = g.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Salt,
                         Nonce = g.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
-                        ZkProof = g.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Nonce,
+                        ZkProof = g.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.ZkProof,
                         ZkProofInfo = g.ZkLoginInfo == null ? new ZkProofInfo() : new ZkProofInfo{
                             ZkProofPiA = { g.ZkLoginInfo.ZkProofPiA },
                             ZkProofPiB1 = { g.ZkLoginInfo.ZkProofPiB1 },
@@ -105,8 +105,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                             ZkProofPiB3 = { g.ZkLoginInfo.ZkProofPiB3 },
                             ZkProofPiC = { g.ZkLoginInfo.ZkProofPiC }
                         },
-                        // Issuer = g.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Issuer,
-                        Issuer = string.Empty,
+                        Issuer = g.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Issuer,
                         Kid = g.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.Kid,
                         CircuitId = g.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : g.ZkLoginInfo.CircuitId,
                         NoncePayload = new NoncePayload
