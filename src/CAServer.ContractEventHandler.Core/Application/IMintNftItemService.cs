@@ -81,7 +81,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
             }
             else
             {
-                _objectMapper.Map(index, eventData.ConfirmInfo);
+                _objectMapper.Map(eventData.ConfirmInfo, index);
                 index.UpdateTime = DateTime.UtcNow;
             }
             // send transaction
