@@ -106,6 +106,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
 
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
+        _logger.LogInformation("=======GetRegisterInfoAsync GetHash guardianIdentifier:{0},guardianIdentifierHash:{1}", requestDto.LoginGuardianIdentifier, guardianIdentifierHash);
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
         _logger.LogInformation("GetGuardiansAsync guardianIdentifierHash:{0},caHash:{1},guardians:{2}",
             guardianIdentifierHash, requestDto.CaHash, JsonConvert.SerializeObject(guardians));

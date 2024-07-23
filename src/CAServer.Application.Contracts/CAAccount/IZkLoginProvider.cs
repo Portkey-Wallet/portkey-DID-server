@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
+using CAServer.Guardian;
 
 namespace CAServer.CAAccount;
 
@@ -13,6 +14,8 @@ public interface IZkLoginProvider
 
     public bool CanExecuteZk(GuardianType type, ZkLoginInfoDto zkLoginInfoDto);
     
-    public  Task GenerateGuardianAndUserInfoAsync(GuardianIdentifierType type, string accessToken, string guardianIdentifier, string identifierHash, string salt,
+    public Task GenerateGuardianAndUserInfoAsync(GuardianIdentifierType type, string accessToken, string guardianIdentifier, string identifierHash, string salt,
         string chainId = "", string verifierId = "");
+
+    public Task<GuardianEto> UpdateGuardianAsync(string guardianIdentifier, string salt, string identifierHash);
 }

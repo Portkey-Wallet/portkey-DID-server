@@ -172,6 +172,15 @@ public class ZkLoginProvider : CAServerAppService, IZkLoginProvider
         }
     }
     
+    public async Task<GuardianEto> UpdateGuardianAsync(string guardianIdentifier, string salt, string identifierHash)
+    {
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrainDto = await guardianGrain.UpdateGuardianAsync(guardianIdentifier, salt, identifierHash);
+        _logger.LogInformation("UpdateGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
+        return _objectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data);
+    }
+    
     [CanBeNull]
     private GuardianGrainDto GetGuardian(string guardianIdentifier)
     {
