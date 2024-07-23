@@ -109,9 +109,11 @@ public class ZkLoginProvider : CAServerAppService, IZkLoginProvider
             string guardianIdentifierFromResponse;
             if (GuardianIdentifierType.Google.Equals(type))
             {
-                var userInfo = await GetUserInfoFromGoogleAsync(accessToken);
-                guardianIdentifierFromResponse = userInfo.Id;
-                _logger.LogInformation($"RegisterRequest google userInfo:{JsonConvert.SerializeObject(userInfo)}");
+                // var userInfo = await GetUserInfoFromGoogleAsync(accessToken);
+                // guardianIdentifierFromResponse = userInfo.Id;
+                // _logger.LogInformation($"RegisterRequest google userInfo:{JsonConvert.SerializeObject(userInfo)}");
+                //todo recover the guardianIdentifier code before online
+                guardianIdentifierFromResponse = guardianIdentifier;
             }
             else if (GuardianIdentifierType.Apple.Equals(type))
             {
