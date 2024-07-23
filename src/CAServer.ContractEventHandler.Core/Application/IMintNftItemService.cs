@@ -16,6 +16,7 @@ using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
 using CAServer.FreeMint.Etos;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.FreeMint;
 using CAServer.Guardian.Provider;
 using Google.Protobuf;
@@ -42,10 +43,12 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
     private readonly IClusterClient _clusterClient;
     private readonly INESTRepository<CAHolderIndex, Guid> _holderRepository;
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly IFreeMintNftProvider _freeMintNftProvider;
 
     public MintNftItemService(INESTRepository<FreeMintIndex, string> freeMintRepository,
         ILogger<MintNftItemService> logger, IObjectMapper objectMapper, IClusterClient clusterClient,
-        INESTRepository<CAHolderIndex, Guid> holderRepository, IGraphQLHelper graphQlHelper)
+        INESTRepository<CAHolderIndex, Guid> holderRepository, IGraphQLHelper graphQlHelper,
+        IFreeMintNftProvider freeMintNftProvider)
     {
         _freeMintRepository = freeMintRepository;
         _logger = logger;
@@ -53,6 +56,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
         _clusterClient = clusterClient;
         _holderRepository = holderRepository;
         _graphQlHelper = graphQlHelper;
+        _freeMintNftProvider = freeMintNftProvider;
     }
 
     public async Task MintAsync(FreeMintEto eventData)
@@ -85,38 +89,39 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
 
             // test
             // send transaction
-            var tranId = await CreateNftItem(eventData.ConfirmInfo.Name, eventData.ConfirmInfo.TokenId,
-                index.CollectionInfo.CollectionName, "", eventData.ConfirmInfo.ImageUrl);
+            // var tranId = await CreateNftItem(eventData.ConfirmInfo.Name, eventData.ConfirmInfo.TokenId,
+            //     index.CollectionInfo.CollectionName, "", eventData.ConfirmInfo.ImageUrl);
+            await _freeMintRepository.AddOrUpdateAsync(index);
+            var transactionInfo = await _freeMintNftProvider.SendMintNftTransactionAsync(eventData);
 
             index.TransactionInfos.Add(new MintTransactionInfo()
             {
                 BeginTime = DateTime.UtcNow,
                 EndTime = DateTime.UtcNow,
-                BlockTime = 1720454400,
-                TransactionId = tranId,
-                TransactionResult = "SUCCESS"
+                BlockTime = transactionInfo.TransactionResultDto.BlockNumber,
+                TransactionId = transactionInfo.TransactionResultDto.TransactionId,
+                TransactionResult = transactionInfo.TransactionResultDto.Status,
+                ErrorMessage = transactionInfo.TransactionResultDto.Error
             });
 
-            var holder = await GetCaHolderAsync(eventData.UserId);
+            // var holder = await GetCaHolderAsync(eventData.UserId);
+            //
+            // var gudto = await GetCaHolderInfoAsync(holder.CaHash);
+            // await Issue($"{index.CollectionInfo.CollectionName}-{eventData.ConfirmInfo.TokenId}",
+            //     gudto.CaHolderInfo.First().CaAddress);
 
-            var gudto = await GetCaHolderInfoAsync(holder.CaHash);
-            await Issue($"{index.CollectionInfo.CollectionName}-{eventData.ConfirmInfo.TokenId}",
-                gudto.CaHolderInfo.First().CaAddress);
-
+            var status = transactionInfo.TransactionResultDto.Status == TransactionState.Mined
+                ? FreeMintStatus.SUCCESS
+                : FreeMintStatus.FAIL;
             var grain = _clusterClient.GetGrain<IFreeMintGrain>(eventData.UserId);
-            var changeResult = await grain.ChangeMintStatus(index.Id, FreeMintStatus.SUCCESS);
-
-            index.Status = FreeMintStatus.SUCCESS.ToString();
+            await grain.ChangeMintStatus(index.Id, status);
+            index.Status = status.ToString();
             await _freeMintRepository.AddOrUpdateAsync(index);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "[FreeMint] error");
         }
-
-        // how to handle transactinoInfo
-        // success
-        // save 
     }
 
     public async Task<GuardiansDto> GetCaHolderInfoAsync(string caHash, int skipCount = 0,
