@@ -242,6 +242,19 @@ public class ContractAppService : IContractAppService
             return;
         }
 
+        if (resultCreateCaHolder.Logs.Select(l => l.Name).Contains(LogEvent.CAHolderErrorOccured))
+        {
+            try
+            {
+                var caHolderErrorOccured = resultCreateCaHolder.Logs
+                    .FirstOrDefault(l => l.Name.Contains(LogEvent.CAHolderErrorOccured));
+                _logger.LogInformation("Register error, message:{0}", JsonConvert.SerializeObject(caHolderErrorOccured));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "register extract caHolderErrorOccured error");
+            }
+        }
         if (!resultCreateCaHolder.Logs.Select(l => l.Name).Contains(LogEvent.CAHolderCreated))
         {
             registerResult.RegisterMessage = "Transaction status: FAILED" + ". Error: Verification failed";
