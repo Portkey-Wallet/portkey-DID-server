@@ -23,16 +23,18 @@ public class CAAccountController : CAServerController
     private readonly ITransactionFeeAppService _transactionFeeAppService;
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
+    private readonly IZkLoginProvider _zkLoginProvider;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService)
+        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
         _transactionFeeAppService = transactionFeeAppService;
         _currentUser = currentUser;
         _growthAppService = growthAppService;
+        _zkLoginProvider = zkLoginProvider;
     }
 
     [HttpPost("register/request")]
@@ -135,5 +137,11 @@ public class CAAccountController : CAServerController
     {
         return await _caAccountService.VerifyCaHolderExistByAddressAsync(address);
     }
-    
+
+    [HttpPost("update/guardian")]
+    public async Task<GuardianEto> UpdateGuardianInfoAsync([FromBody] DBGuardianDto guardianDto)
+    {
+        return await _zkLoginProvider.UpdateGuardianAsync(guardianDto.GuardianIdentifier, guardianDto.Salt,
+            guardianDto.IdentifierHash);
+    }
 }
