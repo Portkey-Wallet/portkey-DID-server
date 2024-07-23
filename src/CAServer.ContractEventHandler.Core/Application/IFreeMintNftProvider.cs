@@ -58,47 +58,56 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
 
     public async Task<TransactionInfoDto> SendMintNftTransactionAsync(FreeMintEto eventData)
     {
-        var from = _packageAccount.getOneAccountRandom();
-        _logger.LogInformation("red package payRedPackageFrom, payRedPackageFrom is {from} ",
-            from);
-        var holder = await GetCaHolderAsync(eventData.UserId);
-        if (holder == null)
+        try
         {
-            _logger.LogWarning("[FreeMint] holder is null, userId:{userId}", eventData.UserId);
-            return null;
-        }
-
-        var guardiansDto = await GetCaHolderInfoAsync(holder.CaHash);
-        var toAddress = guardiansDto.CaHolderInfo.FirstOrDefault()?.CaAddress;
-        if (toAddress.IsNullOrEmpty())
-        {
-            _logger.LogWarning("[FreeMint] guardian info is empty, userId:{userId}, caHash:{caHash}", eventData.UserId,
-                holder.CaHash);
-            return null;
-        }
-
-        var chainId = _chainOptions.ChainInfos.Keys.First(t => t != CommonConstant.MainChainId);
-        var mintNftInput = new MintNftInput()
-        {
-            Symbol = $"{eventData.CollectionInfo.CollectionName}-{eventData.ConfirmInfo.TokenId}",
-            TokenName = eventData.ConfirmInfo.Name,
-            TotalSupply = 1,
-            Decimals = 0,
-            IsBurnable = true,
-            IssueChainId = ChainHelper.ConvertBase58ToChainId(chainId),
-            ExternalInfo = new ExternalInfo()
+            var from = _packageAccount.getOneAccountRandom();
+            _logger.LogInformation("red package payRedPackageFrom, payRedPackageFrom is {from} ",
+                from);
+            var holder = await GetCaHolderAsync(eventData.UserId);
+            if (holder == null)
             {
-                Value =
-                {
-                    {
-                        "__nft_image_url", eventData.ConfirmInfo.ImageUrl
-                    }
-                }
-            },
-            To = Address.FromBase58(toAddress)
-        };
+                _logger.LogWarning("[FreeMint] holder is null, userId:{userId}", eventData.UserId);
+                return null;
+            }
 
-        return await SendFreeMintAsync(chainId, mintNftInput, from, "2KfF91XAyntXP7hm3rGKzkUCbrNppTJvr2WcrEj9XhgeakxeNB", "MintNft");
+            var guardiansDto = await GetCaHolderInfoAsync(holder.CaHash);
+            var toAddress = guardiansDto.CaHolderInfo.FirstOrDefault()?.CaAddress;
+            if (toAddress.IsNullOrEmpty())
+            {
+                _logger.LogWarning("[FreeMint] guardian info is empty, userId:{userId}, caHash:{caHash}", eventData.UserId,
+                    holder.CaHash);
+                return null;
+            }
+
+            var chainId = _chainOptions.ChainInfos.Keys.First(t => t != CommonConstant.MainChainId);
+            var mintNftInput = new MintNftInput()
+            {
+                Symbol = $"{eventData.CollectionInfo.CollectionName.ToUpper()}-{eventData.ConfirmInfo.TokenId}",
+                TokenName = eventData.ConfirmInfo.Name,
+                TotalSupply = 1,
+                Decimals = 0,
+                IsBurnable = true,
+                IssueChainId = ChainHelper.ConvertBase58ToChainId(chainId),
+                ExternalInfo = new ExternalInfo()
+                {
+                    Value =
+                    {
+                        {
+                            "__nft_image_url", eventData.ConfirmInfo.ImageUrl
+                        }
+                    }
+                },
+                To = Address.FromBase58(toAddress)
+            };
+            
+            _logger.LogInformation("FreeMint SendMintNftTransactionAsync param: {param}", JsonConvert.SerializeObject(mintNftInput));
+            return await SendFreeMintAsync(chainId, mintNftInput, from, "2KfF91XAyntXP7hm3rGKzkUCbrNppTJvr2WcrEj9XhgeakxeNB", "MintNft");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "FreeMint SendMintNftTransactionAsync error: {param}", JsonConvert.SerializeObject(eventData));
+            return null;
+        }
     }
 
     public async Task<TransactionInfoDto> SendFreeMintAsync(string chainId, IMessage param,
