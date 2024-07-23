@@ -262,6 +262,24 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class CAHolderErrorOccured : aelf::IEvent<CAHolderErrorOccured>
+  {
+    public global::System.Collections.Generic.IEnumerable<CAHolderErrorOccured> GetIndexed()
+    {
+      return new List<CAHolderErrorOccured>
+      {
+      };
+    }
+
+    public CAHolderErrorOccured GetNonIndexed()
+    {
+      return new CAHolderErrorOccured
+      {
+        ErrorMessage = ErrorMessage,
+      };
+    }
+  }
+
   #endregion
   public static partial class CAContractImplContainer
   {
@@ -346,6 +364,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetVerifierServersOutput> __Marshaller_caimpl_GetVerifierServersOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetVerifierServersOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.VerifyingKey> __Marshaller_caimpl_VerifyingKey = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.VerifyingKey.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.StringValue> __Marshaller_google_protobuf_StringValue = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.StringValue.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.KidPublicKeyOutput> __Marshaller_caimpl_KidPublicKeyOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.KidPublicKeyOutput.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -888,6 +907,27 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_StringValue,
         __Marshaller_caimpl_VerifyingKey);
 
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Portkey.Contracts.CA.KidPublicKeyOutput> __Method_GetGooglePublicKeyByKid = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Portkey.Contracts.CA.KidPublicKeyOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetGooglePublicKeyByKid",
+        __Marshaller_google_protobuf_StringValue,
+        __Marshaller_caimpl_KidPublicKeyOutput);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Portkey.Contracts.CA.KidPublicKeyOutput> __Method_GetApplePublicKeyByKid = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Portkey.Contracts.CA.KidPublicKeyOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetApplePublicKeyByKid",
+        __Marshaller_google_protobuf_StringValue,
+        __Marshaller_caimpl_KidPublicKeyOutput);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Portkey.Contracts.CA.KidPublicKeyOutput> __Method_GetFacebookPublicKeyByKid = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Portkey.Contracts.CA.KidPublicKeyOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetFacebookPublicKeyByKid",
+        __Marshaller_google_protobuf_StringValue,
+        __Marshaller_caimpl_KidPublicKeyOutput);
+
     static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> __Method_InitZkNonceList = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
@@ -1314,6 +1354,21 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Portkey.Contracts.CA.KidPublicKeyOutput GetGooglePublicKeyByKid(global::Google.Protobuf.WellKnownTypes.StringValue input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.KidPublicKeyOutput GetApplePublicKeyByKid(global::Google.Protobuf.WellKnownTypes.StringValue input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.KidPublicKeyOutput GetFacebookPublicKeyByKid(global::Google.Protobuf.WellKnownTypes.StringValue input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty InitZkNonceList(global::Google.Protobuf.WellKnownTypes.Empty input)
       {
         throw new global::System.NotImplementedException();
@@ -1407,6 +1462,9 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_GetVerifierServers, serviceImpl.GetVerifierServers)
           .AddMethod(__Method_AddOrUpdateVerifyingKey, serviceImpl.AddOrUpdateVerifyingKey)
           .AddMethod(__Method_GetVerifyingKey, serviceImpl.GetVerifyingKey)
+          .AddMethod(__Method_GetGooglePublicKeyByKid, serviceImpl.GetGooglePublicKeyByKid)
+          .AddMethod(__Method_GetApplePublicKeyByKid, serviceImpl.GetApplePublicKeyByKid)
+          .AddMethod(__Method_GetFacebookPublicKeyByKid, serviceImpl.GetFacebookPublicKeyByKid)
           .AddMethod(__Method_InitZkNonceList, serviceImpl.InitZkNonceList)
           .AddMethod(__Method_SetOracleAddress, serviceImpl.SetOracleAddress).Build();
     }

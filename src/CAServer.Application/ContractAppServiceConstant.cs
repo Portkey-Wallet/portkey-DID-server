@@ -40,4 +40,5 @@ public static class LogEvent
     public const string NonCreateChainCAHolderCreated = "PreCrossChainSyncHolderInfoCreated";
     public const string ManagerInfoSocialRecovered = "ManagerInfoSocialRecovered";
     public const string CryptoBoxCreated = "CryptoBoxCreated";
+    public const string CAHolderErrorOccured = "CAHolderErrorOccured";
 }
