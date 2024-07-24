@@ -210,7 +210,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
             }
-
+            _logger.LogInformation("send Dtos.UserExtraInfo of Google:{0}", JsonConvert.SerializeObject(response.Data.GoogleUserExtraInfo));
             await AddUserInfoAsync(
                 ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
 
@@ -256,7 +256,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
-
+            _logger.LogInformation("send Dtos.UserExtraInfo of Apple:{0}", JsonConvert.SerializeObject(response.Data.AppleUserExtraInfo));
             await AddUserInfoAsync(
                 ObjectMapper.Map<AppleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.AppleUserExtraInfo));
 
@@ -634,7 +634,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             _logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
                 JsonConvert.SerializeObject(guardianGrainDto.Data));
-
+            
             await _distributedEventBus.PublishAsync(
                 ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data));
         }
