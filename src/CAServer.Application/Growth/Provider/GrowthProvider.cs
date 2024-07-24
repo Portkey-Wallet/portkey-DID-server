@@ -32,7 +32,7 @@ public interface IGrowthProvider
         int limit, DateTime? startDate, DateTime? endDate, List<int> referralTypes);
 
     Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
-    Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime);
+    Task<ScoreInfos> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime);
 }
 
 public class GrowthProvider : IGrowthProvider, ISingletonDependency
@@ -142,15 +142,15 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         if (startDate != null)
         {
-            mustQuery.Add(q =>
-                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
+            // mustQuery.Add(q =>
+            //     q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
         }
 
         if (endDate != null)
         {
-            mustQuery.Add(q =>
-                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").LessThanOrEquals(endDate)));
-        }
+        //     mustQuery.Add(q =>
+        //         q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").LessThanOrEquals(endDate)));
+         }
 
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (total, data) = await _referralRecordRepository.GetListAsync(Filter, sortExp: k => k.ReferralDate,
@@ -172,16 +172,15 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         return true;
     }
 
-    public async Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,
+    public async Task<ScoreInfos> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,
         DateTime endTime)
     {
-        
         var graphQlClient = new GraphQLHttpClient(_hamsterOptions.HamsterEndPoints,
             new NewtonsoftJsonSerializer());
-        var sendQueryAsync = await graphQlClient.SendQueryAsync<List<HamsterScoreDto>>(new GraphQLRequest
+        var sendQueryAsync = await graphQlClient.SendQueryAsync<ScoreInfos>(new GraphQLRequest
         {
             Query = @"
-			      query($caAddressList:[String],$beginTime:DateTime,$endTime:DateTime) {
+         query($caAddressList:[String!]!,$beginTime:DateTime,$endTime:DateTime) {
               getScoreInfos(getScoreInfosDto: {caAddressList:$caAddressList,beginTime:$beginTime,endTime:$endTime}){
                      caAddress,sumScore,symbol,decimals}
                 }",

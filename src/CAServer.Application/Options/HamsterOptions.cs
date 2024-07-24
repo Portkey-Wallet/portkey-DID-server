@@ -9,4 +9,8 @@ public class HamsterOptions
     public string Invitations { get; set; }
 
     public string HamsterEndPoints { get; set; }
+
+    public string AddressPrefix { get; set; }
+
+    public string AddressSuffix { get; set; }
 }
