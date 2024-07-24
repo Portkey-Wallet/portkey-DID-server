@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
@@ -140,12 +141,14 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         if (startDate != new DateTime())
         {
-            mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
+            mustQuery.Add(q =>
+                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
         }
 
         if (endDate != new DateTime())
         {
-            //mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).LessThanOrEquals(endDate)));
+            mustQuery.Add(q =>
+                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").LessThanOrEquals(endDate)));
         }
 
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
@@ -168,7 +171,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         return true;
     }
 
-    public async Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime,
+    public async Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,
         DateTime endTime)
     {
         var graphQlClient = new GraphQLHttpClient(_hamsterOptions.HamsterEndPoints,
@@ -176,13 +179,13 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         var sendQueryAsync = await graphQlClient.SendQueryAsync<List<HamsterScoreDto>>(new GraphQLRequest
         {
             Query = @"
-			      query($caHashes:[String],$referralCodes:[String],$methodNames:[String],$startTime:Long!,$endTime:Long!) {
-              referralInfo(dto: {caHashes:$caHashes,referralCodes:$referralCodes,methodNames:$methodNames,startTime:$startTime,endTime:$endTime}){
-                     caHash,referralCode,projectCode,methodName,timestamp}
+			      query($caAddressList:[String],$beginTime:DateTime,$endTime:DateTime) {
+              getScoreInfos(getScoreInfosDto: {caAddressList:$caAddressList,beginTime:$startTime,endTime:$endTime}){
+                     caAddress,sumScore,symbol,decimals}
                 }",
             Variables = new
             {
-                addresses, startTime, endTime
+                caAddressList, beginTime, endTime
             }
         });
         return sendQueryAsync.Data;

@@ -408,15 +408,19 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             _logger.LogDebug("Hamster Referral data query from ES : {index}", JsonConvert.SerializeObject(index));
         }
-        
+
         var recordDic =
             referralRecordList.GroupBy(t => t.ReferralCaHash).ToDictionary(t => t.Key, k => k.ToList());
         foreach (var caHash in recordDic.Keys)
         {
             var referralRecords = recordDic[caHash];
-            var addresses = referralRecords.Select(t => t.ReferralAddress).ToList();
-            var dic = referralRecords.ToDictionary(t => t.ReferralAddress, t => t);
-            //var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+            var addresses = await GetHamsterReferralAddressAsync(referralRecords);
+            foreach (var address in addresses)
+            {
+                _logger.LogDebug("Address is {address}", address);
+            }
+            //var dic = referralRecords.ToDictionary(t => t.ReferralAddress, t => t);
+            var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
             // var result = hamsterScoreList.Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             // var caHolderInfo =
             //     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
@@ -447,6 +451,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             //     await _growthProvider.AddReferralRecordAsync(index);
             // }
         }
+    }
+
+    private async Task<List<string>> GetHamsterReferralAddressAsync(List<ReferralRecordIndex> referralRecords)
+    {
+        var addresses = new List<string>();
+        foreach (var index in referralRecords)
+        {
+            var holderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string> { index.CaHash }, null);
+            var caHash = holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash;
+            addresses.Add(caHash);
+        }
+
+        return addresses;
     }
 
     public async Task<RewardProgressResponseDto> GetRewardProgressAsync(ActivityEnums activityEnum)
