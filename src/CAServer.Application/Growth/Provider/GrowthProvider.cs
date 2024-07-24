@@ -134,12 +134,12 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         if (referralTypes != null)
         {
-            //mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
         }
 
         if (startDate != new DateTime())
         {
-            mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).GreaterThanOrEquals(startDate)));
+            //mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).GreaterThanOrEquals(startDate)));
         }
         
         if (endDate != new DateTime())
