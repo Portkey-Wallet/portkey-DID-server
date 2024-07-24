@@ -40,10 +40,12 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
     private readonly ILogger<FreeMintNftProvider> _logger;
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<CAHolderIndex, Guid> _holderRepository;
+    private readonly FreeMintOptions _freeMintOptions;
 
     public FreeMintNftProvider(ISignatureProvider signatureProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<ContractServiceOptions> contractGrainOptions,
+        IOptionsSnapshot<FreeMintOptions> freeMintOptions,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount, ILogger<FreeMintNftProvider> logger,
         IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> holderRepository)
     {
@@ -54,6 +56,7 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
         _chainOptions = chainOptions.Value;
         _contractServiceOptions = contractGrainOptions.Value;
         _packageAccount = packageAccount.Value;
+        _freeMintOptions = freeMintOptions.Value;
     }
 
     public async Task<TransactionInfoDto> SendMintNftTransactionAsync(FreeMintEto eventData)
@@ -61,8 +64,7 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
         try
         {
             var from = _packageAccount.getOneAccountRandom();
-            _logger.LogInformation("red package payRedPackageFrom, payRedPackageFrom is {from} ",
-                from);
+            _logger.LogInformation("[FreeMint] get free mint account, from is {from} ", from);
             var holder = await GetCaHolderAsync(eventData.UserId);
             if (holder == null)
             {
@@ -74,7 +76,8 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
             var toAddress = guardiansDto.CaHolderInfo.FirstOrDefault()?.CaAddress;
             if (toAddress.IsNullOrEmpty())
             {
-                _logger.LogWarning("[FreeMint] guardian info is empty, userId:{userId}, caHash:{caHash}", eventData.UserId,
+                _logger.LogWarning("[FreeMint] guardian info is empty, userId:{userId}, caHash:{caHash}",
+                    eventData.UserId,
                     holder.CaHash);
                 return null;
             }
@@ -84,8 +87,8 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
             {
                 Symbol = $"{eventData.CollectionInfo.CollectionName.ToUpper()}-{eventData.ConfirmInfo.TokenId}",
                 TokenName = eventData.ConfirmInfo.Name,
-                TotalSupply = 1,
-                Decimals = 0,
+                TotalSupply = CommonConstant.FreeMintTotalSupply,
+                Decimals = CommonConstant.FreeMintDecimals,
                 IsBurnable = true,
                 IssueChainId = ChainHelper.ConvertBase58ToChainId(chainId),
                 ExternalInfo = new ExternalInfo()
@@ -99,13 +102,16 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
                 },
                 To = Address.FromBase58(toAddress)
             };
-            
-            _logger.LogInformation("FreeMint SendMintNftTransactionAsync param: {param}", JsonConvert.SerializeObject(mintNftInput));
-            return await SendFreeMintAsync(chainId, mintNftInput, from, "2KfF91XAyntXP7hm3rGKzkUCbrNppTJvr2WcrEj9XhgeakxeNB", "MintNft");
+
+            _logger.LogInformation("FreeMint SendMintNftTransactionAsync param: {param}",
+                JsonConvert.SerializeObject(mintNftInput));
+            return await SendFreeMintAsync(chainId, mintNftInput, from,
+                _freeMintOptions.ContractAddress, "MintNft");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "FreeMint SendMintNftTransactionAsync error: {param}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "FreeMint SendMintNftTransactionAsync error: {param}",
+                JsonConvert.SerializeObject(eventData));
             return null;
         }
     }
@@ -124,7 +130,7 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(from); //select public key
             _logger.LogInformation(
-                "Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ,methodName:{methodName}",
+                "[FreeMint] Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ,methodName:{methodName}",
                 ownAddress, freeMintAddress, methodName);
 
             var transaction =
@@ -132,21 +138,20 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
                     param);
 
             var txWithSign = await _signatureProvider.SignTxMsg(from, transaction.GetHash().ToHex());
-            _logger.LogInformation("signature provider sign result: {txWithSign}", txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput
             {
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
-            _logger.LogInformation("SendTransferRedPacketToChainAsync result: {result}",
-                JsonConvert.SerializeObject(result));
+            _logger.LogInformation("[FreeMint] Send transaction, transactionId: {transactionId}", result.TransactionId);
 
             await Task.Delay(_contractServiceOptions.Delay);
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-            _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}",
-                JsonConvert.SerializeObject(transactionResult));
+            _logger.LogInformation(
+                "[FreeMint] query transactionResult, transactionId:{transactionId}, transaction status:{status}",
+                transactionResult.TransactionId, transactionResult.Status);
 
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
@@ -156,6 +161,9 @@ public class FreeMintNftProvider : IFreeMintNftProvider, ISingletonDependency
                 times++;
                 await Task.Delay(_contractServiceOptions.RetryDelay);
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+                _logger.LogInformation(
+                    "[FreeMint] query transactionResult, transactionId:{transactionId}, transaction status:{status}, times:{times}",
+                    transactionResult.TransactionId, transactionResult.Status, times);
             }
 
             return new TransactionInfoDto
