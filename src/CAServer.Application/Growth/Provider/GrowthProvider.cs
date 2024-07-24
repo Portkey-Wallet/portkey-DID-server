@@ -42,7 +42,8 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     private readonly HamsterOptions _hamsterOptions;
 
     public GrowthProvider(INESTRepository<GrowthIndex, string> growthRepository, IGraphQLHelper graphQlHelper,
-        INESTRepository<ReferralRecordIndex, string> referralRecordRepository, IOptionsSnapshot<HamsterOptions> hamsterOptions)
+        INESTRepository<ReferralRecordIndex, string> referralRecordRepository,
+        IOptionsSnapshot<HamsterOptions> hamsterOptions)
     {
         _growthRepository = growthRepository;
         _graphQlHelper = graphQlHelper;
@@ -118,7 +119,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     }
 
     public async Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash,
-        int skip, int limit, DateTime startDate, DateTime endDate,List<int> referralTypes)
+        int skip, int limit, DateTime startDate, DateTime endDate, List<int> referralTypes)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ReferralRecordIndex>, QueryContainer>>();
 
@@ -132,16 +133,16 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralCaHash).Terms(referralCaHash)));
         }
 
-        if (referralTypes != null)
+        if (!referralTypes.IsNullOrEmpty())
         {
-            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
+            //mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
         }
 
         if (startDate != new DateTime())
         {
-            //mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).GreaterThanOrEquals(startDate)));
+            mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
         }
-        
+
         if (endDate != new DateTime())
         {
             //mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).LessThanOrEquals(endDate)));
@@ -157,7 +158,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     {
         var record =
             await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1,
-                new DateTime(), new DateTime(), new List<int>{0});
+                new DateTime(), new DateTime(), new List<int> { 0 });
         if (!record.IsNullOrEmpty())
         {
             return false;
@@ -167,7 +168,8 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         return true;
     }
 
-    public async Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime)
+    public async Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime,
+        DateTime endTime)
     {
         var graphQlClient = new GraphQLHttpClient(_hamsterOptions.HamsterEndPoints,
             new NewtonsoftJsonSerializer());
@@ -182,7 +184,6 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
             {
                 addresses, startTime, endTime
             }
-
         });
         return sendQueryAsync.Data;
     }
