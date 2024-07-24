@@ -82,7 +82,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
         var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0,
-            Int16.MaxValue, new DateTime(), new DateTime(), new List<int> { 0 });
+            Int16.MaxValue, null, null, new List<int> { 0 });
         return growthInfo?.Count ?? 0;
     }
 
@@ -100,7 +100,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var referralRecordList = input.ActivityEnums switch
         {
             ActivityEnums.Invitation => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash,
-                input.Skip, input.Limit, new DateTime(), new DateTime(), new List<int> { 0 }),
+                input.Skip, input.Limit, null, null, new List<int> { 0 }),
             ActivityEnums.Hamster => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip,
                 input.Limit, Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                 new List<int> { 0, 1 }),
@@ -404,11 +404,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             return;
         }
 
-        foreach (var index in referralRecordList)
-        {
-            _logger.LogDebug("Hamster Referral data query from ES : {index}", JsonConvert.SerializeObject(index));
-        }
-
         var recordGroup =
             referralRecordList.GroupBy(t => t.ReferralCaHash);
         foreach (var group in recordGroup)
@@ -420,8 +415,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 _logger.LogDebug("Address is {address}", address);
             }
-            //var dic = referralRecords.ToDictionary(t => t.ReferralAddress, t => t);
-            //var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+            var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
             // var result = hamsterScoreList.Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             // var caHolderInfo =
             //     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
@@ -463,7 +457,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 await _activityProvider.GetCaHolderInfoAsync(new List<string> {}, index.CaHash);
             _logger.LogDebug("holderInfo is {holder}",JsonConvert.SerializeObject(holderInfo));
             var address = holderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
-            addresses.Add(address);
+            var formatAddress = "ELF_" + addresses + "_tDVW";
+            addresses.Add(formatAddress);
         }
         return addresses;
     }

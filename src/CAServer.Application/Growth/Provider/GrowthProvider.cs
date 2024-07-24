@@ -28,7 +28,7 @@ public interface IGrowthProvider
     Task<List<GrowthIndex>> GetAllGrowthInfosAsync(int skip, int limit);
 
     Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash, int skip,
-        int limit, DateTime startDate, DateTime endDate, List<int> referralTypes);
+        int limit, DateTime? startDate, DateTime? endDate, List<int> referralTypes);
 
     Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
     Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime);
@@ -120,7 +120,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     }
 
     public async Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash,
-        int skip, int limit, DateTime startDate, DateTime endDate, List<int> referralTypes)
+        int skip, int limit, DateTime? startDate, DateTime? endDate, List<int> referralTypes)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ReferralRecordIndex>, QueryContainer>>();
 
@@ -139,13 +139,13 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
             //mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
         }
 
-        if (startDate != new DateTime())
+        if (startDate != null)
         {
             mustQuery.Add(q =>
                 q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
         }
 
-        if (endDate != new DateTime())
+        if (endDate != null)
         {
             mustQuery.Add(q =>
                 q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").LessThanOrEquals(endDate)));
@@ -161,7 +161,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     {
         var record =
             await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1,
-                new DateTime(), new DateTime(), new List<int> { 0 });
+                null, null, new List<int> { 0 });
         if (!record.IsNullOrEmpty())
         {
             return false;
@@ -190,4 +190,5 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         });
         return sendQueryAsync.Data;
     }
+    
 }
