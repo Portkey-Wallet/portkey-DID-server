@@ -87,8 +87,8 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         {
             ItemId = mintNftInfo.ItemId,
             Name = mintNftInfo.Name,
-            TokenId = $"{_freeMintOptions.CollectionInfo.CollectionName.ToUpper()}-{mintNftInfo.TokenId}",
-            Symbol = mintNftInfo.TokenId
+            TokenId = mintNftInfo.TokenId,
+            Symbol = $"{_freeMintOptions.CollectionInfo.CollectionName.ToUpper()}-{mintNftInfo.TokenId}"
         };
     }
 
