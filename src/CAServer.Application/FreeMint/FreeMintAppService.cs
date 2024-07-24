@@ -44,14 +44,13 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
 
     public async Task<GetMintInfoDto> GetMintInfoAsync()
     {
+        var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
         var mintInfoDto = new GetMintInfoDto()
         {
-            CollectionInfo = _freeMintOptions.CollectionInfo
+            CollectionInfo = _freeMintOptions.CollectionInfo,
+            IsLimitExceed = grain.CheckLimitExceed().Result,
+            LimitCount = _freeMintOptions.LimitCount
         };
-
-        var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
-        var resultDto = await grain.GetTokenId();
-        mintInfoDto.TokenId = resultDto.Data;
         return mintInfoDto;
     }
 
@@ -72,20 +71,24 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
             throw new UserFriendlyException(saveResult.Message);
         }
 
+        var mintNftInfo = saveResult.Data;
         var eto = new FreeMintEto
         {
             UserId = CurrentUser.GetId(),
             CollectionInfo = collectionInfo,
-            ConfirmInfo = saveResult.Data
+            ConfirmInfo = mintNftInfo
         };
 
         await _distributedEventBus.PublishAsync(eto, false, false);
         _logger.LogInformation("publish free mint eto, userId:{userId}, itemId:{itemId}, tokenId:{tokenId}", eto.UserId,
             eto.ConfirmInfo.ItemId, eto.ConfirmInfo.TokenId);
-        
-        return new ConfirmDto()
+
+        return new ConfirmDto
         {
-            ItemId = saveResult.Data.ItemId
+            ItemId = mintNftInfo.ItemId,
+            Name = mintNftInfo.Name,
+            TokenId = $"{_freeMintOptions.CollectionInfo.CollectionName.ToUpper()}-{mintNftInfo.TokenId}",
+            Symbol = mintNftInfo.TokenId
         };
     }
 
