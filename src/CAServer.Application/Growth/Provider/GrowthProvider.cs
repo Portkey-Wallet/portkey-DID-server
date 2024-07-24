@@ -180,7 +180,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         {
             Query = @"
 			      query($caAddressList:[String],$beginTime:DateTime,$endTime:DateTime) {
-              getScoreInfos(getScoreInfosDto: {caAddressList:$caAddressList,beginTime:$startTime,endTime:$endTime}){
+              getScoreInfos(getScoreInfosDto: {caAddressList:$caAddressList,beginTime:$beginTime,endTime:$endTime}){
                      caAddress,sumScore,symbol,decimals}
                 }",
             Variables = new
