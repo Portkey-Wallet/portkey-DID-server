@@ -1,13 +1,17 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
 using CAServer.FreeMint.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.FreeMint;
+using Hangfire;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 using IObjectMapper = Volo.Abp.ObjectMapping.IObjectMapper;
@@ -25,18 +29,23 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
     private readonly ILogger<MintNftItemService> _logger;
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
+    private readonly ISyncTokenService _syncTokenService;
 
     private readonly IFreeMintNftProvider _freeMintNftProvider;
+    private readonly ChainOptions _chainOptions;
 
     public MintNftItemService(INESTRepository<FreeMintIndex, string> freeMintRepository,
         ILogger<MintNftItemService> logger, IObjectMapper objectMapper, IClusterClient clusterClient,
-        IFreeMintNftProvider freeMintNftProvider)
+        IFreeMintNftProvider freeMintNftProvider, ISyncTokenService syncTokenService,
+        IOptions<ChainOptions> chainOptions)
     {
         _freeMintRepository = freeMintRepository;
         _logger = logger;
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
         _freeMintNftProvider = freeMintNftProvider;
+        _syncTokenService = syncTokenService;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task MintAsync(FreeMintEto eventData)
@@ -64,7 +73,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
                 _objectMapper.Map(eventData.ConfirmInfo, index);
                 index.UpdateTime = DateTime.UtcNow;
             }
-            
+
             await _freeMintRepository.AddOrUpdateAsync(index);
             var transactionInfo = await _freeMintNftProvider.SendMintNftTransactionAsync(eventData);
 
@@ -85,6 +94,13 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
             await grain.ChangeMintStatus(index.Id, status);
             index.Status = status.ToString();
             await _freeMintRepository.AddOrUpdateAsync(index);
+
+            if (index.Status == FreeMintStatus.SUCCESS.ToString())
+            {
+                // add hangfire
+                var chainId = _chainOptions.ChainInfos.Keys.First(t => t != CommonConstant.MainChainId);
+                BackgroundJob.Enqueue(() => _syncTokenService.SyncTokenToOtherChain(chainId, index.Symbol));
+            }
         }
         catch (Exception e)
         {
