@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.FreeMint.Etos;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 
@@ -21,7 +20,8 @@ public class FreeMintEventHandler : IDistributedEventHandler<FreeMintEto>, ITran
 
     public async Task HandleEventAsync(FreeMintEto eventData)
     {
-        _logger.LogInformation("Begin Handle FreeMint: data:{data}", JsonConvert.SerializeObject(eventData));
+        _logger.LogInformation("Begin Handle FreeMint: userId:{userId}, itemId:{itemId}", eventData.UserId,
+            eventData.ConfirmInfo.ItemId);
         _ = _mintNftItemService.MintAsync(eventData);
     }
 }
