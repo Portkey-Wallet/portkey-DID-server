@@ -460,7 +460,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         foreach (var index in referralRecords)
         {
             var holderInfo =
-                await _activityProvider.GetCaHolderInfoAsync(new List<string> { index.CaHash }, null);
+                await _activityProvider.GetCaHolderInfoAsync(new List<string> {}, index.CaHash);
             _logger.LogDebug("holderInfo is {holder}",JsonConvert.SerializeObject(holderInfo));
             var address = holderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
             addresses.Add(address);
