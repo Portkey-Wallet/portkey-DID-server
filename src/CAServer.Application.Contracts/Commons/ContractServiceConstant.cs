@@ -119,4 +119,6 @@ public static class CommonConstant
     
     public const int InitTokenId = 10;
     public const string FreeMintTokenIdGrainId = "FreeMint-TokenId";
+    public const int FreeMintTotalSupply = 1;
+    public const int FreeMintDecimals = 0;
 }
