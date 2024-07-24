@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using CAServer.EnumType;
 using CAServer.Growth.Dtos;
 
 namespace CAServer.Growth;
@@ -9,6 +10,8 @@ public interface IGrowthStatisticAppService
     Task<int> GetReferralTotalCountAsync(ReferralRecordRequestDto input);
     Task CalculateReferralRankAsync();
     Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input);
-    Task InitReferralRankAsync();
     Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input);
+    Task CalculateHamsterDataAsync();
+    Task<RewardProgressResponseDto> GetRewardProgressAsync(ActivityEnums activityEnum);
+    Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus status);
 }

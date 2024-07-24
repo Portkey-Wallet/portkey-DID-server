@@ -1,17 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAActivity.Provider;
 using CAServer.Cache;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
+using CAServer.Options;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -31,16 +35,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly ILogger<GrowthStatisticAppService> _logger;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private const int RankLimit = 50;
-    private const string InitReferralTimesCache = "InitReferralTimesCacheKey";
     private const string ReferralCalculateTimesCache = "Portkey:ReferralCalculateTimesCache";
     private const int ExpireTime = 360;
+    private readonly ActivityConfigOptions _activityConfigOptions;
+    private readonly HamsterOptions _hamsterOptions;
+    private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
-        IUserAssetsProvider userAssetsProvider)
+        IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
+        IOptionsSnapshot<HamsterOptions> hamsterOptions,
+        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -48,6 +56,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _activityProvider = activityProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
+        _beInvitedConfigOptions = beInvitedConfigOptions.Value;
+        _hamsterOptions = hamsterOptions.Value;
+        _activityConfigOptions = activityConfigOptions.Value;
     }
 
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
@@ -70,8 +81,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash , 0 ,
-            Int16.MaxValue);
+        var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0,
+            Int16.MaxValue, new DateTime(), new DateTime(), new List<int> { 0 });
         return growthInfo?.Count ?? 0;
     }
 
@@ -83,10 +94,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-
         var hasNextPage = true;
-        var referralRecordList =
-            await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip, input.Limit);
+        var details = GetActivityDetails(input.ActivityEnums);
+
+        var referralRecordList = input.ActivityEnums switch
+        {
+            ActivityEnums.Invitation => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash,
+                input.Skip, input.Limit, new DateTime(), new DateTime(), new List<int> { 0 }),
+            ActivityEnums.Hamster => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip,
+                input.Limit, Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
+                new List<int> { 0, 1 }),
+            _ => throw new UserFriendlyException("Invalidate Activity.")
+        };
         if (referralRecordList.Count < input.Limit)
         {
             hasNextPage = false;
@@ -94,13 +113,26 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
+        var hamsterDesc = String.Format(CommonConstant.HamsterScore, _hamsterOptions.MinAcornsScore);
         var records = referralRecordList.Select(index => new ReferralRecordDetailDto
         {
-            WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo) ? indexInfo.NickName : "",
+            WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo)
+                ? indexInfo.NickName
+                : "",
+            RecordDesc = index.ReferralType == 0
+                ? nickNameByCaHashes.TryGetValue(index.CaHash, out var referralIndexInfo)
+                    ? referralIndexInfo.NickName
+                    : "" + CommonConstant.SingUp
+                : nickNameByCaHashes.TryGetValue(index.CaHash, out var recordIndexInfo)
+                    ? recordIndexInfo.NickName
+                    : "" + hamsterDesc,
             IsDirectlyInvite = index.IsDirectlyInvite == 0,
             ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd"),
-            Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex) ? caHolderIndex.Avatar : "",
+            Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex)
+                ? caHolderIndex.Avatar
+                : "",
         }).ToList();
+
         return new ReferralRecordResponseDto
         {
             HasNextPage = hasNextPage,
@@ -111,19 +143,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task CalculateReferralRankAsync()
     {
         var startTime = 0L;
-        var referralTimes =  await _cacheProvider.Get(ReferralCalculateTimesCache);
+        var referralTimes = await _cacheProvider.Get(ReferralCalculateTimesCache);
         if (!referralTimes.HasValue)
         {
-            //_activityDateRangeOptions.ActivityDateRanges.TryGetValue(ActivityEnums.Invition.ToString(),out var dateRange);
             startTime = StringToTimeStamp(CommonConstant.DefaultReferralActivityStartTime);
         }
         else
         {
             startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 30000;
         }
-        
+
         var endTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        
+
         var indexerReferralInfo =
             await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(),
                 new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
@@ -175,82 +206,95 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
                 score + 1);
         }
+
         var expire = TimeSpan.FromDays(ExpireTime);
         await _cacheProvider.Set(ReferralCalculateTimesCache, "Init", expire);
     }
 
 
-    public async Task InitReferralRankAsync()
-    {
-        var expire = TimeSpan.FromHours(ExpireTime);
-        var initTimes = await _cacheProvider.Get(InitReferralTimesCache);
-        if (initTimes.HasValue)
-        {
-            return;
-        }
-
-        var skip = 0;
-        var limit = 100;
-        var count = 0;
-        while (true)
-        {
-            var growthInfos = await _growthProvider.GetAllGrowthInfosAsync(skip, limit);
-            if (growthInfos.IsNullOrEmpty())
-            {
-                break;
-            }
-
-            foreach (var growthInfo in growthInfos)
-            {
-                var indexerReferralInfo =
-                    await _growthProvider.GetReferralInfoAsync(new List<string>(),
-                        new List<string> { growthInfo.InviteCode },
-                        new List<string> { MethodName.CreateCAHolder }, 0, 0);
-                if (indexerReferralInfo.ReferralInfo.IsNullOrEmpty() || indexerReferralInfo.ReferralInfo.Count == 0)
-                {
-                    _logger.LogDebug("Current CaHash is {caHash} have no invite user.", growthInfo.CaHash);
-                    continue;
-                }
-
-                var caHolderInfo =
-                    await _activityProvider.GetCaHolderInfoAsync(new List<string>(), growthInfo.CaHash);
-                foreach (var referralRecordIndex in indexerReferralInfo.ReferralInfo.Select(referralInfo =>
-                             new ReferralRecordIndex
-                             {
-                                 CaHash = referralInfo.CaHash,
-                                 ReferralCode = growthInfo.InviteCode,
-                                 IsDirectlyInvite = 0,
-                                 ReferralDate = UnixTimeStampToDateTime(referralInfo.Timestamp),
-                                 ReferralCaHash = growthInfo.CaHash,
-                                 ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
-                             }))
-                {
-                    _logger.LogDebug("Insert Referral detail is {detail}",
-                        JsonConvert.SerializeObject(referralRecordIndex));
-                    var success = await _growthProvider.AddReferralRecordAsync(referralRecordIndex);
-                    if (success)
-                    {
-                        _logger.LogDebug("Begin Redis add score,key is {address}",
-                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                        await _cacheProvider.AddScoreAsync(CommonConstant.ReferralKey,
-                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
-                            indexerReferralInfo.ReferralInfo.Count);
-                    }
-
-                    skip += limit;
-                    count += growthInfos.Count;
-                }
-            }
-        }
-
-        await _cacheProvider.Increase(InitReferralTimesCache, 1, expire);
-    }
-
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
         var hasNext = true;
-        var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.ReferralKey);
-        var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, input.Skip + input.Limit - 1);
+        var list = new List<ReferralRecordsRankDetail>();
+        switch (input.Activity)
+        {
+            case ActivityEnums.Invitation:
+                list = await BuildInvitationRankAsync(input, true, list);
+                break;
+            case ActivityEnums.Hamster:
+                list = await BuildHamsterRankAsync(input, true, list);
+                break;
+            default:
+                throw new UserFriendlyException("Invalidate Activity.");
+        }
+
+        var currentUserReferralInfo = new ReferralRecordsRankDetail();
+        if (CurrentUser.Id.HasValue)
+        {
+            var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+            var caHolderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHolder.CaHash);
+            var currentCaHolder = await _activityProvider.GetCaHolderAsync(caHolder.CaHash);
+            _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
+            var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+            if (currentRank == -1)
+            {
+                currentUserReferralInfo.Rank = 0;
+                currentUserReferralInfo.ReferralTotalCount = 0;
+                currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+                currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
+                currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
+            }
+            else
+            {
+                List<double> scoreList;
+                var currentReferralCount = 0d;
+                switch (input.Activity)
+                {
+                    case ActivityEnums.Invitation:
+                        var sortedEntries =
+                            await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, currentRank + 1);
+                        scoreList = sortedEntries.Select(t => t.Score).ToList();
+                        currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
+                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                        break;
+                    case ActivityEnums.Hamster:
+                        var hamsterSortedEntries =
+                            await _cacheProvider.GetTopAsync(CommonConstant.HamsterRankKey, 0, currentRank + 1);
+                        scoreList = hamsterSortedEntries.Select(t => t.Score).ToList();
+                        currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.HamsterRankKey,
+                            caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+                        break;
+                    default:
+                        throw new UserFriendlyException("Invalidate Activity.");
+                }
+
+                scoreList.Sort();
+                scoreList.Reverse();
+                currentUserReferralInfo.Rank = scoreList.IndexOf(currentReferralCount) + 1;
+                currentUserReferralInfo.ReferralTotalCount = Convert.ToInt16(currentReferralCount);
+                currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+                currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
+                currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
+            }
+        }
+
+        var referralRecordRank = new ReferralRecordsRankResponseDto
+        {
+            HasNext = hasNext,
+            ReferralRecordsRank = list,
+            CurrentUserReferralRecordsRankDetail = currentUserReferralInfo,
+            Invitations = _hamsterOptions.Invitations
+        };
+        return referralRecordRank;
+    }
+
+    private async Task<List<ReferralRecordsRankDetail>> BuildHamsterRankAsync(ReferralRecordRankRequestDto input,
+        bool hasNext, List<ReferralRecordsRankDetail> list)
+    {
+        var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.HamsterRankKey);
+        var entries = await _cacheProvider.GetTopAsync(CommonConstant.HamsterRankKey, 0, input.Skip + input.Limit - 1);
         if (length <= input.Skip + input.Limit)
         {
             hasNext = false;
@@ -260,7 +304,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         scores.Sort();
         scores.Reverse();
         var skipList = entries.Skip(input.Skip).Take(input.Limit).ToArray();
-        var list = new List<ReferralRecordsRankDetail>();
+
 
         foreach (var entry in skipList)
         {
@@ -289,49 +333,214 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             list.Add(referralRecordsRankDetail);
         }
 
-        var currentUserReferralInfo = new ReferralRecordsRankDetail();
-        if (CurrentUser.Id.HasValue)
+        return list;
+    }
+
+    private async Task<List<ReferralRecordsRankDetail>> BuildInvitationRankAsync(ReferralRecordRankRequestDto input,
+        bool hasNext, List<ReferralRecordsRankDetail> list)
+    {
+        var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.ReferralKey);
+        var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, input.Skip + input.Limit - 1);
+        if (length <= input.Skip + input.Limit)
         {
-            var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-            var caHolderInfo =
-                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHolder.CaHash);
-            var currentCaHolder = await _activityProvider.GetCaHolderAsync(caHolder.CaHash);
-            _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
-            var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
-                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-            if (currentRank == -1)
-            {
-                currentUserReferralInfo.Rank = 0;
-                currentUserReferralInfo.ReferralTotalCount = 0;
-                currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
-                currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
-                currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
-            }
-            else
-            {
-                var sortedEntries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, currentRank + 1);
-                var scoreList = sortedEntries.Select(t => t.Score).ToList();
-                scoreList.Sort();
-                scoreList.Reverse();
-                var currentReferralCount = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey,
-                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
-                currentUserReferralInfo.Rank = scoreList.IndexOf(currentReferralCount) + 1;
-                currentUserReferralInfo.ReferralTotalCount = Convert.ToInt16(currentReferralCount);
-                currentUserReferralInfo.CaAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
-                currentUserReferralInfo.Avatar = currentCaHolder != null ? currentCaHolder.Avatar : "";
-                currentUserReferralInfo.WalletName = currentCaHolder != null ? currentCaHolder.NickName : "";
-            }
+            hasNext = false;
         }
 
-        var referralRecordRank = new ReferralRecordsRankResponseDto
+        var scores = entries.Select(t => t.Score).ToList();
+        scores.Sort();
+        scores.Reverse();
+        var skipList = entries.Skip(input.Skip).Take(input.Limit).ToArray();
+
+
+        foreach (var entry in skipList)
         {
-            HasNext = hasNext,
-            ReferralRecordsRank = list,
-            CurrentUserReferralRecordsRankDetail = currentUserReferralInfo
-        };
-        return referralRecordRank;
-        //return new ReferralRecordsRankResponseDto();
+            var caAddress = entry.Element;
+            var holderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string> { caAddress }, null);
+            var caHash = holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash;
+            var caHolder = await _activityProvider.GetCaHolderAsync(caHash);
+            _logger.LogDebug("Get caHolder is {caHolder},caAddress is {address},caHash is {caHash}",
+                JsonConvert.SerializeObject(caHolder), caAddress, caHash);
+            var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey, entry.Element);
+            if (scores.IndexOf(score) + 1 > RankLimit)
+            {
+                hasNext = false;
+                break;
+            }
+
+            var referralRecordsRankDetail = new ReferralRecordsRankDetail
+            {
+                Rank = scores.IndexOf(score) + 1,
+                CaAddress = entry.Element,
+                ReferralTotalCount = Convert.ToInt16(entry.Score),
+                Avatar = caHolder != null ? caHolder.Avatar : "",
+                WalletName = caHolder != null ? caHolder.NickName : ""
+            };
+            list.Add(referralRecordsRankDetail);
+        }
+
+        return list;
     }
+
+    public async Task CalculateHamsterDataAsync()
+    {
+        var details = GetActivityConfig(ActivityEnums.Hamster);
+        var startTime = Convert.ToDateTime(details.StartDate);
+        var endTime = DateTime.UtcNow;
+        if (new DateTimeOffset(endTime).ToUnixTimeSeconds() >
+            new DateTimeOffset(Convert.ToDateTime(details.EndDate)).ToUnixTimeSeconds())
+        {
+            _logger.LogDebug("Current activity has been ended.");
+            return;
+        }
+
+        var referralRecordList =
+            await _growthProvider.GetReferralRecordListAsync(null, null, 0, Int16.MaxValue, startTime, endTime,
+                new List<int> { 0 });
+
+        if (referralRecordList == null)
+        {
+            _logger.LogDebug("Hamster Referral data from ES is null.");
+            return;
+        }
+
+        foreach (var index in referralRecordList)
+        {
+            _logger.LogDebug("Hamster Referral data query from ES : {index}", JsonConvert.SerializeObject(index));
+        }
+        
+        var recordDic =
+            referralRecordList.GroupBy(t => t.ReferralCaHash).ToDictionary(t => t.Key, k => k.ToList());
+        foreach (var caHash in recordDic.Keys)
+        {
+            var referralRecords = recordDic[caHash];
+            var addresses = referralRecords.Select(t => t.ReferralAddress).ToList();
+            var dic = referralRecords.ToDictionary(t => t.ReferralAddress, t => t);
+            var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+            // var result = hamsterScoreList.Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
+            // var caHolderInfo =
+            //     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
+            //         caHash);
+            // await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
+            //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
+            // foreach (var hamster in result)
+            // {
+            //     var record =
+            //         await _growthProvider.GetReferralRecordListAsync(dic[hamster.CaAddress].CaHash, caHash, 0,
+            //             1,
+            //             new DateTime(), new DateTime(), new List<int> { 1 });
+            //     if (!record.IsNullOrEmpty())
+            //     {
+            //         continue;
+            //     }
+            //
+            //     var index = new ReferralRecordIndex
+            //     {
+            //         CaHash = dic[hamster.CaAddress].CaHash,
+            //         ReferralCode = dic[hamster.CaAddress].ReferralCode,
+            //         IsDirectlyInvite = 0,
+            //         ReferralCaHash = dic[hamster.CaAddress].ReferralCaHash,
+            //         ReferralDate = DateTime.UtcNow,
+            //         ReferralAddress = hamster.CaAddress,
+            //         ReferralType = 1
+            //     };
+            //     await _growthProvider.AddReferralRecordAsync(index);
+            // }
+        }
+    }
+
+    public async Task<RewardProgressResponseDto> GetRewardProgressAsync(ActivityEnums activityEnum)
+    {
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new AbpAuthorizationException("Unauthorized.");
+        }
+
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        var details = GetActivityDetails(activityEnum);
+        var data = new RewardProgressResponseDto();
+        switch (activityEnum)
+        {
+            case ActivityEnums.Invitation:
+                var invitationCount = await GetReferralTotalCountAsync(new ReferralRecordRequestDto());
+                var invitationDto = new InvitationRewardProgressDto
+                {
+                    SignUpCount = invitationCount
+                };
+                var progressList = ModelToDictionary(invitationDto);
+                data.Data = progressList;
+                return data;
+            case ActivityEnums.Hamster:
+            {
+                HamsterRewardProgressDto hamsterProgress;
+                var reward = "";
+                var indexes = await GetHamsterSignUpCount(caHolder.CaHash, details.StartDate, details.EndDate);
+                if (indexes.Count == 0)
+                {
+                    hamsterProgress = new HamsterRewardProgressDto
+                    {
+                        SignUpCount = 0,
+                        HamsterCount = 0,
+                    };
+                    reward = 0 + " ELF";
+                }
+                else
+                {
+                    var referralRecordList =
+                        await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0, Int16.MaxValue,
+                            Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
+                            new List<int> { 1 });
+                    hamsterProgress = new HamsterRewardProgressDto()
+                    {
+                        SignUpCount = indexes.Count,
+                        HamsterCount = referralRecordList.Count,
+                    };
+                    reward = referralRecordList.Count * _hamsterOptions.HamsterReward + " ELF";
+                }
+
+                var list = ModelToDictionary(hamsterProgress);
+                data.Data = list;
+                data.RewardProcessCount = reward;
+                return data;
+            }
+            default:
+                throw new UserFriendlyException("Invalidate Activity");
+        }
+    }
+
+    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus status)
+    {
+        _beInvitedConfigOptions.BeInvitedConfig.TryGetValue(status.ToString(), out var config);
+        if (config == null)
+        {
+            return new BeInvitedConfigResponseDto();
+        }
+
+        var response = ObjectMapper.Map<BeInvitedConfig, BeInvitedConfigResponseDto>(config);
+        response.TaskConfigs = ObjectMapper.Map<List<TaskConfigInfo>, List<TaskConfig>>(config.TaskConfigInfos);
+        response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config.NoticeInfo);
+        return response;
+    }
+
+    private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)
+    {
+        _activityConfigOptions.ActivityConfigMap.TryGetValue(activityEnum.ToString(), out var config);
+        return config != null ? config.ActivityConfig : new ActivityConfig();
+    }
+
+    private async Task<List<ReferralRecordIndex>> GetHamsterSignUpCount(string caHash, string startDate, string endDate)
+    {
+        var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHash, 0,
+            Int16.MaxValue, Convert.ToDateTime(startDate), Convert.ToDateTime(endDate), new List<int> { 0 });
+        return growthInfo;
+    }
+
+    private ActivityConfig GetActivityConfig(ActivityEnums activityEnum)
+    {
+        _activityConfigOptions.ActivityConfigMap.TryGetValue(activityEnum.ToString(), out var config);
+        return config != null ? config.ActivityConfig : new ActivityConfig();
+    }
+
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
@@ -503,5 +712,38 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         var dateTime = DateTime.Parse(dateString);
         return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+    }
+
+    private static List<Dictionary<Tkey, Value>> ModelToDictionary(object obj)
+    {
+        var list = new List<Dictionary<Tkey, Value>>();
+        if (obj == null)
+        {
+            throw new ArgumentNullException(nameof(obj));
+        }
+
+        var modelToDic = obj.GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .ToDictionary(
+                prop => prop.Name,
+                prop => prop.GetValue(obj, null)
+            );
+
+        foreach (var model in modelToDic.Keys)
+        {
+            var dic = new Dictionary<Tkey, Value>();
+            var key = new Tkey
+            {
+                Name = model
+            };
+            var value = new Value
+            {
+                Count = modelToDic[model].ToString()
+            };
+            dic.Add(key, value);
+            list.Add(dic);
+        }
+
+        return list;
     }
 }

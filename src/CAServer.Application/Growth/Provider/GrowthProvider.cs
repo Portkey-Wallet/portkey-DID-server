@@ -5,7 +5,11 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Growth.Dtos;
+using CAServer.Options;
 using GraphQL;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
+using Microsoft.Extensions.Options;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
@@ -23,9 +27,10 @@ public interface IGrowthProvider
     Task<List<GrowthIndex>> GetAllGrowthInfosAsync(int skip, int limit);
 
     Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash, int skip,
-        int limit);
+        int limit, DateTime startDate, DateTime endDate, List<int> referralTypes);
 
     Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
+    Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime);
 }
 
 public class GrowthProvider : IGrowthProvider, ISingletonDependency
@@ -34,13 +39,15 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     private readonly INESTRepository<ReferralRecordIndex, string> _referralRecordRepository;
 
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly HamsterOptions _hamsterOptions;
 
     public GrowthProvider(INESTRepository<GrowthIndex, string> growthRepository, IGraphQLHelper graphQlHelper,
-        INESTRepository<ReferralRecordIndex, string> referralRecordRepository)
+        INESTRepository<ReferralRecordIndex, string> referralRecordRepository, IOptionsSnapshot<HamsterOptions> hamsterOptions)
     {
         _growthRepository = growthRepository;
         _graphQlHelper = graphQlHelper;
         _referralRecordRepository = referralRecordRepository;
+        _hamsterOptions = hamsterOptions.Value;
     }
 
     public async Task<GrowthIndex> GetGrowthInfoByLinkCodeAsync(string shortLinkCode)
@@ -111,7 +118,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     }
 
     public async Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash,
-        int skip, int limit)
+        int skip, int limit, DateTime startDate, DateTime endDate,List<int> referralTypes)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ReferralRecordIndex>, QueryContainer>>();
 
@@ -125,6 +132,21 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralCaHash).Terms(referralCaHash)));
         }
 
+        if (referralTypes != null)
+        {
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
+        }
+
+        if (startDate != new DateTime())
+        {
+            mustQuery.Add(q => q.Range(i => i.Field(f => f.ReferralDate).GreaterThanOrEquals(((DateTimeOffset)startDate).ToUnixTimeSeconds())));
+        }
+        
+        if (endDate != new DateTime())
+        {
+            mustQuery.Add(q => q.Range(i => i.Field(f => f.ReferralDate).LessThanOrEquals(((DateTimeOffset)endDate).ToUnixTimeSeconds())));
+        }
+
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (total, data) = await _referralRecordRepository.GetListAsync(Filter, sortExp: k => k.ReferralDate,
             sortType: SortOrder.Descending, skip: skip, limit: limit);
@@ -133,14 +155,35 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
     public async Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex)
     {
-        var record=
-            await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1);
+        var record =
+            await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1,
+                new DateTime(), new DateTime(), new List<int>{0});
         if (!record.IsNullOrEmpty())
         {
             return false;
         }
+
         await _referralRecordRepository.AddAsync(referralRecordIndex);
         return true;
+    }
 
+    public async Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime)
+    {
+        var graphQlClient = new GraphQLHttpClient(_hamsterOptions.HamsterEndPoints,
+            new NewtonsoftJsonSerializer());
+        var sendQueryAsync = await graphQlClient.SendQueryAsync<List<HamsterScoreDto>>(new GraphQLRequest
+        {
+            Query = @"
+			      query($caHashes:[String],$referralCodes:[String],$methodNames:[String],$startTime:Long!,$endTime:Long!) {
+              referralInfo(dto: {caHashes:$caHashes,referralCodes:$referralCodes,methodNames:$methodNames,startTime:$startTime,endTime:$endTime}){
+                     caHash,referralCode,projectCode,methodName,timestamp}
+                }",
+            Variables = new
+            {
+                addresses, startTime, endTime
+            }
+
+        });
+        return sendQueryAsync.Data;
     }
 }
