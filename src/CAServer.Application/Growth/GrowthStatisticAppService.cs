@@ -395,21 +395,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             return;
         }
 
-        if (endTime > Convert.ToDateTime(details.EndDate))
-        {
-            _logger.LogDebug("Current activity has been ended.");
-            return;
-        }
-
         var referralRecordList =
             await _growthProvider.GetReferralRecordListAsync(null, null, 0, Int16.MaxValue, startTime, endTime,
                 new List<int> { 0 });
-
+        
         if (referralRecordList == null || referralRecordList.Count == 0)
         {
             _logger.LogDebug("Hamster Referral data from ES is null.");
             return;
         }
+        foreach (var index in referralRecordList)
+        {
+            _logger.LogDebug("Get from Es index is {index}",JsonConvert.SerializeObject(index));
+        }
+   
 
         var recordGroup =
             referralRecordList.GroupBy(t => t.ReferralCaHash);
