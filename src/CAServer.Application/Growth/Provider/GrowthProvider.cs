@@ -137,7 +137,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         if (!referralTypes.IsNullOrEmpty())
         {
-            //mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
         }
 
         if (startDate != null)
