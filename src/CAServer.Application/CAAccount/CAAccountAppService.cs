@@ -112,23 +112,15 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     {
         //just deal with google guardian, todo apple send the user extra info event
         _logger.LogInformation("RegisterRequest started.......................");
-        if (input.ZkLoginInfo != null && _zkLoginProvider.CanExecuteZk(input.Type, input.ZkLoginInfo))
-        {
-            await _zkLoginProvider.GenerateGuardianAndUserInfoAsync(input.Type, input.AccessToken, input.LoginGuardianIdentifier, 
-                input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Salt, input.ChainId, input.VerifierId);
-        }
+        // if (input.ZkLoginInfo != null && _zkLoginProvider.CanExecuteZk(input.Type, input.ZkLoginInfo))
+        // {
+        //     await _zkLoginProvider.GenerateGuardianAndUserInfoAsync(input.Type, input.AccessToken, input.LoginGuardianIdentifier, 
+        //         input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Salt, input.ChainId, input.VerifierId);
+        // }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
-        //todo remove the if condition before online
-        if (input.ZkLoginInfo != null)
-        {
-            registerDto.GuardianInfo.IdentifierHash = input.ZkLoginInfo.IdentifierHash;
-        }
-        else
-        {
-            registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
-        }
+        registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
         SetZkLoginParams(input, registerDto);
 
         _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
@@ -256,16 +248,10 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                              JsonConvert.SerializeObject(guardianGrainDto));
         }
 
-        // var dic = input.GuardiansApproved.ToDictionary(k => k.VerificationDoc, v => v.Identifier);
         recoveryDto.GuardianApproved?.ForEach(t =>
         {
-            // if (dic.TryGetValue(t.VerificationInfo.VerificationDoc, out var identifier) &&
-            //     !string.IsNullOrWhiteSpace(identifier))
-            // {
-            
             var guardianGrain = GetGuardian(t.IdentifierHash);
             t.IdentifierHash = guardianGrain.IdentifierHash;
-            // }
         });
         
         _logger.LogInformation($"recover dto :{JsonConvert.SerializeObject(recoveryDto)}");
