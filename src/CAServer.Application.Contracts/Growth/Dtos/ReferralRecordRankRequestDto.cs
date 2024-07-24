@@ -5,7 +5,7 @@ namespace CAServer.Growth.Dtos;
 
 public class ReferralRecordRankRequestDto
 {
-    public ActivityEnums Activity { get; set; }
+    public ActivityEnums ActivityEnums { get; set; }
 
     public ActivityCycleEnums ActivityCycle { get; set; }
 

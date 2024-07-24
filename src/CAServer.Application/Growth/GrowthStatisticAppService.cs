@@ -216,7 +216,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         var hasNext = true;
         var list = new List<ReferralRecordsRankDetail>();
-        switch (input.Activity)
+        switch (input.ActivityEnums)
         {
             case ActivityEnums.Invitation:
                 list = await BuildInvitationRankAsync(input, true, list);
@@ -250,7 +250,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 List<double> scoreList;
                 var currentReferralCount = 0d;
-                switch (input.Activity)
+                switch (input.ActivityEnums)
                 {
                     case ActivityEnums.Invitation:
                         var sortedEntries =

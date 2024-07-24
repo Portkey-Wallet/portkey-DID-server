@@ -67,21 +67,21 @@ public class GrowthController : CAServerController
     }
     
     [HttpGet("activityDetails")]
-    public async Task<ActivityDetailsResponseDto> GetActivityDetails(ActivityEnums activityEnum)
+    public async Task<ActivityDetailsResponseDto> GetActivityDetails(ActivityEnums activityEnums)
     {
-        return await _growthAppService.GetActivityDetailsAsync(activityEnum);
+        return await _growthAppService.GetActivityDetailsAsync(activityEnums);
     }
     
     [HttpGet("RewardProgress")]
-    public async Task<RewardProgressResponseDto> GetRewardProgress(ActivityEnums activityEnum)
+    public async Task<RewardProgressResponseDto> GetRewardProgress(ActivityEnums activityEnums)
     {
-        return await _statisticAppService.GetRewardProgressAsync(activityEnum);
+        return await _statisticAppService.GetRewardProgressAsync(activityEnums);
     }
 
     [HttpGet("BeInvitedConfigs")]
-    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus status)
+    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus referralTaskStatus)
     {
-        return await _statisticAppService.GetBeInvitedConfigAsync(status);
+        return await _statisticAppService.GetBeInvitedConfigAsync(referralTaskStatus);
     }
 
 
