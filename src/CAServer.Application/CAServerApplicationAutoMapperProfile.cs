@@ -106,6 +106,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 {
     public CAServerApplicationAutoMapperProfile()
     {
+        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
         CreateMap<UserTokenGrainDto, UserTokenEto>();
         CreateMap<UserTokenGrainDto, UserTokenDeleteEto>();
         CreateMap<UserTokenGrainDto, UserTokenDto>();

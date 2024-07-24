@@ -149,6 +149,49 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    public async Task<bool> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
+    {
+        var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
+        if (GuardianIdentifierType.Google.Equals(requestDto.Type))
+        {
+            try
+            {
+                await VerifyGoogleTokenAsync(verifyTokenRequestDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "VerifyGoogleTokenAsync error");
+                return false;
+            }
+        }
+        if (GuardianIdentifierType.Apple.Equals(requestDto.Type))
+        {
+            try
+            {
+                await VerifyAppleTokenAsync(verifyTokenRequestDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "VerifyAppleTokenAsync error");
+                return false;
+            }
+        }
+        if (GuardianIdentifierType.Facebook.Equals(requestDto.Type))
+        {
+            try
+            {
+                await VerifyFacebookTokenAsync(verifyTokenRequestDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "VerifyFacebookTokenAsync error");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
         try
