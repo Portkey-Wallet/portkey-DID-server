@@ -741,9 +741,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
     }
 
-    private static List<Dictionary<string, string>> ModelToDictionary(object obj)
+    private static List<ReferralCountDto> ModelToDictionary(object obj)
     {
-        var list = new List<Dictionary<string, string>>();
+        var list = new List<ReferralCountDto>();
         if (obj == null)
         {
             throw new ArgumentNullException(nameof(obj));
@@ -758,10 +758,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         foreach (var model in modelToDic.Keys)
         {
-            var dic = new Dictionary<string, string>();
-        
-            dic.Add(model, modelToDic[model].ToString());
-            list.Add(dic);
+            var result = new ReferralCountDto()
+            {
+                ActivityName = model,
+                ReferralCount = modelToDic[model].ToString()
+            };
+            list.Add(result);
         }
 
         return list;

@@ -5,10 +5,17 @@ namespace CAServer.Growth.Dtos;
 public class RewardProgressResponseDto
 {
 
-    public List<Dictionary<string, string>> Data { get; set; }
+    public List<ReferralCountDto> Data { get; set; }
 
     public string RewardProcessCount { get; set; }
 
+}
+
+public class ReferralCountDto
+{
+    public string ActivityName { get; set; }
+    
+    public string ReferralCount{get; set; }
 }
 
 
