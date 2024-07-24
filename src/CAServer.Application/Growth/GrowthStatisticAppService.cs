@@ -398,36 +398,46 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var referralRecordList =
             await _growthProvider.GetReferralRecordListAsync(null, null, 0, Int16.MaxValue, startTime, endTime,
                 new List<int> { 0 });
-        
-        if (referralRecordList == null || referralRecordList.Count == 0)
+        var list = referralRecordList.Where(t => t.ReferralType == 0).ToList();
+        if (list.IsNullOrEmpty() || list.Count == 0)
         {
             _logger.LogDebug("Hamster Referral data from ES is null.");
             return;
         }
-        foreach (var index in referralRecordList)
+
+        foreach (var index in list)
         {
-            _logger.LogDebug("Get from Es index is {index}",JsonConvert.SerializeObject(index));
+            _logger.LogDebug("Get from Es index is {index}", JsonConvert.SerializeObject(index));
         }
-   
+
 
         var recordGroup =
-            referralRecordList.GroupBy(t => t.ReferralCaHash);
+            list.GroupBy(t => t.ReferralCaHash);
         foreach (var group in recordGroup)
         {
             var hamsterReferralInfo = new Dictionary<string, string>();
             var referralRecords = group.ToList();
             foreach (var index in referralRecords)
             {
-                _logger.LogDebug("index is {index}",JsonConvert.SerializeObject(index));
+                _logger.LogDebug("index is {index}", JsonConvert.SerializeObject(index));
             }
-            
-            var hamsterReferralDic = referralRecordList.ToDictionary(t => t.CaHash, k => k);
+
+            var hamsterReferralDic = referralRecords.ToDictionary(t => t.CaHash, k => k);
             var caHash = group.Key;
             var addresses = await GetHamsterReferralAddressAsync(referralRecords, hamsterReferralInfo);
+            var result = new List<HamsterScoreDto>();
+            for (var i = 0; i < addresses.Count; i += 50)
+            {
+                var queryList = addresses.GetRange(i, Math.Min(50, list.Count - i));
+                var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(queryList, startTime, endTime);
+                var scoreResult = hamsterScoreList.GetScoreInfos
+                    .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
+                if (!scoreResult.IsNullOrEmpty())
+                {
+                    result.AddRange(scoreResult);
+                }
+            }
 
-            var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
-            var result = hamsterScoreList.GetScoreInfos
-                .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             if (result.IsNullOrEmpty())
             {
                 _logger.LogDebug("No scores over limit.");
@@ -446,7 +456,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     await _growthProvider.GetReferralRecordListAsync(hamsterReferralInfo[hamster.CaAddress], caHash, 0,
                         1,
                         null, null, new List<int> { 1 });
-                if (!record.IsNullOrEmpty())
+                var referralRecordIndices = record.Where(t=>t.ReferralType == 1).ToList();
+                if (!referralRecordIndices.IsNullOrEmpty())
                 {
                     continue;
                 }
@@ -480,6 +491,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 continue;
             }
+
             var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
             addresses.Add(formatAddress);
             userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
