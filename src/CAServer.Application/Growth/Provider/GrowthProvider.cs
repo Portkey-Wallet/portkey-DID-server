@@ -134,17 +134,17 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         if (referralTypes != null)
         {
-            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
+            //mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
         }
 
         if (startDate != new DateTime())
         {
-            //mustQuery.Add(q => q.Range(i => i.Field(f => f.ReferralDate).GreaterThanOrEquals(((DateTimeOffset)startDate).ToUnixTimeSeconds())));
+            //mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).GreaterThanOrEquals(startDate)));
         }
         
         if (endDate != new DateTime())
         {
-            //mustQuery.Add(q => q.Range(i => i.Field(f => f.ReferralDate).LessThanOrEquals(((DateTimeOffset)endDate).ToUnixTimeSeconds())));
+            //mustQuery.Add(q => q.DateRange(i => i.Field(f => f.ReferralDate).LessThanOrEquals(endDate)));
         }
 
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));

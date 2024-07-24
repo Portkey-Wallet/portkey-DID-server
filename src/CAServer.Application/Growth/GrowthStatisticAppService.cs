@@ -398,7 +398,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             await _growthProvider.GetReferralRecordListAsync(null, null, 0, Int16.MaxValue, startTime, endTime,
                 new List<int> { 0 });
 
-        if (referralRecordList == null)
+        if (referralRecordList == null || referralRecordList.Count == 0)
         {
             _logger.LogDebug("Hamster Referral data from ES is null.");
             return;
