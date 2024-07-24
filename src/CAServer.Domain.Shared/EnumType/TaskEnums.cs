@@ -1,7 +1,7 @@
 namespace CAServer.EnumType;
 
-public enum ActivityEnums
+public enum TaskEnums
 {
-    Invitation = 1,
+    Register = 1,
     Hamster = 2
 }

@@ -40,6 +40,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.Growth.Dtos;
 using CAServer.Growth.Etos;
 using CAServer.Guardian;
 using CAServer.Hubs;
@@ -945,6 +946,13 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
+        CreateMap<ActivityConfig, ActivityConfigDto>();
+        CreateMap<RulesConfig, RulesConfigDto>();
+        CreateMap<BeInvitedConfig, BeInvitedConfigResponseDto>();
+        CreateMap<TaskConfigInfo, TaskConfig>();
+        CreateMap<NoticeInfo, Notice>();
+        
+        
         CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
         CreateMap<FreeMintIndex, GetItemInfoDto>();
     }

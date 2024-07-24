@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Growth.Dtos;
 using Volo.Abp.Application.Services;
 
 namespace CAServer.Hubs;
@@ -17,4 +19,6 @@ public interface IHubService : IApplicationService
     Task RequestAchTxAddressAsync(string targetClientId, string orderId);
     Task RequestNFTOrderStatusAsync(string clientId, string orderId);
     Task RequestRampOrderStatus(string clientId, string orderId);
+    Task<ReferralRecordResponseDto> ReferralRecordListAsync(ReferralRecordRequestDto input, string targetClientId);
+    Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input, string targetClientId);
 }
