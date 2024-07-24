@@ -2,6 +2,7 @@ using CAServer.Commons;
 using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
 using CAServer.Grains.State.FreeMint;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp.ObjectMapping;
 
@@ -10,10 +11,12 @@ namespace CAServer.Grains.Grain.FreeMint;
 public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
 {
     private readonly IObjectMapper _objectMapper;
+    private readonly FreeMintGrainOptions _freeMintOptions;
 
-    public FreeMintGrain(IObjectMapper objectMapper)
+    public FreeMintGrain(IObjectMapper objectMapper, IOptions<FreeMintGrainOptions> freeMintOptions)
     {
         _objectMapper = objectMapper;
+        _freeMintOptions = freeMintOptions.Value;
     }
 
     public override async Task OnActivateAsync()
@@ -236,7 +239,7 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
             return false;
         }
 
-        return mintInfos.Count >= 5;
+        return mintInfos.Count >= _freeMintOptions.LimitCount;
     }
 
     private string GetDateKey() => DateTime.UtcNow.ToString("yyyyMMdd");
