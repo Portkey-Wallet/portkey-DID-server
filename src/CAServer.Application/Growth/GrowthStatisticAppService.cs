@@ -410,12 +410,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             var referralRecords = group.ToList();
             var caHash = group.Key;
-            var addresses = await GetHamsterReferralAddressAsync(referralRecords);
-            foreach (var address in addresses)
+            //var addresses = await GetHamsterReferralAddressAsync(referralRecords);
+            var addresses = new List<string>()
             {
-                _logger.LogDebug("Address is {address}", address);
-            }
+                "ELF_21P56XMWj6AB4zKtkUfXG3WM3Xrhqf6FBNnkkUzqTN17eRYu2t_tDVW"
+            };
             var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+            foreach (var dto in hamsterScoreList)
+            {
+                _logger.LogDebug("Query from hamster result is {result}",JsonConvert.SerializeObject(dto));
+            }
             
             // var result = hamsterScoreList.Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             // var caHolderInfo =
