@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
@@ -174,6 +175,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     public async Task<List<HamsterScoreDto>> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,
         DateTime endTime)
     {
+        
         var graphQlClient = new GraphQLHttpClient(_hamsterOptions.HamsterEndPoints,
             new NewtonsoftJsonSerializer());
         var sendQueryAsync = await graphQlClient.SendQueryAsync<List<HamsterScoreDto>>(new GraphQLRequest
@@ -188,6 +190,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
                 caAddressList, beginTime, endTime
             }
         });
+        
         return sendQueryAsync.Data;
     }
     

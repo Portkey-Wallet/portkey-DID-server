@@ -72,7 +72,7 @@ public class GrowthController : CAServerController
         return await _growthAppService.GetActivityDetailsAsync(activityEnum);
     }
     
-    [HttpGet("RewardProgress"),Authorize]
+    [HttpGet("RewardProgress")]
     public async Task<RewardProgressResponseDto> GetRewardProgress(ActivityEnums activityEnum)
     {
         return await _statisticAppService.GetRewardProgressAsync(activityEnum);

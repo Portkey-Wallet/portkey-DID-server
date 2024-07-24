@@ -470,6 +470,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<RewardProgressResponseDto> GetRewardProgressAsync(ActivityEnums activityEnum)
     {
+
+        // var config = GetActivityDetails(activityEnum);
+        // var addresses = new List<string>()
+        // {
+        //     "ELF_21P56XMWj6AB4zKtkUfXG3WM3Xrhqf6FBNnkkUzqTN17eRYu2t_tDVW"
+        // };
+        // var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, Convert.ToDateTime(config.StartDate), Convert.ToDateTime(config.EndDate));
         if (!CurrentUser.Id.HasValue)
         {
             throw new AbpAuthorizationException("Unauthorized.");
@@ -488,6 +495,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 };
                 var progressList = ModelToDictionary(invitationDto);
                 data.Data = progressList;
+                data.RewardProcessCount = "";
                 return data;
             case ActivityEnums.Hamster:
             {
@@ -733,9 +741,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
     }
 
-    private static List<Dictionary<Tkey, Value>> ModelToDictionary(object obj)
+    private static List<Dictionary<string, string>> ModelToDictionary(object obj)
     {
-        var list = new List<Dictionary<Tkey, Value>>();
+        var list = new List<Dictionary<string, string>>();
         if (obj == null)
         {
             throw new ArgumentNullException(nameof(obj));
@@ -750,16 +758,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         foreach (var model in modelToDic.Keys)
         {
-            var dic = new Dictionary<Tkey, Value>();
-            var key = new Tkey
-            {
-                Name = model
-            };
-            var value = new Value
-            {
-                Count = modelToDic[model].ToString()
-            };
-            dic.Add(key, value);
+            var dic = new Dictionary<string, string>();
+        
+            dic.Add(model, modelToDic[model].ToString());
             list.Add(dic);
         }
 
