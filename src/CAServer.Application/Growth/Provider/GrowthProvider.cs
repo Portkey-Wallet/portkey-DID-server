@@ -142,15 +142,15 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         if (startDate != null)
         {
-            // mustQuery.Add(q =>
-            //     q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
+            mustQuery.Add(q =>
+                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
         }
 
         if (endDate != null)
         {
-        //     mustQuery.Add(q =>
-        //         q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").LessThanOrEquals(endDate)));
-         }
+            mustQuery.Add(q =>
+                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").LessThanOrEquals(endDate)));
+        }
 
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (total, data) = await _referralRecordRepository.GetListAsync(Filter, sortExp: k => k.ReferralDate,
@@ -189,8 +189,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
                 caAddressList, beginTime, endTime
             }
         });
-        
+
         return sendQueryAsync.Data;
     }
-    
 }
