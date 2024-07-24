@@ -149,6 +149,49 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    public async Task<bool> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
+    {
+        var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
+        if (GuardianIdentifierType.Google.Equals(requestDto.Type))
+        {
+            try
+            {
+                await VerifyGoogleTokenAsync(verifyTokenRequestDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "VerifyGoogleTokenAsync error");
+                return false;
+            }
+        }
+        if (GuardianIdentifierType.Apple.Equals(requestDto.Type))
+        {
+            try
+            {
+                await VerifyAppleTokenAsync(verifyTokenRequestDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "VerifyAppleTokenAsync error");
+                return false;
+            }
+        }
+        if (GuardianIdentifierType.Facebook.Equals(requestDto.Type))
+        {
+            try
+            {
+                await VerifyFacebookTokenAsync(verifyTokenRequestDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "VerifyFacebookTokenAsync error");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
         try
@@ -167,7 +210,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
             }
-
+            _logger.LogInformation("send Dtos.UserExtraInfo of Google:{0}", JsonConvert.SerializeObject(response.Data.GoogleUserExtraInfo));
             await AddUserInfoAsync(
                 ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
 
@@ -213,7 +256,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
-
+            _logger.LogInformation("send Dtos.UserExtraInfo of Apple:{0}", JsonConvert.SerializeObject(response.Data.AppleUserExtraInfo));
             await AddUserInfoAsync(
                 ObjectMapper.Map<AppleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.AppleUserExtraInfo));
 
@@ -591,7 +634,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             _logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
                 JsonConvert.SerializeObject(guardianGrainDto.Data));
-
+            
             await _distributedEventBus.PublishAsync(
                 ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data));
         }
