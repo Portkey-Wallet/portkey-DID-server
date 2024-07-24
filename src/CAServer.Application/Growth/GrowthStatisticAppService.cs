@@ -460,8 +460,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             var holderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string> { index.CaHash }, null);
-            var caHash = holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash;
-            addresses.Add(caHash);
+            var address = holderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+            addresses.Add(address);
         }
 
         return addresses;
