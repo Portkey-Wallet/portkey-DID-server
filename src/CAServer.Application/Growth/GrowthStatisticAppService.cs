@@ -416,7 +416,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var referralRecords = recordDic[caHash];
             var addresses = referralRecords.Select(t => t.ReferralAddress).ToList();
             var dic = referralRecords.ToDictionary(t => t.ReferralAddress, t => t);
-            var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+            //var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
             // var result = hamsterScoreList.Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             // var caHolderInfo =
             //     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
