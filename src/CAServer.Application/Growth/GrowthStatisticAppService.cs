@@ -416,6 +416,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 _logger.LogDebug("Address is {address}", address);
             }
             var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+            
             // var result = hamsterScoreList.Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             // var caHolderInfo =
             //     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
@@ -457,7 +458,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 await _activityProvider.GetCaHolderInfoAsync(new List<string> {}, index.CaHash);
             _logger.LogDebug("holderInfo is {holder}",JsonConvert.SerializeObject(holderInfo));
             var address = holderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
-            var formatAddress = "ELF_" + addresses + "_tDVW";
+            var formatAddress = "ELF_" + address + "_tDVW";
             addresses.Add(formatAddress);
         }
         return addresses;
