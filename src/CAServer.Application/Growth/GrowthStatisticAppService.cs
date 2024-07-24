@@ -456,19 +456,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     private async Task<List<string>> GetHamsterReferralAddressAsync(List<ReferralRecordIndex> referralRecords)
     {
-        foreach (var index in referralRecords)
-        {
-            _logger.LogDebug("index is {index}",JsonConvert.SerializeObject(index));
-        }
         var addresses = new List<string>();
         foreach (var index in referralRecords)
         {
             var holderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string> { index.CaHash }, null);
+            _logger.LogDebug("holderInfo is {holder}",JsonConvert.SerializeObject(holderInfo));
             var address = holderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
             addresses.Add(address);
         }
-
         return addresses;
     }
 
