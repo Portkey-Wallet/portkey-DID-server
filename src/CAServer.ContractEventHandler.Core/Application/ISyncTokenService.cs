@@ -25,7 +25,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface ISyncTokenService
 {
-    Task SyncTokenToOtherChain(string chainId, string symbol);
+    Task SyncTokenToOtherChainAsync(string chainId, string symbol);
 }
 
 public class SyncTokenService : ISyncTokenService, ISingletonDependency
@@ -51,7 +51,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         _contractOptions = contractOptions.Value;
     }
 
-    public async Task SyncTokenToOtherChain(string chainId, string symbol)
+    public async Task SyncTokenToOtherChainAsync(string chainId, string symbol)
     {
         _logger.LogInformation("[SyncToken] Begin to sync token, chainId:{chainId}, symbol:{symbol}", chainId, symbol);
         var from = _packageAccount.getOneAccountRandom();
@@ -95,7 +95,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         }
 
         var otherChainId = _chainOptions.ChainInfos.Keys.FirstOrDefault(t => t != chainId);
-        await SideChainCheckMainChainBlockIndexAsync(otherChainId,
+        await MainChainCheckMainChainBlockIndexAsync(chainId, otherChainId,
             tokenValidationTransaction.TransactionResultDto.BlockNumber);
 
         var crossChainCreateTokenInput = new CrossChainCreateTokenInput
@@ -125,22 +125,27 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             chainId);
     }
 
-    private async Task<long> GetIndexHeightFromSideChainAsync(string chainId)
+    private async Task<long> GetIndexHeightFromMainChainAsync(string chainId, int sideChainId)
     {
-        var value = await CallTransactionAsync<Int64Value>("GetParentChainHeight", new Empty(),
+        var param = new Int32Value
+        {
+            Value = sideChainId
+        };
+        var value = await CallTransactionAsync<Int64Value>(MethodName.GetSideChainHeight, param,
             _chainOptions.ChainInfos.GetOrDefault(chainId).CrossChainContractAddress, chainId);
 
         return value.Value;
     }
 
-    private async Task SideChainCheckMainChainBlockIndexAsync(string otherChainId, long txHeight)
+    private async Task MainChainCheckMainChainBlockIndexAsync(string chainId, string otherChainId, long txHeight)
     {
+        var fromChain = ChainHelper.ConvertBase58ToChainId(chainId);
         var checkResult = false;
         var time = 0;
 
         while (!checkResult && time < 40)
         {
-            var indexMainChainBlock = await GetIndexHeightFromSideChainAsync(otherChainId);
+            var indexMainChainBlock = await GetIndexHeightFromMainChainAsync(otherChainId, fromChain);
             _logger.LogInformation($"valid txHeight:{txHeight}, indexMainChainBlock: {indexMainChainBlock}");
             if (indexMainChainBlock < txHeight)
             {
