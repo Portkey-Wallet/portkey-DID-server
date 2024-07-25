@@ -151,4 +151,10 @@ public class CAAccountController : CAServerController
     {
         return await _guardianAppService.GetUserExtraInfoDtoAsync(identifiers.ToList());
     }
+
+    [HttpGet("guardian")]
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(string[] identifierHashList)
+    {
+        return await _guardianAppService.GetGuardianListAsync(identifierHashList.ToList());
+    }
 }

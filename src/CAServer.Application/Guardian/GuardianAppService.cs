@@ -93,7 +93,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var identifiers = hashDic?.Values.ToList();
 
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
-
+        _logger.LogInformation(".....GetUserExtraInfoAsync userExtraInfos:{0}", JsonConvert.SerializeObject(userExtraInfos));
         await AddGuardianInfoAsync(guardianResult.GuardianList?.Guardians, hashDic, userExtraInfos);
         return guardianResult;
     }
@@ -201,7 +201,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             return;
         }
-
+        _logger.LogInformation("AddGuardianInfoAsync guardians:{0} userExtraInfos:{1}",
+            JsonConvert.SerializeObject(guardians), JsonConvert.SerializeObject(userExtraInfos));
         foreach (var guardian in guardians)
         {
             guardian.GuardianIdentifier = hashDic.GetValueOrDefault(guardian.IdentifierHash);
