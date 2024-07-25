@@ -9,7 +9,7 @@ public interface IVerifierAppService
     public Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input);
 
     public Task<VerificationCodeResponse> VerifyCodeAsync(VerificationSignatureRequestDto signatureRequestDto);
-    public Task<bool> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto);
+    public Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto);
     public Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto);
     public Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto);
     public Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress);

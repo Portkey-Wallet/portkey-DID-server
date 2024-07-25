@@ -149,19 +149,20 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    public async Task<bool> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
+    public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
         var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
+        string identifierHash = null;
         if (GuardianIdentifierType.Google.Equals(requestDto.Type))
         {
             try
             {
-                await AddGuardianAndUserByGoogleTokenAsync(requestDto);
+                identifierHash = await AddGuardianAndUserByGoogleTokenAsync(requestDto);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "VerifyGoogleTokenAsync error");
-                return false;
+                throw new UserFriendlyException("add google guardian and user extra info error");
             }
         }
         if (GuardianIdentifierType.Apple.Equals(requestDto.Type))
@@ -169,11 +170,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             try
             {
                 await VerifyAppleTokenAsync(verifyTokenRequestDto);
+                identifierHash = null;
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "VerifyAppleTokenAsync error");
-                return false;
+                throw new UserFriendlyException("add apple guardian and user extra info error");
             }
         }
         if (GuardianIdentifierType.Facebook.Equals(requestDto.Type))
@@ -181,18 +183,22 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             try
             {
                 await VerifyFacebookTokenAsync(verifyTokenRequestDto);
+                identifierHash = null;
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "VerifyFacebookTokenAsync error");
-                return false;
+                throw new UserFriendlyException("add facebook guardian and user extra info error");
             }
         }
 
-        return true;
+        return new VerifiedZkResponse()
+        {
+            GuardianIdentifierHash = identifierHash
+        };
     }
     
-    private async Task AddGuardianAndUserByGoogleTokenAsync(VerifiedZkLoginRequestDto requestDto)
+    private async Task<string> AddGuardianAndUserByGoogleTokenAsync(VerifiedZkLoginRequestDto requestDto)
     {
         try
         {
@@ -203,6 +209,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
             }
             await AddUserInfoAsync(ObjectMapper.Map<GoogleUserInfoDto, Dtos.UserExtraInfo>(userInfo));
+            return hashInfo.Item1;
         }
         catch (Exception e)
         {
