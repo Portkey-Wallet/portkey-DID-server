@@ -36,15 +36,18 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     private readonly PayRedPackageAccount _packageAccount;
     private readonly ILogger<SyncTokenService> _logger;
     private readonly ContractOptions _contractOptions;
+    private readonly INESTRepository<FreeMintNftSyncIndex, string> _freeMintNftSyncRepository;
 
     public SyncTokenService(ISignatureProvider signatureProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<ContractServiceOptions> contractGrainOptions,
         IOptionsSnapshot<ContractOptions> contractOptions,
-        IOptionsSnapshot<PayRedPackageAccount> packageAccount, ILogger<SyncTokenService> logger)
+        IOptionsSnapshot<PayRedPackageAccount> packageAccount, ILogger<SyncTokenService> logger,
+        INESTRepository<FreeMintNftSyncIndex, string> freeMintNftSyncRepository)
     {
         _signatureProvider = signatureProvider;
         _logger = logger;
+        _freeMintNftSyncRepository = freeMintNftSyncRepository;
         _chainOptions = chainOptions.Value;
         _contractServiceOptions = contractGrainOptions.Value;
         _packageAccount = packageAccount.Value;
@@ -54,20 +57,33 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     public async Task SyncTokenToOtherChainAsync(string chainId, string symbol)
     {
         _logger.LogInformation("[SyncToken] Begin to sync token, chainId:{chainId}, symbol:{symbol}", chainId, symbol);
-        var from = _packageAccount.getOneAccountRandom();
-        var crossChainCreateTokenInput = await GetCrossChainCreateTokenInput(chainId, symbol, from);
-        var chainInfo = _chainOptions.ChainInfos.GetOrDefault(chainId);
-        var transactionInfo = await SendTransactionAsync(chainId, crossChainCreateTokenInput, from,
-            chainInfo.CrossChainContractAddress, "CrossChainCreateToken");
-        if (transactionInfo == null || transactionInfo.TransactionResultDto == null)
+        var nftSyncIndex = await SaveSyncRecordAsync(chainId, symbol);
+        try
         {
-            _logger.LogInformation("[SyncToken] sync token error, chainId:{chainId}, symbol:{symbol}", chainId, symbol);
-        }
+            var from = _packageAccount.getOneAccountRandom();
+            var crossChainCreateTokenInput = await GetCrossChainCreateTokenInput(chainId, symbol, from);
+            var chainInfo = _chainOptions.ChainInfos.GetOrDefault(chainId);
+            var transactionInfo = await SendTransactionAsync(chainId, crossChainCreateTokenInput, from,
+                chainInfo.CrossChainContractAddress, "CrossChainCreateToken");
+            if (transactionInfo == null || transactionInfo.TransactionResultDto == null)
+            {
+                await SaveSyncRecordResultAsync(nftSyncIndex, null);
+                _logger.LogInformation("[SyncToken] sync token fail, chainId:{chainId}, symbol:{symbol}", chainId,
+                    symbol);
+            }
 
-        _logger.LogInformation(
-            "[SyncToken] End to sync token, chainId:{chainId}, symbol:{symbol}, transactionResult:{transactionResult}",
-            chainId,
-            symbol, JsonConvert.SerializeObject(transactionInfo.TransactionResultDto));
+            _logger.LogInformation(
+                "[SyncToken] End to sync token, chainId:{chainId}, symbol:{symbol}, transactionResult:{transactionResult}",
+                chainId,
+                symbol, JsonConvert.SerializeObject(transactionInfo.TransactionResultDto));
+            await SaveSyncRecordResultAsync(nftSyncIndex, transactionInfo.TransactionResultDto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[SyncToken] sync token error, chainId:{chainId}, symbol:{symbol}", chainId,
+                symbol);
+            await SaveSyncRecordResultAsync(nftSyncIndex, null, e.Message);
+        }
     }
 
     private async Task<CrossChainCreateTokenInput> GetCrossChainCreateTokenInput(string chainId, string symbol,
@@ -146,7 +162,8 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         while (!checkResult && time < 40)
         {
             var indexMainChainBlock = await GetIndexHeightFromMainChainAsync(otherChainId, fromChain);
-            _logger.LogInformation($"valid txHeight:{txHeight}, indexMainChainBlock: {indexMainChainBlock}");
+            _logger.LogInformation("valid txHeight:{txHeight}, indexMainChainBlock: {indexMainChainBlock}", txHeight,
+                indexMainChainBlock);
             if (indexMainChainBlock < txHeight)
             {
                 await Task.Delay(10000);
@@ -225,64 +242,87 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     private async Task<TransactionInfoDto> SendTransactionAsync(string chainId, IMessage param,
         string from, string contractAddress, string methodName)
     {
-        try
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
         {
-            if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
-            {
-                return null;
-            }
-
-            var client = new AElfClient(chainInfo.BaseUrl);
-            await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPubKey(from); //select public key
-            _logger.LogInformation(
-                "[SyncToken] Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ,methodName:{methodName}",
-                ownAddress, contractAddress, methodName);
-
-            var transaction =
-                await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName,
-                    param);
-
-            var txWithSign = await _signatureProvider.SignTxMsg(from, transaction.GetHash().ToHex());
-            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
-
-            var result = await client.SendTransactionAsync(new SendTransactionInput
-            {
-                RawTransaction = transaction.ToByteArray().ToHex()
-            });
-            _logger.LogInformation("[SyncToken] Send transaction, transactionId: {transactionId}",
-                result.TransactionId);
-
-            await Task.Delay(_contractServiceOptions.Delay);
-
-            var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-            _logger.LogInformation(
-                "[SyncToken] query transactionResult, transactionId:{transactionId}, transaction status:{status}",
-                transactionResult.TransactionId, transactionResult.Status);
-
-            var times = 0;
-            while ((transactionResult.Status == TransactionState.Pending ||
-                    transactionResult.Status == TransactionState.NotExisted) &&
-                   times < _contractServiceOptions.RetryTimes)
-            {
-                times++;
-                await Task.Delay(_contractServiceOptions.RetryDelay);
-                transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-                _logger.LogInformation(
-                    "[FreeMint] query transactionResult, transactionId:{transactionId}, transaction status:{status}, times:{times}",
-                    transactionResult.TransactionId, transactionResult.Status, times);
-            }
-
-            return new TransactionInfoDto
-            {
-                Transaction = transaction,
-                TransactionResultDto = transactionResult
-            };
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "SyncToken transaction error: {param}", JsonConvert.SerializeObject(param));
             return null;
         }
+
+        var client = new AElfClient(chainInfo.BaseUrl);
+        await client.IsConnectedAsync();
+        var ownAddress = client.GetAddressFromPubKey(from); //select public key
+        _logger.LogInformation(
+            "[SyncToken] Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ,methodName:{methodName}",
+            ownAddress, contractAddress, methodName);
+
+        var transaction =
+            await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName,
+                param);
+
+        var txWithSign = await _signatureProvider.SignTxMsg(from, transaction.GetHash().ToHex());
+        transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+
+        var result = await client.SendTransactionAsync(new SendTransactionInput
+        {
+            RawTransaction = transaction.ToByteArray().ToHex()
+        });
+        _logger.LogInformation("[SyncToken] Send transaction, transactionId: {transactionId}",
+            result.TransactionId);
+
+        await Task.Delay(_contractServiceOptions.Delay);
+
+        var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+        _logger.LogInformation(
+            "[SyncToken] query transactionResult, transactionId:{transactionId}, transaction status:{status}",
+            transactionResult.TransactionId, transactionResult.Status);
+
+        var times = 0;
+        while ((transactionResult.Status == TransactionState.Pending ||
+                transactionResult.Status == TransactionState.NotExisted) &&
+               times < _contractServiceOptions.RetryTimes)
+        {
+            times++;
+            await Task.Delay(_contractServiceOptions.RetryDelay);
+            transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            _logger.LogInformation(
+                "[FreeMint] query transactionResult, transactionId:{transactionId}, transaction status:{status}, times:{times}",
+                transactionResult.TransactionId, transactionResult.Status, times);
+        }
+
+        return new TransactionInfoDto
+        {
+            Transaction = transaction,
+            TransactionResultDto = transactionResult
+        };
+    }
+
+    private async Task<FreeMintNftSyncIndex> SaveSyncRecordAsync(string chainId, string symbol)
+    {
+        var nftSyncIndex = new FreeMintNftSyncIndex()
+        {
+            Id = Guid.NewGuid().ToString(),
+            BeginTime = DateTime.UtcNow,
+            Symbol = symbol,
+            ChainId = chainId
+        };
+        await _freeMintNftSyncRepository.AddOrUpdateAsync(nftSyncIndex);
+        return nftSyncIndex;
+    }
+
+    private async Task SaveSyncRecordResultAsync(FreeMintNftSyncIndex nftSyncIndex,
+        TransactionResultDto resultDto, string errorMessage = "")
+    {
+        if (resultDto == null)
+        {
+            nftSyncIndex.ErrorMessage = errorMessage;
+            nftSyncIndex.EndTime = DateTime.UtcNow;
+            await _freeMintNftSyncRepository.AddOrUpdateAsync(nftSyncIndex);
+        }
+
+        nftSyncIndex.TransactionId = resultDto.TransactionId;
+        nftSyncIndex.BlockNumber = resultDto.BlockNumber;
+        nftSyncIndex.TransactionResult = resultDto.Status;
+        nftSyncIndex.ErrorMessage = resultDto.Error;
+        nftSyncIndex.EndTime = DateTime.UtcNow;
+        await _freeMintNftSyncRepository.AddOrUpdateAsync(nftSyncIndex);
     }
 }
