@@ -95,6 +95,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
             index.Status = status.ToString();
             await _freeMintRepository.AddOrUpdateAsync(index);
 
+            _logger.LogInformation("[FreeMint] end handle mint event, status:{status}", index.Status);
             if (index.Status == FreeMintStatus.SUCCESS.ToString())
             {
                 var chainId = _chainOptions.ChainInfos.Keys.First(t => t != CommonConstant.MainChainId);
