@@ -215,19 +215,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
-        var hasNext = true;
-        var list = new List<ReferralRecordsRankDetail>();
-        switch (input.ActivityEnums)
+        var referralRecordRank = new ReferralRecordsRankResponseDto();
+        referralRecordRank = input.ActivityEnums switch
         {
-            case ActivityEnums.Invitation:
-                list = await BuildInvitationRankAsync(input, true, list);
-                break;
-            case ActivityEnums.Hamster:
-                list = await BuildHamsterRankAsync(input, true, list);
-                break;
-            default:
-                throw new UserFriendlyException("Invalidate Activity.");
-        }
+            ActivityEnums.Invitation => await BuildInvitationRankAsync(input, referralRecordRank),
+            ActivityEnums.Hamster => await BuildHamsterRankAsync(input, referralRecordRank),
+            _ => throw new UserFriendlyException("Invalidate Activity.")
+        };
 
         var currentUserReferralInfo = new ReferralRecordsRankDetail();
         if (CurrentUser.Id.HasValue)
@@ -281,19 +275,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             }
         }
 
-        var referralRecordRank = new ReferralRecordsRankResponseDto
-        {
-            HasNext = hasNext,
-            ReferralRecordsRank = list,
-            CurrentUserReferralRecordsRankDetail = currentUserReferralInfo,
-            Invitations = _hamsterOptions.Invitations
-        };
+        referralRecordRank.CurrentUserReferralRecordsRankDetail = currentUserReferralInfo;
+        referralRecordRank.Invitations = _hamsterOptions.Invitations;
         return referralRecordRank;
     }
 
-    private async Task<List<ReferralRecordsRankDetail>> BuildHamsterRankAsync(ReferralRecordRankRequestDto input,
-        bool hasNext, List<ReferralRecordsRankDetail> list)
+    private async Task<ReferralRecordsRankResponseDto> BuildHamsterRankAsync(ReferralRecordRankRequestDto input,
+        ReferralRecordsRankResponseDto response)
     {
+        var hasNext = true;
+        var list = new List<ReferralRecordsRankDetail>();
         var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.HamsterRankKey);
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.HamsterRankKey, 0, input.Skip + input.Limit - 1);
         if (length <= input.Skip + input.Limit)
@@ -334,12 +325,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             list.Add(referralRecordsRankDetail);
         }
 
-        return list;
+        response.HasNext = hasNext;
+        response.ReferralRecordsRank = list;
+        return response;
     }
 
-    private async Task<List<ReferralRecordsRankDetail>> BuildInvitationRankAsync(ReferralRecordRankRequestDto input,
-        bool hasNext, List<ReferralRecordsRankDetail> list)
+    private async Task<ReferralRecordsRankResponseDto> BuildInvitationRankAsync(ReferralRecordRankRequestDto input,
+        ReferralRecordsRankResponseDto response)
     {
+        var hasNext = true;
+        var list = new List<ReferralRecordsRankDetail>();
         var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.ReferralKey);
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, input.Skip + input.Limit - 1);
         if (length <= input.Skip + input.Limit)
@@ -351,8 +346,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         scores.Sort();
         scores.Reverse();
         var skipList = entries.Skip(input.Skip).Take(input.Limit).ToArray();
-
-
         foreach (var entry in skipList)
         {
             var caAddress = entry.Element;
@@ -380,7 +373,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             list.Add(referralRecordsRankDetail);
         }
 
-        return list;
+        response.HasNext = hasNext;
+        response.ReferralRecordsRank = list;
+        return response;
     }
 
     public async Task CalculateHamsterDataAsync()
@@ -456,7 +451,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     await _growthProvider.GetReferralRecordListAsync(hamsterReferralInfo[hamster.CaAddress], caHash, 0,
                         1,
                         null, null, new List<int> { 1 });
-                var referralRecordIndices = record.Where(t=>t.ReferralType == 1).ToList();
+                var referralRecordIndices = record.Where(t => t.ReferralType == 1).ToList();
                 if (!referralRecordIndices.IsNullOrEmpty())
                 {
                     continue;
