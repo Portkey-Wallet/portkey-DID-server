@@ -435,10 +435,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.ImageUrl =
                     await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
                         requestDto.Height,
-                        ImageResizeType.Forest);
+                        ImageResizeType.Im);
                 nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
                     (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
-                    ImageResizeType.Forest);
+                    ImageResizeType.Im);
                 nftItem.TokenName = nftInfo.NftInfo.TokenName;
                 nftItem.RecommendedRefreshSeconds = _nftItemDisplayOption.RecommendedRefreshSeconds <= 0
                     ? NftItemDisplayOption.DefaultRecommendedRefreshSeconds
