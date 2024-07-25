@@ -62,8 +62,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         _packageAccount = packageAccount.Value;
         _contractOptions = contractOptions.Value;
     }
-
-    [AutomaticRetry(Attempts = 5, DelaysInSeconds = new[] { 100, 200, 600, 3600, 36000 })]
+    
     public async Task SyncTokenToOtherChainAsync(string chainId, string symbol)
     {
         _logger.LogInformation(
@@ -201,7 +200,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             _logger.LogInformation(
                 "txHeight:{txHeight}, indexMainChainBlock:{indexMainChainBlock}, mainHeight:{mainHeight}, indexMainChainHeight:{indexMainChainHeight}",
                 txHeight, cache.SideChainIndexHeight, cache.MainChainBlockHeight, cache.ParentChainHeight);
-            
+
             var indexMainChainBlock = await GetIndexHeightFromMainChainAsync(otherChainId, fromChain);
             _logger.LogInformation("[SyncToken] valid txHeight:{txHeight}, indexMainChainBlock: {indexMainChainBlock}",
                 txHeight,
