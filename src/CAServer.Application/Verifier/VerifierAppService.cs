@@ -156,7 +156,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             try
             {
-                await VerifyGoogleTokenAsync(verifyTokenRequestDto);
+                await AddGuardianAndUserByGoogleTokenAsync(requestDto);
             }
             catch (Exception e)
             {
@@ -190,6 +190,25 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
 
         return true;
+    }
+    
+    private async Task AddGuardianAndUserByGoogleTokenAsync(VerifiedZkLoginRequestDto requestDto)
+    {
+        try
+        {
+            var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
+            var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
+            }
+            await AddUserInfoAsync(ObjectMapper.Map<GoogleUserInfoDto, Dtos.UserExtraInfo>(userInfo));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{Message}", e.Message);
+            throw new UserFriendlyException(e.Message);
+        }
     }
 
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
