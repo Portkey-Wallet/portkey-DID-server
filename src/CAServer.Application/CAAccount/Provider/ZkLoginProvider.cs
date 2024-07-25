@@ -100,6 +100,19 @@ public class ZkLoginProvider : CAServerAppService, IZkLoginProvider
                && zkLoginInfo.Kid is not (null or "")
                && zkLoginInfo.NoncePayload is not null;
     }
+
+    public bool CanExecuteZk(Portkey.Contracts.CA.ZkLoginInfo zkLoginInfo)
+    {
+        return zkLoginInfo is not null
+               && zkLoginInfo.IdentifierHash != null && !AElf.Types.Hash.Empty.Equals(zkLoginInfo.IdentifierHash)
+               && zkLoginInfo.Salt is not (null or "")
+               && zkLoginInfo.Nonce is not (null or "")
+               && zkLoginInfo.ZkProof is not (null or "")
+               && zkLoginInfo.CircuitId is not (null or "")
+               && zkLoginInfo.Issuer is not (null or "")
+               && zkLoginInfo.Kid is not (null or "")
+               && zkLoginInfo.NoncePayload is not null;
+    }
     
     public async Task GenerateGuardianAndUserInfoAsync(GuardianIdentifierType type, string accessToken, string guardianIdentifier, string identifierHash, string salt,
         string chainId = "", string verifierId = "")

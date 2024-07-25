@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
+using AElf.Types;
 using CAServer.AppleAuth.Provider;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
 using CAServer.Entities.Es;
@@ -39,7 +41,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly AppleTransferOptions _appleTransferOptions;
     private readonly StopRegisterOptions _stopRegisterOptions;
     private readonly INicknameProvider _nicknameProvider;
-    
+    private readonly IZkLoginProvider _zkLoginProvider;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
@@ -47,7 +49,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
         IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
-        INicknameProvider nicknameProvider)
+        INicknameProvider nicknameProvider,
+        IZkLoginProvider zkLoginProvider)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -59,6 +62,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _appleTransferOptions = appleTransferOptions.Value;
         _stopRegisterOptions = stopRegisterOptions.Value; 
         _nicknameProvider = nicknameProvider;
+        _zkLoginProvider = zkLoginProvider;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -95,7 +99,23 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
         _logger.LogInformation(".....GetUserExtraInfoAsync userExtraInfos:{0}", JsonConvert.SerializeObject(userExtraInfos));
         await AddGuardianInfoAsync(guardianResult.GuardianList?.Guardians, hashDic, userExtraInfos);
+        SetGuardianVerifiedZkField(guardianResult, holderInfo);
         return guardianResult;
+    }
+
+    private void SetGuardianVerifiedZkField(GuardianResultDto guardianResult, GetHolderInfoOutput holderInfo)
+    {
+        if (guardianResult.GuardianList is null || guardianResult.GuardianList.Guardians.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        foreach (var guardian in guardianResult.GuardianList.Guardians)
+        {
+            var guardianVerifiedByZk = holderInfo.GuardianList.Guardians.FirstOrDefault(
+                g => g.IdentifierHash.Equals(Hash.LoadFromHex(guardian.IdentifierHash)) && _zkLoginProvider.CanExecuteZk(g.ZkLoginInfo));
+            guardian.VerifiedByZk = guardianVerifiedByZk is not null;
+        }
     }
 
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
