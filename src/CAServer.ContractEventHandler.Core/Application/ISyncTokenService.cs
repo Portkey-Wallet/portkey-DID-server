@@ -64,7 +64,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             var crossChainCreateTokenInput = await GetCrossChainCreateTokenInput(chainId, symbol, from);
             var chainInfo = _chainOptions.ChainInfos.GetOrDefault(chainId);
             var transactionInfo = await SendTransactionAsync(chainId, crossChainCreateTokenInput, from,
-                chainInfo.CrossChainContractAddress, "CrossChainCreateToken");
+                chainInfo.TokenContractAddress, "CrossChainCreateToken");
             if (transactionInfo == null || transactionInfo.TransactionResultDto == null)
             {
                 await SaveSyncRecordResultAsync(nftSyncIndex, null);
