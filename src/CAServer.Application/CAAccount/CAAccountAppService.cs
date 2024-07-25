@@ -110,13 +110,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
-        //just deal with google guardian, todo apple send the user extra info event
         _logger.LogInformation("RegisterRequest started.......................");
-        // if (input.ZkLoginInfo != null && _zkLoginProvider.CanExecuteZk(input.Type, input.ZkLoginInfo))
-        // {
-        //     await _zkLoginProvider.GenerateGuardianAndUserInfoAsync(input.Type, input.AccessToken, input.LoginGuardianIdentifier, 
-        //         input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Salt, input.ChainId, input.VerifierId);
-        // }
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);

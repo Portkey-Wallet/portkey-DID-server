@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.CAAccount.Dtos.Zklogin;
 
 namespace CAServer.Guardian;
 
@@ -32,5 +33,7 @@ public class GuardianInfoBase
     public bool IsLoginGuardian { get; set; }
     public string Type { get; set; }
     public string TransactionId { get; set; }
+    public bool VerifiedByZk { get; set; }
+    public ZkLoginInfoDto ZkLoginInfo { get; set; }
     public bool ManuallySupportForZk { get; set; }
 }

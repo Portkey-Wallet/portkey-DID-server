@@ -12,6 +12,8 @@ public interface IZkLoginProvider
 
     public bool CanExecuteZk(GuardianIdentifierType type, ZkLoginInfoRequestDto zkLoginInfo);
 
+    public bool CanExecuteZk(Portkey.Contracts.CA.ZkLoginInfo zkLoginInfo);
+
     public bool CanExecuteZk(GuardianType type, ZkLoginInfoDto zkLoginInfoDto);
     
     public Task GenerateGuardianAndUserInfoAsync(GuardianIdentifierType type, string accessToken, string guardianIdentifier, string identifierHash, string salt,
