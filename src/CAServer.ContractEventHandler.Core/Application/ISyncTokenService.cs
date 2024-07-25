@@ -9,6 +9,7 @@ using AElf.Contracts.MultiToken;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Options;
@@ -56,32 +57,38 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
 
     public async Task SyncTokenToOtherChainAsync(string chainId, string symbol)
     {
-        _logger.LogInformation("[SyncToken] Begin to sync token, chainId:{chainId}, symbol:{symbol}", chainId, symbol);
+        _logger.LogInformation(
+            "[SyncToken] Begin to sync token, fromChainId:{chainId}, toChainId:{toChainId}, symbol:{symbol}", chainId,
+            CommonConstant.MainChainId, symbol);
         var nftSyncIndex = await SaveSyncRecordAsync(chainId, symbol);
         try
         {
             var from = _packageAccount.getOneAccountRandom();
             var crossChainCreateTokenInput = await GetCrossChainCreateTokenInput(chainId, symbol, from);
-            var chainInfo = _chainOptions.ChainInfos.GetOrDefault(chainId);
-            var transactionInfo = await SendTransactionAsync(chainId, crossChainCreateTokenInput, from,
-                chainInfo.TokenContractAddress, "CrossChainCreateToken");
+
+            // sync token info to main chain
+            var toChainInfo = _chainOptions.ChainInfos.GetOrDefault(CommonConstant.MainChainId);
+            var transactionInfo = await SendTransactionAsync(CommonConstant.MainChainId, crossChainCreateTokenInput,
+                from,
+                toChainInfo.TokenContractAddress, "CrossChainCreateToken");
             if (transactionInfo == null || transactionInfo.TransactionResultDto == null)
             {
                 await SaveSyncRecordResultAsync(nftSyncIndex, null);
-                _logger.LogInformation("[SyncToken] sync token fail, chainId:{chainId}, symbol:{symbol}", chainId,
+                _logger.LogInformation("[SyncToken] sync token fail, toChainId:{chainId}, symbol:{symbol}",
+                    CommonConstant.MainChainId,
                     symbol);
             }
 
             _logger.LogInformation(
-                "[SyncToken] End to sync token, chainId:{chainId}, symbol:{symbol}, transactionResult:{transactionResult}",
-                chainId,
+                "[SyncToken] End to sync token, toChainId:{chainId}, symbol:{symbol}, transactionResult:{transactionResult}",
+                CommonConstant.MainChainId,
                 symbol, JsonConvert.SerializeObject(transactionInfo.TransactionResultDto));
             await SaveSyncRecordResultAsync(nftSyncIndex, transactionInfo.TransactionResultDto);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[SyncToken] sync token error, chainId:{chainId}, symbol:{symbol}", chainId,
-                symbol);
+            _logger.LogError(e, "[SyncToken] sync token error, fromChainId:{chainId}, toChainId:{toChainId}, symbol:{symbol}", chainId,
+                CommonConstant.MainChainId, symbol);
             await SaveSyncRecordResultAsync(nftSyncIndex, null, e.Message);
         }
     }
