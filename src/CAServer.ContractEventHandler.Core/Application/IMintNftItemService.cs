@@ -97,7 +97,6 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
 
             if (index.Status == FreeMintStatus.SUCCESS.ToString())
             {
-                // add hangfire
                 var chainId = _chainOptions.ChainInfos.Keys.First(t => t != CommonConstant.MainChainId);
                 BackgroundJob.Enqueue(() => _syncTokenService.SyncTokenToOtherChainAsync(chainId, index.Symbol));
             }
