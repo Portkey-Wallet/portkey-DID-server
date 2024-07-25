@@ -93,7 +93,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         await client.IsConnectedAsync();
 
         var tokenInfo = await GetTokenInfo(chainId, symbol);
-        _logger.LogInformation("[SyncToken] tokenInfo:{tokenInfo}", JsonConvert.SerializeObject(tokenInfo));
+        _logger.LogInformation("[SyncToken] symbol:{symbol}", tokenInfo.Symbol);
         var tokenValidationTransaction = await CreateTokenInfoValidationTransaction(chainId, from, tokenInfo);
 
         var merklePathDto =
