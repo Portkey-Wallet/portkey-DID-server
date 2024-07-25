@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -146,8 +147,8 @@ public class CAAccountController : CAServerController
     }
 
     [HttpGet("guardian/userinfo")]
-    public async Task<List<UserExtraInfoIndexDto>> GetUserExtraInfoDtoAsync(List<string> identifiers)
+    public async Task<List<UserExtraInfoIndexDto>> GetUserExtraInfoDtoAsync(string[] identifiers)
     {
-        return await _guardianAppService.GetUserExtraInfoDtoAsync(identifiers);
+        return await _guardianAppService.GetUserExtraInfoDtoAsync(identifiers.ToList());
     }
 }
