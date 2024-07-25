@@ -175,21 +175,8 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             chainId);
     }
 
-    private async Task<long> GetIndexHeightFromMainChainAsync(string chainId, int sideChainId)
-    {
-        var param = new Int32Value
-        {
-            Value = sideChainId
-        };
-        var value = await CallTransactionAsync<Int64Value>(MethodName.GetSideChainHeight, param,
-            _chainOptions.ChainInfos.GetOrDefault(chainId).CrossChainContractAddress, chainId);
-
-        return value.Value;
-    }
-
     private async Task MainChainCheckMainChainBlockIndexAsync(string chainId, string otherChainId, long txHeight)
     {
-        var fromChain = ChainHelper.ConvertBase58ToChainId(chainId);
         var checkResult = false;
         var mainHeight = long.MaxValue;
         var time = 0;
@@ -201,23 +188,22 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
                 "txHeight:{txHeight}, indexMainChainBlock:{indexMainChainBlock}, mainHeight:{mainHeight}, indexMainChainHeight:{indexMainChainHeight}",
                 txHeight, cache.SideChainIndexHeight, cache.MainChainBlockHeight, cache.ParentChainHeight);
 
-            //var sideChainIndexHeight = await GetIndexHeightFromMainChainAsync(otherChainId, fromChain);
             var sideChainIndexHeight = cache.SideChainIndexHeight;
-            _logger.LogInformation("[SyncToken] valid txHeight:{txHeight}, sideChainIndexHeight: {indexMainChainBlock}",
-                txHeight,
-                sideChainIndexHeight);
             if (sideChainIndexHeight < txHeight)
             {
                 await Task.Delay(10000);
                 time++;
+                _logger.LogInformation(
+                    "[SyncToken] valid txHeight:{txHeight}, sideChainIndexHeight: {sideChainIndexHeight}, time:{time}",
+                    txHeight,
+                    sideChainIndexHeight, time);
                 continue;
             }
 
             mainHeight = mainHeight == long.MaxValue
-                ? cache.MainChainBlockHeight// await GetBlockHeightAsync(ContractAppServiceConstant.MainChainId)
+                ? cache.MainChainBlockHeight
                 : mainHeight;
 
-            //var indexMainChainHeight = await GetIndexHeightFromSideChainAsync(chainId);
             var indexMainChainHeight = cache.ParentChainHeight;
             _logger.LogInformation(
                 "[SyncToken] valid indexMainChainHeight:{indexMainChainHeight}, mainHeight: {mainHeight}",
@@ -228,22 +214,6 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         }
 
         CheckIndexBlockHeightResult(checkResult, time);
-    }
-
-    public async Task<long> GetIndexHeightFromSideChainAsync(string sideChainId)
-    {
-        var result =
-            await CallTransactionAsync<Int64Value>(MethodName.GetParentChainHeight, new Empty(),
-                _chainOptions.ChainInfos.GetOrDefault(sideChainId).CrossChainContractAddress, sideChainId);
-
-        return result.Value;
-    }
-
-    private async Task<long> GetBlockHeightAsync(string chainId)
-    {
-        var client = new AElfClient(_chainOptions.ChainInfos[chainId].BaseUrl);
-        await client.IsConnectedAsync();
-        return await client.GetBlockHeightAsync();
     }
 
     private void CheckIndexBlockHeightResult(bool result, int time)
