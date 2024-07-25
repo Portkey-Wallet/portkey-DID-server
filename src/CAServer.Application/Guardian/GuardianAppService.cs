@@ -301,6 +301,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         return guardianGrainDto == null || guardianGrainDto.IsDeleted ? null : guardianGrainDto.IdentifierHash;
     }
 
+    public async Task<List<UserExtraInfoIndexDto>> GetUserExtraInfoDtoAsync(List<string> identifiers)
+    {
+        var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
+        return ObjectMapper.Map<List<UserExtraInfoIndex>, List<UserExtraInfoIndexDto>>(userExtraInfos);
+    }
 
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
     {
