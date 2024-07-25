@@ -78,7 +78,7 @@ public class ChainHeightService : IChainHeightService, ISingletonDependency
         return value.Value;
     }
 
-    public async Task<long> GetParentChainHeightAsync(string sideChainId)
+    private async Task<long> GetParentChainHeightAsync(string sideChainId)
     {
         var result =
             await CallTransactionAsync<Int64Value>(MethodName.GetParentChainHeight, new Empty(),
@@ -98,15 +98,11 @@ public class ChainHeightService : IChainHeightService, ISingletonDependency
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
-        string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
-
+        var addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
         var transaction =
             await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
-        _logger.LogDebug("[ChainHeight] Call tx methodName is: {methodName} param is: {transaction}", methodName,
-            transaction);
 
         var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
-
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()

@@ -62,7 +62,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         _packageAccount = packageAccount.Value;
         _contractOptions = contractOptions.Value;
     }
-    
+
     public async Task SyncTokenToOtherChainAsync(string chainId, string symbol)
     {
         _logger.LogInformation(
@@ -79,8 +79,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             var transactionInfo = await SendTransactionAsync(CommonConstant.MainChainId, crossChainCreateTokenInput,
                 from,
                 toChainInfo.TokenContractAddress, "CrossChainCreateToken");
-            _logger.LogInformation("[SyncToken] crossChainCreateTokenInput:{data}",
-                JsonConvert.SerializeObject(crossChainCreateTokenInput));
+
             if (transactionInfo == null || transactionInfo.TransactionResultDto == null)
             {
                 await SaveSyncRecordResultAsync(nftSyncIndex, null);
@@ -90,9 +89,10 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             }
 
             _logger.LogInformation(
-                "[SyncToken] End to sync token, toChainId:{chainId}, symbol:{symbol}, transactionResult:{transactionResult}",
+                "[SyncToken] End to sync token, toChainId:{chainId}, symbol:{symbol}, transactionId:{transactionId}, transactionResult:{transactionResult}, errorMessage:{message}",
                 CommonConstant.MainChainId,
-                symbol, JsonConvert.SerializeObject(transactionInfo.TransactionResultDto));
+                symbol, transactionInfo.TransactionResultDto.TransactionId, transactionInfo.TransactionResultDto.Status,
+                transactionInfo.TransactionResultDto.Error ?? "-");
             await SaveSyncRecordResultAsync(nftSyncIndex, transactionInfo.TransactionResultDto);
         }
         catch (Exception e)
@@ -201,11 +201,12 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
                 "txHeight:{txHeight}, indexMainChainBlock:{indexMainChainBlock}, mainHeight:{mainHeight}, indexMainChainHeight:{indexMainChainHeight}",
                 txHeight, cache.SideChainIndexHeight, cache.MainChainBlockHeight, cache.ParentChainHeight);
 
-            var indexMainChainBlock = await GetIndexHeightFromMainChainAsync(otherChainId, fromChain);
-            _logger.LogInformation("[SyncToken] valid txHeight:{txHeight}, indexMainChainBlock: {indexMainChainBlock}",
+            //var sideChainIndexHeight = await GetIndexHeightFromMainChainAsync(otherChainId, fromChain);
+            var sideChainIndexHeight = cache.SideChainIndexHeight;
+            _logger.LogInformation("[SyncToken] valid txHeight:{txHeight}, sideChainIndexHeight: {indexMainChainBlock}",
                 txHeight,
-                indexMainChainBlock);
-            if (indexMainChainBlock < txHeight)
+                sideChainIndexHeight);
+            if (sideChainIndexHeight < txHeight)
             {
                 await Task.Delay(10000);
                 time++;
@@ -213,10 +214,11 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             }
 
             mainHeight = mainHeight == long.MaxValue
-                ? await GetBlockHeightAsync(ContractAppServiceConstant.MainChainId)
+                ? cache.MainChainBlockHeight// await GetBlockHeightAsync(ContractAppServiceConstant.MainChainId)
                 : mainHeight;
 
-            var indexMainChainHeight = await GetIndexHeightFromSideChainAsync(chainId);
+            //var indexMainChainHeight = await GetIndexHeightFromSideChainAsync(chainId);
+            var indexMainChainHeight = cache.ParentChainHeight;
             _logger.LogInformation(
                 "[SyncToken] valid indexMainChainHeight:{indexMainChainHeight}, mainHeight: {mainHeight}",
                 indexMainChainHeight, mainHeight);
