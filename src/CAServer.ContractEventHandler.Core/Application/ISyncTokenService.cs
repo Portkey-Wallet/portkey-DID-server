@@ -4,10 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
+using AElf.Client.Proto;
 using AElf.Client.Service;
 using AElf.Contracts.MultiToken;
 using AElf.Indexing.Elasticsearch;
-using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -20,6 +20,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
+using Hash = AElf.Types.Hash;
+using MerklePath = AElf.Types.MerklePath;
+using MerklePathNode = AElf.Types.MerklePathNode;
 using TokenInfo = AElf.Contracts.MultiToken.TokenInfo;
 
 namespace CAServer.ContractEventHandler.Core.Application;
@@ -127,11 +130,27 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         var crossChainCreateTokenInput = new CrossChainCreateTokenInput
         {
             FromChainId = ChainHelper.ConvertBase58ToChainId(chainId),
-            ParentChainHeight = tokenValidationTransaction.TransactionResultDto.BlockNumber,
             TransactionBytes = tokenValidationTransaction.Transaction.ToByteString(),
             MerklePath = merklePath
         };
 
+        var getCrossChainMerkleProofContextInput = new Int64Value
+        {
+            Value = tokenValidationTransaction.TransactionResultDto.BlockNumber
+        };
+
+        var crossChainMerkleProofContext = await CallTransactionAsync<AElf.Standards.ACS7.CrossChainMerkleProofContext>(
+            "GetBoundParentChainHeightAndMerklePathByHeight", getCrossChainMerkleProofContextInput,
+            _chainOptions.ChainInfos[chainId].CrossChainContractAddress, chainId);
+
+        crossChainCreateTokenInput.MerklePath.MerklePathNodes.AddRange(crossChainMerkleProofContext
+            .MerklePathFromParentChain.MerklePathNodes);
+        crossChainCreateTokenInput.ParentChainHeight = crossChainMerkleProofContext.BoundParentChainHeight;
+
+        _logger.LogInformation(
+            "[SyncToken] crossChainMerkleProofContext, chainId:{chainId}, crossChainContractAddress:{crossChainContractAddress}, parentChainHeight:{parentChainHeight}",
+            chainId, _chainOptions.ChainInfos[chainId].CrossChainContractAddress,
+            crossChainCreateTokenInput.ParentChainHeight);
         return crossChainCreateTokenInput;
     }
 
@@ -167,12 +186,14 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     {
         var fromChain = ChainHelper.ConvertBase58ToChainId(chainId);
         var checkResult = false;
+        var mainHeight = long.MaxValue;
         var time = 0;
 
         while (!checkResult && time < 40)
         {
             var indexMainChainBlock = await GetIndexHeightFromMainChainAsync(otherChainId, fromChain);
-            _logger.LogInformation("valid txHeight:{txHeight}, indexMainChainBlock: {indexMainChainBlock}", txHeight,
+            _logger.LogInformation("[SyncToken] valid txHeight:{txHeight}, indexMainChainBlock: {indexMainChainBlock}",
+                txHeight,
                 indexMainChainBlock);
             if (indexMainChainBlock < txHeight)
             {
@@ -181,10 +202,35 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
                 continue;
             }
 
-            checkResult = true;
+            mainHeight = mainHeight == long.MaxValue
+                ? await GetBlockHeightAsync(ContractAppServiceConstant.MainChainId)
+                : mainHeight;
+
+            var indexMainChainHeight = await GetIndexHeightFromSideChainAsync(chainId);
+            _logger.LogInformation(
+                "[SyncToken] valid indexMainChainHeight:{indexMainChainHeight}, mainHeight: {mainHeight}",
+                indexMainChainHeight, mainHeight);
+
+            checkResult = indexMainChainHeight > mainHeight;
         }
 
         CheckIndexBlockHeightResult(checkResult, time);
+    }
+
+    public async Task<long> GetIndexHeightFromSideChainAsync(string sideChainId)
+    {
+        var result =
+            await CallTransactionAsync<Int64Value>(MethodName.GetParentChainHeight, new Empty(),
+                _chainOptions.ChainInfos.GetOrDefault(sideChainId).CrossChainContractAddress, sideChainId);
+
+        return result.Value;
+    }
+
+    private async Task<long> GetBlockHeightAsync(string chainId)
+    {
+        var client = new AElfClient(_chainOptions.ChainInfos[chainId].BaseUrl);
+        await client.IsConnectedAsync();
+        return await client.GetBlockHeightAsync();
     }
 
     private void CheckIndexBlockHeightResult(bool result, int time)
