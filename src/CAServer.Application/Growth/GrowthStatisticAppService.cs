@@ -193,7 +193,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     ? referralCaHash
                     : "",
                 ReferralDate = UnixTimeStampToDateTime(indexer.Timestamp),
-                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                ReferralType = 0
             };
             var success = await _growthProvider.AddReferralRecordAsync(referralRecord);
             if (!success)
