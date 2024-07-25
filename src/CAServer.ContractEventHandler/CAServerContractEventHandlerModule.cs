@@ -138,6 +138,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
         context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
+        context.AddBackgroundWorkerAsync<ChainHeightWorker>();
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
