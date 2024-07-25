@@ -71,6 +71,8 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             var transactionInfo = await SendTransactionAsync(CommonConstant.MainChainId, crossChainCreateTokenInput,
                 from,
                 toChainInfo.TokenContractAddress, "CrossChainCreateToken");
+            _logger.LogInformation("[SyncToken] crossChainCreateTokenInput:{data}",
+                JsonConvert.SerializeObject(crossChainCreateTokenInput));
             if (transactionInfo == null || transactionInfo.TransactionResultDto == null)
             {
                 await SaveSyncRecordResultAsync(nftSyncIndex, null);
@@ -87,7 +89,8 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[SyncToken] sync token error, fromChainId:{chainId}, toChainId:{toChainId}, symbol:{symbol}", chainId,
+            _logger.LogError(e,
+                "[SyncToken] sync token error, fromChainId:{chainId}, toChainId:{toChainId}, symbol:{symbol}", chainId,
                 CommonConstant.MainChainId, symbol);
             await SaveSyncRecordResultAsync(nftSyncIndex, null, e.Message);
         }
