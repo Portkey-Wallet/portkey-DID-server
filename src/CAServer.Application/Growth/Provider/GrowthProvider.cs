@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
@@ -162,7 +163,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     {
         var record =
             await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1,
-                null, null, new List<int> { 0 });
+                null, null, new List<int> { referralRecordIndex.ReferralType});
         if (!record.IsNullOrEmpty())
         {
             return false;

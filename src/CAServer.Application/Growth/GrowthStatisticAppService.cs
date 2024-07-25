@@ -193,7 +193,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     ? referralCaHash
                     : "",
                 ReferralDate = UnixTimeStampToDateTime(indexer.Timestamp),
-                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                ReferralType = 0
             };
             var success = await _growthProvider.AddReferralRecordAsync(referralRecord);
             if (!success)
@@ -421,16 +422,26 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHash = group.Key;
             var addresses = await GetHamsterReferralAddressAsync(referralRecords, hamsterReferralInfo);
             var result = new List<HamsterScoreDto>();
-            for (var i = 0; i < addresses.Count; i += 50)
+
+            if (addresses.Count >= 100)
             {
-                var queryList = addresses.GetRange(i, Math.Min(50, list.Count - i));
-                var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(queryList, startTime, endTime);
-                var scoreResult = hamsterScoreList.GetScoreInfos
-                    .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
-                if (!scoreResult.IsNullOrEmpty())
+                for (var i = 0; i < addresses.Count; i += 50)
                 {
-                    result.AddRange(scoreResult);
+                    var queryList = addresses.GetRange(i, Math.Min(50, list.Count - i));
+                    var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(queryList, startTime, endTime);
+                    var scoreResult = hamsterScoreList.GetScoreInfos
+                        .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
+                    if (!scoreResult.IsNullOrEmpty())
+                    {
+                        result.AddRange(scoreResult);
+                    }
                 }
+            }
+            else
+            {
+                var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+                result = hamsterScoreList.GetScoreInfos
+                    .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             }
 
             if (result.IsNullOrEmpty())

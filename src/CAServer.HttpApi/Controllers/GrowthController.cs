@@ -78,7 +78,7 @@ public class GrowthController : CAServerController
         return await _statisticAppService.GetRewardProgressAsync(activityEnums);
     }
 
-    [HttpGet("BeInvitedConfigs")]
+    [HttpGet("be-invited-configs")]
     public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus referralTaskStatus)
     {
         return await _statisticAppService.GetBeInvitedConfigAsync(referralTaskStatus);
