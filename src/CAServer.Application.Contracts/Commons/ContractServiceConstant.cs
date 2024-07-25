@@ -126,4 +126,7 @@ public static class CommonConstant
     public const string FreeMintTokenIdGrainId = "FreeMint-TokenId";
     public const int FreeMintTotalSupply = 1;
     public const int FreeMintDecimals = 0;
+
+    public const string PortkeyS3Mark = "did";
+    public const string ImS3Mark = "im";
 }
