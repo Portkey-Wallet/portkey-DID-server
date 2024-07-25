@@ -144,4 +144,10 @@ public class CAAccountController : CAServerController
         return await _zkLoginProvider.UpdateGuardianAsync(guardianDto.GuardianIdentifier, guardianDto.Salt,
             guardianDto.IdentifierHash);
     }
+
+    [HttpGet("guardian/userinfo")]
+    public async Task<List<UserExtraInfoIndexDto>> GetUserExtraInfoDtoAsync(List<string> identifiers)
+    {
+        return await _guardianAppService.GetUserExtraInfoDtoAsync(identifiers);
+    }
 }
