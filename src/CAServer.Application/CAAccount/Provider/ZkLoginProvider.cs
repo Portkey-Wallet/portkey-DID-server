@@ -84,7 +84,7 @@ public class ZkLoginProvider : CAServerAppService, IZkLoginProvider
                || GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.Equals(type);
     }
 
-    public bool CanExecuteZk(GuardianType type, ZkLoginInfoDto zkLoginInfo)
+    public bool CanExecuteZkByZkLoginInfoDto(GuardianType type, ZkLoginInfoDto zkLoginInfo)
     {
         if (!CanSupportZk(type))
         {
@@ -101,7 +101,7 @@ public class ZkLoginProvider : CAServerAppService, IZkLoginProvider
                && zkLoginInfo.NoncePayload is not null;
     }
 
-    public bool CanExecuteZk(Portkey.Contracts.CA.ZkLoginInfo zkLoginInfo)
+    public bool CanExecuteZkByContractZk(Portkey.Contracts.CA.ZkLoginInfo zkLoginInfo)
     {
         return zkLoginInfo is not null
                && zkLoginInfo.IdentifierHash != null && !AElf.Types.Hash.Empty.Equals(zkLoginInfo.IdentifierHash)

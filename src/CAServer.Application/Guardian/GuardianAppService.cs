@@ -113,7 +113,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         foreach (var guardian in guardianResult.GuardianList.Guardians)
         {
             var guardianVerifiedByZk = holderInfo.GuardianList.Guardians.FirstOrDefault(
-                g => g.IdentifierHash.Equals(Hash.LoadFromHex(guardian.IdentifierHash)) && _zkLoginProvider.CanExecuteZk(g.ZkLoginInfo));
+                g => g.IdentifierHash.Equals(Hash.LoadFromHex(guardian.IdentifierHash)) && _zkLoginProvider.CanExecuteZkByContractZk(g.ZkLoginInfo));
             guardian.VerifiedByZk = guardianVerifiedByZk is not null;
         }
     }
