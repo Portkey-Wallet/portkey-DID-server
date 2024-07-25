@@ -8,7 +8,7 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
 {
     [Required] public GuardianIdentifierType Type { get; set; }
     [Required] public string AccessToken { get; set; }
-    [Required] public string VerifierId { get; set; }
+    public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
     [Required] public OperationType OperationType { get; set; }
 
