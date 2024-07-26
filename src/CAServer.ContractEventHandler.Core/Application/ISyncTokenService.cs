@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Client.Proto;
 using AElf.Client.Service;
 using AElf.Contracts.MultiToken;
 using AElf.Indexing.Elasticsearch;
@@ -16,10 +15,8 @@ using CAServer.Options;
 using CAServer.Signature.Provider;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
-using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Hash = AElf.Types.Hash;
@@ -44,11 +41,13 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     private readonly ContractOptions _contractOptions;
     private readonly INESTRepository<FreeMintNftSyncIndex, string> _freeMintNftSyncRepository;
     private readonly IDistributedCache<ChainHeightCache> _distributedCache;
+    private readonly IndexOptions _indexOptions;
 
     public SyncTokenService(ISignatureProvider signatureProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<ContractServiceOptions> contractGrainOptions,
         IOptionsSnapshot<ContractOptions> contractOptions,
+        IOptionsSnapshot<IndexOptions> indexOptions,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount, ILogger<SyncTokenService> logger,
         INESTRepository<FreeMintNftSyncIndex, string> freeMintNftSyncRepository,
         IDistributedCache<ChainHeightCache> distributedCache)
@@ -61,6 +60,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         _contractServiceOptions = contractGrainOptions.Value;
         _packageAccount = packageAccount.Value;
         _contractOptions = contractOptions.Value;
+        _indexOptions = indexOptions.Value;
     }
 
     public async Task SyncTokenToOtherChainAsync(string chainId, string symbol)
@@ -181,7 +181,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         var mainHeight = long.MaxValue;
         var time = 0;
 
-        while (!checkResult && time < 40)
+        while (!checkResult && time < _indexOptions.IndexTimes)
         {
             var cache = await _distributedCache.GetAsync(nameof(ChainHeightCache));
             _logger.LogInformation(
@@ -191,7 +191,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             var sideChainIndexHeight = cache.SideChainIndexHeight;
             if (sideChainIndexHeight < txHeight)
             {
-                await Task.Delay(10000);
+                await Task.Delay(_indexOptions.IndexDelay);
                 time++;
                 _logger.LogInformation(
                     "[SyncToken] valid txHeight:{txHeight}, sideChainIndexHeight: {sideChainIndexHeight}, time:{time}",
@@ -210,7 +210,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
                 indexMainChainHeight, mainHeight);
 
             checkResult = indexMainChainHeight > mainHeight;
-            await Task.Delay(10000);
+            await Task.Delay(_indexOptions.IndexDelay);
         }
 
         CheckIndexBlockHeightResult(checkResult, time);
@@ -218,7 +218,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
 
     private void CheckIndexBlockHeightResult(bool result, int time)
     {
-        if (!result && time == 40)
+        if (!result && time == _indexOptions.IndexTimes)
         {
             throw new Exception(LoggerMsg.IndexTimeoutError);
         }
