@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography.Xml;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAActivity.Provider;
@@ -115,25 +114,32 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
         var hamsterDesc = String.Format(CommonConstant.HamsterScore, _hamsterOptions.MinAcornsScore);
-        var records = referralRecordList.Select(index => new ReferralRecordDetailDto
-        {
-            WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo)
-                ? indexInfo.NickName
-                : "",
-            RecordDesc = index.ReferralType == 0
-                ? nickNameByCaHashes.TryGetValue(index.CaHash, out var referralIndexInfo)
-                    ? referralIndexInfo.NickName
-                    : "" + CommonConstant.SingUp
-                : nickNameByCaHashes.TryGetValue(index.CaHash, out var recordIndexInfo)
-                    ? recordIndexInfo.NickName
-                    : "" + hamsterDesc,
-            IsDirectlyInvite = index.IsDirectlyInvite == 0,
-            ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd"),
-            Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex)
-                ? caHolderIndex.Avatar
-                : "",
-        }).ToList();
 
+        var records = new List<ReferralRecordDetailDto>();
+        foreach (var index in referralRecordList)
+        {
+            var record = new ReferralRecordDetailDto();
+            var walletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo)
+                ? indexInfo.NickName
+                : "";
+            var recordDesc = walletName;
+            if (index.ReferralType == 0)
+            {
+                recordDesc += CommonConstant.SingUp;
+            }
+            else
+            {
+                recordDesc += hamsterDesc;
+            }
+            record.WalletName = walletName;
+            record.RecordDesc = recordDesc;
+            record.Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex)
+                ? caHolderIndex.Avatar
+                : "";;
+            record.IsDirectlyInvite = index.IsDirectlyInvite == 0;
+            record.ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd");
+            records.Add(record);
+        }
         return new ReferralRecordResponseDto
         {
             HasNextPage = hasNextPage,
@@ -428,7 +434,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 for (var i = 0; i < addresses.Count; i += 50)
                 {
                     var queryList = addresses.GetRange(i, Math.Min(50, list.Count - i));
-                    var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(queryList, startTime, endTime);
+                    var hamsterScoreList =
+                        await _growthProvider.GetHamsterScoreListAsync(queryList, startTime, endTime);
                     var scoreResult = hamsterScoreList.GetScoreInfos
                         .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
                     if (!scoreResult.IsNullOrEmpty())
@@ -462,8 +469,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     await _growthProvider.GetReferralRecordListAsync(hamsterReferralInfo[hamster.CaAddress], caHash, 0,
                         1,
                         null, null, new List<int> { 1 });
-                var referralRecordIndices = record.Where(t => t.ReferralType == 1).ToList();
-                if (!referralRecordIndices.IsNullOrEmpty())
+                if (!record.IsNullOrEmpty())
                 {
                     continue;
                 }
@@ -566,18 +572,21 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
     }
 
-    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus status)
+    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync()
     {
-        _beInvitedConfigOptions.BeInvitedConfig.TryGetValue(status.ToString(), out var config);
-        if (config == null)
+        var result = new BeInvitedConfigResponseDto();
+        var data = new Dictionary<string, BeInvitedConfigDto>();
+        var config = _beInvitedConfigOptions.BeInvitedConfig;
+        foreach (var key in config.Keys)
         {
-            return new BeInvitedConfigResponseDto();
+            var response = ObjectMapper.Map<BeInvitedConfig, BeInvitedConfigDto>(config[key]);
+            response.TaskConfigs =
+                ObjectMapper.Map<List<TaskConfigInfo>, List<TaskConfig>>(config[key].TaskConfigInfos);
+            response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config[key].NoticeInfo);
+            data.Add(key, response);
         }
-
-        var response = ObjectMapper.Map<BeInvitedConfig, BeInvitedConfigResponseDto>(config);
-        response.TaskConfigs = ObjectMapper.Map<List<TaskConfigInfo>, List<TaskConfig>>(config.TaskConfigInfos);
-        response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config.NoticeInfo);
-        return response;
+        result.Data = data;
+        return result;
     }
 
     private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)
@@ -774,7 +783,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     private static List<ReferralCountDto> ModelToDictionary(object obj)
     {
-        var list = new List<ReferralCountDto>();
         if (obj == null)
         {
             throw new ArgumentNullException(nameof(obj));
@@ -787,16 +795,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 prop => prop.GetValue(obj, null)
             );
 
-        foreach (var model in modelToDic.Keys)
-        {
-            var result = new ReferralCountDto()
-            {
-                ActivityName = model,
-                ReferralCount = modelToDic[model].ToString()
-            };
-            list.Add(result);
-        }
-
-        return list;
+        return modelToDic.Keys.Select(model => new ReferralCountDto() { ActivityName = model, ReferralCount = modelToDic[model].ToString() }).ToList();
     }
 }
