@@ -2,6 +2,7 @@ using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.FreeMint;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
@@ -23,6 +24,7 @@ public class CAServerOrleansSiloModule : AbpModule
         //ConfigureEsIndexCreation();
         Configure<GrainOptions>(configuration.GetSection("Contract"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<FreeMintGrainOptions>(configuration.GetSection("FreeMint"));
         context.Services.AddHttpClient();
     }
     
