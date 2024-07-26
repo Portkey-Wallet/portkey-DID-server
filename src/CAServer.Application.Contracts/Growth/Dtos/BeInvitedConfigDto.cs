@@ -31,6 +31,8 @@ public class TaskConfig
     public string TaskCopyWriting { get; set; }
 
     public string ButtonName { get; set; }
+
+    public bool ButtonAbled { get; set; }
 }
 
 public class Notice
@@ -38,4 +40,6 @@ public class Notice
     public string CopyWriting { get; set; }
 
     public string ButtonName { get; set; }
+    
+    public bool ButtonAbled { get; set; }
 }
