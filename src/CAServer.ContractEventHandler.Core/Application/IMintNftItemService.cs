@@ -12,6 +12,7 @@ using CAServer.Grains.Grain.FreeMint;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 using IObjectMapper = Volo.Abp.ObjectMapping.IObjectMapper;
@@ -93,6 +94,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
             var grain = _clusterClient.GetGrain<IFreeMintGrain>(eventData.UserId);
             await grain.ChangeMintStatus(index.Id, status);
             index.Status = status.ToString();
+            index.UpdateTime = DateTime.UtcNow;
             await _freeMintRepository.AddOrUpdateAsync(index);
 
             _logger.LogInformation("[FreeMint] end handle mint event, status:{status}", index.Status);
@@ -104,7 +106,17 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[FreeMint] error");
+            var grain = _clusterClient.GetGrain<IFreeMintGrain>(eventData.UserId);
+            await grain.ChangeMintStatus(eventData.ConfirmInfo.ItemId, FreeMintStatus.FAIL);
+            var index = await _freeMintRepository.GetAsync(eventData.ConfirmInfo.ItemId);
+            if (index != null)
+            {
+                index.Status = FreeMintStatus.FAIL.ToString();
+                index.UpdateTime = DateTime.UtcNow;
+                await _freeMintRepository.AddOrUpdateAsync(index);
+            }
+
+            _logger.LogError(e, "[FreeMint] error, data:{data}", JsonConvert.SerializeObject(eventData));
         }
     }
 }
