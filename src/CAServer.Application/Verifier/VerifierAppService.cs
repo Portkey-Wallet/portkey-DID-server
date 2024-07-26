@@ -313,13 +313,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 ValidateIssuer = true,
                 ValidIssuer = "https://appleid.apple.com",
                 ValidateAudience = true,
-                ValidAudiences = [
+                ValidAudiences = new List<string>{
                     "com.portkey.finance",
                     "com.portkey.did",
                     "did.portkey",
                     "com.portkey.did.tran",
                     "com.portkey.did.extension.service"
-                ], //_appleAuthOptions.Audiences,
+                }, //_appleAuthOptions.Audiences,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = jwk
