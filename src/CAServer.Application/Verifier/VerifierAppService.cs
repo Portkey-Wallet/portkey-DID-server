@@ -176,8 +176,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             try
             {
-                await AddGuardianAndUserByAppleTokenAsync(requestDto);
-                identifierHash = null;
+                identifierHash = await AddGuardianAndUserByAppleTokenAsync(requestDto);
             }
             catch (Exception e)
             {
