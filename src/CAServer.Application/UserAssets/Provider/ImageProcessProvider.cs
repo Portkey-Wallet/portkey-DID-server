@@ -183,8 +183,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
     {
         var urlSplit = imageUrl.Split(new string[] { UserAssetsServiceConstant.AwsDomain },
             StringSplitOptions.RemoveEmptyEntries);
-        _logger.LogInformation("### s3: {s3}", urlSplit[0]);
-        
+
         if (urlSplit[0].ToLower().Contains(CommonConstant.ImS3Mark))
         {
             return ImageResizeType.Im;

@@ -79,6 +79,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<GrabRedPackageOptions>(configuration.GetSection("GrabRedPackage"));
         Configure<NFTTraitsSyncOptions>(configuration.GetSection("NFTTraitsSync"));
         Configure<TransactionReportOptions>(configuration.GetSection("TransactionReport"));
+        Configure<SyncChainHeightOptions>(configuration.GetSection("SyncChainHeight"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
