@@ -72,7 +72,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService, IDistributedCache<AppleKeys> distributedCache)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
+        IDistributedCache<AppleKeys> distributedCache)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -86,6 +87,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
+        _distributedCache = distributedCache;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
