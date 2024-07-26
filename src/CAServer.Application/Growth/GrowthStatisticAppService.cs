@@ -131,15 +131,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 recordDesc += hamsterDesc;
             }
+
             record.WalletName = walletName;
             record.RecordDesc = recordDesc;
             record.Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex)
                 ? caHolderIndex.Avatar
-                : "";;
+                : "";
+            ;
             record.IsDirectlyInvite = index.IsDirectlyInvite == 0;
             record.ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd");
             records.Add(record);
         }
+
         return new ReferralRecordResponseDto
         {
             HasNextPage = hasNextPage,
@@ -303,8 +306,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         scores.Sort();
         scores.Reverse();
         var skipList = entries.Skip(input.Skip).Take(input.Limit).ToArray();
-
-
         foreach (var entry in skipList)
         {
             var caAddress = entry.Element;
@@ -585,8 +586,33 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config[key].NoticeInfo);
             data.Add(key, response);
         }
+
         result.Data = data;
         return result;
+    }
+
+    public async Task<ActivityBaseInfoDto> ActivityBaseInfoAsync()
+    {
+        var data = new List<ActivityBaseInfo>();
+        var configs = _activityConfigOptions.ActivityConfigMap;
+        foreach (var key in configs.Keys)
+        {
+            var baseInfo = new ActivityBaseInfo();
+            var config = configs[key];
+            baseInfo.ActivityName = key;
+            baseInfo.StartDate = config.ActivityConfig.StartDate;
+            baseInfo.EndDate = config.ActivityConfig.EndDate;
+            baseInfo.IsDefault = config.IsDefault;
+            var sDate = DateTime.Parse(config.ActivityConfig.StartDate).ToString("MM.dd");
+            var eDate = DateTime.Parse(config.ActivityConfig.EndDate).ToString("MM.dd");
+            baseInfo.DateRange = sDate + "-" + eDate;
+            data.Add(baseInfo);
+        }
+
+        return new ActivityBaseInfoDto
+        {
+            Data = data
+        };
     }
 
     private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)
@@ -795,6 +821,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 prop => prop.GetValue(obj, null)
             );
 
-        return modelToDic.Keys.Select(model => new ReferralCountDto() { ActivityName = model, ReferralCount = modelToDic[model].ToString() }).ToList();
+        return modelToDic.Keys.Select(model => new ReferralCountDto()
+            { ActivityName = model, ReferralCount = modelToDic[model].ToString() }).ToList();
     }
 }

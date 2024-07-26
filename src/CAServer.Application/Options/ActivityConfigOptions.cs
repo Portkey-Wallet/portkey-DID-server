@@ -12,9 +12,13 @@ public class ActivityConfigOptions
 
 public class ActivityConfigs
 {
+    public string ActivityName { get; set; }
+
     public ActivityConfig ActivityConfig { get; set; }
 
     public RulesConfig RulesConfig { get; set; }
+
+    public bool IsDefault { get; set; }
 }
 
 public class RulesConfig

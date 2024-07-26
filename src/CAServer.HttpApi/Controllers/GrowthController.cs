@@ -72,9 +72,15 @@ public class GrowthController : CAServerController
     }
 
     [HttpGet("be-invited-configs")]
-    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync()
+    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfig()
     {
         return await _statisticAppService.GetBeInvitedConfigAsync();
+    }
+    
+    [HttpGet("get-activity-baseInfos")]
+    public async Task<ActivityBaseInfoDto> GetActivityBaseInfos()
+    {
+        return await _statisticAppService.ActivityBaseInfoAsync();
     }
 
 
