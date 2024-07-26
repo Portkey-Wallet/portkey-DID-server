@@ -2,9 +2,13 @@ namespace CAServer.Growth.Dtos;
 
 public class ActivityDetailsResponseDto
 {
+    public string ActivityName { get; set; }
+
     public ActivityConfigDto ActivityConfig { get; set; }
 
     public RulesConfigDto RulesConfig { get; set; }
+
+    public bool IsDefault { get; set; }
 }
 
 public class RulesConfigDto
