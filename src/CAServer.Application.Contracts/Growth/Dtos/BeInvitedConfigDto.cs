@@ -46,4 +46,6 @@ public class Notice
     public bool ButtonAbled { get; set; }
     
     public string ButtonLink { get; set; }
+
+    public string NoticeName { get; set; }
 }
