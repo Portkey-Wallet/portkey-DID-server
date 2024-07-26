@@ -34,4 +34,8 @@ public class ActivityConfigDto
     public string EndDateFormat { get; set; }
 
     public string TaskImageUrl { get; set; }
+    
+    public string PCTaskImageUrl { get; set; }
+    
+    
 }

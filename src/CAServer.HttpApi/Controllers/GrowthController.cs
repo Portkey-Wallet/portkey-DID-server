@@ -53,13 +53,6 @@ public class GrowthController : CAServerController
         return await _statisticAppService.GetReferralRecordList(input);
     }
     
-    [HttpGet("referralTotalCount"),Authorize]
-    public async Task<int> GetReferralTotalCount(ReferralRecordRequestDto input)
-    {
-        return await _statisticAppService.GetReferralTotalCountAsync(input);
-    }
-    
-    
     [HttpGet("referralRecordRank")]
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
@@ -79,9 +72,9 @@ public class GrowthController : CAServerController
     }
 
     [HttpGet("be-invited-configs")]
-    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus referralTaskStatus)
+    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync()
     {
-        return await _statisticAppService.GetBeInvitedConfigAsync(referralTaskStatus);
+        return await _statisticAppService.GetBeInvitedConfigAsync();
     }
 
 

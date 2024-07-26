@@ -951,7 +951,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
         CreateMap<ActivityConfig, ActivityConfigDto>();
         CreateMap<RulesConfig, RulesConfigDto>();
-        CreateMap<BeInvitedConfig, BeInvitedConfigResponseDto>();
+        CreateMap<BeInvitedConfig, BeInvitedConfigDto>();
         CreateMap<TaskConfigInfo, TaskConfig>();
         CreateMap<NoticeInfo, Notice>();
         
