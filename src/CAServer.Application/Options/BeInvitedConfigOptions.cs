@@ -34,6 +34,8 @@ public class TaskConfigInfo
     
     public bool ButtonAbled { get; set; }
 
+    public string ButtonLink { get; set; }
+
 }
 
 public class NoticeInfo
@@ -43,5 +45,7 @@ public class NoticeInfo
     public string ButtonName { get; set; }
     
     public bool ButtonAbled { get; set; }
+    
+    public string ButtonLink { get; set; }
 
 }
