@@ -20,16 +20,33 @@ namespace CAServer.CAAccount.Provider;
 
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
-public class ZkLoginProvider(
-    IClusterClient clusterClient,
-    ILogger<ZkLoginProvider> logger,
-    IDistributedEventBus distributedEventBus,
-    IObjectMapper objectMapper,
-    IGoogleZkProvider googleZkProvider,
-    IAppleZkProvider appleZkProvider,
-    IFacebookZkProvider facebookZkProvider)
+public class ZkLoginProvider
     : CAServerAppService, IZkLoginProvider
 {
+    private readonly IClusterClient _clusterClient;
+    private readonly ILogger<ZkLoginProvider> _logger;
+    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IObjectMapper _objectMapper;
+    private readonly IGoogleZkProvider _googleZkProvider;
+    private readonly IAppleZkProvider _appleZkProvider;
+    private readonly IFacebookZkProvider _facebookZkProvider;
+    public ZkLoginProvider(
+        IClusterClient clusterClient,
+        ILogger<ZkLoginProvider> logger,
+        IDistributedEventBus distributedEventBus,
+        IObjectMapper objectMapper,
+        IGoogleZkProvider googleZkProvider,
+        IAppleZkProvider appleZkProvider,
+        IFacebookZkProvider facebookZkProvider)
+    {
+        _clusterClient = clusterClient;
+        _logger = logger;
+        _distributedEventBus = distributedEventBus;
+        _objectMapper = objectMapper;
+        _googleZkProvider = googleZkProvider;
+        _appleZkProvider = appleZkProvider;
+        _facebookZkProvider = facebookZkProvider;
+    }
     public bool CanSupportZk(GuardianIdentifierType type)
     {
         return GuardianIdentifierType.Google.Equals(type)
@@ -81,30 +98,30 @@ public class ZkLoginProvider(
     public async Task<GuardianEto> UpdateGuardianAsync(string guardianIdentifier, string salt, string identifierHash)
     {
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
-        var guardianGrain = clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
         var guardianGrainDto = await guardianGrain.UpdateGuardianAsync(guardianIdentifier, salt, identifierHash);
-        logger.LogInformation("UpdateGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
-        var eto = objectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data);
+        _logger.LogInformation("UpdateGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
+        var eto = _objectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data);
         if (guardianGrainDto.Success)
         {
-            await distributedEventBus.PublishAsync(eto);
+            await _distributedEventBus.PublishAsync(eto);
         }
         return eto;
     }
     
     public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
-        var verifyTokenRequestDto = objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
+        var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
         string identifierHash = null;
         if (GuardianIdentifierType.Google.Equals(requestDto.Type))
         {
             try
             {
-                identifierHash = await googleZkProvider.SaveGuardianUserBeforeZkLoginAsync(requestDto);
+                identifierHash = await _googleZkProvider.SaveGuardianUserBeforeZkLoginAsync(requestDto);
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Google SaveGuardianUserBeforeZkLogin error");
+                _logger.LogError(e, "Google SaveGuardianUserBeforeZkLogin error");
                 throw new UserFriendlyException("add google guardian and user extra info error");
             }
         }
@@ -112,11 +129,11 @@ public class ZkLoginProvider(
         {
             try
             {
-                identifierHash = await appleZkProvider.SaveGuardianUserBeforeZkLoginAsync(requestDto);
+                identifierHash = await _appleZkProvider.SaveGuardianUserBeforeZkLoginAsync(requestDto);
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Apple SaveGuardianUserBeforeZkLogin error");
+                _logger.LogError(e, "Apple SaveGuardianUserBeforeZkLogin error");
                 throw new UserFriendlyException("add apple guardian and user extra info error");
             }
         }
@@ -124,11 +141,11 @@ public class ZkLoginProvider(
         {
             try
             {
-                identifierHash = await facebookZkProvider.SaveGuardianUserBeforeZkLoginAsync(requestDto);
+                identifierHash = await _facebookZkProvider.SaveGuardianUserBeforeZkLoginAsync(requestDto);
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Facebook SaveGuardianUserBeforeZkLogin error");
+                _logger.LogError(e, "Facebook SaveGuardianUserBeforeZkLogin error");
                 throw new UserFriendlyException("add facebook guardian and user extra info error");
             }
         }

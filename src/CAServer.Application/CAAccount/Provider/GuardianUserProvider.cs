@@ -22,18 +22,29 @@ namespace CAServer.CAAccount.Provider;
 
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
-public class GuardianUserProvider(
-    ILogger<GuardianUserProvider> logger,
-    IClusterClient clusterClient,
-    IObjectMapper objectMapper,
-    IDistributedEventBus distributedEventBus)
+public class GuardianUserProvider
     : CAServerAppService, IGuardianUserProvider
 {
+    private readonly ILogger<GuardianUserProvider> _logger;
+    private readonly IClusterClient _clusterClient;
+    private readonly IObjectMapper _objectMapper;
+    private readonly IDistributedEventBus _distributedEventBus;
+    public GuardianUserProvider(
+        ILogger<GuardianUserProvider> logger,
+        IClusterClient clusterClient,
+        IObjectMapper objectMapper,
+        IDistributedEventBus distributedEventBus)
+    {
+        _logger = logger;
+        _clusterClient = clusterClient;
+        _objectMapper = objectMapper;
+        _distributedEventBus = distributedEventBus;
+    }
     public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier)
     {
         var guardianGrainResult = GetGuardian(guardianIdentifier);
 
-        logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
+        _logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
             JsonConvert.SerializeObject(guardianGrainResult));
 
         if (guardianGrainResult.Success)
@@ -51,7 +62,7 @@ public class GuardianUserProvider(
     {
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
 
-        var guardianGrain = clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
         return guardianGrain.GetGuardianAsync(guardianIdentifier).Result;
     }
     
@@ -79,16 +90,16 @@ public class GuardianUserProvider(
     public async Task AddGuardianAsync(string guardianIdentifier, string salt, string identifierHash)
     {
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
-        var guardianGrain = clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
         var guardianGrainDto = await guardianGrain.AddGuardianAsync(guardianIdentifier, salt, identifierHash);
 
-        logger.LogInformation("AddGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
+        _logger.LogInformation("AddGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
         if (guardianGrainDto.Success)
         {
-            logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
+            _logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
                 JsonConvert.SerializeObject(guardianGrainDto.Data));
             
-            await distributedEventBus.PublishAsync(
+            await _distributedEventBus.PublishAsync(
                 ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data));
         }
     }
@@ -97,18 +108,18 @@ public class GuardianUserProvider(
     {
         var userExtraInfoGrainId =
             GrainIdHelper.GenerateGrainId("UserExtraInfo", userExtraInfo.Id);
-        var userExtraInfoGrain = clusterClient.GetGrain<IUserExtraInfoGrain>(userExtraInfoGrainId);
+        var userExtraInfoGrain = _clusterClient.GetGrain<IUserExtraInfoGrain>(userExtraInfoGrainId);
 
         var grainDto = await userExtraInfoGrain.AddOrUpdateAsync(
-            objectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>(userExtraInfo));
+            _objectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>(userExtraInfo));
 
         grainDto.Id = userExtraInfo.Id;
 
         Logger.LogInformation("Add or update user extra info success, Publish to MQ: {data}",
             JsonConvert.SerializeObject(userExtraInfo));
 
-        var userExtraInfoEto = objectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto);
-        logger.LogDebug("Publish user extra info to mq: {data}", JsonConvert.SerializeObject(userExtraInfoEto));
-        await distributedEventBus.PublishAsync(userExtraInfoEto);
+        var userExtraInfoEto = _objectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto);
+        _logger.LogDebug("Publish user extra info to mq: {data}", JsonConvert.SerializeObject(userExtraInfoEto));
+        await _distributedEventBus.PublishAsync(userExtraInfoEto);
     }
 }
