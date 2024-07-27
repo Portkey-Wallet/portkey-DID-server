@@ -19,20 +19,33 @@ namespace CAServer.CAAccount.Provider;
 
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
-public class AppleZkProvider(
-    IGuardianUserProvider guardianUserProvider,
-    ILogger<AppleZkProvider> logger,
-    JwtSecurityTokenHandler jwtSecurityTokenHandler,
-    IDistributedCache<AppleKeys, string> distributedCache,
-    IHttpClientFactory httpClientFactory)
-    : CAServerAppService, IAppleZkProvider
+public class AppleZkProvider : CAServerAppService, IAppleZkProvider
 {
+    private readonly IGuardianUserProvider _guardianUserProvider;
+    private readonly ILogger<AppleZkProvider> _logger;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly IDistributedCache<AppleKeys, string> _distributedCache;
+    private readonly IHttpClientFactory _httpClientFactory;
+    public AppleZkProvider(
+        IGuardianUserProvider guardianUserProvider,
+        ILogger<AppleZkProvider> logger,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler,
+        IDistributedCache<AppleKeys, string> distributedCache,
+        IHttpClientFactory httpClientFactory)
+    {
+        _guardianUserProvider = guardianUserProvider;
+        _logger = logger;
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _distributedCache = distributedCache;
+        _httpClientFactory = httpClientFactory;
+    }
+    
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
         try
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
-            var hashInfo = await guardianUserProvider.GetSaltAndHashAsync(userId);
+            var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userId);
             var securityToken = await ValidateTokenAsync(requestDto.AccessToken);
             var userInfo = GetUserInfoFromToken(securityToken);
 
@@ -41,17 +54,17 @@ public class AppleZkProvider(
 
             if (!hashInfo.Item3)
             {
-                await guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
+                await _guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
-            logger.LogInformation("send Dtos.UserExtraInfo of Apple:{0}", JsonConvert.SerializeObject(userInfo));
-            await guardianUserProvider.AddUserInfoAsync(
+            _logger.LogInformation("send Dtos.UserExtraInfo of Apple:{0}", JsonConvert.SerializeObject(userInfo));
+            await _guardianUserProvider.AddUserInfoAsync(
                 ObjectMapper.Map<AppleUserExtraInfo, CAServer.Verifier.Dtos.UserExtraInfo>(userInfo));
 
             return hashInfo.Item1;
         }
         catch (Exception e)
         {
-            logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "{Message}", e.Message);
             throw new UserFriendlyException(e.Message);
         }
     }
@@ -60,12 +73,12 @@ public class AppleZkProvider(
     {
         try
         {
-            var jwtToken = jwtSecurityTokenHandler.ReadJwtToken(identityToken);
+            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(identityToken);
             return jwtToken.Payload.Sub;
         }
         catch (Exception e)
         {
-            logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "{Message}", e.Message);
             throw new Exception("Invalid token");
         }
     }
@@ -74,7 +87,7 @@ public class AppleZkProvider(
     {
         try
         {
-            var jwtToken = jwtSecurityTokenHandler.ReadJwtToken(identityToken);
+            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(identityToken);
             var kid = jwtToken.Header["kid"].ToString();
             var appleKey = await GetAppleKeyAsync(kid);
             var jwk = new JsonWebKey(JsonConvert.SerializeObject(appleKey));
@@ -96,14 +109,14 @@ public class AppleZkProvider(
                 IssuerSigningKey = jwk
             };
 
-            jwtSecurityTokenHandler.ValidateToken(identityToken, validateParameter,
+            _jwtSecurityTokenHandler.ValidateToken(identityToken, validateParameter,
                 out SecurityToken validatedToken);
 
             return validatedToken;
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Get UserInfo From Apple Failed:" + e.Message);
+            _logger.LogError(e, "Get UserInfo From Apple Failed:" + e.Message);
             throw new UserFriendlyException("Get UserInfo From Apple Failed");
         }
     }
@@ -116,7 +129,7 @@ public class AppleZkProvider(
 
     private async Task<AppleKeys> GetAppleKeysAsync()
     {
-        return await distributedCache.GetOrAddAsync(
+        return await _distributedCache.GetOrAddAsync(
             "apple.auth.keys",
             async () => await GetAppleKeyFormAppleAsync(),
             () => new DistributedCacheEntryOptions
@@ -129,7 +142,7 @@ public class AppleZkProvider(
     private async Task<AppleKeys> GetAppleKeyFormAppleAsync()
     {
         var appleKeyUrl = "https://appleid.apple.com/auth/keys";
-        var response = await httpClientFactory.CreateClient().GetStringAsync(appleKeyUrl);
+        var response = await _httpClientFactory.CreateClient().GetStringAsync(appleKeyUrl);
 
         return JsonConvert.DeserializeObject<AppleKeys>(response);
     }

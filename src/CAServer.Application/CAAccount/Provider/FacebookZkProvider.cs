@@ -14,37 +14,47 @@ namespace CAServer.CAAccount.Provider;
 
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
-public class FacebookZkProvider(IGuardianUserProvider guardianUserProvider,
-    ILogger<FacebookZkProvider> logger,
-    IHttpClientFactory httpClientFactory,
-    IVerifierServerClient verifierServerClient) : CAServerAppService,  IFacebookZkProvider
+public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
 {
-    
+    private readonly IGuardianUserProvider _guardianUserProvider;
+    private readonly ILogger<FacebookZkProvider> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IVerifierServerClient _verifierServerClient;
+    public FacebookZkProvider(IGuardianUserProvider guardianUserProvider,
+        ILogger<FacebookZkProvider> logger,
+        IHttpClientFactory httpClientFactory,
+        IVerifierServerClient verifierServerClient)
+    {
+        _guardianUserProvider = guardianUserProvider;
+        _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _verifierServerClient = verifierServerClient;
+    }
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
         try
         {
             var facebookUser = await GetFacebookUserInfoAsync(requestDto);
-            var userSaltAndHash = await guardianUserProvider.GetSaltAndHashAsync(facebookUser.Id);
+            var userSaltAndHash = await _guardianUserProvider.GetSaltAndHashAsync(facebookUser.Id);
             if (!userSaltAndHash.Item3)
             {
-                await guardianUserProvider.AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
+                await _guardianUserProvider.AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
             }
 
-            await guardianUserProvider.AddUserInfoAsync(
+            await _guardianUserProvider.AddUserInfoAsync(
                 ObjectMapper.Map<FacebookUserInfoDto, CAServer.Verifier.Dtos.UserExtraInfo>(facebookUser));
             return userSaltAndHash.Item1;
         }
         catch (Exception e)
         {
-            logger.LogError("Verify Facebook Failed, {Message}", e.Message);
+            _logger.LogError("Verify Facebook Failed, {Message}", e.Message);
             throw new UserFriendlyException("Verify Facebook Failed.");
         }
     }
     
     private async Task<FacebookUserInfoDto> GetFacebookUserInfoAsync(VerifiedZkLoginRequestDto requestDto)
     {
-        var verifyFacebookUserInfoDto = await verifierServerClient.VerifyFacebookAccessTokenAsync(new VerifyTokenRequestDto()
+        var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(new VerifyTokenRequestDto()
         {
             AccessToken = requestDto.AccessToken,
             ChainId = requestDto.ChainId,
@@ -69,14 +79,14 @@ public class FacebookZkProvider(IGuardianUserProvider guardianUserProvider,
     
     private async Task<string> FacebookRequestAsync(string url)
     {
-        var client = httpClientFactory.CreateClient();
+        var client = _httpClientFactory.CreateClient();
         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url));
 
         var result = await response.Content.ReadAsStringAsync();
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            logger.LogError("{Message}", response.ToString());
+            _logger.LogError("{Message}", response.ToString());
             throw new Exception("Invalid token");
         }
 
@@ -85,7 +95,7 @@ public class FacebookZkProvider(IGuardianUserProvider guardianUserProvider,
             return result;
         }
 
-        logger.LogError("{Message}", response.ToString());
+        _logger.LogError("{Message}", response.ToString());
         throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
     }
 }
