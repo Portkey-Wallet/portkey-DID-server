@@ -1,0 +1,162 @@
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using CAServer.AppleVerify;
+using CAServer.CAAccount.Dtos;
+using CAServer.Verifier.Dtos;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using Volo.Abp;
+using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
+
+namespace CAServer.CAAccount.Provider;
+
+[RemoteService(IsEnabled = false)]
+[DisableAuditing]
+public class AppleZkProvider(
+    IGuardianUserProvider guardianUserProvider,
+    ILogger<AppleZkProvider> logger,
+    JwtSecurityTokenHandler jwtSecurityTokenHandler,
+    IDistributedCache<AppleKeys, string> distributedCache,
+    IHttpClientFactory httpClientFactory)
+    : CAServerAppService, IAppleZkProvider
+{
+    public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
+    {
+        try
+        {
+            var userId = GetAppleUserId(requestDto.AccessToken);
+            var hashInfo = await guardianUserProvider.GetSaltAndHashAsync(userId);
+            var securityToken = await ValidateTokenAsync(requestDto.AccessToken);
+            var userInfo = GetUserInfoFromToken(securityToken);
+
+            userInfo.GuardianType = GuardianIdentifierType.Apple.ToString();
+            userInfo.AuthTime = DateTime.UtcNow;
+
+            if (!hashInfo.Item3)
+            {
+                await guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
+            }
+            logger.LogInformation("send Dtos.UserExtraInfo of Apple:{0}", JsonConvert.SerializeObject(userInfo));
+            await guardianUserProvider.AddUserInfoAsync(
+                ObjectMapper.Map<AppleUserExtraInfo, CAServer.Verifier.Dtos.UserExtraInfo>(userInfo));
+
+            return hashInfo.Item1;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "{Message}", e.Message);
+            throw new UserFriendlyException(e.Message);
+        }
+    }
+    
+    private string GetAppleUserId(string identityToken)
+    {
+        try
+        {
+            var jwtToken = jwtSecurityTokenHandler.ReadJwtToken(identityToken);
+            return jwtToken.Payload.Sub;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "{Message}", e.Message);
+            throw new Exception("Invalid token");
+        }
+    }
+
+    private async Task<SecurityToken> ValidateTokenAsync(string identityToken)
+    {
+        try
+        {
+            var jwtToken = jwtSecurityTokenHandler.ReadJwtToken(identityToken);
+            var kid = jwtToken.Header["kid"].ToString();
+            var appleKey = await GetAppleKeyAsync(kid);
+            var jwk = new JsonWebKey(JsonConvert.SerializeObject(appleKey));
+
+            var validateParameter = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = "https://appleid.apple.com",
+                ValidateAudience = true,
+                ValidAudiences = new List<string>{
+                    "com.portkey.finance",
+                    "com.portkey.did",
+                    "did.portkey",
+                    "com.portkey.did.tran",
+                    "com.portkey.did.extension.service"
+                }, //_appleAuthOptions.Audiences, todo
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = jwk
+            };
+
+            jwtSecurityTokenHandler.ValidateToken(identityToken, validateParameter,
+                out SecurityToken validatedToken);
+
+            return validatedToken;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Get UserInfo From Apple Failed:" + e.Message);
+            throw new UserFriendlyException("Get UserInfo From Apple Failed");
+        }
+    }
+    
+    private async Task<AppleKey> GetAppleKeyAsync(string kid)
+    {
+        var appleKeys = await GetAppleKeysAsync();
+        return appleKeys.Keys.FirstOrDefault(t => t.Kid == kid);
+    }
+
+    private async Task<AppleKeys> GetAppleKeysAsync()
+    {
+        return await distributedCache.GetOrAddAsync(
+            "apple.auth.keys",
+            async () => await GetAppleKeyFormAppleAsync(),
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddHours(1/*_appleAuthOptions.KeysExpireTime*/) //todo
+            }
+        );
+    }
+
+    private async Task<AppleKeys> GetAppleKeyFormAppleAsync()
+    {
+        var appleKeyUrl = "https://appleid.apple.com/auth/keys";
+        var response = await httpClientFactory.CreateClient().GetStringAsync(appleKeyUrl);
+
+        return JsonConvert.DeserializeObject<AppleKeys>(response);
+    }
+    
+    private static AppleUserExtraInfo GetUserInfoFromToken(SecurityToken validatedToken)
+    {
+        var jwtPayload = ((JwtSecurityToken)validatedToken).Payload;
+        var userInfo = new AppleUserExtraInfo
+        {
+            Id = jwtPayload.Sub
+        };
+
+        if (jwtPayload.TryGetValue("email", out var email))
+        {
+            userInfo.Email = email.ToString();
+        }
+
+        if (jwtPayload.TryGetValue("email_verified", out var verifiedEmail))
+        {
+            userInfo.VerifiedEmail = Convert.ToBoolean(verifiedEmail);
+        }
+
+        if (jwtPayload.TryGetValue("is_private_email", out var privateEmail))
+        {
+            userInfo.IsPrivateEmail = Convert.ToBoolean(privateEmail);
+        }
+
+        return userInfo;
+    }
+}

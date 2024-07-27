@@ -87,7 +87,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
-        _distributedCache = distributedCache;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -156,74 +155,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
-    {
-        var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
-        string identifierHash = null;
-        if (GuardianIdentifierType.Google.Equals(requestDto.Type))
-        {
-            try
-            {
-                identifierHash = await AddGuardianAndUserByGoogleTokenAsync(requestDto);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "VerifyGoogleTokenAsync error");
-                throw new UserFriendlyException("add google guardian and user extra info error");
-            }
-        }
-        if (GuardianIdentifierType.Apple.Equals(requestDto.Type))
-        {
-            try
-            {
-                identifierHash = await AddGuardianAndUserByAppleTokenAsync(requestDto);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "VerifyAppleTokenAsync error");
-                throw new UserFriendlyException("add apple guardian and user extra info error");
-            }
-        }
-        if (GuardianIdentifierType.Facebook.Equals(requestDto.Type))
-        {
-            try
-            {
-                await VerifyFacebookTokenAsync(verifyTokenRequestDto);
-                identifierHash = null;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "VerifyFacebookTokenAsync error");
-                throw new UserFriendlyException("add facebook guardian and user extra info error");
-            }
-        }
-
-        return new VerifiedZkResponse()
-        {
-            GuardianIdentifierHash = identifierHash
-        };
-    }
-    
-    private async Task<string> AddGuardianAndUserByGoogleTokenAsync(VerifiedZkLoginRequestDto requestDto)
-    {
-        try
-        {
-            var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
-            var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
-            if (!hashInfo.Item3)
-            {
-                await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
-            }
-            await AddUserInfoAsync(ObjectMapper.Map<GoogleUserInfoDto, Dtos.UserExtraInfo>(userInfo));
-            return hashInfo.Item1;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "{Message}", e.Message);
-            throw new UserFriendlyException(e.Message);
-        }
-    }
-
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
         try
@@ -269,125 +200,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             throw new UserFriendlyException(e.Message);
         }
-    }
-    
-    private async Task<string> AddGuardianAndUserByAppleTokenAsync(VerifiedZkLoginRequestDto requestDto)
-    {
-        try
-        {
-            var userId = GetAppleUserId(requestDto.AccessToken);
-            var hashInfo = await GetSaltAndHashAsync(userId);
-            var securityToken = await ValidateTokenAsync(requestDto.AccessToken);
-            var userInfo = GetUserInfoFromToken(securityToken);
-
-            userInfo.GuardianType = GuardianIdentifierType.Apple.ToString();
-            userInfo.AuthTime = DateTime.UtcNow;
-
-            if (!hashInfo.Item3)
-            {
-                await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
-            }
-            _logger.LogInformation("send Dtos.UserExtraInfo of Apple:{0}", JsonConvert.SerializeObject(userInfo));
-            await AddUserInfoAsync(
-                ObjectMapper.Map<AppleUserExtraInfo, Dtos.UserExtraInfo>(userInfo));
-
-            return hashInfo.Item1;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "{Message}", e.Message);
-            throw new UserFriendlyException(e.Message);
-        }
-    }
-    
-    public async Task<SecurityToken> ValidateTokenAsync(string identityToken)
-    {
-        try
-        {
-            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(identityToken);
-            var kid = jwtToken.Header["kid"].ToString();
-            var appleKey = await GetAppleKeyAsync(kid);
-            var jwk = new JsonWebKey(JsonConvert.SerializeObject(appleKey));
-
-            var validateParameter = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidIssuer = "https://appleid.apple.com",
-                ValidateAudience = true,
-                ValidAudiences = new List<string>{
-                    "com.portkey.finance",
-                    "com.portkey.did",
-                    "did.portkey",
-                    "com.portkey.did.tran",
-                    "com.portkey.did.extension.service"
-                }, //_appleAuthOptions.Audiences,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = jwk
-            };
-
-            _jwtSecurityTokenHandler.ValidateToken(identityToken, validateParameter,
-                out SecurityToken validatedToken);
-
-            return validatedToken;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Get UserInfo From Apple Failed:" + e.Message);
-            throw new UserFriendlyException("Get UserInfo From Apple Failed");
-        }
-    }
-    
-    private async Task<AppleKey> GetAppleKeyAsync(string kid)
-    {
-        var appleKeys = await GetAppleKeysAsync();
-        return appleKeys.Keys.FirstOrDefault(t => t.Kid == kid);
-    }
-
-    private async Task<AppleKeys> GetAppleKeysAsync()
-    {
-        return await _distributedCache.GetOrAddAsync(
-            "apple.auth.keys",
-            async () => await GetAppleKeyFormAppleAsync(),
-            () => new DistributedCacheEntryOptions
-            {
-                AbsoluteExpiration = DateTimeOffset.Now.AddHours(1/*_appleAuthOptions.KeysExpireTime*/)
-            }
-        );
-    }
-
-    private async Task<AppleKeys> GetAppleKeyFormAppleAsync()
-    {
-        var appleKeyUrl = "https://appleid.apple.com/auth/keys";
-        var response = await _httpClientFactory.CreateClient().GetStringAsync(appleKeyUrl);
-
-        return JsonConvert.DeserializeObject<AppleKeys>(response);
-    }
-    
-    private AppleUserExtraInfo GetUserInfoFromToken(SecurityToken validatedToken)
-    {
-        var jwtPayload = ((JwtSecurityToken)validatedToken).Payload;
-        var userInfo = new AppleUserExtraInfo
-        {
-            Id = jwtPayload.Sub
-        };
-
-        if (jwtPayload.ContainsKey("email"))
-        {
-            userInfo.Email = jwtPayload["email"].ToString();
-        }
-
-        if (jwtPayload.ContainsKey("email_verified"))
-        {
-            userInfo.VerifiedEmail = Convert.ToBoolean(jwtPayload["email_verified"]);
-        }
-
-        if (jwtPayload.ContainsKey("is_private_email"))
-        {
-            userInfo.IsPrivateEmail = Convert.ToBoolean(jwtPayload["is_private_email"]);
-        }
-
-        return userInfo;
     }
 
     public async Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto)

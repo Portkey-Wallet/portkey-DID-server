@@ -2,6 +2,7 @@ using System;
 using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Threading.Tasks;
+using CAServer.CAAccount;
 using CAServer.Dtos;
 using CAServer.Google;
 using CAServer.IpWhiteList;
@@ -33,11 +34,13 @@ public class CAVerifierController : CAServerController
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
+    private readonly IZkLoginProvider _zkLoginProvider;
 
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
-        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService)
+        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService,
+        IZkLoginProvider zkLoginProvider)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
@@ -46,6 +49,7 @@ public class CAVerifierController : CAServerController
         _googleAppService = googleAppService;
         _currentUser = currentUser;
         _ipWhiteListAppService = ipWhiteListAppService;
+        _zkLoginProvider = zkLoginProvider;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -211,7 +215,7 @@ public class CAVerifierController : CAServerController
     public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
         ValidateOperationType(requestDto.OperationType);
-        return await _verifierAppService.VerifiedZkLoginAsync(requestDto);
+        return await _zkLoginProvider.VerifiedZkLoginAsync(requestDto);
     }
 
     [HttpPost("verifyGoogleToken")]
