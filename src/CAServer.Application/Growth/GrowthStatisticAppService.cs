@@ -315,7 +315,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHolder = await _activityProvider.GetCaHolderAsync(caHash);
             _logger.LogDebug("Get caHolder is {caHolder},caAddress is {address},caHash is {caHash}",
                 JsonConvert.SerializeObject(caHolder), caAddress, caHash);
-            var score = await _cacheProvider.GetScoreAsync(CommonConstant.HamsterScore, entry.Element);
+            var score = await _cacheProvider.GetScoreAsync(CommonConstant.HamsterRankKey, entry.Element);
             if (scores.IndexOf(score) + 1 > RankLimit)
             {
                 hasNext = false;
