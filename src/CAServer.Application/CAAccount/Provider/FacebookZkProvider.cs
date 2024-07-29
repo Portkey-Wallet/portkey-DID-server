@@ -54,24 +54,22 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
     
     private async Task<FacebookUserInfoDto> GetFacebookUserInfoAsync(VerifiedZkLoginRequestDto requestDto)
     {
-        // var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(new VerifyTokenRequestDto()
-        // {
-        //     AccessToken = requestDto.AccessToken,
-        //     ChainId = requestDto.ChainId,
-        //     VerifierId = requestDto.VerifierId,
-        // });
-        //
-        // if (!verifyFacebookUserInfoDto.Success)
-        // {
-        //     throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
-        // }
+        var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(new VerifyTokenRequestDto()
+        {
+            AccessToken = requestDto.AccessToken,
+            ChainId = requestDto.ChainId,
+            VerifierId = requestDto.VerifierId,
+        });
+        
+        if (!verifyFacebookUserInfoDto.Success)
+        {
+            throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
+        }
 
-        // var getUserInfoUrl =
-        //     "https://graph.facebook.com/" + verifyFacebookUserInfoDto.Data.UserId +
-        //     "?fields=id,name,email,picture&access_token=" +
-        //     requestDto.AccessToken;
-        var getUserInfoUrl = "https://graph.facebook.com/" + requestDto.UserId +
-                             "?fields=id,name,email,picture&access_token=" + requestDto.AccessToken;
+        var getUserInfoUrl =
+            "https://graph.facebook.com/" + verifyFacebookUserInfoDto.Data.UserId +
+            "?fields=id,name,email,picture&access_token=" +
+            requestDto.AccessToken;
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
         facebookUserInfo.Picture = facebookUserInfo.PictureDic["data"].Url;
