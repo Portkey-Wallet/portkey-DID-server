@@ -14,6 +14,8 @@ public class ReferralRecordRankRequestDto
     public int Skip { get; set; }
 
     public int Limit { get; set; }
+    
+    public string TargetClientId { get; set; }
 
 }
 

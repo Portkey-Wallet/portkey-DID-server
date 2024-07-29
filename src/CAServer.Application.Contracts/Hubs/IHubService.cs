@@ -19,6 +19,6 @@ public interface IHubService : IApplicationService
     Task RequestAchTxAddressAsync(string targetClientId, string orderId);
     Task RequestNFTOrderStatusAsync(string clientId, string orderId);
     Task RequestRampOrderStatus(string clientId, string orderId);
-    Task<ReferralRecordResponseDto> ReferralRecordListAsync(ReferralRecordRequestDto input, string targetClientId);
-    Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input, string targetClientId);
+    Task<ReferralRecordResponseDto> ReferralRecordListAsync(ReferralRecordRequestDto input);
+    Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input);
 }

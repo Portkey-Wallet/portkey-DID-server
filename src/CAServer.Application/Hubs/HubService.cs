@@ -132,15 +132,14 @@ public class HubService : CAServerAppService, IHubService
         await RequestOrderStatusAsync(clientId, orderId);
     }
 
-    public async Task<ReferralRecordResponseDto> ReferralRecordListAsync(ReferralRecordRequestDto input,
-        string targetClientId)
+    public async Task<ReferralRecordResponseDto> ReferralRecordListAsync(ReferralRecordRequestDto input)
     {
         while (true)
         {
             try
             {
                 // stop while disconnected
-                if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
+                if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
                 {
                     return await _statisticAppService.GetReferralRecordList(input);
                 }
@@ -152,20 +151,21 @@ public class HubService : CAServerAppService, IHubService
             catch (Exception e)
             {
                 _logger.LogError(e, "");
+                break;
             }
         }
 
         return new ReferralRecordResponseDto();
     }
 
-    public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input, string targetClientId)
+    public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
         while (true)
         {
             try
             {
                 // stop while disconnected
-                if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
+                if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
                 {
                     return await _statisticAppService.GetReferralRecordRankAsync(input);
                 }
@@ -177,6 +177,7 @@ public class HubService : CAServerAppService, IHubService
             catch (Exception e)
             {
                 _logger.LogError(e, "");
+                break;
             }
         }
 

@@ -38,36 +38,25 @@ public class HamsterHub : AbpHub
         await _hubService.SendAllUnreadRes(clientId);
     }
 
-    public async Task<ReferralRecordResponseDto> ReferralRecordList(ReferralRecordRequestDto input,string targetClientId)
+    public async Task<ReferralRecordResponseDto> ReferralRecordList(ReferralRecordRequestDto input)
     {
         if (!CurrentUser.Id.HasValue)
         {
             throw new UnauthorizedAccessException();
         }
 
-        return await _hubService.ReferralRecordListAsync(input,targetClientId);
+        return await _hubService.ReferralRecordListAsync(input);
     }
     
-    public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRank(ReferralRecordRankRequestDto input,string targetClientId)
+    public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRank(ReferralRecordRankRequestDto input)
     {
         if (!CurrentUser.Id.HasValue)
         {
             throw new UnauthorizedAccessException();
         }
 
-        return await _hubService.GetReferralRecordRankAsync(input,targetClientId);
+        return await _hubService.GetReferralRecordRankAsync(input);
     }
-    
-    // public async Task<ReferralRecordResponseDto> ReferralRecordList(ReferralRecordRequestDto input,string targetClientId)
-    // {
-    //     if (!CurrentUser.Id.HasValue)
-    //     {
-    //         throw new UnauthorizedAccessException();
-    //     }
-    //
-    //     return await _hubService.ReferralRecordListAsync(input,targetClientId);
-    // }
-    
     
 
     public override Task OnDisconnectedAsync(Exception? exception)
