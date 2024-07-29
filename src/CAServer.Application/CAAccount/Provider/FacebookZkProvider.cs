@@ -47,29 +47,31 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
         }
         catch (Exception e)
         {
-            _logger.LogError("Verify Facebook Failed, {Message}", e.Message);
+            _logger.LogError(e,"Verify Facebook Failed");
             throw new UserFriendlyException("Verify Facebook Failed.");
         }
     }
     
     private async Task<FacebookUserInfoDto> GetFacebookUserInfoAsync(VerifiedZkLoginRequestDto requestDto)
     {
-        var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(new VerifyTokenRequestDto()
-        {
-            AccessToken = requestDto.AccessToken,
-            ChainId = requestDto.ChainId,
-            VerifierId = requestDto.VerifierId,
-        });
+        // var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(new VerifyTokenRequestDto()
+        // {
+        //     AccessToken = requestDto.AccessToken,
+        //     ChainId = requestDto.ChainId,
+        //     VerifierId = requestDto.VerifierId,
+        // });
+        //
+        // if (!verifyFacebookUserInfoDto.Success)
+        // {
+        //     throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
+        // }
 
-        if (!verifyFacebookUserInfoDto.Success)
-        {
-            throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
-        }
-
-        var getUserInfoUrl =
-            "https://graph.facebook.com/" + verifyFacebookUserInfoDto.Data.UserId +
-            "?fields=id,name,email,picture&access_token=" +
-            requestDto.AccessToken;
+        // var getUserInfoUrl =
+        //     "https://graph.facebook.com/" + verifyFacebookUserInfoDto.Data.UserId +
+        //     "?fields=id,name,email,picture&access_token=" +
+        //     requestDto.AccessToken;
+        var getUserInfoUrl = "https://graph.facebook.com/" + requestDto.UserId +
+                             "?fields=id,name,email,picture&access_token=" + requestDto.AccessToken;
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
         facebookUserInfo.Picture = facebookUserInfo.PictureDic["data"].Url;
@@ -83,10 +85,10 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url));
 
         var result = await response.Content.ReadAsStringAsync();
-
+        _logger.LogInformation("Get Response From Facebook {0}", result);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            _logger.LogError("{Message}", response.ToString());
+            _logger.LogError("FacebookRequest Error {Message}", response.ToString());
             throw new Exception("Invalid token");
         }
 
