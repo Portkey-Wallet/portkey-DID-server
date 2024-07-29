@@ -477,11 +477,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
             foreach (var hamster in result)
             {
+                var address = hamster.CaAddress.Split("_")[1];
                 _logger.LogDebug("hamster is {hamster},hamster address is {address}",
                     JsonConvert.SerializeObject(hamster), hamster.CaAddress.Split("_")[1]);
                 var record =
                     await _growthProvider.GetReferralRecordListAsync(
-                        hamsterReferralInfo[hamster.CaAddress.Split("_")[1]], caHash, 0,
+                        hamsterReferralInfo[address], caHash, 0,
                         1,
                         null, null, new List<int> { 1 });
                 if (!record.IsNullOrEmpty())
@@ -490,15 +491,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     continue;
                 }
 
+                
                 var index = new ReferralRecordIndex
                 {
-                    CaHash = hamsterReferralInfo[
-                        hamster.CaAddress.Split("_")[1]],
-                    ReferralCode = hamsterReferralDic[hamster.CaAddress].ReferralCode,
+                    CaHash = hamsterReferralInfo[address],
+                    ReferralCode = hamsterReferralDic[address].ReferralCode,
                     IsDirectlyInvite = 0,
                     ReferralCaHash = caHash,
                     ReferralDate = DateTime.UtcNow,
-                    ReferralAddress = hamsterReferralDic[hamster.CaAddress].ReferralAddress,
+                    ReferralAddress = hamsterReferralDic[address].ReferralAddress,
                     ReferralType = 1
                 };
                 await _growthProvider.AddReferralRecordAsync(index);
