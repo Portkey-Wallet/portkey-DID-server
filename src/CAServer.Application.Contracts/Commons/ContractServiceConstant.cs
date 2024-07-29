@@ -118,7 +118,7 @@ public static class CommonConstant
 
     public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
 
-    public const string SingUp = " sing up";
+    public const string SingUp = " signed up";
     public const string HamsterScore = " obtained {0} $ACORNS";
     
     
