@@ -481,11 +481,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     _logger.LogDebug("Data has been added : {data}", JsonConvert.SerializeObject(record));
                     continue;
                 }
-
+                
+                
+                
                 var index = new ReferralRecordIndex
                 {
                     CaHash = hamsterReferralInfo[
-                        _hamsterOptions.AddressPrefix + hamster.CaAddress + _hamsterOptions.AddressSuffix],
+                        hamster.CaAddress.Split("_")[1]],
                     ReferralCode = hamsterReferralDic[hamster.CaAddress].ReferralCode,
                     IsDirectlyInvite = 0,
                     ReferralCaHash = caHash,
