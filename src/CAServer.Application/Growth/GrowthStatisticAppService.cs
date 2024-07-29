@@ -472,12 +472,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
             foreach (var key in hamsterReferralInfo.Keys)
             {
-                _logger.LogDebug("hamsterReferralInfo key is {key}",key);
+                _logger.LogDebug("hamsterReferralInfo key is {key}", key);
             }
+
             foreach (var hamster in result)
             {
+                _logger.LogDebug("hamster is {hamster},hamster address is {address}",
+                    JsonConvert.SerializeObject(hamster), hamster.CaAddress.Split("_")[1]);
                 var record =
-                    await _growthProvider.GetReferralRecordListAsync(hamsterReferralInfo[hamster.CaAddress.Split("_")[1]], caHash, 0,
+                    await _growthProvider.GetReferralRecordListAsync(
+                        hamsterReferralInfo[hamster.CaAddress.Split("_")[1]], caHash, 0,
                         1,
                         null, null, new List<int> { 1 });
                 if (!record.IsNullOrEmpty())
