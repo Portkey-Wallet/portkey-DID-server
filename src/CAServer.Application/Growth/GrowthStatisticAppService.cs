@@ -491,15 +491,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     continue;
                 }
 
-                
+                var referralCaHash = hamsterReferralInfo[address];
                 var index = new ReferralRecordIndex
                 {
-                    CaHash = hamsterReferralInfo[address],
-                    ReferralCode = hamsterReferralDic[address].ReferralCode,
+                    CaHash = referralCaHash,
+                    ReferralCode = hamsterReferralDic[referralCaHash].ReferralCode,
                     IsDirectlyInvite = 0,
                     ReferralCaHash = caHash,
                     ReferralDate = DateTime.UtcNow,
-                    ReferralAddress = hamsterReferralDic[address].ReferralAddress,
+                    ReferralAddress = hamsterReferralDic[referralCaHash].ReferralAddress,
                     ReferralType = 1
                 };
                 await _growthProvider.AddReferralRecordAsync(index);
