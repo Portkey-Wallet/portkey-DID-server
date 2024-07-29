@@ -428,6 +428,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var hamsterReferralDic = referralRecords.ToDictionary(t => t.CaHash, k => k);
             var caHash = group.Key;
             var addresses = await GetHamsterReferralAddressAsync(referralRecords, hamsterReferralInfo);
+            
             var result = new List<HamsterScoreDto>();
 
             if (addresses.Count >= 100)
@@ -450,8 +451,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
                 foreach (var score in hamsterScoreList.GetScoreInfos)
                 {
-                    _logger.LogDebug("query from hamster data is {data}",JsonConvert.SerializeObject(score));
+                    _logger.LogDebug("query from hamster data is {data}", JsonConvert.SerializeObject(score));
                 }
+
                 result = hamsterScoreList.GetScoreInfos
                     .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             }
@@ -476,7 +478,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         null, null, new List<int> { 1 });
                 if (!record.IsNullOrEmpty())
                 {
-                    _logger.LogDebug("Data has been added : {data}",JsonConvert.SerializeObject(record));
+                    _logger.LogDebug("Data has been added : {data}", JsonConvert.SerializeObject(record));
                     continue;
                 }
 
@@ -504,7 +506,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var holderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string> { }, index.CaHash);
             var address = holderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
-            //var formatAddress = "ELF_" + address + "_tDVW";
             if (string.IsNullOrEmpty(address))
             {
                 continue;
@@ -513,7 +514,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
             addresses.Add(formatAddress);
             userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
-            _logger.LogDebug("should culcalate adderss is {address}",formatAddress);
+            _logger.LogDebug("should culcalate adderss is {address},Cahash is {caHash}", formatAddress,
+                holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
         }
 
         return addresses;
