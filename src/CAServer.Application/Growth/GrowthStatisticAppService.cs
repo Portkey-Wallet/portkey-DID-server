@@ -603,6 +603,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             baseInfo.StartDate = config.ActivityConfig.StartDate;
             baseInfo.EndDate = config.ActivityConfig.EndDate;
             baseInfo.IsDefault = config.IsDefault;
+            var activityValue = (int)Enum.Parse(typeof(ActivityEnums), key);
+            baseInfo.ActivityValue = activityValue;
             var sDate = DateTime.Parse(config.ActivityConfig.StartDate).ToString("MM.dd");
             var eDate = DateTime.Parse(config.ActivityConfig.EndDate).ToString("MM.dd");
             baseInfo.DateRange = sDate + "-" + eDate;

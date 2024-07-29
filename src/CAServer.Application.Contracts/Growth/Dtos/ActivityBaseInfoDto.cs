@@ -14,6 +14,8 @@ public class ActivityBaseInfo
     
     public string ActivityName { get; set; }
 
+    public int ActivityValue { get; set; }
+
     public bool IsDefault { get; set; }
 
     public string StartDate { get; set; }
