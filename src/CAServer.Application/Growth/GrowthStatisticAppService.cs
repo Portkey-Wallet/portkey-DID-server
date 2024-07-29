@@ -473,7 +473,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             foreach (var hamster in result)
             {
                 var record =
-                    await _growthProvider.GetReferralRecordListAsync(hamsterReferralInfo[hamster.CaAddress], caHash, 0,
+                    await _growthProvider.GetReferralRecordListAsync(hamsterReferralInfo[hamster.CaAddress.Split("_")[1]], caHash, 0,
                         1,
                         null, null, new List<int> { 1 });
                 if (!record.IsNullOrEmpty())
@@ -481,9 +481,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     _logger.LogDebug("Data has been added : {data}", JsonConvert.SerializeObject(record));
                     continue;
                 }
-                
-                
-                
+
                 var index = new ReferralRecordIndex
                 {
                     CaHash = hamsterReferralInfo[
