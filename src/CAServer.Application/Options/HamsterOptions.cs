@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CAServer.Options;
 
 public class HamsterOptions
@@ -13,4 +15,6 @@ public class HamsterOptions
     public string AddressPrefix { get; set; }
 
     public string AddressSuffix { get; set; }
+
+    public Dictionary<string, string> HamsterCopyWriting { get; set; }
 }

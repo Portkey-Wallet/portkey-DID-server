@@ -827,7 +827,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
     }
 
-    private static List<ReferralCountDto> ModelToDictionary(object obj)
+    private List<ReferralCountDto> ModelToDictionary(object obj)
     {
         if (obj == null)
         {
@@ -841,7 +841,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 prop => prop.GetValue(obj, null)
             );
 
+        
         return modelToDic.Keys.Select(model => new ReferralCountDto()
-            { ActivityName = model, ReferralCount = modelToDic[model].ToString() }).ToList();
+            { ActivityName = _hamsterOptions.HamsterCopyWriting[model], ReferralCount = modelToDic[model].ToString() }).ToList();
     }
 }
