@@ -470,6 +470,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
 
+            foreach (var key in hamsterReferralInfo.Keys)
+            {
+                _logger.LogDebug("hamsterReferralInfo key is {key}",key);
+            }
             foreach (var hamster in result)
             {
                 var record =
