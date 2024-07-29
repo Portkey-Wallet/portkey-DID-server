@@ -60,7 +60,7 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
             ChainId = requestDto.ChainId,
             VerifierId = requestDto.VerifierId,
         });
-        
+        _logger.LogInformation("===================GetFacebookUserInfo verifyFacebookUserInfoDto:{0}", JsonConvert.SerializeObject(verifyFacebookUserInfoDto));
         if (!verifyFacebookUserInfoDto.Success)
         {
             throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
