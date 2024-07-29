@@ -197,7 +197,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "accessToken", input.AccessToken }
         };
 
-
+        _logger.LogInformation("=========VerifyFacebookAccessToken url:{0} accessToken:{1}", url, input.AccessToken);
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifyFacebookUserInfoDto>>(url, parameters);
     }
 
