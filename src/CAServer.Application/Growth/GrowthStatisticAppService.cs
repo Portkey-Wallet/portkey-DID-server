@@ -428,7 +428,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var hamsterReferralDic = referralRecords.ToDictionary(t => t.CaHash, k => k);
             var caHash = group.Key;
             var addresses = await GetHamsterReferralAddressAsync(referralRecords, hamsterReferralInfo);
-            
+
             var result = new List<HamsterScoreDto>();
 
             if (addresses.Count >= 100)
@@ -484,7 +484,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
                 var index = new ReferralRecordIndex
                 {
-                    CaHash = hamsterReferralInfo[hamster.CaAddress],
+                    CaHash = hamsterReferralInfo[
+                        _hamsterOptions.AddressPrefix + hamster.CaAddress + _hamsterOptions.AddressSuffix],
                     ReferralCode = hamsterReferralDic[hamster.CaAddress].ReferralCode,
                     IsDirectlyInvite = 0,
                     ReferralCaHash = caHash,
