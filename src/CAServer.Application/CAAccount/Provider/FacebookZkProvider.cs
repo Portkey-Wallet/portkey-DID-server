@@ -41,6 +41,7 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
         {
             // var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var facebookUser = ExtractUserInfoFromJwt(requestDto.Jwt);
+            _logger.LogInformation("============Extract userinfo from jwt:{0}", JsonConvert.SerializeObject(facebookUser));
             var userSaltAndHash = await _guardianUserProvider.GetSaltAndHashAsync(facebookUser.Id);
             if (!userSaltAndHash.Item3)
             {
