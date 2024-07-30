@@ -109,7 +109,12 @@ public class GuardianUserProvider
         var userExtraInfoGrainId =
             GrainIdHelper.GenerateGrainId("UserExtraInfo", userExtraInfo.Id);
         var userExtraInfoGrain = _clusterClient.GetGrain<IUserExtraInfoGrain>(userExtraInfoGrainId);
-
+        var userInfoResultDto = await userExtraInfoGrain.GetAsync();
+        if (userInfoResultDto != null && userInfoResultDto.Success)
+        {
+            return;
+        }
+        
         var grainDto = await userExtraInfoGrain.AddOrUpdateAsync(
             _objectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>(userExtraInfo));
 
