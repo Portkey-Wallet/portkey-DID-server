@@ -5,10 +5,10 @@ using CAServer.Growth.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.AspNetCore.SignalR;
-using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.Hubs;
 
+[HubRoute("HamsterDataReporting")]
 [Authorize]
 public class HamsterHub : AbpHub
 {
@@ -34,14 +34,14 @@ public class HamsterHub : AbpHub
         await _hubService.SendAllUnreadRes(clientId);
     }
     
-    public async Task RewardProgress(ActivityEnums activityEnums,string targetClientId)
+    public async Task RewardProgress(RewardProgressDto rewardProgressDto)
     {
         if (!CurrentUser.Id.HasValue)
         {
             throw new UnauthorizedAccessException();
         }
 
-        await _hubService.RewardProgressAsync(activityEnums,targetClientId);
+        await _hubService.RewardProgressAsync(rewardProgressDto.ActivityEnums,rewardProgressDto.TargetClientId);
     }
     
 
@@ -55,16 +55,6 @@ public class HamsterHub : AbpHub
         await _hubService.ReferralRecordListAsync(input);
     }
     
-    //
-    // public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRank(ReferralRecordRankRequestDto input)
-    // {
-    //     if (!CurrentUser.Id.HasValue)
-    //     {
-    //         throw new UnauthorizedAccessException();
-    //     }
-    //
-    //     return await _hubService.GetReferralRecordRankAsync(input);
-    // }
     
 
     public override Task OnDisconnectedAsync(Exception? exception)
