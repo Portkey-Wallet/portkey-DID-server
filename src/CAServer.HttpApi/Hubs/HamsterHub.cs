@@ -8,7 +8,7 @@ using Volo.Abp.AspNetCore.SignalR;
 namespace CAServer.Hubs;
 
 [HubRoute("HamsterDataReporting")]
-//[Authorize]
+[Authorize]
 public class HamsterHub : AbpHub
 {
     private readonly IHubService _hubService;
@@ -18,6 +18,12 @@ public class HamsterHub : AbpHub
     {
         _logger = logger;
         _hubService = hubService;
+    }
+    
+    public override Task OnConnectedAsync()
+    {
+        _logger.LogInformation("user connected");
+        return base.OnConnectedAsync();
     }
 
 
