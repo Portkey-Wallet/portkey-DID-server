@@ -462,7 +462,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
             foreach (var hamster in result)
             {
-                
                 var address = hamster.CaAddress.Split("_")[1];
                 var record =
                     await _growthProvider.GetReferralRecordListAsync(
@@ -485,7 +484,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     ReferralAddress = hamsterReferralDic[referralCaHash].ReferralAddress,
                     ReferralType = 1
                 };
-                await _growthProvider.AddReferralRecordAsync(index);
+                var addResult = await _growthProvider.AddReferralRecordAsync(index);
+                if (!addResult)
+                {
+                    continue;
+                }
+
                 var expired = TimeSpan.FromDays(_hamsterOptions.HamsterExpired);
                 await _cacheProvider.SetAddAsync(OverHamsterScoreLimitKey, hamster.CaAddress, expired);
             }
@@ -505,13 +509,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 continue;
             }
-            
+
             var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
             var overLimitAddress = await _cacheProvider.SetMembersAsync(OverHamsterScoreLimitKey);
             if (overLimitAddress.Contains(formatAddress))
             {
                 continue;
             }
+
             addresses.Add(formatAddress);
             userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
             _logger.LogDebug("should culcalate adderss is {address},Cahash is {caHash}", formatAddress,
@@ -572,14 +577,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         await _growthProvider.GetReferralRecordListAsync(caHolder.CaHash, null, 0, Int16.MaxValue,
                             Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                             new List<int> { 1 });
-                    
+
                     if (referralList == null || referralList.Count == 0)
                     {
                         reward = referralRecordList.Count * _hamsterOptions.HamsterReward + " ELF";
                     }
                     else
                     {
-                        reward = referralRecordList.Count * _hamsterOptions.HamsterReward + _hamsterOptions.ReferralReward + " ELF";
+                        reward = referralRecordList.Count * _hamsterOptions.HamsterReward +
+                                 _hamsterOptions.ReferralReward + " ELF";
                     }
                 }
 
