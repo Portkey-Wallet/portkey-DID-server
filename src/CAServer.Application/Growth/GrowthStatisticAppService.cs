@@ -551,6 +551,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             case ActivityEnums.Hamster:
             {
                 HamsterRewardProgressDto hamsterProgress;
+                var referralList =
+                    await _growthProvider.GetReferralRecordListAsync(caHolder.CaHash, null, 0, Int16.MaxValue,
+                        Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
+                        new List<int> { 1 });
                 var reward = "";
                 var indexes = await GetHamsterSignUpCount(caHolder.CaHash, details.StartDate, details.EndDate);
                 if (indexes.Count == 0)
@@ -560,7 +564,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         SignUpCount = 0,
                         HamsterCount = 0,
                     };
-                    reward = 0 + " ELF";
+                    if (referralList == null || referralList.Count == 0)
+                    {
+                        reward = 0 + " ELF";
+                    }
+                    else
+                    {
+                        reward = _hamsterOptions.ReferralReward + " ELF";
+                    }
                 }
                 else
                 {
@@ -573,10 +584,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         SignUpCount = indexes.Count,
                         HamsterCount = referralRecordList.Count,
                     };
-                    var referralList =
-                        await _growthProvider.GetReferralRecordListAsync(caHolder.CaHash, null, 0, Int16.MaxValue,
-                            Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
-                            new List<int> { 1 });
 
                     if (referralList == null || referralList.Count == 0)
                     {
