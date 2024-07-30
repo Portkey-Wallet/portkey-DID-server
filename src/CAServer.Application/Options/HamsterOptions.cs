@@ -17,4 +17,8 @@ public class HamsterOptions
     public string AddressSuffix { get; set; }
 
     public Dictionary<string, string> HamsterCopyWriting { get; set; }
+
+    public int HamsterExpired { get; set; }
+    
+    public double ReferralReward { get; set; }
 }

@@ -40,6 +40,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly ActivityConfigOptions _activityConfigOptions;
     private readonly HamsterOptions _hamsterOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
+    private const string OverHamsterScoreLimitKey = "Portkey:OverHamsterScoreLimitKey";
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -408,23 +409,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             return;
         }
 
-        foreach (var index in list)
-        {
-            _logger.LogDebug("Get from Es index is {index}", JsonConvert.SerializeObject(index));
-        }
-
-
         var recordGroup =
             list.GroupBy(t => t.ReferralCaHash);
         foreach (var group in recordGroup)
         {
             var hamsterReferralInfo = new Dictionary<string, string>();
             var referralRecords = group.ToList();
-            foreach (var index in referralRecords)
-            {
-                _logger.LogDebug("index is {index}", JsonConvert.SerializeObject(index));
-            }
-
             var hamsterReferralDic = referralRecords.ToDictionary(t => t.CaHash, k => k);
             var caHash = group.Key;
             var addresses = await GetHamsterReferralAddressAsync(referralRecords, hamsterReferralInfo);
@@ -470,16 +460,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
 
-            foreach (var key in hamsterReferralInfo.Keys)
-            {
-                _logger.LogDebug("hamsterReferralInfo key is {key}", key);
-            }
-
             foreach (var hamster in result)
             {
+                
                 var address = hamster.CaAddress.Split("_")[1];
-                _logger.LogDebug("hamster is {hamster},hamster address is {address}",
-                    JsonConvert.SerializeObject(hamster), hamster.CaAddress.Split("_")[1]);
                 var record =
                     await _growthProvider.GetReferralRecordListAsync(
                         hamsterReferralInfo[address], caHash, 0,
@@ -487,7 +471,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         null, null, new List<int> { 1 });
                 if (!record.IsNullOrEmpty())
                 {
-                    _logger.LogDebug("Data has been added : {data}", JsonConvert.SerializeObject(record));
                     continue;
                 }
 
@@ -503,6 +486,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     ReferralType = 1
                 };
                 await _growthProvider.AddReferralRecordAsync(index);
+                var expired = TimeSpan.FromDays(_hamsterOptions.HamsterExpired);
+                await _cacheProvider.SetAddAsync(OverHamsterScoreLimitKey, hamster.CaAddress, expired);
             }
         }
     }
@@ -520,8 +505,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 continue;
             }
-
+            
             var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
+            var overLimitAddress = await _cacheProvider.SetMembersAsync(OverHamsterScoreLimitKey);
+            if (overLimitAddress.Contains(formatAddress))
+            {
+                continue;
+            }
             addresses.Add(formatAddress);
             userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
             _logger.LogDebug("should culcalate adderss is {address},Cahash is {caHash}", formatAddress,
@@ -573,12 +563,24 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0, Int16.MaxValue,
                             Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                             new List<int> { 1 });
-                    hamsterProgress = new HamsterRewardProgressDto()
+                    hamsterProgress = new HamsterRewardProgressDto
                     {
                         SignUpCount = indexes.Count,
                         HamsterCount = referralRecordList.Count,
                     };
-                    reward = referralRecordList.Count * _hamsterOptions.HamsterReward + " ELF";
+                    var referralList =
+                        await _growthProvider.GetReferralRecordListAsync(caHolder.CaHash, null, 0, Int16.MaxValue,
+                            Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
+                            new List<int> { 1 });
+                    
+                    if (referralList == null || referralList.Count == 0)
+                    {
+                        reward = referralRecordList.Count * _hamsterOptions.HamsterReward + " ELF";
+                    }
+                    else
+                    {
+                        reward = referralRecordList.Count * _hamsterOptions.HamsterReward + _hamsterOptions.ReferralReward + " ELF";
+                    }
                 }
 
                 var list = ModelToDictionary(hamsterProgress);
@@ -841,8 +843,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 prop => prop.GetValue(obj, null)
             );
 
-        
+
         return modelToDic.Keys.Select(model => new ReferralCountDto()
-            { ActivityName = _hamsterOptions.HamsterCopyWriting[model], ReferralCount = modelToDic[model].ToString() }).ToList();
+            {
+                ActivityName = _hamsterOptions.HamsterCopyWriting[model], ReferralCount = modelToDic[model].ToString()
+            })
+            .ToList();
     }
 }
