@@ -1,4 +1,5 @@
 using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -20,21 +21,27 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
     private readonly ILogger<FacebookZkProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IVerifierServerClient _verifierServerClient;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    
     public FacebookZkProvider(IGuardianUserProvider guardianUserProvider,
         ILogger<FacebookZkProvider> logger,
         IHttpClientFactory httpClientFactory,
-        IVerifierServerClient verifierServerClient)
+        IVerifierServerClient verifierServerClient,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler)
     {
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _verifierServerClient = verifierServerClient;
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
     }
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
         try
         {
-            var facebookUser = await GetFacebookUserInfoAsync(requestDto);
+            // var facebookUser = await GetFacebookUserInfoAsync(requestDto);
+            var facebookUser = ExtractUserInfoFromJwt(requestDto.Jwt);
+            _logger.LogInformation("============Extract userinfo from jwt:{0}", JsonConvert.SerializeObject(facebookUser));
             var userSaltAndHash = await _guardianUserProvider.GetSaltAndHashAsync(facebookUser.Id);
             if (!userSaltAndHash.Item3)
             {
@@ -50,6 +57,29 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
             _logger.LogError(e,"Verify Facebook Failed");
             throw new UserFriendlyException("Verify Facebook Failed.");
         }
+    }
+
+    private FacebookUserInfoDto ExtractUserInfoFromJwt(string jwt)
+    {
+        if (jwt.IsNullOrWhiteSpace())
+        {
+            return new FacebookUserInfoDto();
+        }
+        var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwt);
+        var sub = jwtToken.Payload["sub"].ToString();
+        var givenName = jwtToken.Payload["given_name"].ToString();
+        var familyName = jwtToken.Payload["family_name"].ToString();
+        var name = jwtToken.Payload["name"].ToString();
+        var picture = jwtToken.Payload["picture"].ToString();
+        return new FacebookUserInfoDto
+        {
+            Id = sub,
+            FullName = name,
+            FirstName = givenName,
+            LastName = familyName,
+            GuardianType = GuardianIdentifierType.Facebook.ToString(),
+            Picture = picture
+        };
     }
     
     private async Task<FacebookUserInfoDto> GetFacebookUserInfoAsync(VerifiedZkLoginRequestDto requestDto)

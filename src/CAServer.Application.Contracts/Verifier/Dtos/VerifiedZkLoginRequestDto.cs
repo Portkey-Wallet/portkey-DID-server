@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CAServer.CAAccount.Dtos;
@@ -11,6 +12,7 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
     public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
     [Required] public OperationType OperationType { get; set; }
+    public string Jwt { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
@@ -22,6 +24,14 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
             yield return new ValidationResult(
                 "Invalid input type.",
                 new[] { "GuardianIdentifierType" }
+            );
+        }
+
+        if (Type == GuardianIdentifierType.Facebook && Jwt.IsNullOrEmpty())
+        {
+            yield return new ValidationResult(
+                "Invalid input jwt.",
+                new[] { "Jwt" }
             );
         }
     }
