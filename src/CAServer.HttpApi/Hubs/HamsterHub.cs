@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.EnumType;
 using CAServer.Growth.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;

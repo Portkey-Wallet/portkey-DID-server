@@ -119,7 +119,7 @@ public static class CommonConstant
     public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
 
     public const string SingUp = " created a Portkey account";
-    public const string HamsterScore = " collect {0} $ACORNS";
+    public const string HamsterScore = " collected {0} $ACORNS";
     
     
     public const int InitTokenId = 10;
