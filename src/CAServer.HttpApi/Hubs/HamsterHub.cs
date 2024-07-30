@@ -8,7 +8,7 @@ using Volo.Abp.AspNetCore.SignalR;
 namespace CAServer.Hubs;
 
 [HubRoute("HamsterDataReporting")]
-[Authorize]
+//[Authorize]
 public class HamsterHub : AbpHub
 {
     private readonly IHubService _hubService;
