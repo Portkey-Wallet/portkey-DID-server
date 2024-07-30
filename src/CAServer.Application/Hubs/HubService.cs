@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Growth;
 using CAServer.Growth.Dtos;
 using CAServer.Hub;
@@ -132,7 +133,7 @@ public class HubService : CAServerAppService, IHubService
         await RequestOrderStatusAsync(clientId, orderId);
     }
 
-    public async Task<ReferralRecordResponseDto> ReferralRecordListAsync(ReferralRecordRequestDto input)
+    public async Task ReferralRecordListAsync(ReferralRecordRequestDto input)
     {
         while (true)
         {
@@ -141,12 +142,10 @@ public class HubService : CAServerAppService, IHubService
                 // stop while disconnected
                 if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
                 {
-                    return await _statisticAppService.GetReferralRecordList(input);
+                    await GetReferralRecordListAsync(input);
                 }
-
                 _logger.LogWarning("Get ReferralRecords STOP");
                 break;
-
             }
             catch (Exception e)
             {
@@ -154,25 +153,21 @@ public class HubService : CAServerAppService, IHubService
                 break;
             }
         }
-
-        return new ReferralRecordResponseDto();
     }
 
-    public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
+    public async Task RewardProgressAsync(ActivityEnums activityEnums, string targetClientId)
     {
         while (true)
         {
             try
             {
                 // stop while disconnected
-                if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
+                if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
                 {
-                    return await _statisticAppService.GetReferralRecordRankAsync(input);
+                    await RewardProgressChangedAsync(activityEnums, targetClientId);
                 }
-
-                _logger.LogWarning("Get ReferralRecords STOP");
+                _logger.LogWarning("Get RewardProgressChanged STOP");
                 break;
-
             }
             catch (Exception e)
             {
@@ -180,135 +175,168 @@ public class HubService : CAServerAppService, IHubService
                 break;
             }
         }
-
-        return new ReferralRecordsRankResponseDto();
     }
+
+    private async Task RewardProgressChangedAsync(ActivityEnums activityEnums, string targetClientId)
+    {
+        var rewardProgressResponseDto = await _statisticAppService.GetRewardProgressAsync(activityEnums);
+        try
+        {
+            var methodName = "RewardProgressChanged";
+            await _caHubProvider.ResponseAsync(
+                new HubResponseBase<RewardProgressResponseDto>(rewardProgressResponseDto), targetClientId,
+                methodName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "RewardProgressChanged error, clientId={ClientId}, enums={enums}", targetClientId,
+                activityEnums.ToString());
+        }
+    }
+
+    private async Task GetReferralRecordListAsync(ReferralRecordRequestDto dto)
+    {
+        var referralRecordResponseDto = await _statisticAppService.GetReferralRecordList(dto);
+        try
+        {
+            var methodName = "ReferralRecordListChanged";
+            await _caHubProvider.ResponseAsync(
+                new HubResponseBase<ReferralRecordResponseDto>(referralRecordResponseDto), dto.TargetClientId,
+                methodName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Get ReferralRecordList error, clientId={ClientId}, dto={dto}", dto.TargetClientId,
+                JsonConvert.SerializeObject(dto));
+        }
+    }
+
 
     public async Task RequestNFTOrderStatusAsync(string clientId, string orderId)
-        {
-            await RequestOrderStatusAsync(clientId, orderId);
-        }
-
-        public async Task RequestOrderStatusAsync(string clientId, string orderId)
-        {
-            await _orderWsNotifyProvider.RegisterOrderListenerAsync(clientId, orderId, async notifyOrderDto =>
-            {
-                try
-                {
-                    var methodName = notifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
-                    await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId,
-                        methodName);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e, "notify orderStatus error, clientId={ClientId}, orderId={OrderId}", clientId,
-                        orderId);
-                }
-            });
-
-            // notify current order immediately
-            var currentOrder = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(orderId);
-            var notifyOrderDto = _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder);
-            await _orderWsNotifyProvider.NotifyOrderDataAsync(notifyOrderDto);
-        }
-
-        public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
-        {
-            await RequestConditionOrderAsync(targetClientId, orderId,
-                esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString()
-                               || esOrderData.Status == OrderStatusType.TransferFailed.ToString()
-                               || esOrderData.Status == OrderStatusType.Invalid.ToString(),
-                "onOrderTransferredReceived");
-        }
-
-        public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
-        {
-            await RequestConditionOrderAsync(targetClientId, orderId,
-                esOrderData => !string.IsNullOrWhiteSpace(esOrderData.Address),
-                "onAchTxAddressReceived");
-        }
-
-
-        private async Task RequestConditionOrderAsync(string targetClientId, string orderId,
-            Func<OrderDto, bool> matchCondition, string callbackMethod)
-        {
-            var cts = new CancellationTokenSource(_thirdPartOptions.CurrentValue.Timer.TimeoutMillis);
-            while (!cts.IsCancellationRequested)
-            {
-                try
-                {
-                    // stop while disconnected
-                    if (_connectionProvider.GetConnectionByClientId(targetClientId) == null)
-                    {
-                        _logger.LogWarning(
-                            "Get third-part order {OrderId} {CallbackMethod} STOP, connection disconnected",
-                            orderId, callbackMethod);
-                        break;
-                    }
-
-                    var grainId = ThirdPartHelper.GetOrderId(orderId);
-                    var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-                    if (esOrderData == null || esOrderData.Id == new Guid())
-                    {
-                        _logger.LogError("This order {OrderId} {CallbackMethod} not exists in the es", orderId,
-                            callbackMethod);
-                        break;
-                    }
-
-                    // condition mot match
-                    if (!matchCondition(esOrderData))
-                    {
-                        _logger.LogWarning(
-                            "Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
-                            orderId, callbackMethod);
-                        await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.CurrentValue.Timer.DelaySeconds));
-                        continue;
-                    }
-
-                    // push address to client via ws
-                    var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(
-                        JsonConvert.SerializeObject(
-                            new NotifyOrderDto()
-                            {
-                                OrderId = esOrderData.Id,
-                                MerchantName = esOrderData.MerchantName,
-                                Address = esOrderData.Address,
-                                Network = esOrderData.Network,
-                                Crypto = esOrderData.Crypto,
-                                CryptoAmount = esOrderData.CryptoAmount,
-                                Status = esOrderData.Status
-                            },
-                            Formatting.None,
-                            new JsonSerializerSettings
-                            {
-                                ContractResolver = new CamelCasePropertyNamesContractResolver()
-                            }));
-                    await _caHubProvider.ResponseAsync(
-                        new HubResponseBase<Dictionary<string, string>>
-                        {
-                            Body = bodyDict
-                        },
-                        targetClientId, callbackMethod
-                    );
-                    _logger.LogInformation("Get third-part order {OrderId} {CallbackMethod}  success",
-                        orderId, callbackMethod);
-                    break;
-                }
-                catch (OperationCanceledException oce)
-                {
-                    _logger.LogError(oce,
-                        "Timed out waiting for third-part order { {OrderId} {CallbackMethod}  update status", orderId,
-                        callbackMethod);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e,
-                        "An exception occurred during the query third-part order {OrderId} {CallbackMethod} ",
-                        orderId, callbackMethod);
-                    break;
-                }
-            }
-
-            cts.Cancel();
-        }
+    {
+        await RequestOrderStatusAsync(clientId, orderId);
     }
+
+    public async Task RequestOrderStatusAsync(string clientId, string orderId)
+    {
+        await _orderWsNotifyProvider.RegisterOrderListenerAsync(clientId, orderId, async notifyOrderDto =>
+        {
+            try
+            {
+                var methodName = notifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
+                await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId,
+                    methodName);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "notify orderStatus error, clientId={ClientId}, orderId={OrderId}", clientId,
+                    orderId);
+            }
+        });
+
+        // notify current order immediately
+        var currentOrder = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(orderId);
+        var notifyOrderDto = _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder);
+        await _orderWsNotifyProvider.NotifyOrderDataAsync(notifyOrderDto);
+    }
+
+    public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
+    {
+        await RequestConditionOrderAsync(targetClientId, orderId,
+            esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString()
+                           || esOrderData.Status == OrderStatusType.TransferFailed.ToString()
+                           || esOrderData.Status == OrderStatusType.Invalid.ToString(),
+            "onOrderTransferredReceived");
+    }
+
+    public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
+    {
+        await RequestConditionOrderAsync(targetClientId, orderId,
+            esOrderData => !string.IsNullOrWhiteSpace(esOrderData.Address),
+            "onAchTxAddressReceived");
+    }
+
+
+    private async Task RequestConditionOrderAsync(string targetClientId, string orderId,
+        Func<OrderDto, bool> matchCondition, string callbackMethod)
+    {
+        var cts = new CancellationTokenSource(_thirdPartOptions.CurrentValue.Timer.TimeoutMillis);
+        while (!cts.IsCancellationRequested)
+        {
+            try
+            {
+                // stop while disconnected
+                if (_connectionProvider.GetConnectionByClientId(targetClientId) == null)
+                {
+                    _logger.LogWarning(
+                        "Get third-part order {OrderId} {CallbackMethod} STOP, connection disconnected",
+                        orderId, callbackMethod);
+                    break;
+                }
+
+                var grainId = ThirdPartHelper.GetOrderId(orderId);
+                var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
+                if (esOrderData == null || esOrderData.Id == new Guid())
+                {
+                    _logger.LogError("This order {OrderId} {CallbackMethod} not exists in the es", orderId,
+                        callbackMethod);
+                    break;
+                }
+
+                // condition mot match
+                if (!matchCondition(esOrderData))
+                {
+                    _logger.LogWarning(
+                        "Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
+                        orderId, callbackMethod);
+                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.CurrentValue.Timer.DelaySeconds));
+                    continue;
+                }
+
+                // push address to client via ws
+                var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(
+                    JsonConvert.SerializeObject(
+                        new NotifyOrderDto()
+                        {
+                            OrderId = esOrderData.Id,
+                            MerchantName = esOrderData.MerchantName,
+                            Address = esOrderData.Address,
+                            Network = esOrderData.Network,
+                            Crypto = esOrderData.Crypto,
+                            CryptoAmount = esOrderData.CryptoAmount,
+                            Status = esOrderData.Status
+                        },
+                        Formatting.None,
+                        new JsonSerializerSettings
+                        {
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        }));
+                await _caHubProvider.ResponseAsync(
+                    new HubResponseBase<Dictionary<string, string>>
+                    {
+                        Body = bodyDict
+                    },
+                    targetClientId, callbackMethod
+                );
+                _logger.LogInformation("Get third-part order {OrderId} {CallbackMethod}  success",
+                    orderId, callbackMethod);
+                break;
+            }
+            catch (OperationCanceledException oce)
+            {
+                _logger.LogError(oce,
+                    "Timed out waiting for third-part order { {OrderId} {CallbackMethod}  update status", orderId,
+                    callbackMethod);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,
+                    "An exception occurred during the query third-part order {OrderId} {CallbackMethod} ",
+                    orderId, callbackMethod);
+                break;
+            }
+        }
+
+        cts.Cancel();
+    }
+}
