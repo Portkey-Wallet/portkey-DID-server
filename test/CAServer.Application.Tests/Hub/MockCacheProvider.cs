@@ -132,4 +132,14 @@ public class MockCacheProvider : ICacheProvider
     {
         throw new NotImplementedException();
     }
+
+    public Task SetAddAsync(string key, string value, TimeSpan? timeSpan)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<RedisValue[]> SetMembersAsync(string key)
+    {
+        throw new NotImplementedException();
+    }
 }
