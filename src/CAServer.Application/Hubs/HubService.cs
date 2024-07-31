@@ -142,7 +142,7 @@ public class HubService : CAServerAppService, IHubService
                 // stop while disconnected
                 if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
                 {
-                    await GetReferralRecordListAsync(input);
+                    //await GetReferralRecordListAsync(input);
                 }
                 _logger.LogWarning("Get ReferralRecords STOP");
                 break;
@@ -164,7 +164,7 @@ public class HubService : CAServerAppService, IHubService
                 // stop while disconnected
                 if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
                 {
-                    await RewardProgressChangedAsync(activityEnums, targetClientId);
+                    //await RewardProgressChangedAsync(activityEnums, targetClientId);
                 }
                 _logger.LogWarning("Get RewardProgressChanged STOP");
                 break;
