@@ -9,6 +9,8 @@ public class ReferralRecordsRankResponseDto
     public ReferralRecordsRankDetail CurrentUserReferralRecordsRankDetail { get; set; }
 
     public bool HasNext { get; set; }
+
+    public string Invitations { get; set; }
 }
 
 public class ReferralRecordsRankDetail

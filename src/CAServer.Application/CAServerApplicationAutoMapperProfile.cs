@@ -14,7 +14,6 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
-using CAServer.CryptoGift.Dtos;
 using CAServer.DataReporting.Dtos;
 using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
@@ -22,11 +21,13 @@ using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
+using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.CryptoGift;
+using CAServer.Grains.Grain.FreeMint;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
@@ -39,6 +40,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.Growth.Dtos;
 using CAServer.Growth.Etos;
 using CAServer.Guardian;
 using CAServer.Hubs;
@@ -82,6 +84,7 @@ using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using CoinGecko.Entities.Response.Coins;
+using Google.Protobuf;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.AutoMapper;
@@ -93,7 +96,10 @@ using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 using Google.Protobuf.Collections;
-using static Google.Protobuf.WellKnownTypes.TimeExtensions;
+using Google.Protobuf.WellKnownTypes;
+using Microsoft.IdentityModel.Tokens;
+using Enum = System.Enum;
+using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
 
 namespace CAServer;
 
@@ -101,6 +107,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 {
     public CAServerApplicationAutoMapperProfile()
     {
+        CreateMap<GoogleUserInfoDto, CAServer.Verifier.Dtos.UserExtraInfo>();
         CreateMap<UserTokenGrainDto, UserTokenEto>();
         CreateMap<UserTokenGrainDto, UserTokenDeleteEto>();
         CreateMap<UserTokenGrainDto, UserTokenDto>();
@@ -801,5 +808,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
+        CreateMap<ActivityConfig, ActivityConfigDto>();
+        CreateMap<RulesConfig, RulesConfigDto>();
+        CreateMap<BeInvitedConfig, BeInvitedConfigDto>();
+        CreateMap<TaskConfigInfo, TaskConfig>();
+        CreateMap<NoticeInfo, Notice>();
+        
+        
+        CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
+        CreateMap<FreeMintIndex, GetItemInfoDto>();
     }
 }
