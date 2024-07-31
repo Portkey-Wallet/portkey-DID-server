@@ -439,11 +439,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             else
             {
                 var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
-                foreach (var score in hamsterScoreList.GetScoreInfos)
-                {
-                    _logger.LogDebug("query from hamster data is {data}", JsonConvert.SerializeObject(score));
-                }
-
                 result = hamsterScoreList.GetScoreInfos
                     .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             }
@@ -519,8 +514,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
             addresses.Add(formatAddress);
             userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
-            _logger.LogDebug("should culcalate adderss is {address},Cahash is {caHash}", formatAddress,
-                holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
         }
 
         return addresses;
