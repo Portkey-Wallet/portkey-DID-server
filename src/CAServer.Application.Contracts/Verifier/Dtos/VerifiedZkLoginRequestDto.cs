@@ -14,6 +14,9 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
     [Required] public OperationType OperationType { get; set; }
     public string Jwt { get; set; }
 
+    public string GuardianIdentifierHash { get; set; }
+    public string Salt { get; set; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         var usedZk = GuardianIdentifierType.Google.Equals(Type) 

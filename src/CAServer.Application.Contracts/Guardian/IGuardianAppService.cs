@@ -13,4 +13,6 @@ public interface IGuardianAppService
     Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto guardianIdentifierDto);
 
     public Task<List<UserExtraInfoIndexDto>> GetUserExtraInfoDtoAsync(List<string> identifiers);
+
+    public Task<List<GuardianIndexDto>> GetGuardianListByCreateTimeAsync(long createTimeSeconds);
 }
