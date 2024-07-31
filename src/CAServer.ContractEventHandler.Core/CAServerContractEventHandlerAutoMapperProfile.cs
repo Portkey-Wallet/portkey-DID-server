@@ -7,6 +7,7 @@ using CAServer.ContractEventHandler.Core.Application;
 using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
+using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using Portkey.Contracts.CA;
 
@@ -56,5 +57,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                 opt => opt.MapFrom(g => Hash.LoadFromHex(g.LoginGuardianIdentifierHash)));
 
         CreateMap<TransactionReportEto, TransactionReportContext>();
+        CreateMap<FreeMintCollectionInfo, CollectionInfo>();
+        CreateMap<ItemMintInfo, FreeMintIndex>();
     }
 }

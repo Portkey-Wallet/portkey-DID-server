@@ -117,6 +117,15 @@ public static class CommonConstant
     
 
     public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
+    
+    
+    public const int InitTokenId = 10;
+    public const string FreeMintTokenIdGrainId = "FreeMint-TokenId";
+    public const int FreeMintTotalSupply = 1;
+    public const int FreeMintDecimals = 0;
+
+    public const string PortkeyS3Mark = "did";
+    public const string ImS3Mark = "im";
 
     public const string SingUp = " sing up";
     public const string HamsterScore = " obtained {0} $ACORNS";

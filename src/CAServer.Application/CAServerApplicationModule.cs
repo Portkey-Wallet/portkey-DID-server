@@ -94,6 +94,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<HamsterOptions>(configuration.GetSection("Hamster"));
         
         
+        Configure<FreeMintOptions>(configuration.GetSection("FreeMint"));
         
 
         context.Services.AddMemoryCache();
