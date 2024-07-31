@@ -67,6 +67,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<ReferralRefreshTimeOptions>(configuration.GetSection("ReferralRefreshTime"));
         Configure<ActivityDateRangeOptions>(configuration.GetSection("ActivityDateRange"));
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
+        Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
