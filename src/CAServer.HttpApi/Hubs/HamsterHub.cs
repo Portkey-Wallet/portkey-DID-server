@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CAServer.Growth.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp.AspNetCore.SignalR;
 
 namespace CAServer.Hubs;
@@ -52,6 +53,7 @@ public class HamsterHub : AbpHub
 
     public async Task ReferralRecordList(ReferralRecordRequestDto input)
     {
+        _logger.LogDebug("Hub param is {param}",JsonConvert.SerializeObject(input));
         if (!CurrentUser.Id.HasValue)
         {
             throw new UnauthorizedAccessException();
