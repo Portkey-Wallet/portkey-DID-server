@@ -20,6 +20,7 @@ using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -1421,11 +1422,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         switch (request.Type)
         {
-            case "Token":
+            case "token":
             {
                 var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, request.Symbol,
                     0, MaxResultCount);
 
+                _logger.LogDebug("User Assert is {tokenRes}",JsonConvert.SerializeObject(tokenRes));
                 if (tokenRes.CaHolderTokenBalanceInfo?.Data.Count > 0)
                 {
                     return true;
@@ -1433,10 +1435,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 break;
             }
-            case "NFT":
+            case "nft":
             {
                 var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
                     request.Symbol, 0, MaxResultCount);
+                _logger.LogDebug("User assert is {nft}",JsonConvert.SerializeObject(res));
                 if (res.CaHolderNFTBalanceInfo?.Data.Count > 0)
                 {
                     return true;
