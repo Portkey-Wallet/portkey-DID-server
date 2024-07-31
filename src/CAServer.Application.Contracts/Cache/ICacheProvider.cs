@@ -28,4 +28,12 @@ public interface ICacheProvider
 
     Task<long> GetSortedSetLengthAsync(string leaderboardKey);
 
+    Task SetAddAsync(string key, string value, TimeSpan? timeSpan);
+
+    Task<RedisValue[]> SetMembersAsync(string key);
+
+
+
+
+
 }

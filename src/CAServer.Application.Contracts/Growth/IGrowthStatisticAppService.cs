@@ -7,11 +7,11 @@ namespace CAServer.Growth;
 public interface IGrowthStatisticAppService
 {
     Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input);
-    Task<int> GetReferralTotalCountAsync(ReferralRecordRequestDto input);
     Task CalculateReferralRankAsync();
     Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input);
     Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input);
     Task CalculateHamsterDataAsync();
     Task<RewardProgressResponseDto> GetRewardProgressAsync(ActivityEnums activityEnum);
-    Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus status);
+    Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync();
+    Task<ActivityBaseInfoDto> ActivityBaseInfoAsync();
 }

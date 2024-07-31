@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.EnumType;
 using CAServer.Growth.Dtos;
 using Volo.Abp.Application.Services;
 
@@ -19,6 +20,8 @@ public interface IHubService : IApplicationService
     Task RequestAchTxAddressAsync(string targetClientId, string orderId);
     Task RequestNFTOrderStatusAsync(string clientId, string orderId);
     Task RequestRampOrderStatus(string clientId, string orderId);
-    Task<ReferralRecordResponseDto> ReferralRecordListAsync(ReferralRecordRequestDto input, string targetClientId);
-    Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input, string targetClientId);
+    Task ReferralRecordListAsync(ReferralRecordRequestDto input);
+    //Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input);
+    
+    Task RewardProgressAsync(ActivityEnums activityEnums, string targetClientId);
 }

@@ -11,4 +11,6 @@ public class ReferralRecordRequestDto
     public int Limit { get; set; }
 
     public ActivityEnums ActivityEnums { get; set; }
+    
+    public string TargetClientId { get; set; }
 }

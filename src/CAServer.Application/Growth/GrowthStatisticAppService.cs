@@ -40,6 +40,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly ActivityConfigOptions _activityConfigOptions;
     private readonly HamsterOptions _hamsterOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
+    private const string OverHamsterScoreLimitKey = "Portkey:OverHamsterScoreLimitKey";
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -82,7 +83,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
         var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0,
-            Int16.MaxValue, new DateTime(), new DateTime(), new List<int> { 0 });
+            Int16.MaxValue, null, null, new List<int> { 0 });
         return growthInfo?.Count ?? 0;
     }
 
@@ -100,7 +101,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var referralRecordList = input.ActivityEnums switch
         {
             ActivityEnums.Invitation => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash,
-                input.Skip, input.Limit, new DateTime(), new DateTime(), new List<int> { 0 }),
+                input.Skip, input.Limit, null, null, new List<int> { 0 }),
             ActivityEnums.Hamster => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip,
                 input.Limit, Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                 new List<int> { 0, 1 }),
@@ -114,24 +115,34 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var caHashes = referralRecordList.Select(t => t.CaHash).Distinct().ToList();
         var nickNameByCaHashes = await GetNickNameByCaHashes(caHashes);
         var hamsterDesc = String.Format(CommonConstant.HamsterScore, _hamsterOptions.MinAcornsScore);
-        var records = referralRecordList.Select(index => new ReferralRecordDetailDto
+
+        var records = new List<ReferralRecordDetailDto>();
+        foreach (var index in referralRecordList)
         {
-            WalletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo)
+            var record = new ReferralRecordDetailDto();
+            var walletName = nickNameByCaHashes.TryGetValue(index.CaHash, out var indexInfo)
                 ? indexInfo.NickName
-                : "",
-            RecordDesc = index.ReferralType == 0
-                ? nickNameByCaHashes.TryGetValue(index.CaHash, out var referralIndexInfo)
-                    ? referralIndexInfo.NickName
-                    : "" + CommonConstant.SingUp
-                : nickNameByCaHashes.TryGetValue(index.CaHash, out var recordIndexInfo)
-                    ? recordIndexInfo.NickName
-                    : "" + hamsterDesc,
-            IsDirectlyInvite = index.IsDirectlyInvite == 0,
-            ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd"),
-            Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex)
+                : "";
+            var recordDesc = walletName;
+            if (index.ReferralType == 0)
+            {
+                recordDesc += CommonConstant.SingUp;
+            }
+            else
+            {
+                recordDesc += hamsterDesc;
+            }
+
+            record.WalletName = walletName;
+            record.RecordDesc = recordDesc;
+            record.Avatar = nickNameByCaHashes.TryGetValue(index.CaHash, out var caHolderIndex)
                 ? caHolderIndex.Avatar
-                : "",
-        }).ToList();
+                : "";
+            ;
+            record.IsDirectlyInvite = index.IsDirectlyInvite == 0;
+            record.ReferralDate = index.ReferralDate.ToString("yyyy-MM-dd");
+            records.Add(record);
+        }
 
         return new ReferralRecordResponseDto
         {
@@ -192,7 +203,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     ? referralCaHash
                     : "",
                 ReferralDate = UnixTimeStampToDateTime(indexer.Timestamp),
-                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
+                ReferralType = 0
             };
             var success = await _growthProvider.AddReferralRecordAsync(referralRecord);
             if (!success)
@@ -214,19 +226,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
-        var hasNext = true;
-        var list = new List<ReferralRecordsRankDetail>();
-        switch (input.Activity)
+        var referralRecordRank = new ReferralRecordsRankResponseDto();
+        referralRecordRank = input.ActivityEnums switch
         {
-            case ActivityEnums.Invitation:
-                list = await BuildInvitationRankAsync(input, true, list);
-                break;
-            case ActivityEnums.Hamster:
-                list = await BuildHamsterRankAsync(input, true, list);
-                break;
-            default:
-                throw new UserFriendlyException("Invalidate Activity.");
-        }
+            ActivityEnums.Invitation => await BuildInvitationRankAsync(input, referralRecordRank),
+            ActivityEnums.Hamster => await BuildHamsterRankAsync(input, referralRecordRank),
+            _ => throw new UserFriendlyException("Invalidate Activity.")
+        };
 
         var currentUserReferralInfo = new ReferralRecordsRankDetail();
         if (CurrentUser.Id.HasValue)
@@ -250,7 +256,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 List<double> scoreList;
                 var currentReferralCount = 0d;
-                switch (input.Activity)
+                switch (input.ActivityEnums)
                 {
                     case ActivityEnums.Invitation:
                         var sortedEntries =
@@ -280,19 +286,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             }
         }
 
-        var referralRecordRank = new ReferralRecordsRankResponseDto
-        {
-            HasNext = hasNext,
-            ReferralRecordsRank = list,
-            CurrentUserReferralRecordsRankDetail = currentUserReferralInfo,
-            Invitations = _hamsterOptions.Invitations
-        };
+        referralRecordRank.CurrentUserReferralRecordsRankDetail = currentUserReferralInfo;
+        referralRecordRank.Invitations = _hamsterOptions.Invitations;
         return referralRecordRank;
     }
 
-    private async Task<List<ReferralRecordsRankDetail>> BuildHamsterRankAsync(ReferralRecordRankRequestDto input,
-        bool hasNext, List<ReferralRecordsRankDetail> list)
+    private async Task<ReferralRecordsRankResponseDto> BuildHamsterRankAsync(ReferralRecordRankRequestDto input,
+        ReferralRecordsRankResponseDto response)
     {
+        var hasNext = true;
+        var list = new List<ReferralRecordsRankDetail>();
         var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.HamsterRankKey);
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.HamsterRankKey, 0, input.Skip + input.Limit - 1);
         if (length <= input.Skip + input.Limit)
@@ -304,8 +307,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         scores.Sort();
         scores.Reverse();
         var skipList = entries.Skip(input.Skip).Take(input.Limit).ToArray();
-
-
         foreach (var entry in skipList)
         {
             var caAddress = entry.Element;
@@ -315,7 +316,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHolder = await _activityProvider.GetCaHolderAsync(caHash);
             _logger.LogDebug("Get caHolder is {caHolder},caAddress is {address},caHash is {caHash}",
                 JsonConvert.SerializeObject(caHolder), caAddress, caHash);
-            var score = await _cacheProvider.GetScoreAsync(CommonConstant.ReferralKey, entry.Element);
+            var score = await _cacheProvider.GetScoreAsync(CommonConstant.HamsterRankKey, entry.Element);
             if (scores.IndexOf(score) + 1 > RankLimit)
             {
                 hasNext = false;
@@ -333,12 +334,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             list.Add(referralRecordsRankDetail);
         }
 
-        return list;
+        response.HasNext = hasNext;
+        response.ReferralRecordsRank = list;
+        return response;
     }
 
-    private async Task<List<ReferralRecordsRankDetail>> BuildInvitationRankAsync(ReferralRecordRankRequestDto input,
-        bool hasNext, List<ReferralRecordsRankDetail> list)
+    private async Task<ReferralRecordsRankResponseDto> BuildInvitationRankAsync(ReferralRecordRankRequestDto input,
+        ReferralRecordsRankResponseDto response)
     {
+        var hasNext = true;
+        var list = new List<ReferralRecordsRankDetail>();
         var length = await _cacheProvider.GetSortedSetLengthAsync(CommonConstant.ReferralKey);
         var entries = await _cacheProvider.GetTopAsync(CommonConstant.ReferralKey, 0, input.Skip + input.Limit - 1);
         if (length <= input.Skip + input.Limit)
@@ -350,8 +355,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         scores.Sort();
         scores.Reverse();
         var skipList = entries.Skip(input.Skip).Take(input.Limit).ToArray();
-
-
         foreach (var entry in skipList)
         {
             var caAddress = entry.Element;
@@ -379,7 +382,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             list.Add(referralRecordsRankDetail);
         }
 
-        return list;
+        response.HasNext = hasNext;
+        response.ReferralRecordsRank = list;
+        return response;
     }
 
     public async Task CalculateHamsterDataAsync()
@@ -397,56 +402,128 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var referralRecordList =
             await _growthProvider.GetReferralRecordListAsync(null, null, 0, Int16.MaxValue, startTime, endTime,
                 new List<int> { 0 });
-
-        if (referralRecordList == null)
+        var list = referralRecordList.Where(t => t.ReferralType == 0).ToList();
+        if (list.IsNullOrEmpty() || list.Count == 0)
         {
             _logger.LogDebug("Hamster Referral data from ES is null.");
             return;
         }
 
-        foreach (var index in referralRecordList)
+        var recordGroup =
+            list.GroupBy(t => t.ReferralCaHash);
+        foreach (var group in recordGroup)
         {
-            _logger.LogDebug("Hamster Referral data query from ES : {index}", JsonConvert.SerializeObject(index));
+            var hamsterReferralInfo = new Dictionary<string, string>();
+            var referralRecords = group.ToList();
+            var hamsterReferralDic = referralRecords.ToDictionary(t => t.CaHash, k => k);
+            var caHash = group.Key;
+            var addresses = await GetHamsterReferralAddressAsync(referralRecords, hamsterReferralInfo);
+
+            var result = new List<HamsterScoreDto>();
+
+            if (addresses.Count >= 100)
+            {
+                for (var i = 0; i < addresses.Count; i += 50)
+                {
+                    var queryList = addresses.GetRange(i, Math.Min(50, list.Count - i));
+                    var hamsterScoreList =
+                        await _growthProvider.GetHamsterScoreListAsync(queryList, startTime, endTime);
+                    var scoreResult = hamsterScoreList.GetScoreInfos
+                        .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
+                    if (!scoreResult.IsNullOrEmpty())
+                    {
+                        result.AddRange(scoreResult);
+                    }
+                }
+            }
+            else
+            {
+                var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
+                foreach (var score in hamsterScoreList.GetScoreInfos)
+                {
+                    _logger.LogDebug("query from hamster data is {data}", JsonConvert.SerializeObject(score));
+                }
+
+                result = hamsterScoreList.GetScoreInfos
+                    .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
+            }
+
+            if (result.IsNullOrEmpty())
+            {
+                _logger.LogDebug("No scores over limit.");
+                continue;
+            }
+
+            var caHolderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
+                    caHash);
+            await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
+
+            foreach (var hamster in result)
+            {
+                var address = hamster.CaAddress.Split("_")[1];
+                var record =
+                    await _growthProvider.GetReferralRecordListAsync(
+                        hamsterReferralInfo[address], caHash, 0,
+                        1,
+                        null, null, new List<int> { 1 });
+                if (!record.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
+                var referralCaHash = hamsterReferralInfo[address];
+                var index = new ReferralRecordIndex
+                {
+                    CaHash = referralCaHash,
+                    ReferralCode = hamsterReferralDic[referralCaHash].ReferralCode,
+                    IsDirectlyInvite = 0,
+                    ReferralCaHash = caHash,
+                    ReferralDate = DateTime.UtcNow,
+                    ReferralAddress = hamsterReferralDic[referralCaHash].ReferralAddress,
+                    ReferralType = 1
+                };
+                var addResult = await _growthProvider.AddReferralRecordAsync(index);
+                if (!addResult)
+                {
+                    continue;
+                }
+
+                var expired = TimeSpan.FromDays(_hamsterOptions.HamsterExpired);
+                await _cacheProvider.SetAddAsync(OverHamsterScoreLimitKey, hamster.CaAddress, expired);
+            }
         }
-        
-        var recordDic =
-            referralRecordList.GroupBy(t => t.ReferralCaHash).ToDictionary(t => t.Key, k => k.ToList());
-        foreach (var caHash in recordDic.Keys)
+    }
+
+    private async Task<List<string>> GetHamsterReferralAddressAsync(List<ReferralRecordIndex> referralRecords,
+        Dictionary<string, string> userInfoDic)
+    {
+        var addresses = new List<string>();
+        foreach (var index in referralRecords)
         {
-            var referralRecords = recordDic[caHash];
-            var addresses = referralRecords.Select(t => t.ReferralAddress).ToList();
-            var dic = referralRecords.ToDictionary(t => t.ReferralAddress, t => t);
-            var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
-            // var result = hamsterScoreList.Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
-            // var caHolderInfo =
-            //     await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
-            //         caHash);
-            // await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
-            //     caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
-            // foreach (var hamster in result)
-            // {
-            //     var record =
-            //         await _growthProvider.GetReferralRecordListAsync(dic[hamster.CaAddress].CaHash, caHash, 0,
-            //             1,
-            //             new DateTime(), new DateTime(), new List<int> { 1 });
-            //     if (!record.IsNullOrEmpty())
-            //     {
-            //         continue;
-            //     }
-            //
-            //     var index = new ReferralRecordIndex
-            //     {
-            //         CaHash = dic[hamster.CaAddress].CaHash,
-            //         ReferralCode = dic[hamster.CaAddress].ReferralCode,
-            //         IsDirectlyInvite = 0,
-            //         ReferralCaHash = dic[hamster.CaAddress].ReferralCaHash,
-            //         ReferralDate = DateTime.UtcNow,
-            //         ReferralAddress = hamster.CaAddress,
-            //         ReferralType = 1
-            //     };
-            //     await _growthProvider.AddReferralRecordAsync(index);
-            // }
+            var holderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string> { }, index.CaHash);
+            var address = holderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+            if (string.IsNullOrEmpty(address))
+            {
+                continue;
+            }
+
+            var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
+            var overLimitAddress = await _cacheProvider.SetMembersAsync(OverHamsterScoreLimitKey);
+            if (overLimitAddress.Contains(formatAddress))
+            {
+                continue;
+            }
+
+            addresses.Add(formatAddress);
+            userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
+            _logger.LogDebug("should culcalate adderss is {address},Cahash is {caHash}", formatAddress,
+                holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
         }
+
+        return addresses;
     }
 
     public async Task<RewardProgressResponseDto> GetRewardProgressAsync(ActivityEnums activityEnum)
@@ -469,10 +546,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 };
                 var progressList = ModelToDictionary(invitationDto);
                 data.Data = progressList;
+                data.RewardProcessCount = "";
                 return data;
             case ActivityEnums.Hamster:
             {
                 HamsterRewardProgressDto hamsterProgress;
+                var referralList =
+                    await _growthProvider.GetReferralRecordListAsync(caHolder.CaHash, null, 0, Int16.MaxValue,
+                        Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
+                        new List<int> { 1 });
                 var reward = "";
                 var indexes = await GetHamsterSignUpCount(caHolder.CaHash, details.StartDate, details.EndDate);
                 if (indexes.Count == 0)
@@ -482,7 +564,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         SignUpCount = 0,
                         HamsterCount = 0,
                     };
-                    reward = 0 + " ELF";
+                    if (referralList == null || referralList.Count == 0)
+                    {
+                        reward = 0 + " ELF";
+                    }
+                    else
+                    {
+                        reward = _hamsterOptions.ReferralReward + " ELF";
+                    }
                 }
                 else
                 {
@@ -490,12 +579,21 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                         await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0, Int16.MaxValue,
                             Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                             new List<int> { 1 });
-                    hamsterProgress = new HamsterRewardProgressDto()
+                    hamsterProgress = new HamsterRewardProgressDto
                     {
                         SignUpCount = indexes.Count,
                         HamsterCount = referralRecordList.Count,
                     };
-                    reward = referralRecordList.Count * _hamsterOptions.HamsterReward + " ELF";
+
+                    if (referralList == null || referralList.Count == 0)
+                    {
+                        reward = referralRecordList.Count * _hamsterOptions.HamsterReward + " ELF";
+                    }
+                    else
+                    {
+                        reward = referralRecordList.Count * _hamsterOptions.HamsterReward +
+                                 _hamsterOptions.ReferralReward + " ELF";
+                    }
                 }
 
                 var list = ModelToDictionary(hamsterProgress);
@@ -508,18 +606,48 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
     }
 
-    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus status)
+    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync()
     {
-        _beInvitedConfigOptions.BeInvitedConfig.TryGetValue(status.ToString(), out var config);
-        if (config == null)
+        var result = new BeInvitedConfigResponseDto();
+        var data = new Dictionary<string, BeInvitedConfigDto>();
+        var config = _beInvitedConfigOptions.BeInvitedConfig;
+        foreach (var key in config.Keys)
         {
-            return new BeInvitedConfigResponseDto();
+            var response = ObjectMapper.Map<BeInvitedConfig, BeInvitedConfigDto>(config[key]);
+            response.TaskConfigs =
+                ObjectMapper.Map<List<TaskConfigInfo>, List<TaskConfig>>(config[key].TaskConfigInfos);
+            response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config[key].NoticeInfo);
+            data.Add(key, response);
         }
 
-        var response = ObjectMapper.Map<BeInvitedConfig, BeInvitedConfigResponseDto>(config);
-        response.TaskConfigs = ObjectMapper.Map<List<TaskConfigInfo>, List<TaskConfig>>(config.TaskConfigInfos);
-        response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config.NoticeInfo);
-        return response;
+        result.Data = data;
+        return result;
+    }
+
+    public async Task<ActivityBaseInfoDto> ActivityBaseInfoAsync()
+    {
+        var data = new List<ActivityBaseInfo>();
+        var configs = _activityConfigOptions.ActivityConfigMap;
+        foreach (var key in configs.Keys)
+        {
+            var baseInfo = new ActivityBaseInfo();
+            var config = configs[key];
+            baseInfo.ActivityName = key;
+            baseInfo.StartDate = config.ActivityConfig.StartDate;
+            baseInfo.EndDate = config.ActivityConfig.EndDate;
+            baseInfo.IsDefault = config.IsDefault;
+            var activityValue = (int)Enum.Parse(typeof(ActivityEnums), key);
+            baseInfo.ActivityValue = activityValue;
+            var sDate = DateTime.Parse(config.ActivityConfig.StartDate).ToString("MM.dd");
+            var eDate = DateTime.Parse(config.ActivityConfig.EndDate).ToString("MM.dd");
+            baseInfo.DateRange = sDate + "-" + eDate;
+            data.Add(baseInfo);
+        }
+
+        return new ActivityBaseInfoDto
+        {
+            Data = data
+        };
     }
 
     private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)
@@ -714,9 +842,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
     }
 
-    private static List<Dictionary<Tkey, Value>> ModelToDictionary(object obj)
+    private List<ReferralCountDto> ModelToDictionary(object obj)
     {
-        var list = new List<Dictionary<Tkey, Value>>();
         if (obj == null)
         {
             throw new ArgumentNullException(nameof(obj));
@@ -729,21 +856,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 prop => prop.GetValue(obj, null)
             );
 
-        foreach (var model in modelToDic.Keys)
-        {
-            var dic = new Dictionary<Tkey, Value>();
-            var key = new Tkey
-            {
-                Name = model
-            };
-            var value = new Value
-            {
-                Count = modelToDic[model].ToString()
-            };
-            dic.Add(key, value);
-            list.Add(dic);
-        }
 
-        return list;
+        return modelToDic.Keys.Select(model => new ReferralCountDto()
+            {
+                ActivityName = _hamsterOptions.HamsterCopyWriting[model], ReferralCount = modelToDic[model].ToString()
+            })
+            .ToList();
     }
 }

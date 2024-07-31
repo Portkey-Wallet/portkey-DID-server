@@ -1,28 +1,30 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Growth.Dtos;
-using CAServer.Message.Dtos;
-using CAServer.Message.Etos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp.AspNetCore.SignalR;
-using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.Hubs;
 
+[HubRoute("HamsterDataReporting")]
 [Authorize]
 public class HamsterHub : AbpHub
 {
-    private readonly IDistributedEventBus _distributedEventBus;
     private readonly IHubService _hubService;
     private readonly ILogger<HamsterHub> _logger;
 
-    public HamsterHub(ILogger<HamsterHub> logger, IHubService hubService, IDistributedEventBus distributedEventBus)
+    public HamsterHub(ILogger<HamsterHub> logger, IHubService hubService)
     {
         _logger = logger;
         _hubService = hubService;
-        _distributedEventBus = distributedEventBus;
+    }
+    
+    public override Task OnConnectedAsync()
+    {
+        _logger.LogInformation("user connected");
+        return base.OnConnectedAsync();
     }
 
 
@@ -37,36 +39,28 @@ public class HamsterHub : AbpHub
         _logger.LogInformation("clientId={ClientId} connect", clientId);
         await _hubService.SendAllUnreadRes(clientId);
     }
-
-    public async Task<ReferralRecordResponseDto> ReferralRecordList(ReferralRecordRequestDto input,string targetClientId)
+    
+    public async Task RewardProgress(RewardProgressDto rewardProgressDto)
     {
         if (!CurrentUser.Id.HasValue)
         {
             throw new UnauthorizedAccessException();
         }
 
-        return await _hubService.ReferralRecordListAsync(input,targetClientId);
+        await _hubService.RewardProgressAsync(rewardProgressDto.ActivityEnums,rewardProgressDto.TargetClientId);
     }
     
-    public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRank(ReferralRecordRankRequestDto input,string targetClientId)
+
+    public async Task ReferralRecordList(ReferralRecordRequestDto input)
     {
+        _logger.LogDebug("Hub param is {param}",JsonConvert.SerializeObject(input));
         if (!CurrentUser.Id.HasValue)
         {
             throw new UnauthorizedAccessException();
         }
-
-        return await _hubService.GetReferralRecordRankAsync(input,targetClientId);
-    }
     
-    // public async Task<ReferralRecordResponseDto> ReferralRecordList(ReferralRecordRequestDto input,string targetClientId)
-    // {
-    //     if (!CurrentUser.Id.HasValue)
-    //     {
-    //         throw new UnauthorizedAccessException();
-    //     }
-    //
-    //     return await _hubService.ReferralRecordListAsync(input,targetClientId);
-    // }
+        await _hubService.ReferralRecordListAsync(input);
+    }
     
     
 

@@ -53,13 +53,6 @@ public class GrowthController : CAServerController
         return await _statisticAppService.GetReferralRecordList(input);
     }
     
-    [HttpGet("referralTotalCount"),Authorize]
-    public async Task<int> GetReferralTotalCount(ReferralRecordRequestDto input)
-    {
-        return await _statisticAppService.GetReferralTotalCountAsync(input);
-    }
-    
-    
     [HttpGet("referralRecordRank")]
     public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
     {
@@ -67,21 +60,27 @@ public class GrowthController : CAServerController
     }
     
     [HttpGet("activityDetails")]
-    public async Task<ActivityDetailsResponseDto> GetActivityDetails(ActivityEnums activityEnum)
+    public async Task<ActivityDetailsResponseDto> GetActivityDetails(ActivityEnums activityEnums)
     {
-        return await _growthAppService.GetActivityDetailsAsync(activityEnum);
+        return await _growthAppService.GetActivityDetailsAsync(activityEnums);
     }
     
-    [HttpGet("RewardProgress"),Authorize]
-    public async Task<RewardProgressResponseDto> GetRewardProgress(ActivityEnums activityEnum)
+    [HttpGet("rewardProgress")]
+    public async Task<RewardProgressResponseDto> GetRewardProgress(ActivityEnums activityEnums)
     {
-        return await _statisticAppService.GetRewardProgressAsync(activityEnum);
+        return await _statisticAppService.GetRewardProgressAsync(activityEnums);
     }
 
-    [HttpGet("BeInvitedConfigs")]
-    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync(ReferralTaskStatus status)
+    [HttpGet("be-invited-configs")]
+    public async Task<BeInvitedConfigResponseDto> GetBeInvitedConfig()
     {
-        return await _statisticAppService.GetBeInvitedConfigAsync(status);
+        return await _statisticAppService.GetBeInvitedConfigAsync();
+    }
+    
+    [HttpGet("get-activity-baseInfos")]
+    public async Task<ActivityBaseInfoDto> GetActivityBaseInfos()
+    {
+        return await _statisticAppService.ActivityBaseInfoAsync();
     }
 
 
