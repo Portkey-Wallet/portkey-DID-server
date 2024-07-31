@@ -47,7 +47,7 @@ public class HamsterHub : AbpHub
             throw new UnauthorizedAccessException();
         }
 
-        await _hubService.RewardProgressAsync(rewardProgressDto.ActivityEnums,rewardProgressDto.TargetClientId);
+        //await _hubService.RewardProgressAsync(rewardProgressDto.ActivityEnums,rewardProgressDto.TargetClientId);
     }
     
 
@@ -59,7 +59,7 @@ public class HamsterHub : AbpHub
             throw new UnauthorizedAccessException();
         }
     
-        await _hubService.ReferralRecordListAsync(input);
+        //await _hubService.ReferralRecordListAsync(input);
     }
     
     
