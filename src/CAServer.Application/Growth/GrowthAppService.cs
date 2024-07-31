@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
@@ -30,18 +32,21 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private readonly INickNameAppService _nickNameAppService;
     private readonly IGrowthProvider _growthProvider;
     private readonly GrowthOptions _growthOptions;
-    private readonly ActivityDateRangeOptions _activityDateRangeOptions;
+    private readonly ActivityConfigOptions _activityConfigOptions;
+    private readonly HamsterOptions _hamsterOptions;
 
     public GrowthAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         IRedDotAppService redDotAppService, INickNameAppService nickNameAppService,
-        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider, IOptionsSnapshot<ActivityDateRangeOptions> activityDataRangeOptions)
+        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider,
+        IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions, IOptionsSnapshot<HamsterOptions> hamsterOptions)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _redDotAppService = redDotAppService;
         _nickNameAppService = nickNameAppService;
         _growthProvider = growthProvider;
-        _activityDateRangeOptions = activityDataRangeOptions.Value;
+        _hamsterOptions = hamsterOptions.Value;
+        _activityConfigOptions = activityConfigOptions.Value;
         _growthOptions = growthOptions.Value;
     }
 
@@ -151,21 +156,23 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
             $"{_growthOptions.RedirectUrl}?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}&networkType={_growthOptions.NetworkType ?? string.Empty}";
     }
 
-    public async Task<ActivityDateRangeResponseDto> GetActivityDateRangeAsync(ActivityEnums activityEnum)
+    public async Task<ActivityDetailsResponseDto> GetActivityDetailsAsync(ActivityEnums activityEnum)
     {
-        
-        _activityDateRangeOptions.ActivityDateRanges.TryGetValue(activityEnum.ToString(),out var dateRange);
-        if (dateRange != null)
+        _activityConfigOptions.ActivityConfigMap.TryGetValue(activityEnum.ToString(), out var config);
+        if (config != null)
         {
-            return new ActivityDateRangeResponseDto
+            return new ActivityDetailsResponseDto
             {
-                StartDate = dateRange.StartDate,
-                EndDate = dateRange.EndDate
+                ActivityConfig = ObjectMapper.Map<ActivityConfig,ActivityConfigDto>(config.ActivityConfig),
+                RulesConfig = ObjectMapper.Map<RulesConfig,RulesConfigDto>(config.RulesConfig),
             };
         }
-        return new ActivityDateRangeResponseDto();
+
+        return new ActivityDetailsResponseDto();
     }
-    
+
+
+
 
     private async Task<string> GetCaHashAsync()
     {
