@@ -153,8 +153,8 @@ public class CAAccountController : CAServerController
     }
 
     [HttpGet("guardian")]
-    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(string[] identifierHashList)
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(long createTimeSeconds)
     {
-        return await _guardianAppService.GetGuardianListAsync(identifierHashList.ToList());
+        return await _guardianAppService.GetGuardianListByCreateTimeAsync(createTimeSeconds);
     }
 }

@@ -40,7 +40,7 @@ public class GuardianUserProvider
         _objectMapper = objectMapper;
         _distributedEventBus = distributedEventBus;
     }
-    public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier)
+    public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier, string guardianIdentifierHash, string guardianSalt)
     {
         var guardianGrainResult = GetGuardian(guardianIdentifier);
 
@@ -52,8 +52,11 @@ public class GuardianUserProvider
             return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, true));
         }
 
-        var salt = GetSalt();
-        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt);
+        var salt = guardianSalt.IsNullOrEmpty() 
+            ? GetSalt() : ByteArrayHelper.HexStringToByteArray(guardianSalt);
+        var identifierHash = guardianIdentifierHash.IsNullOrEmpty() 
+            ? GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt) 
+            : Hash.LoadFromHex(guardianIdentifierHash);
 
         return Task.FromResult(Tuple.Create(identifierHash.ToHex(), salt.ToHex(), false));
     }
