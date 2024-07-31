@@ -9,6 +9,7 @@ using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
@@ -158,6 +159,20 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
         //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardians = await _guardianRepository.GetListAsync(Filter);
+
+        var result = guardians.Item2.Where(t => t.IsDeleted == false).ToList();
+
+        return ObjectMapper.Map<List<GuardianIndex>, List<GuardianIndexDto>>(result);
+    }
+    
+    public async Task<List<GuardianIndexDto>> GetGuardianListByCreateTimeAsync(long createTimeSeconds)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Range(i => i.Field(f => f.CreateTime.ToUtcMilliSeconds()).GreaterThanOrEquals(createTimeSeconds)));
         QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
