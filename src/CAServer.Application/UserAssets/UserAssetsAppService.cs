@@ -1390,6 +1390,67 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
+    public async Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request)
+    {
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new UserFriendlyException("User UnLogin");
+        }
+
+        var uid = (Guid)CurrentUser.Id;
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
+        var caHash = caHolderIndex.CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+        try
+        {
+            var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, request.ChainId);
+            if (result != null)
+            {
+                caAddressInfos.Add(new CAAddressInfo
+                {
+                    CaAddress = result.CaAddress.ToBase58(),
+                    ChainId = request.ChainId
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "get holder from chain error, userId:{userId}, caHash:{caHash}", uid.ToString(),
+                caHash);
+        }
+
+        switch (request.Type)
+        {
+            case "Token":
+            {
+                var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, request.Symbol,
+                    0, MaxResultCount);
+
+                if (tokenRes.CaHolderTokenBalanceInfo?.Data.Count > 0)
+                {
+                    return true;
+                }
+
+                break;
+            }
+            case "NFT":
+            {
+                var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
+                    request.Symbol, 0, MaxResultCount);
+                if (res.CaHolderNFTBalanceInfo?.Data.Count > 0)
+                {
+                    return true;
+                }
+
+                break;
+            }
+            default:
+                return false;
+        }
+
+        return false;
+    }
+
     private async Task<decimal> CalculateTotalBalanceInUsdAsync(List<IndexerTokenInfo> tokenInfos)
     {
         var totalBalanceInUsd = 0m;
