@@ -22,7 +22,6 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
-using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
 
@@ -40,10 +39,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private const int ExpireTime = 360;
     private readonly ActivityConfigOptions _activityConfigOptions;
     private readonly HamsterOptions _hamsterOptions;
-    private readonly ActivityDateRangeOptions activityDateRangeOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
     private const string OverHamsterScoreLimitKey = "Portkey:OverHamsterScoreLimitKey";
-    private const string ValidateAddressesKey = "Portkey:ValidateAddressesKey";
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -52,8 +49,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
-        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions,
-        IOptionsSnapshot<ActivityDateRangeOptions> activityDateRangeOptions)
+        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -61,7 +57,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _activityProvider = activityProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
-        this.activityDateRangeOptions = activityDateRangeOptions.Value;
         _beInvitedConfigOptions = beInvitedConfigOptions.Value;
         _hamsterOptions = hamsterOptions.Value;
         _activityConfigOptions = activityConfigOptions.Value;
@@ -444,11 +439,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             else
             {
                 var hamsterScoreList = await _growthProvider.GetHamsterScoreListAsync(addresses, startTime, endTime);
-                foreach (var score in hamsterScoreList.GetScoreInfos)
-                {
-                    _logger.LogDebug("query from hamster data is {data}", JsonConvert.SerializeObject(score));
-                }
-
                 result = hamsterScoreList.GetScoreInfos
                     .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
             }
@@ -524,8 +514,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
             addresses.Add(formatAddress);
             userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
-            _logger.LogDebug("should culcalate adderss is {address},Cahash is {caHash}", formatAddress,
-                holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
         }
 
         return addresses;
@@ -618,79 +606,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var config = _beInvitedConfigOptions.BeInvitedConfig;
         foreach (var key in config.Keys)
         {
-            var response = ObjectMapper.Map<BeInvitedConfig, BeInvitedConfigDto>(config[key]);
-            response.TaskConfigs =
-                ObjectMapper.Map<List<TaskConfigInfo>, List<TaskConfig>>(config[key].TaskConfigInfos);
-            response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config[key].NoticeInfo);
-            data.Add(key, response);
-        }
-
-        result.Data = data;
-        return result;
-    }
-
-    public async Task<ActivityBaseInfoDto> ActivityBaseInfoAsync()
-    {
-        var data = new List<ActivityBaseInfo>();
-        var configs = _activityConfigOptions.ActivityConfigMap;
-        foreach (var key in configs.Keys)
-        {
-            var baseInfo = new ActivityBaseInfo();
-            var config = configs[key];
-            baseInfo.ActivityName = key;
-            baseInfo.StartDate = config.ActivityConfig.StartDate;
-            baseInfo.EndDate = config.ActivityConfig.EndDate;
-            baseInfo.IsDefault = config.IsDefault;
-            var activityValue = (int)Enum.Parse(typeof(ActivityEnums), key);
-            baseInfo.ActivityValue = activityValue;
-            var sDate = DateTime.Parse(config.ActivityConfig.StartDate).ToString("MM.dd");
-            var eDate = DateTime.Parse(config.ActivityConfig.EndDate).ToString("MM.dd");
-            baseInfo.DateRange = sDate + "-" + eDate;
-            data.Add(baseInfo);
-        }
-
-        return new ActivityBaseInfoDto
-        {
-            Data = data
+            HasNext = hasNext,
+            ReferralRecordsRank = list,
+            CurrentUserReferralRecordsRankDetail = currentUserReferralInfo
         };
-    }
-
-    public async Task<ValidateHamsterScoreResponseDto> ValidateHamsterScoreAsync(string address)
-    {
-        var validateAddresses = await _cacheProvider.SetMembersAsync(ValidateAddressesKey);
-        if (validateAddresses.Contains(address))
-        {
-            return new ValidateHamsterScoreResponseDto()
-            {
-                Result = new Result()
-                {
-                    ValidateResult = true
-                },
-                ErrorMsg = new ErrorMsg()
-                {
-                    Message = "Already Validate"
-                }
-            };
-        }
-        var hamsterScoreList =
-            await _growthProvider.GetHamsterScoreListAsync(new List<string> { address },
-                Convert.ToDateTime(activityDateRangeOptions.StartDate), Convert.ToDateTime(activityDateRangeOptions.EndDate));
-        if (hamsterScoreList == null || hamsterScoreList.GetScoreInfos.Count <= 0)
-        {
-            return new ValidateHamsterScoreResponseDto();
-        }
-
-        var expire = TimeSpan.FromDays(ExpireTime);
-        await _cacheProvider.SetAddAsync(ValidateAddressesKey,
-            hamsterScoreList.GetScoreInfos.FirstOrDefault()?.CaAddress, expire);
-        return new ValidateHamsterScoreResponseDto()
-        {
-            Result = new Result()
-            {
-                ValidateResult = true
-            }
-        };
-
     }
 
     private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)

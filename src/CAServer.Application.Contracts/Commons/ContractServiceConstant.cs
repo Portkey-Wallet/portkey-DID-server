@@ -26,7 +26,7 @@ public static class CommonConstant
     public const string Underline = "_";
     public const string Comma = ",";
     public const string UpperZ = "z";
-
+    public const string DefaultDappName = "Unknown";
     public const string CurrencyFiat = "Fiat";
     public const string CurrencyCrypto = "Crypto";
 

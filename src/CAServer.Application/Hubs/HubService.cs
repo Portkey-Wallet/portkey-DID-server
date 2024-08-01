@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Entities.Es;
-using CAServer.EnumType;
-using CAServer.Growth;
-using CAServer.Growth.Dtos;
 using CAServer.Hub;
 using CAServer.Options;
 using CAServer.ThirdPart;
@@ -38,14 +35,13 @@ public class HubService : CAServerAppService, IHubService
     private readonly Dictionary<string, string> _clientOrderListener = new();
     private readonly Dictionary<string, Func<NotifyOrderDto, Task>> _orderNotifyListeners = new();
 
-    private readonly IGrowthStatisticAppService _statisticAppService;
+    //private readonly IGrowthStatisticAppService _statisticAppService;
 
 
     public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
         IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
         IConnectionProvider connectionProvider, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
-        ILogger<HubService> logger, IOrderWsNotifyProvider orderWsNotifyProvider,
-        IGrowthStatisticAppService statisticAppService)
+        ILogger<HubService> logger, IOrderWsNotifyProvider orderWsNotifyProvider)
     {
         _hubProvider = hubProvider;
         _hubCacheProvider = hubCacheProvider;
@@ -56,7 +52,6 @@ public class HubService : CAServerAppService, IHubService
         _thirdPartOptions = thirdPartOptions;
         _logger = logger;
         _orderWsNotifyProvider = orderWsNotifyProvider;
-        _statisticAppService = statisticAppService;
     }
 
     public async Task Ping(HubRequestContext context, string content)
@@ -133,83 +128,83 @@ public class HubService : CAServerAppService, IHubService
         await RequestOrderStatusAsync(clientId, orderId);
     }
 
-    public async Task ReferralRecordListAsync(ReferralRecordRequestDto input)
-    {
-        while (true)
-        {
-            try
-            {
-                // stop while disconnected
-                if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
-                {
-                    await GetReferralRecordListAsync(input);
-                }
-                _logger.LogWarning("Get ReferralRecords STOP");
-                break;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "");
-                break;
-            }
-        }
-    }
+    // public async Task ReferralRecordListAsync(ReferralRecordRequestDto input)
+    // {
+    //     // while (true)
+    //     // {
+    //     //     try
+    //     //     {
+    //     //         // stop while disconnected
+    //     //         if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
+    //     //         {
+    //     //             //await GetReferralRecordListAsync(input);
+    //     //         }
+    //     //         _logger.LogWarning("Get ReferralRecords STOP");
+    //     //         break;
+    //     //     }
+    //     //     catch (Exception e)
+    //     //     {
+    //     //         _logger.LogError(e, "");
+    //     //         break;
+    //     //     }
+    //     // }
+    // }
 
-    public async Task RewardProgressAsync(ActivityEnums activityEnums, string targetClientId)
-    {
-        while (true)
-        {
-            try
-            {
-                // stop while disconnected
-                if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
-                {
-                    await RewardProgressChangedAsync(activityEnums, targetClientId);
-                }
-                _logger.LogWarning("Get RewardProgressChanged STOP");
-                break;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "");
-                break;
-            }
-        }
-    }
-
-    private async Task RewardProgressChangedAsync(ActivityEnums activityEnums, string targetClientId)
-    {
-        var rewardProgressResponseDto = await _statisticAppService.GetRewardProgressAsync(activityEnums);
-        try
-        {
-            var methodName = "RewardProgressChanged";
-            await _caHubProvider.ResponseAsync(
-                new HubResponseBase<RewardProgressResponseDto>(rewardProgressResponseDto), targetClientId,
-                methodName);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "RewardProgressChanged error, clientId={ClientId}, enums={enums}", targetClientId,
-                activityEnums.ToString());
-        }
-    }
-
-    private async Task GetReferralRecordListAsync(ReferralRecordRequestDto dto)
-    {
-        var referralRecordResponseDto = await _statisticAppService.GetReferralRecordList(dto);
-        try
-        {
-            var methodName = "ReferralRecordListChanged";
-            await _caHubProvider.ResponseAsync(
-                new HubResponseBase<ReferralRecordResponseDto>(referralRecordResponseDto), dto.TargetClientId,
-                methodName);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Get ReferralRecordList error, clientId={ClientId}, dto={dto}", dto.TargetClientId,
-                JsonConvert.SerializeObject(dto));
-        }
-    }
+    // public async Task RewardProgressAsync(ActivityEnums activityEnums, string targetClientId)
+    // {
+    //     // while (true)
+    //     // {
+    //     //     try
+    //     //     {
+    //     //         // stop while disconnected
+    //     //         if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
+    //     //         {
+    //     //             //await RewardProgressChangedAsync(activityEnums, targetClientId);
+    //     //         }
+    //     //         _logger.LogWarning("Get RewardProgressChanged STOP");
+    //     //         break;
+    //     //     }
+    //     //     catch (Exception e)
+    //     //     {
+    //     //         _logger.LogError(e, "");
+    //     //         break;
+    //     //     }
+    //     //}
+    // }
+    //
+    // private async Task RewardProgressChangedAsync(ActivityEnums activityEnums, string targetClientId)
+    // {
+    //     // var rewardProgressResponseDto = await _statisticAppService.GetRewardProgressAsync(activityEnums);
+    //     // try
+    //     // {
+    //     //     var methodName = "RewardProgressChanged";
+    //     //     await _caHubProvider.ResponseAsync(
+    //     //         new HubResponseBase<RewardProgressResponseDto>(rewardProgressResponseDto), targetClientId,
+    //     //         methodName);
+    //     // }
+    //     // catch (Exception e)
+    //     // {
+    //     //     _logger.LogError(e, "RewardProgressChanged error, clientId={ClientId}, enums={enums}", targetClientId,
+    //     //         activityEnums.ToString());
+    //     // }
+    // }
+    //
+    // private async Task GetReferralRecordListAsync(ReferralRecordRequestDto dto)
+    // {
+    //     // var referralRecordResponseDto = await _statisticAppService.GetReferralRecordList(dto);
+    //     // try
+    //     // {
+    //     //     var methodName = "ReferralRecordListChanged";
+    //     //     await _caHubProvider.ResponseAsync(
+    //     //         new HubResponseBase<ReferralRecordResponseDto>(referralRecordResponseDto), dto.TargetClientId,
+    //     //         methodName);
+    //     // }
+    //     // catch (Exception e)
+    //     // {
+    //     //     _logger.LogError(e, "Get ReferralRecordList error, clientId={ClientId}, dto={dto}", dto.TargetClientId,
+    //     //         JsonConvert.SerializeObject(dto));
+    //     // }
+    // }
 
 
     public async Task RequestNFTOrderStatusAsync(string clientId, string orderId)

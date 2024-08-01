@@ -82,13 +82,6 @@ public class GrowthController : CAServerController
     {
         return await _statisticAppService.ActivityBaseInfoAsync();
     }
-    
-    [HttpGet("validate-hamster-score")]
-    public async Task<ValidateHamsterScoreResponseDto> ValidateHamsterScore(string address)
-    {
-        return await _statisticAppService.ValidateHamsterScoreAsync(address);
-    }
-    
 
 
 
