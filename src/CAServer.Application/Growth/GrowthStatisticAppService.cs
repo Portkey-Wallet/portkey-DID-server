@@ -452,8 +452,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHolderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
                     caHash);
+            var score =  await _cacheProvider.GetScoreAsync(CommonConstant.HamsterRankKey,
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
             await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
-                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
+                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count + score);
 
             foreach (var hamster in result)
             {
