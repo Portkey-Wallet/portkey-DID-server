@@ -65,6 +65,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ITokenPriceService _tokenPriceService;
     private readonly IDistributedCache<string> _userNftTraitsCountCache;
     private const string TraitsCachePrefix = "PortKey:NFTtraits:";
+    private readonly IActivityProvider _activityProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -78,7 +79,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
         IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
-        IDistributedCache<string> userNftTraitsCountCache)
+        IDistributedCache<string> userNftTraitsCountCache, IActivityProvider activityProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -102,6 +103,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _ipfsOptions = ipfsOption.Value;
         _tokenPriceService = tokenPriceService;
         _userNftTraitsCountCache = userNftTraitsCountCache;
+        _activityProvider = activityProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -1393,54 +1395,25 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     public async Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request)
     {
-        if (!CurrentUser.Id.HasValue)
-        {
-            throw new UserFriendlyException("User UnLogin");
-        }
-
-        var uid = (Guid)CurrentUser.Id;
-        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
-        var caHash = caHolderIndex.CaHash;
-        var caAddressInfos = new List<CAAddressInfo>();
-        try
-        {
-            var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, request.ChainId);
-            if (result != null)
-            {
-                caAddressInfos.Add(new CAAddressInfo
-                {
-                    CaAddress = result.CaAddress.ToBase58(),
-                    ChainId = request.ChainId
-                });
-            }
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "get holder from chain error, userId:{userId}, caHash:{caHash}", uid.ToString(),
-                caHash);
-        }
-
         switch (request.Type)
         {
             case "token":
             {
-                var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, request.Symbol,
-                    0, MaxResultCount);
-
-                _logger.LogDebug("User Assert is {tokenRes}",JsonConvert.SerializeObject(tokenRes));
-                if (tokenRes.CaHolderTokenBalanceInfo?.Data.Count > 0)
+                var token = await _activityProvider.GetTokenDecimalsAsync(request.Symbol);
+                _logger.LogDebug("Query from Portkey index data is {data}",JsonConvert.SerializeObject(token));
+                var symbolInfos = token.TokenInfo.Where(t=>t.ChainId == request.ChainId).ToList();
+                if (symbolInfos.Count > 0)
                 {
                     return true;
                 }
-
                 break;
             }
             case "nft":
             {
-                var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
-                    request.Symbol, 0, MaxResultCount);
-                _logger.LogDebug("User assert is {nft}",JsonConvert.SerializeObject(res));
-                if (res.CaHolderNFTBalanceInfo?.Data.Count > 0)
+                // var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
+                //     request.Symbol, 0, MaxResultCount);
+                // _logger.LogDebug("User assert is {nft}",JsonConvert.SerializeObject(res));
+                // if (res.CaHolderNFTBalanceInfo?.Data.Count > 0)
                 {
                     return true;
                 }

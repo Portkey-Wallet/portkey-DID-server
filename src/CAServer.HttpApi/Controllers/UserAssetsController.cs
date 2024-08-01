@@ -102,6 +102,7 @@ public class UserAssetsController
         return await _userAssetsAppService.GetTokenBalanceAsync(requestDto);
     }
     
+    [AllowAnonymous]
     [HttpGet("asset-estimation")]
     public async Task<bool> AssetEstimation(UserAssetEstimationRequestDto request)
     {
