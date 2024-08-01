@@ -15,5 +15,5 @@ public class ErrorMsg
 
 public class Result
 {
-    public bool ValidateResult { get; set; }
+    public bool ValidateResult { get; set; } = false;
 }
