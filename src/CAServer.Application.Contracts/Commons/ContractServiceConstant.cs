@@ -132,5 +132,5 @@ public static class CommonConstant
     public const string ImS3Mark = "im";
 
     public const string HamsterPassSymbol = "HAMSTERPASS-1";
-    public const string HamsterKingSymbol = "HAMSTERKING-1";
+    public const string HamsterKingSymbol = "KINGHAMSTER-1";
 }
