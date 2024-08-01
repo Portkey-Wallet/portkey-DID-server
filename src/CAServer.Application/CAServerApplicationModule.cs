@@ -90,6 +90,11 @@ public class CAServerApplicationModule : AbpModule
         Configure<NftToFtOptions>(configuration.GetSection("NftToFt"));
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         Configure<FreeMintOptions>(configuration.GetSection("FreeMint"));
+        Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
+        Configure<BeInvitedConfigOptions>(configuration.GetSection("BeInvitedConfig"));
+        Configure<HamsterOptions>(configuration.GetSection("Hamster"));
+        
+        
         
 
         context.Services.AddMemoryCache();
