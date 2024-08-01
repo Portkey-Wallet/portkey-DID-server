@@ -40,7 +40,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly ActivityConfigOptions _activityConfigOptions;
     private readonly HamsterOptions _hamsterOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
-    private const string OverHamsterScoreLimitKey = "Portkey:OverHamsterScoreLimitKey";
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -479,14 +478,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     ReferralAddress = hamsterReferralDic[referralCaHash].ReferralAddress,
                     ReferralType = 1
                 };
-                var addResult = await _growthProvider.AddReferralRecordAsync(index);
-                if (!addResult)
-                {
-                    continue;
-                }
-
-                var expired = TimeSpan.FromDays(_hamsterOptions.HamsterExpired);
-                await _cacheProvider.SetAddAsync(OverHamsterScoreLimitKey, hamster.CaAddress, expired);
+                await _growthProvider.AddReferralRecordAsync(index);
             }
         }
     }
@@ -506,12 +498,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             }
 
             var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
-            var overLimitAddress = await _cacheProvider.SetMembersAsync(OverHamsterScoreLimitKey);
-            if (overLimitAddress.Contains(formatAddress))
-            {
-                continue;
-            }
-
             addresses.Add(formatAddress);
             userInfoDic.Add(address, holderInfo.CaHolderInfo.FirstOrDefault()?.CaHash);
         }
