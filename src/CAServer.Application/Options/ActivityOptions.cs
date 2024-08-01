@@ -8,6 +8,7 @@ public class ActivityOptions
     public List<ETransferConfig> ETransferConfigs { get; set; }
     public List<string> NotUnknownContracts { get; set; } = new();
     public List<ContractConfig> ContractConfigs { get; set; }
+    public HamsterConfig HamsterConfig { get; set; }
 }
 
 public class ETransferConfig
@@ -20,8 +21,9 @@ public class ETransferConfig
 public class HamsterConfig
 {
     public string ContractAddress { get; set; }
-    public string HamsterPassAddress { get; set; }
-    public string HamsterKingAddress { get; set; }
+    public string GetPassName { get; set; }
+    public string GetRewardName { get; set; }
+    public string FromAddress { get; set; }
 }
 
 public class TransactionFeeFix

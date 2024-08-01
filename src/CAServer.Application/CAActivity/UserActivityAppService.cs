@@ -1009,6 +1009,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.TransactionName = contractConfig.MethodNameMap.ContainsKey(transactionType)
             ? contractConfig.MethodNameMap[transactionType]
             : activityDto.TransactionName;
+
+        SetHamsterName(activityDto);
+    }
+
+    private void SetHamsterName(GetActivityDto activityDto)
+    {
+        if (activityDto.TransactionType == AElfContractMethodName.Issue &&
+            activityDto.Symbol == CommonConstant.HamsterKingSymbol)
+        {
+            activityDto.TransactionName = _activityOptions.HamsterConfig.GetRewardName;
+        }
+        else if (activityDto.TransactionType == AElfContractMethodName.Transfer &&
+                 activityDto.Symbol == CommonConstant.HamsterPassSymbol &&
+                 activityDto.FromAddress == _activityOptions.HamsterConfig.FromAddress)
+        {
+            activityDto.TransactionName = _activityOptions.HamsterConfig.GetPassName;
+        }
     }
 
     private bool IsETransfer(string transactionType, string fromChainId, string fromAddress)
