@@ -606,9 +606,40 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var config = _beInvitedConfigOptions.BeInvitedConfig;
         foreach (var key in config.Keys)
         {
-            HasNext = hasNext,
-            ReferralRecordsRank = list,
-            CurrentUserReferralRecordsRankDetail = currentUserReferralInfo
+            var response = ObjectMapper.Map<BeInvitedConfig, BeInvitedConfigDto>(config[key]);
+            response.TaskConfigs =
+                ObjectMapper.Map<List<TaskConfigInfo>, List<TaskConfig>>(config[key].TaskConfigInfos);
+            response.Notice = ObjectMapper.Map<NoticeInfo, Notice>(config[key].NoticeInfo);
+            data.Add(key, response);
+        }
+
+        result.Data = data;
+        return result;
+    }
+
+    public async Task<ActivityBaseInfoDto> ActivityBaseInfoAsync()
+    {
+        var data = new List<ActivityBaseInfo>();
+        var configs = _activityConfigOptions.ActivityConfigMap;
+        foreach (var key in configs.Keys)
+        {
+            var baseInfo = new ActivityBaseInfo();
+            var config = configs[key];
+            baseInfo.ActivityName = key;
+            baseInfo.StartDate = config.ActivityConfig.StartDate;
+            baseInfo.EndDate = config.ActivityConfig.EndDate;
+            baseInfo.IsDefault = config.IsDefault;
+            var activityValue = (int)Enum.Parse(typeof(ActivityEnums), key);
+            baseInfo.ActivityValue = activityValue;
+            var sDate = DateTime.Parse(config.ActivityConfig.StartDate).ToString("MM.dd");
+            var eDate = DateTime.Parse(config.ActivityConfig.EndDate).ToString("MM.dd");
+            baseInfo.DateRange = sDate + "-" + eDate;
+            data.Add(baseInfo);
+        }
+
+        return new ActivityBaseInfoDto
+        {
+            Data = data
         };
     }
 
