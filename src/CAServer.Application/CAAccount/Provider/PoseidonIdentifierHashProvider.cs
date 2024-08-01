@@ -56,7 +56,7 @@ public class PoseidonIdentifierHashProvider : CAServerAppService, IPoseidonIdent
 
     public List<string> ToPublicInput(string identifierHash)
     {
-        return [identifierHash];
+        return new List<string>{ identifierHash };
     }
 
     private static byte[][] SplitByteArrayFromEnd(byte[] buffer, int chunkSize)
