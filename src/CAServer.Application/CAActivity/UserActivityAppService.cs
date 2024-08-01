@@ -998,6 +998,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 ? nftTransactionName + " NFT"
                 : nftTransactionName;
         }
+        
+        SetHamsterName(activityDto);
 
         activityDto.TransactionType =
             _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(transactionType, transactionType);
@@ -1009,8 +1011,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.TransactionName = contractConfig.MethodNameMap.ContainsKey(transactionType)
             ? contractConfig.MethodNameMap[transactionType]
             : activityDto.TransactionName;
-
-        SetHamsterName(activityDto);
     }
 
     private void SetHamsterName(GetActivityDto activityDto)
