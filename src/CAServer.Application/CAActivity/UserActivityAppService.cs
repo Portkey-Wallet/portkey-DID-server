@@ -269,6 +269,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t => t.ContractAddress == toContractAddress);
         if (tokenSpender == null)
         {
+            activityDto.DappName = CommonConstant.DefaultDappName;
             return;
         }
 
