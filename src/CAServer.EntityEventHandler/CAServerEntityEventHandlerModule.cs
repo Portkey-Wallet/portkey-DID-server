@@ -68,6 +68,9 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<ActivityDateRangeOptions>(configuration.GetSection("ActivityDateRange"));
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
+        Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
+        Configure<HamsterOptions>(configuration.GetSection("Hamster"));
+
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
