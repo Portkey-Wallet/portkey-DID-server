@@ -269,9 +269,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t => t.ContractAddress == toContractAddress);
         if (tokenSpender == null)
         {
-            activityDto.DappName = _activityOptions.NotUnknownContracts.Contains(toContractAddress)
+            activityDto.DappName = _activityOptions.UnknownConfig.NotUnknownContracts.Contains(toContractAddress)
                 ? string.Empty
-                : CommonConstant.DefaultDappName;
+                : _activityOptions.UnknownConfig.UnknownName;
+            activityDto.DappIcon = activityDto.DappName == _activityOptions.UnknownConfig.UnknownName
+                ? _activityOptions.UnknownConfig.UnknownIcon
+                : activityDto.DappIcon;
             return;
         }
 
@@ -998,7 +1001,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 ? nftTransactionName + " NFT"
                 : nftTransactionName;
         }
-        
+
         SetHamsterName(activityDto);
 
         activityDto.TransactionType =
