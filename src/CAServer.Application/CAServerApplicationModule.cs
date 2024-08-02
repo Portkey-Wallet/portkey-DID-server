@@ -93,6 +93,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
         Configure<BeInvitedConfigOptions>(configuration.GetSection("BeInvitedConfig"));
         Configure<HamsterOptions>(configuration.GetSection("Hamster"));
+        Configure<ActivityDateRangeOptions>(configuration.GetSection("ActivityDateRange"));
         
         
         
