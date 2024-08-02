@@ -784,6 +784,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var hamsterScoreList =
             await _growthProvider.GetHamsterScoreListAsync(new List<string> { address },
                 Convert.ToDateTime(_activityDateRangeOptions.StartDate), Convert.ToDateTime(_activityDateRangeOptions.EndDate));
+        _logger.LogDebug("Get Hamster Data is {data}",JsonConvert.SerializeObject(hamsterScoreList));
         if (hamsterScoreList == null || hamsterScoreList.GetScoreInfos.Count <= 0)
         {
             return new ValidateHamsterScoreResponseDto();
