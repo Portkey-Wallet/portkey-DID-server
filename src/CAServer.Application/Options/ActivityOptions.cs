@@ -6,9 +6,9 @@ public class ActivityOptions
 {
     public List<TransactionFeeFix> ActivityTransactionFeeFix { get; set; }
     public List<ETransferConfig> ETransferConfigs { get; set; }
-    public List<string> NotUnknownContracts { get; set; } = new();
     public List<ContractConfig> ContractConfigs { get; set; }
     public HamsterConfig HamsterConfig { get; set; }
+    public UnknownConfig UnknownConfig { get; set; }
 }
 
 public class ETransferConfig
@@ -36,4 +36,11 @@ public class ContractConfig
 {
     public string ContractAddress { get; set; }
     public Dictionary<string, string> MethodNameMap { get; set; } = new();
+}
+
+public class UnknownConfig
+{
+    public string UnknownIcon { get; set; }
+    public string UnknownName { get; set; }
+    public List<string> NotUnknownContracts { get; set; } = new();
 }
