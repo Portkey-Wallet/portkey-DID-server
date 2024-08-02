@@ -15,6 +15,7 @@ public static class AElfContractMethodName
     public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfo";
     public const string SocialRecovery = "SocialRecovery";
     public const string ManagerForwardCall = "ManagerForwardCall";
+    public const string Issue = "Issue";
 }
 
 public static class CommonConstant
@@ -129,4 +130,7 @@ public static class CommonConstant
 
     public const string PortkeyS3Mark = "did";
     public const string ImS3Mark = "im";
+
+    public const string HamsterPassSymbol = "HAMSTERPASS-1";
+    public const string HamsterKingSymbol = "KINGHAMSTER-1";
 }

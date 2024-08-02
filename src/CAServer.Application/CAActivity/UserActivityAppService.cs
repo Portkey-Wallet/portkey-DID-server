@@ -58,10 +58,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
-        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
-        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
-        IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
-        IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
+        IOptionsSnapshot<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
+        IContractProvider contractProvider, IOptionsSnapshot<ChainOptions> chainOptions,
+        IOptionsSnapshot<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
+        IOptionsSnapshot<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
@@ -269,7 +269,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t => t.ContractAddress == toContractAddress);
         if (tokenSpender == null)
         {
-            activityDto.DappName = CommonConstant.DefaultDappName;
+            activityDto.DappName = _activityOptions.NotUnknownContracts.Contains(toContractAddress)
+                ? string.Empty
+                : CommonConstant.DefaultDappName;
             return;
         }
 
@@ -827,7 +829,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (needMap)
             {
-                await MapMethodNameAsync(caAddresses, dto, guardian);
+                await MapMethodNameAsync(caAddresses, dto, ht.ToContractAddress, guardian);
             }
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress, ht.MethodName);
@@ -944,6 +946,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     }
 
     private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
+        string toContractAddress,
         GuardiansDto guardian = null)
     {
         var transactionType = activityDto.TransactionType;
@@ -995,9 +998,34 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 ? nftTransactionName + " NFT"
                 : nftTransactionName;
         }
+        
+        SetHamsterName(activityDto);
 
         activityDto.TransactionType =
             _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(transactionType, transactionType);
+
+        var contractConfig =
+            _activityOptions.ContractConfigs.FirstOrDefault(t => t.ContractAddress == toContractAddress);
+        if (contractConfig == null) return;
+
+        activityDto.TransactionName = contractConfig.MethodNameMap.ContainsKey(transactionType)
+            ? contractConfig.MethodNameMap[transactionType]
+            : activityDto.TransactionName;
+    }
+
+    private void SetHamsterName(GetActivityDto activityDto)
+    {
+        if (activityDto.TransactionType == AElfContractMethodName.Issue &&
+            activityDto.Symbol == CommonConstant.HamsterKingSymbol)
+        {
+            activityDto.TransactionName = _activityOptions.HamsterConfig.GetRewardName;
+        }
+        else if (activityDto.TransactionType == AElfContractMethodName.Transfer &&
+                 activityDto.Symbol == CommonConstant.HamsterPassSymbol &&
+                 activityDto.FromAddress == _activityOptions.HamsterConfig.FromAddress)
+        {
+            activityDto.TransactionName = _activityOptions.HamsterConfig.GetPassName;
+        }
     }
 
     private bool IsETransfer(string transactionType, string fromChainId, string fromAddress)
