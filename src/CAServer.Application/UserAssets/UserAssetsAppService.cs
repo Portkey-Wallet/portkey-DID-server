@@ -1410,14 +1410,23 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
             case "nft":
             {
-                // var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
-                //     request.Symbol, 0, MaxResultCount);
-                // _logger.LogDebug("User assert is {nft}",JsonConvert.SerializeObject(res));
-                // if (res.CaHolderNFTBalanceInfo?.Data.Count > 0)
+                var param = new GetNftItemInfosDto
+                {
+                    GetNftItemInfos = new List<GetNftItemInfo>()
+                    {
+                        new GetNftItemInfo()
+                        {
+                            ChainId = request.ChainId,
+                            Symbol = request.Symbol
+                        }
+                    }
+                };
+                var nftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(param,0,10);
+                _logger.LogDebug("User assert is {nft}",JsonConvert.SerializeObject(nftItemInfos));
+                if (nftItemInfos.NftItemInfos.Count > 0)
                 {
                     return true;
                 }
-
                 break;
             }
             default:
