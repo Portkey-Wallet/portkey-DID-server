@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Commons;
 
 namespace CAServer.Dtos;
@@ -26,6 +27,55 @@ public class RecoveryRequestDto : IValidatableObject
                 new[] { "LoginGuardianIdentifier" }
             );
         }
+
+        if (!GuardiansApproved.IsNullOrEmpty())
+        {
+            foreach (var recoveryGuardian in GuardiansApproved)
+            {
+                if (recoveryGuardian.ZkLoginInfo != null)
+                {
+                    if (recoveryGuardian.ZkLoginInfo.ZkProof.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkLoginInfo ZkProof.",
+                            new[] { "ZkProof" }
+                        );
+                    }
+
+                    if (recoveryGuardian.ZkLoginInfo.Jwt.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkLoginInfo Jwt.",
+                            new[] { "Jwt" }
+                        );
+                    }
+
+                    if (recoveryGuardian.ZkLoginInfo.Salt.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkLoginInfo Salt.",
+                            new[] { "Salt" }
+                        );
+                    }
+            
+                    if (recoveryGuardian.ZkLoginInfo.Nonce.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkLoginInfo Nonce.",
+                            new[] { "Nonce" }
+                        );
+                    }
+            
+                    if (recoveryGuardian.ZkLoginInfo.CircuitId.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkLoginInfo CircuitId.",
+                            new[] { "CircuitId" }
+                        );
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -33,9 +83,10 @@ public class RecoveryGuardian : IValidatableObject
 {
     public GuardianIdentifierType Type { get; set; }
     [Required] public string Identifier { get; set; }
-    [Required] public string VerifierId { get; set; }
-    [Required] public string VerificationDoc { get; set; }
-    [Required] public string Signature { get; set; }
+    public string VerifierId { get; set; }
+    public string VerificationDoc { get; set; }
+    public string Signature { get; set; }
+    public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)

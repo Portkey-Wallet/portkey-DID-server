@@ -1,7 +1,5 @@
 using System.Threading.Tasks;
-using CAServer.Etos;
 using CAServer.UserAssets.Dtos;
-using Portkey.Contracts.CA;
 
 namespace CAServer.UserAssets;
 
@@ -18,4 +16,5 @@ public interface IUserAssetsAppService
     Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto);
 
     Task NftTraitsProportionCalculateAsync();
+    Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request);
 }

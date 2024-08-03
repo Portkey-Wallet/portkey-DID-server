@@ -22,6 +22,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
+using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
 
@@ -39,7 +40,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private const int ExpireTime = 360;
     private readonly ActivityConfigOptions _activityConfigOptions;
     private readonly HamsterOptions _hamsterOptions;
+    private readonly ActivityDateRangeOptions _activityDateRangeOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
+    private const string OverHamsterScoreLimitKey = "Portkey:OverHamsterScoreLimitKey";
+    private const string ValidateAddressesKey = "Portkey:ValidateAddressesKey";
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -48,7 +52,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
-        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions)
+        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IOptionsSnapshot<ActivityDateRangeOptions> activityDateRangeOptions)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -56,6 +60,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _activityProvider = activityProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
+        _activityDateRangeOptions = activityDateRangeOptions.Value;
         _beInvitedConfigOptions = beInvitedConfigOptions.Value;
         _hamsterOptions = hamsterOptions.Value;
         _activityConfigOptions = activityConfigOptions.Value;
@@ -451,6 +456,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHolderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
                     caHash);
+            
             await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
 
@@ -743,6 +749,45 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         await GetReferralInfoListAsync(result.ReferralInfos);
         return result;
+    }
+    
+    public async Task<ValidateHamsterScoreResponseDto> ValidateHamsterScoreAsync(string address)
+    {
+        var validateAddresses = await _cacheProvider.SetMembersAsync(ValidateAddressesKey);
+        if (validateAddresses.Contains(address))
+        {
+            return new ValidateHamsterScoreResponseDto
+            {
+                Result = new Result
+                {
+                    ValidateResult = true
+                },
+                ErrorMsg = new ErrorMsg
+                {
+                    Message = "Already Validate"
+                }
+            };
+        }
+        var hamsterScoreList =
+            await _growthProvider.GetHamsterScoreListAsync(new List<string> { address },
+                Convert.ToDateTime(_activityDateRangeOptions.StartDate), Convert.ToDateTime(_activityDateRangeOptions.EndDate));
+        _logger.LogDebug("Get Hamster Data is {data}",JsonConvert.SerializeObject(hamsterScoreList));
+        if (hamsterScoreList == null || hamsterScoreList.GetScoreInfos.Count <= 0)
+        {
+            return new ValidateHamsterScoreResponseDto();
+        }
+
+        var expire = TimeSpan.FromDays(ExpireTime);
+        await _cacheProvider.SetAddAsync(ValidateAddressesKey,
+            hamsterScoreList.GetScoreInfos.FirstOrDefault()?.CaAddress, expire);
+        return new ValidateHamsterScoreResponseDto()
+        {
+            Result = new Result()
+            {
+                ValidateResult = true
+            }
+        };
+
     }
 
     private async Task GetReferralInfoListAsync(List<Referral> referralInfos)

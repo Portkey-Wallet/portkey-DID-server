@@ -367,69 +367,6 @@ namespace Portkey.Contracts.CA {
     }
   }
 
-  public partial class VerifierServerEndPointsAdded : aelf::IEvent<VerifierServerEndPointsAdded>
-  {
-    public global::System.Collections.Generic.IEnumerable<VerifierServerEndPointsAdded> GetIndexed()
-    {
-      return new List<VerifierServerEndPointsAdded>
-      {
-      new VerifierServerEndPointsAdded
-      {
-        VerifierServer = VerifierServer
-      },
-      };
-    }
-
-    public VerifierServerEndPointsAdded GetNonIndexed()
-    {
-      return new VerifierServerEndPointsAdded
-      {
-      };
-    }
-  }
-
-  public partial class VerifierServerEndPointsRemoved : aelf::IEvent<VerifierServerEndPointsRemoved>
-  {
-    public global::System.Collections.Generic.IEnumerable<VerifierServerEndPointsRemoved> GetIndexed()
-    {
-      return new List<VerifierServerEndPointsRemoved>
-      {
-      new VerifierServerEndPointsRemoved
-      {
-        VerifierServer = VerifierServer
-      },
-      };
-    }
-
-    public VerifierServerEndPointsRemoved GetNonIndexed()
-    {
-      return new VerifierServerEndPointsRemoved
-      {
-      };
-    }
-  }
-
-  public partial class VerifierServerRemoved : aelf::IEvent<VerifierServerRemoved>
-  {
-    public global::System.Collections.Generic.IEnumerable<VerifierServerRemoved> GetIndexed()
-    {
-      return new List<VerifierServerRemoved>
-      {
-      new VerifierServerRemoved
-      {
-        VerifierServer = VerifierServer
-      },
-      };
-    }
-
-    public VerifierServerRemoved GetNonIndexed()
-    {
-      return new VerifierServerRemoved
-      {
-      };
-    }
-  }
-
   public partial class CAServerAdded : aelf::IEvent<CAServerAdded>
   {
     public global::System.Collections.Generic.IEnumerable<CAServerAdded> GetIndexed()
