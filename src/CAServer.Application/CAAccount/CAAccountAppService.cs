@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.CAAccount.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.ContractService;
 using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Etos;
@@ -33,7 +36,10 @@ using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
+using Enum = System.Enum;
+using NoncePayload = CAServer.CAAccount.Dtos.Zklogin.NoncePayload;
 using Error = CAServer.CAAccount.Dtos.Error;
+
 
 namespace CAServer.CAAccount;
 
@@ -58,6 +64,10 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public const double MinBanlance = 0.05 * 100000000;
     private readonly IVerifierServerClient _verifierServerClient;
     private readonly IIpInfoAppService _ipInfoAppService;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly IVerifierAppService _verifierAppService;
+    private readonly IContractService _contractService;
+    private readonly IZkLoginProvider _zkLoginProvider;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -72,7 +82,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IAppleAuthProvider appleAuthProvider,
         IOptionsSnapshot<ManagerCountLimitOptions> managerCountLimitOptions,
         IVerifierServerClient verifierServerClient,
-        IIpInfoAppService ipInfoAppService)
+        IIpInfoAppService ipInfoAppService,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler,
+        IVerifierAppService verifierAppService,
+        IContractService contractService,
+        IZkLoginProvider zkLoginProvider)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -88,13 +102,20 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
         _ipInfoAppService = ipInfoAppService;
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _verifierAppService = verifierAppService;
+        _contractService = contractService;
+        _zkLoginProvider = zkLoginProvider;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
+        _logger.LogInformation("RegisterRequest started.......................");
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
+        _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
+        SetZkLoginParams(input, registerDto);
 
         _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
 
@@ -113,9 +134,85 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var registerCreateEto = ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data);
+        if (result.Data.GuardianInfo.ZkLoginInfo != null)
+        {
+            registerCreateEto.GuardianInfo.ZkLoginInfo = result.Data.GuardianInfo.ZkLoginInfo;
+        }
         registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp();
         await _distributedEventBus.PublishAsync(registerCreateEto);
         return new AccountResultDto(registerDto.Id.ToString());
+    }
+
+    private void SetZkLoginParams(RegisterRequestDto input, RegisterDto registerDto)
+    {
+        if (input.ZkLoginInfo == null)
+        {
+            registerDto.GuardianInfo.ZkLoginInfo = GetDefaultZkJwtAuthInfo();
+        }
+        else
+        {
+            registerDto.GuardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(input.ZkLoginInfo.Jwt, input.ZkLoginInfo.Nonce, input.ZkLoginInfo.ZkProof,
+                input.ZkLoginInfo.Salt, input.ZkLoginInfo.CircuitId,
+                input.Manager, input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Timestamp);
+        }
+    }
+
+    private ZkLoginInfoDto GetZkJwtAuthInfo(string jwt, string nonce, string zkProof, string salt, string circuitId, string manager, string identifierHash, long timestamp)
+    {
+        var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwt);
+        InternalRapidSnarkProofRepr proofRepr = JsonConvert.DeserializeObject<InternalRapidSnarkProofRepr>(zkProof);
+        return new ZkLoginInfoDto()
+            {
+                IdentifierHash = identifierHash,
+                Issuer = jwtToken.Payload.Iss,
+                Kid = jwtToken.Header.Kid,
+                Nonce = nonce,
+                ZkProof = zkProof,
+                ZkProofPiA = proofRepr.PiA,
+                ZkProofPiB1 = proofRepr.PiB[0],
+                ZkProofPiB2 = proofRepr.PiB[1],
+                ZkProofPiB3 = proofRepr.PiB[2],
+                ZkProofPiC = proofRepr.PiC,
+                Salt = salt,
+                CircuitId = circuitId,
+                NoncePayload = new NoncePayload()
+                {
+                    AddManager = new Dtos.Zklogin.ManagerInfoDto()
+                    {
+                        CaHash = string.Empty,
+                        ManagerAddress = manager,
+                        Timestamp = timestamp
+                    }
+                }
+            };
+    }
+
+    private static ZkLoginInfoDto GetDefaultZkJwtAuthInfo()
+    {
+        return new ZkLoginInfoDto()
+        {
+            IdentifierHash = "",
+            Issuer = "",
+            Kid = "",
+            Nonce = "",
+            ZkProof = "",
+            ZkProofPiA = new List<string>(),
+            ZkProofPiB1 = new List<string>(),
+            ZkProofPiB2 = new List<string>(),
+            ZkProofPiB3 = new List<string>(),
+            ZkProofPiC = new List<string>(),
+            Salt = "",
+            CircuitId = "",
+            NoncePayload = new NoncePayload()
+            {
+                AddManager = new Dtos.Zklogin.ManagerInfoDto()
+                {
+                    CaHash = "",
+                    ManagerAddress = "",
+                    Timestamp = 0
+                }
+            }
+        };
     }
 
     private GuardianGrainDto GetGuardian(string guardianIdentifier)
@@ -129,7 +226,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
             throw new UserFriendlyException(guardianGrainDto.Message);
         }
-
+        _logger.LogInformation("....GetGuardian guardianIdentifier:{0}, guardianGrainDto:{1}", guardianIdentifier, JsonConvert.SerializeObject(guardianGrainDto.Data));
         return guardianGrainDto.Data;
     }
 
@@ -137,7 +234,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         var recoveryDto = ObjectMapper.Map<RecoveryRequestDto, RecoveryDto>(input);
-
+        SetRecoveryZkLoginParams(input, recoveryDto);
         recoveryDto.LoginGuardianIdentifierHash = guardianGrainDto.IdentifierHash;
         if (string.IsNullOrWhiteSpace(recoveryDto.LoginGuardianIdentifierHash))
         {
@@ -145,17 +242,12 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                              JsonConvert.SerializeObject(guardianGrainDto));
         }
 
-        var dic = input.GuardiansApproved.ToDictionary(k => k.VerificationDoc, v => v.Identifier);
         recoveryDto.GuardianApproved?.ForEach(t =>
         {
-            if (dic.TryGetValue(t.VerificationInfo.VerificationDoc, out var identifier) &&
-                !string.IsNullOrWhiteSpace(identifier))
-            {
-                var guardianGrain = GetGuardian(identifier);
-                t.IdentifierHash = guardianGrain.IdentifierHash;
-            }
+            var guardianGrain = GetGuardian(t.IdentifierHash);
+            t.IdentifierHash = guardianGrain.IdentifierHash;
         });
-
+        
         _logger.LogInformation($"recover dto :{JsonConvert.SerializeObject(recoveryDto)}");
 
         var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.ChainId, input.Manager);
@@ -181,6 +273,30 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         await _distributedEventBus.PublishAsync(recoverCreateEto);
 
         return new AccountResultDto(recoveryDto.Id.ToString());
+    }
+
+    private void SetRecoveryZkLoginParams(RecoveryRequestDto input, RecoveryDto recoveryDto)
+    {
+        foreach (var recoveryGuardian in input.GuardiansApproved)
+        {
+            var guardianInfo = recoveryDto.GuardianApproved.FirstOrDefault(guardian =>
+                guardian.IdentifierHash.Equals(recoveryGuardian.Identifier)
+                && ((int)guardian.Type) == ((int)recoveryGuardian.Type));
+            if (guardianInfo == null)
+            {
+                _logger.LogWarning("recoveryGuardian:{0} not exist in RecoveryDto", JsonConvert.SerializeObject(recoveryGuardian));
+                continue;
+            }
+            if (recoveryGuardian.ZkLoginInfo != null)
+            {
+                guardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt, recoveryGuardian.ZkLoginInfo.Nonce,
+                    recoveryGuardian.ZkLoginInfo.ZkProof, recoveryGuardian.ZkLoginInfo.Salt,
+                    recoveryGuardian.ZkLoginInfo.CircuitId, input.Manager, recoveryGuardian.ZkLoginInfo.IdentifierHash, recoveryGuardian.ZkLoginInfo.Timestamp);
+            } else
+            {
+                guardianInfo.ZkLoginInfo = GetDefaultZkJwtAuthInfo();
+            }
+        }
     }
 
     public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
@@ -623,7 +739,13 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var output =
             await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
                 chainId);
-
+        _logger.LogInformation("GetHolderInfoAsync loginGuardianIdentifierHash:{0},chainId:{1},output:{2}",
+            loginGuardianIdentifierHash, chainId, JsonConvert.SerializeObject(output));
         return output?.CaHash?.ToHex();
+    }
+
+    public async Task TestCreateHolderInfoAsync(RegisterDto registerDto)
+    {
+        await _contractService.TestCreateHolderInfoAsync(registerDto);
     }
 }

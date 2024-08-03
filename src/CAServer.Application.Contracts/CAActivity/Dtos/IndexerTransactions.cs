@@ -75,7 +75,11 @@ public class IndexerSymbols
 
 public class SymbolInfo
 {
-    public int Decimals { get; set; } 
+    public int Decimals { get; set; }
+
+    public string ChainId { get; set; }
+
+
 }
 
 public class CaHolderTransactionInfos
