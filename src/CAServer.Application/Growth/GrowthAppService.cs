@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
@@ -67,8 +68,9 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
 
     public async Task<ShortLinkDto> GetShortLinkAsync(string projectCode)
     {
+        projectCode = projectCode == null ? string.Empty : projectCode;
         var caHash = await GetCaHashAsync();
-        var grainId = GrainIdHelper.GenerateGrainId(CommonConstant.UserGrowthPrefix, caHash);
+        var grainId = GrainIdHelper.GenerateGrainId(CommonConstant.UserGrowthPrefix, caHash, projectCode);
         var growthGrain = _clusterClient.GetGrain<IGrowthGrain>(grainId);
 
         GrowthGrainDto grainDto;
@@ -103,7 +105,8 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private async Task<GrowthGrainDto> CreateGrowthInfoAsync(IGrowthGrain growthGrain, Guid userId, string projectCode)
     {
         var caHash = await GetCaHashAsync();
-        var shortLinkCode = await GenerateShortLinkCodeAsync(caHash);
+        var source = caHash + projectCode;
+        var shortLinkCode = await GenerateShortLinkCodeAsync(source);
         var result = await growthGrain.CreateGrowthInfo(new GrowthGrainDto()
         {
             UserId = userId,
