@@ -4,6 +4,7 @@ namespace CAServer.Growth.Dtos;
 
 public class BeInvitedConfigResponseDto
 {
+    public string ActivityTitle { get; set; }
     public Dictionary<string, BeInvitedConfigDto> Data { get; set; }
 }
 

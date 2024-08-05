@@ -4,6 +4,8 @@ namespace CAServer.Options;
 
 public class BeInvitedConfigOptions
 {
+    
+    public string ActivityTitle { get; set; }
     public Dictionary<string, BeInvitedConfig> BeInvitedConfig { get; set; }
 }
 
