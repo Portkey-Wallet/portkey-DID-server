@@ -367,42 +367,6 @@ namespace Portkey.Contracts.CA {
     }
   }
 
-  public partial class CAServerAdded : aelf::IEvent<CAServerAdded>
-  {
-    public global::System.Collections.Generic.IEnumerable<CAServerAdded> GetIndexed()
-    {
-      return new List<CAServerAdded>
-      {
-      };
-    }
-
-    public CAServerAdded GetNonIndexed()
-    {
-      return new CAServerAdded
-      {
-        CaSeverAdded = CaSeverAdded,
-      };
-    }
-  }
-
-  public partial class CAServerRemoved : aelf::IEvent<CAServerRemoved>
-  {
-    public global::System.Collections.Generic.IEnumerable<CAServerRemoved> GetIndexed()
-    {
-      return new List<CAServerRemoved>
-      {
-      };
-    }
-
-    public CAServerRemoved GetNonIndexed()
-    {
-      return new CAServerRemoved
-      {
-        CaServerRemoved = CaServerRemoved,
-      };
-    }
-  }
-
   public partial class CAHolderSynced : aelf::IEvent<CAHolderSynced>
   {
     public global::System.Collections.Generic.IEnumerable<CAHolderSynced> GetIndexed()

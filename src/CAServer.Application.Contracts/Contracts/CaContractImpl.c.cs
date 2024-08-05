@@ -160,6 +160,42 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class CAServerAdded : aelf::IEvent<CAServerAdded>
+  {
+    public global::System.Collections.Generic.IEnumerable<CAServerAdded> GetIndexed()
+    {
+      return new List<CAServerAdded>
+      {
+      };
+    }
+
+    public CAServerAdded GetNonIndexed()
+    {
+      return new CAServerAdded
+      {
+        CaSeverAdded = CaSeverAdded,
+      };
+    }
+  }
+
+  public partial class CAServerRemoved : aelf::IEvent<CAServerRemoved>
+  {
+    public global::System.Collections.Generic.IEnumerable<CAServerRemoved> GetIndexed()
+    {
+      return new List<CAServerRemoved>
+      {
+      };
+    }
+
+    public CAServerRemoved GetNonIndexed()
+    {
+      return new CAServerRemoved
+      {
+        CaServerRemoved = CaServerRemoved,
+      };
+    }
+  }
+
   public partial class VerifierServerEndPointsAdded : aelf::IEvent<VerifierServerEndPointsAdded>
   {
     public global::System.Collections.Generic.IEnumerable<VerifierServerEndPointsAdded> GetIndexed()
@@ -295,6 +331,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddGuardianInput> __Marshaller_ca_AddGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddGuardianInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveGuardianInput> __Marshaller_ca_RemoveGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveGuardianInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.UpdateGuardianInput> __Marshaller_ca_UpdateGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.UpdateGuardianInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AppendGuardianInput> __Marshaller_ca_AppendGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AppendGuardianInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SetGuardianForLoginInput> __Marshaller_ca_SetGuardianForLoginInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SetGuardianForLoginInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.UnsetGuardianForLoginInput> __Marshaller_ca_UnsetGuardianForLoginInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.UnsetGuardianForLoginInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ManagerForwardCallInput> __Marshaller_ca_ManagerForwardCallInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ManagerForwardCallInput.Parser.ParseFrom);
@@ -305,11 +342,8 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveManagerInfoInput> __Marshaller_ca_RemoveManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveManagerInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveOtherManagerInfoInput> __Marshaller_ca_RemoveOtherManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveOtherManagerInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.UpdateManagerInfosInput> __Marshaller_ca_UpdateManagerInfosInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.UpdateManagerInfosInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddCAServerInput> __Marshaller_ca_AddCAServerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddCAServerInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveCAServerInput> __Marshaller_ca_RemoveCAServerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveCAServerInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoInput> __Marshaller_ca_GetHolderInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoOutput> __Marshaller_ca_GetHolderInfoOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoOutput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetCAServersOutput> __Marshaller_ca_GetCAServersOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetCAServersOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput> __Marshaller_ca_ValidateCAHolderInfoWithManagerInfosExistsInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SyncHolderInfoInput> __Marshaller_ca_SyncHolderInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SyncHolderInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SyncHolderInfosInput> __Marshaller_ca_SyncHolderInfosInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SyncHolderInfosInput.Parser.ParseFrom);
@@ -358,6 +392,9 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddManagerApproveSpenderWhitelistInput> __Marshaller_caimpl_AddManagerApproveSpenderWhitelistInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddManagerApproveSpenderWhitelistInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveManagerApproveSpenderWhitelistInput> __Marshaller_caimpl_RemoveManagerApproveSpenderWhitelistInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveManagerApproveSpenderWhitelistInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Address> __Marshaller_aelf_Address = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Address.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddCAServerInput> __Marshaller_caimpl_AddCAServerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddCAServerInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveCAServerInput> __Marshaller_caimpl_RemoveCAServerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveCAServerInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetCAServersOutput> __Marshaller_caimpl_GetCAServersOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetCAServersOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddVerifierServerEndPointsInput> __Marshaller_caimpl_AddVerifierServerEndPointsInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddVerifierServerEndPointsInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveVerifierServerEndPointsInput> __Marshaller_caimpl_RemoveVerifierServerEndPointsInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveVerifierServerEndPointsInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveVerifierServerInput> __Marshaller_caimpl_RemoveVerifierServerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveVerifierServerInput.Parser.ParseFrom);
@@ -365,6 +402,8 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.VerifyingKey> __Marshaller_caimpl_VerifyingKey = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.VerifyingKey.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.StringValue> __Marshaller_google_protobuf_StringValue = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.StringValue.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.KidPublicKeyOutput> __Marshaller_caimpl_KidPublicKeyOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.KidPublicKeyOutput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.CircomBigInt> __Marshaller_caimpl_CircomBigInt = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.CircomBigInt.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ZkNonceList> __Marshaller_caimpl_ZkNonceList = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ZkNonceList.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -415,6 +454,13 @@ namespace Portkey.Contracts.CA {
         __ServiceName,
         "UpdateGuardian",
         __Marshaller_ca_UpdateGuardianInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Portkey.Contracts.CA.AppendGuardianInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AppendGuardianPoseidonHash = new aelf::Method<global::Portkey.Contracts.CA.AppendGuardianInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "AppendGuardianPoseidonHash",
+        __Marshaller_ca_AppendGuardianInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::Portkey.Contracts.CA.SetGuardianForLoginInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetGuardianForLogin = new aelf::Method<global::Portkey.Contracts.CA.SetGuardianForLoginInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -487,33 +533,12 @@ namespace Portkey.Contracts.CA {
         __Marshaller_ca_UpdateManagerInfosInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CA.AddCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddCAServer = new aelf::Method<global::Portkey.Contracts.CA.AddCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
-        aelf::MethodType.Action,
-        __ServiceName,
-        "AddCAServer",
-        __Marshaller_ca_AddCAServerInput,
-        __Marshaller_google_protobuf_Empty);
-
-    static readonly aelf::Method<global::Portkey.Contracts.CA.RemoveCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveCAServer = new aelf::Method<global::Portkey.Contracts.CA.RemoveCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
-        aelf::MethodType.Action,
-        __ServiceName,
-        "RemoveCAServer",
-        __Marshaller_ca_RemoveCAServerInput,
-        __Marshaller_google_protobuf_Empty);
-
     static readonly aelf::Method<global::Portkey.Contracts.CA.GetHolderInfoInput, global::Portkey.Contracts.CA.GetHolderInfoOutput> __Method_GetHolderInfo = new aelf::Method<global::Portkey.Contracts.CA.GetHolderInfoInput, global::Portkey.Contracts.CA.GetHolderInfoOutput>(
         aelf::MethodType.View,
         __ServiceName,
         "GetHolderInfo",
         __Marshaller_ca_GetHolderInfoInput,
         __Marshaller_ca_GetHolderInfoOutput);
-
-    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput> __Method_GetCAServers = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput>(
-        aelf::MethodType.View,
-        __ServiceName,
-        "GetCAServers",
-        __Marshaller_google_protobuf_Empty,
-        __Marshaller_ca_GetCAServersOutput);
 
     static readonly aelf::Method<global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_ValidateCAHolderInfoWithManagerInfosExists = new aelf::Method<global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
@@ -865,6 +890,27 @@ namespace Portkey.Contracts.CA {
         __Marshaller_aelf_Address,
         __Marshaller_google_protobuf_BoolValue);
 
+    static readonly aelf::Method<global::Portkey.Contracts.CA.AddCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddCAServer = new aelf::Method<global::Portkey.Contracts.CA.AddCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "AddCAServer",
+        __Marshaller_caimpl_AddCAServerInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Portkey.Contracts.CA.RemoveCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveCAServer = new aelf::Method<global::Portkey.Contracts.CA.RemoveCAServerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "RemoveCAServer",
+        __Marshaller_caimpl_RemoveCAServerInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput> __Method_GetCAServers = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetCAServers",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_caimpl_GetCAServersOutput);
+
     static readonly aelf::Method<global::Portkey.Contracts.CA.AddVerifierServerEndPointsInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddVerifierServerEndPoints = new aelf::Method<global::Portkey.Contracts.CA.AddVerifierServerEndPointsInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
@@ -928,11 +974,11 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_StringValue,
         __Marshaller_caimpl_KidPublicKeyOutput);
 
-    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> __Method_InitZkNonceList = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveFacebookPublicKeyByKid = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
-        "InitZkNonceList",
-        __Marshaller_google_protobuf_Empty,
+        "RemoveFacebookPublicKeyByKid",
+        __Marshaller_google_protobuf_StringValue,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetOracleAddress = new aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -941,6 +987,27 @@ namespace Portkey.Contracts.CA {
         "SetOracleAddress",
         __Marshaller_aelf_Address,
         __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Portkey.Contracts.CA.CircomBigInt, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetCircomBigInt = new aelf::Method<global::Portkey.Contracts.CA.CircomBigInt, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetCircomBigInt",
+        __Marshaller_caimpl_CircomBigInt,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CircomBigInt> __Method_GetCircomBigInt = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CircomBigInt>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "GetCircomBigInt",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_caimpl_CircomBigInt);
+
+    static readonly aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.ZkNonceList> __Method_GetZkNonceListByCaHash = new aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.ZkNonceList>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetZkNonceListByCaHash",
+        __Marshaller_aelf_Hash,
+        __Marshaller_caimpl_ZkNonceList);
 
     #endregion
 
@@ -1004,6 +1071,11 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AppendGuardianPoseidonHash(global::Portkey.Contracts.CA.AppendGuardianInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty SetGuardianForLogin(global::Portkey.Contracts.CA.SetGuardianForLoginInput input)
       {
         throw new global::System.NotImplementedException();
@@ -1054,22 +1126,7 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddCAServer(global::Portkey.Contracts.CA.AddCAServerInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveCAServer(global::Portkey.Contracts.CA.RemoveCAServerInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
       public virtual global::Portkey.Contracts.CA.GetHolderInfoOutput GetHolderInfo(global::Portkey.Contracts.CA.GetHolderInfoInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Portkey.Contracts.CA.GetCAServersOutput GetCAServers(global::Google.Protobuf.WellKnownTypes.Empty input)
       {
         throw new global::System.NotImplementedException();
       }
@@ -1324,6 +1381,21 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddCAServer(global::Portkey.Contracts.CA.AddCAServerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveCAServer(global::Portkey.Contracts.CA.RemoveCAServerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetCAServersOutput GetCAServers(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty AddVerifierServerEndPoints(global::Portkey.Contracts.CA.AddVerifierServerEndPointsInput input)
       {
         throw new global::System.NotImplementedException();
@@ -1369,12 +1441,27 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty InitZkNonceList(global::Google.Protobuf.WellKnownTypes.Empty input)
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveFacebookPublicKeyByKid(global::Google.Protobuf.WellKnownTypes.StringValue input)
       {
         throw new global::System.NotImplementedException();
       }
 
       public virtual global::Google.Protobuf.WellKnownTypes.Empty SetOracleAddress(global::AElf.Types.Address input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetCircomBigInt(global::Portkey.Contracts.CA.CircomBigInt input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.CircomBigInt GetCircomBigInt(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.ZkNonceList GetZkNonceListByCaHash(global::AElf.Types.Hash input)
       {
         throw new global::System.NotImplementedException();
       }
@@ -1392,6 +1479,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_AddGuardian, serviceImpl.AddGuardian)
           .AddMethod(__Method_RemoveGuardian, serviceImpl.RemoveGuardian)
           .AddMethod(__Method_UpdateGuardian, serviceImpl.UpdateGuardian)
+          .AddMethod(__Method_AppendGuardianPoseidonHash, serviceImpl.AppendGuardianPoseidonHash)
           .AddMethod(__Method_SetGuardianForLogin, serviceImpl.SetGuardianForLogin)
           .AddMethod(__Method_UnsetGuardianForLogin, serviceImpl.UnsetGuardianForLogin)
           .AddMethod(__Method_ManagerForwardCall, serviceImpl.ManagerForwardCall)
@@ -1402,10 +1490,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_RemoveManagerInfo, serviceImpl.RemoveManagerInfo)
           .AddMethod(__Method_RemoveOtherManagerInfo, serviceImpl.RemoveOtherManagerInfo)
           .AddMethod(__Method_UpdateManagerInfos, serviceImpl.UpdateManagerInfos)
-          .AddMethod(__Method_AddCAServer, serviceImpl.AddCAServer)
-          .AddMethod(__Method_RemoveCAServer, serviceImpl.RemoveCAServer)
           .AddMethod(__Method_GetHolderInfo, serviceImpl.GetHolderInfo)
-          .AddMethod(__Method_GetCAServers, serviceImpl.GetCAServers)
           .AddMethod(__Method_ValidateCAHolderInfoWithManagerInfosExists, serviceImpl.ValidateCAHolderInfoWithManagerInfosExists)
           .AddMethod(__Method_SyncHolderInfo, serviceImpl.SyncHolderInfo)
           .AddMethod(__Method_SyncHolderInfos, serviceImpl.SyncHolderInfos)
@@ -1456,6 +1541,9 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_AddManagerApproveSpenderWhitelist, serviceImpl.AddManagerApproveSpenderWhitelist)
           .AddMethod(__Method_RemoveManagerApproveSpenderWhitelist, serviceImpl.RemoveManagerApproveSpenderWhitelist)
           .AddMethod(__Method_CheckInManagerApproveSpenderWhitelist, serviceImpl.CheckInManagerApproveSpenderWhitelist)
+          .AddMethod(__Method_AddCAServer, serviceImpl.AddCAServer)
+          .AddMethod(__Method_RemoveCAServer, serviceImpl.RemoveCAServer)
+          .AddMethod(__Method_GetCAServers, serviceImpl.GetCAServers)
           .AddMethod(__Method_AddVerifierServerEndPoints, serviceImpl.AddVerifierServerEndPoints)
           .AddMethod(__Method_RemoveVerifierServerEndPoints, serviceImpl.RemoveVerifierServerEndPoints)
           .AddMethod(__Method_RemoveVerifierServer, serviceImpl.RemoveVerifierServer)
@@ -1465,8 +1553,11 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_GetGooglePublicKeyByKid, serviceImpl.GetGooglePublicKeyByKid)
           .AddMethod(__Method_GetApplePublicKeyByKid, serviceImpl.GetApplePublicKeyByKid)
           .AddMethod(__Method_GetFacebookPublicKeyByKid, serviceImpl.GetFacebookPublicKeyByKid)
-          .AddMethod(__Method_InitZkNonceList, serviceImpl.InitZkNonceList)
-          .AddMethod(__Method_SetOracleAddress, serviceImpl.SetOracleAddress).Build();
+          .AddMethod(__Method_RemoveFacebookPublicKeyByKid, serviceImpl.RemoveFacebookPublicKeyByKid)
+          .AddMethod(__Method_SetOracleAddress, serviceImpl.SetOracleAddress)
+          .AddMethod(__Method_SetCircomBigInt, serviceImpl.SetCircomBigInt)
+          .AddMethod(__Method_GetCircomBigInt, serviceImpl.GetCircomBigInt)
+          .AddMethod(__Method_GetZkNonceListByCaHash, serviceImpl.GetZkNonceListByCaHash).Build();
     }
 
   }

@@ -29,4 +29,6 @@ public interface IContractService
     Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto);
 
     Task<TransactionResultDto> TestCreateHolderInfoAsync(RegisterDto registerDto);
+
+    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput);
 }

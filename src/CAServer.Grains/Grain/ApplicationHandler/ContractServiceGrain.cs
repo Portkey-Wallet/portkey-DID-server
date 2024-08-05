@@ -431,9 +431,15 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
-      
+    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput)
+    {
+        var result = await SendTransactionToChainAsync(chainId, appendGuardianInput, MethodName.AppendGuardianPoseidonHash);
+        DeactivateOnIdle();
+        return result.TransactionResultDto;
+    }
 
-        public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
+
+    public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
         {
             var param = _objectMapper.Map<AssignProjectDelegateeDto, AssignProjectDelegateeInput>(assignProjectDelegateeDto);
             var result = await SendTransactionToChainAsync(assignProjectDelegateeDto.ChainId, param, MethodName.AssignProjectDelegatee);

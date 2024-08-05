@@ -71,6 +71,8 @@ public interface IContractProvider : ISingletonDependency
 
     public Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
         GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom);
+
+    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput);
 }
 
 public class ContractProvider : IContractProvider
@@ -635,5 +637,30 @@ public class ContractProvider : IContractProvider
 
         return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);
+    }
+    
+    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput)
+    {
+        try
+        {
+            var result = await _contractServiceProxy.AppendGuardianPoseidonHashAsync(chainId, appendGuardianInput);
+
+            _logger.LogInformation(
+                "AppendGuardianPoseidonHash to chain: {id} result:" +
+                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "AppendGuardianPoseidonHash error: {message}",
+                JsonConvert.SerializeObject(appendGuardianInput, Formatting.Indented));
+            return new TransactionResultDto
+            {
+                Status = TransactionState.Failed,
+                Error = e.Message
+            };
+        }
     }
 }
