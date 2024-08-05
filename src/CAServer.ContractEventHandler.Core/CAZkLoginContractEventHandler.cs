@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Guardian;
@@ -23,6 +24,6 @@ public class CAZkLoginContractEventHandler: IDistributedEventHandler<ZkEto>, ITr
     public async Task HandleEventAsync(ZkEto eventData)
     {
         _logger.LogInformation("receive zkEto message:{0}", JsonConvert.SerializeObject(eventData));
-        await _zklogin.DoWorkAsync();
+        await _zklogin.DoWorkAsync(new List<string>(){eventData.CaHash});
     }
 }

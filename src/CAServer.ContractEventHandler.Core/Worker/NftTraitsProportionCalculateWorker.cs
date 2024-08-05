@@ -20,7 +20,6 @@ public class NftTraitsProportionCalculateWorker : AsyncPeriodicBackgroundWorkerB
     private readonly N9EClientFactory _n9EClientFactory;
     private readonly NFTTraitsSyncOptions _nftTraitsSyncOptions;
     private readonly ILogger<NftTraitsProportionCalculateWorker> _logger;
-    private readonly IZkloginPoseidongHashService _zklogin;
 
     private const string WorkerName = "NftTraitsProportionCalculateWorker";
 
@@ -28,8 +27,7 @@ public class NftTraitsProportionCalculateWorker : AsyncPeriodicBackgroundWorkerB
         IUserAssetsAppService userAssetsAppService,
         IBackgroundWorkerRegistrarProvider registrarProvider, N9EClientFactory n9EClientFactory,
         IOptionsSnapshot<NFTTraitsSyncOptions> nftTraitsSyncOptions,
-        IOptionsSnapshot<ContractSyncOptions> contractSyncOptions, ILogger<NftTraitsProportionCalculateWorker> logger,
-        IZkloginPoseidongHashService zklogin) : base(timer,
+        IOptionsSnapshot<ContractSyncOptions> contractSyncOptions, ILogger<NftTraitsProportionCalculateWorker> logger) : base(timer,
         serviceScopeFactory)
     {
         _userAssetsAppService = userAssetsAppService;
@@ -38,7 +36,6 @@ public class NftTraitsProportionCalculateWorker : AsyncPeriodicBackgroundWorkerB
         _logger = logger;
         _contractSyncOptions = contractSyncOptions.Value;
         _nftTraitsSyncOptions = nftTraitsSyncOptions.Value;
-        _zklogin = zklogin;
         Timer.Period = 1000 * _nftTraitsSyncOptions.Sync;
     }
 

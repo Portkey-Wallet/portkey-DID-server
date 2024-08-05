@@ -19,7 +19,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IZkloginPoseidongHashService
 {
-    public Task DoWorkAsync();
+    public Task DoWorkAsync(List<string> caHashList);
 }
 
 public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingletonDependency
@@ -44,14 +44,14 @@ public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingle
         _chainOptions = chainOptions.Value;
     }
     
-    public async Task DoWorkAsync()
+    public async Task DoWorkAsync(List<string> caHashList)
     {
-        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
+        _logger.LogInformation("SyncronizeZkloginPoseidonHash event handler starting.........");
         var sw = new Stopwatch();
         sw.Start();
         // var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(0, 10);
         // var caHashList = caHoldersByPage.Select(holder => holder.CaHash).ToList();
-        List<string> caHashList = new List<string>() { "d2188a2ea94803efe27e4a04e63c26840b4d656ea2e88172f9bdb7dfdaea3f96" };
+        // List<string> caHashList = new List<string>() { "d2188a2ea94803efe27e4a04e63c26840b4d656ea2e88172f9bdb7dfdaea3f96" };
         foreach (var caHash in caHashList)
         {
             var chainIdToCaHolder = await ListHolderInfosFromContract(caHash);
