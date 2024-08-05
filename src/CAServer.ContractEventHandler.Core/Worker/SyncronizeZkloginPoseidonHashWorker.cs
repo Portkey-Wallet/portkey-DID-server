@@ -24,7 +24,6 @@ namespace CAServer.ContractEventHandler.Core.Worker;
 
 public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorkerBase
 {
-    private readonly IGuardianAppService _guardianAppService;
     private readonly IPoseidonIdentifierHashProvider _poseidonProvider;
     private readonly ILogger<SyncronizeZkloginPoseidonHashWorker> _logger;
     private readonly IGuardianUserProvider _guardianUserProvider;
@@ -32,14 +31,12 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
     private readonly IContractProvider _contractProvider;
     
     public SyncronizeZkloginPoseidonHashWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IGuardianAppService guardianAppService,
         IPoseidonIdentifierHashProvider poseidonProvider,
         ILogger<SyncronizeZkloginPoseidonHashWorker> logger,
         IGuardianUserProvider guardianUserProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IContractProvider contractProvider) : base(timer, serviceScopeFactory)
     {
-        _guardianAppService = guardianAppService;
         _poseidonProvider = poseidonProvider;
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
@@ -66,7 +63,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             }
             
             var identifierHashList = ExtractGuardianIdentifierHashFromChains(chainIdToCaHolder.Values.ToList());
-            var guardiansFromEs = await _guardianAppService.GetGuardianListAsync(identifierHashList);
+            var guardiansFromEs = await _guardianUserProvider.GetGuardianListAsync(identifierHashList);
             foreach (var getHolderInfoOutput in chainIdToCaHolder)
             {
                 var guardiansOfAppendInput = new RepeatedField<GuardianInfoWithPoseidon>();

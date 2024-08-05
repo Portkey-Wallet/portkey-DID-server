@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
+using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -183,5 +185,21 @@ public class GuardianUserProvider
         }
 
         return true;
+    }
+    
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(List<string> identifierHashList)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardians = await _guardianRepository.GetListAsync(Filter);
+
+        var result = guardians.Item2.Where(t => t.IsDeleted == false).ToList();
+
+        return ObjectMapper.Map<List<GuardianIndex>, List<GuardianIndexDto>>(result);
     }
 }

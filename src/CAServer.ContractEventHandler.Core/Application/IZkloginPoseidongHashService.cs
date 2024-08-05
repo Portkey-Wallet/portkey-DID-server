@@ -24,21 +24,19 @@ public interface IZkloginPoseidongHashService
 
 public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingletonDependency
 {
-    private readonly IGuardianAppService _guardianAppService;
     private readonly IPoseidonIdentifierHashProvider _poseidonProvider;
     private readonly ILogger<ZkloginPoseidongHashService> _logger;
     private readonly IGuardianUserProvider _guardianUserProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
     
-    public ZkloginPoseidongHashService(IGuardianAppService guardianAppService,
+    public ZkloginPoseidongHashService(
         IPoseidonIdentifierHashProvider poseidonProvider,
         ILogger<ZkloginPoseidongHashService> logger,
         IGuardianUserProvider guardianUserProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IContractProvider contractProvider)
     {
-        _guardianAppService = guardianAppService;
         _poseidonProvider = poseidonProvider;
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
@@ -63,7 +61,7 @@ public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingle
             }
             
             var identifierHashList = ExtractGuardianIdentifierHashFromChains(chainIdToCaHolder.Values.ToList());
-            var guardiansFromEs = await _guardianAppService.GetGuardianListAsync(identifierHashList);
+            var guardiansFromEs = await _guardianUserProvider.GetGuardianListAsync(identifierHashList);
             foreach (var getHolderInfoOutput in chainIdToCaHolder)
             {
                 var guardiansOfAppendInput = new RepeatedField<GuardianInfoWithPoseidon>();
