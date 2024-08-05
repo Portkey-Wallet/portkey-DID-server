@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
@@ -72,14 +70,14 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         var growthGrain = _clusterClient.GetGrain<IGrowthGrain>(grainId);
 
         GrowthGrainDto grainDto;
-        var exist = await growthGrain.Exist();
+        var exist = await growthGrain.Exist(projectCode);
         if (!exist)
         {
             grainDto = await CreateGrowthInfoAsync(growthGrain, CurrentUser.GetId(), projectCode);
         }
         else
         {
-            grainDto = await GetGrowthInfoAsync(growthGrain);
+            grainDto = await GetGrowthInfoAsync(growthGrain, projectCode);
         }
 
         var url = $"{_growthOptions.BaseUrl}/api/app/account/{grainDto.ShortLinkCode}";
@@ -89,9 +87,9 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         };
     }
 
-    private async Task<GrowthGrainDto> GetGrowthInfoAsync(IGrowthGrain growthGrain)
+    private async Task<GrowthGrainDto> GetGrowthInfoAsync(IGrowthGrain growthGrain, string projectCode)
     {
-        var result = await growthGrain.GetGrowthInfo();
+        var result = await growthGrain.GetGrowthInfo(projectCode);
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
@@ -103,7 +101,8 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private async Task<GrowthGrainDto> CreateGrowthInfoAsync(IGrowthGrain growthGrain, Guid userId, string projectCode)
     {
         var caHash = await GetCaHashAsync();
-        var shortLinkCode = await GenerateShortLinkCodeAsync(caHash);
+        var plainText = caHash + projectCode;
+        var shortLinkCode = await GenerateShortLinkCodeAsync(plainText);
         var result = await growthGrain.CreateGrowthInfo(new GrowthGrainDto()
         {
             UserId = userId,
@@ -163,15 +162,13 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         {
             return new ActivityDetailsResponseDto
             {
-                ActivityConfig = ObjectMapper.Map<ActivityConfig,ActivityConfigDto>(config.ActivityConfig),
-                RulesConfig = ObjectMapper.Map<RulesConfig,RulesConfigDto>(config.RulesConfig),
+                ActivityConfig = ObjectMapper.Map<ActivityConfig, ActivityConfigDto>(config.ActivityConfig),
+                RulesConfig = ObjectMapper.Map<RulesConfig, RulesConfigDto>(config.RulesConfig),
             };
         }
 
         return new ActivityDetailsResponseDto();
     }
-
-
 
 
     private async Task<string> GetCaHashAsync()
