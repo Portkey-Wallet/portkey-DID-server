@@ -775,7 +775,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _logger.LogDebug("Get Hamster Data is {data}",JsonConvert.SerializeObject(hamsterScoreList));
         if (hamsterScoreList == null || hamsterScoreList.GetScoreInfos.Count <= 0)
         {
-            return new ValidateHamsterScoreResponseDto();
+            return new ValidateHamsterScoreResponseDto
+            {
+                Result = new Result
+                {
+                    
+                    ValidateResult = false
+                }
+            };
         }
 
         var expire = TimeSpan.FromDays(ExpireTime);
@@ -783,7 +790,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             hamsterScoreList.GetScoreInfos.FirstOrDefault()?.CaAddress, expire);
         return new ValidateHamsterScoreResponseDto()
         {
-            Result = new Result()
+            Result = new Result
             {
                 ValidateResult = true
             }
