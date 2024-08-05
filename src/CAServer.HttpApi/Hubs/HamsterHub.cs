@@ -9,7 +9,6 @@ using Volo.Abp.AspNetCore.SignalR;
 namespace CAServer.Hubs;
 
 [HubRoute("HamsterDataReporting")]
-[Authorize]
 public class HamsterHub : AbpHub
 {
     private readonly IHubService _hubService;
@@ -42,22 +41,13 @@ public class HamsterHub : AbpHub
     
     public async Task RewardProgress(RewardProgressDto rewardProgressDto)
     {
-        if (!CurrentUser.Id.HasValue)
-        {
-            throw new UnauthorizedAccessException();
-        }
-    
-        await _hubService.RewardProgressAsync(rewardProgressDto.ActivityEnums,rewardProgressDto.TargetClientId);
+        await _hubService.RewardProgressAsync(rewardProgressDto);
     }
     
     
     public async Task ReferralRecordList(ReferralRecordRequestDto input)
     {
         _logger.LogDebug("Hub param is {param}",JsonConvert.SerializeObject(input));
-        if (!CurrentUser.Id.HasValue)
-        {
-            throw new UnauthorizedAccessException();
-        }
     
         await _hubService.ReferralRecordListAsync(input);
     }

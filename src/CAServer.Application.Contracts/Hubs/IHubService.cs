@@ -23,5 +23,5 @@ public interface IHubService : IApplicationService
     Task ReferralRecordListAsync(ReferralRecordRequestDto input);
     //Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input);
     
-    Task RewardProgressAsync(ActivityEnums activityEnums, string targetClientId);
+    Task RewardProgressAsync(RewardProgressDto raRewardProgressDto);
 }

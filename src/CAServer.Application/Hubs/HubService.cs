@@ -156,16 +156,16 @@ public class HubService : CAServerAppService, IHubService
         }
     }
 
-    public async Task RewardProgressAsync(ActivityEnums activityEnums, string targetClientId)
+    public async Task RewardProgressAsync(RewardProgressDto rewardProgressDto)
     {
         while (true)
         {
             try
             {
                 // stop while disconnected
-                if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
+                if (_connectionProvider.GetConnectionByClientId(rewardProgressDto.TargetClientId) != null)
                 {
-                    await RewardProgressChangedAsync(activityEnums, targetClientId);
+                    await RewardProgressChangedAsync(rewardProgressDto);
                 }
 
                 _logger.LogWarning("Get RewardProgressChanged STOP");
@@ -179,20 +179,20 @@ public class HubService : CAServerAppService, IHubService
         }
     }
 
-    private async Task RewardProgressChangedAsync(ActivityEnums activityEnums, string targetClientId)
+    private async Task RewardProgressChangedAsync(RewardProgressDto rewardProgressDto)
     {
-        var rewardProgressResponseDto = await _statisticAppService.GetRewardProgressAsync(activityEnums);
+        var rewardProgressResponseDto = await _statisticAppService.GetRewardProgressAsync(rewardProgressDto.ActivityEnums);
         try
         {
             var methodName = "RewardProgressChanged";
             await _caHubProvider.ResponseAsync(
-                new HubResponseBase<RewardProgressResponseDto>(rewardProgressResponseDto), targetClientId,
+                new HubResponseBase<RewardProgressResponseDto>(rewardProgressResponseDto), rewardProgressDto.TargetClientId,
                 methodName);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "RewardProgressChanged error, clientId={ClientId}, enums={enums}", targetClientId,
-                activityEnums.ToString());
+            _logger.LogError(e, "RewardProgressChanged error, clientId={ClientId}, enums={enums}", rewardProgressDto.TargetClientId,
+                rewardProgressDto.ActivityEnums.ToString());
         }
     }
 
