@@ -32,14 +32,13 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
     
-    public SyncronizeZkloginPoseidonHashWorker(
+    public SyncronizeZkloginPoseidonHashWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IGuardianAppService guardianAppService,
         IPoseidonIdentifierHashProvider poseidonProvider,
         ILogger<SyncronizeZkloginPoseidonHashWorker> logger,
         IGuardianUserProvider guardianUserProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
-        IContractProvider contractProvider,
-        AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory) : base(timer, serviceScopeFactory)
+        IContractProvider contractProvider) : base(timer, serviceScopeFactory)
     {
         _guardianAppService = guardianAppService;
         _poseidonProvider = poseidonProvider;
@@ -48,7 +47,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
         
-        Timer.Period = 1000 * 600;
+        Timer.Period = 600000;
         Timer.RunOnStart = true;
     }
 
