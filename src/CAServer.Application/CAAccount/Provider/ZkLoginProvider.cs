@@ -155,4 +155,12 @@ public class ZkLoginProvider
             GuardianIdentifierHash = identifierHash
         };
     }
+
+    public async Task TriggerZkLoginWorker(string caHash)
+    {
+        await _distributedEventBus.PublishAsync(new ZkEto
+        {
+            CaHash = caHash
+        });
+    }
 }

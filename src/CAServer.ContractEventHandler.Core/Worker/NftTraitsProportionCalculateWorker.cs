@@ -49,7 +49,6 @@ public class NftTraitsProportionCalculateWorker : AsyncPeriodicBackgroundWorkerB
         if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _nftTraitsSyncOptions.Sync,
                 _contractSyncOptions.WorkerNodeExpirationTime))
         {
-            await _zklogin.DoWorkAsync();
             return;
         }
 
