@@ -109,12 +109,12 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             Query = @"
 			    query($symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
                     tokenInfo(dto: {symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        decimals
+                        decimals,chainId
                     }
                 }",
             Variables = new
             {
-                symbol, skipCount = 0, maxResultCount = 1
+                symbol, skipCount = 0, maxResultCount = 10
             }
         });
     }

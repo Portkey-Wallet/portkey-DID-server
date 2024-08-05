@@ -5,5 +5,6 @@ public enum FreeMintStatus
     NONE,
     PENDING,
     SUCCESS,
-    FAIL
+    FAIL,
+    LimitExceed
 }

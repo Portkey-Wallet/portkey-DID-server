@@ -20,6 +20,7 @@ using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -64,6 +65,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ITokenPriceService _tokenPriceService;
     private readonly IDistributedCache<string> _userNftTraitsCountCache;
     private const string TraitsCachePrefix = "PortKey:NFTtraits:";
+    private readonly IActivityProvider _activityProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -77,7 +79,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
         IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
-        IDistributedCache<string> userNftTraitsCountCache)
+        IDistributedCache<string> userNftTraitsCountCache, IActivityProvider activityProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -101,6 +103,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _ipfsOptions = ipfsOption.Value;
         _tokenPriceService = tokenPriceService;
         _userNftTraitsCountCache = userNftTraitsCountCache;
+        _activityProvider = activityProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -343,9 +346,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 _logger.LogInformation("[GetNFTCollectionsAsync] data from indexer is empty.");
                 return dto;
             }
-
-            _logger.LogInformation("[GetNFTCollectionsAsync] get from indexer: {0}",
-                JsonConvert.SerializeObject(res.CaHolderNFTCollectionBalanceInfo));
 
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
@@ -1391,6 +1391,49 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     AbsoluteExpiration = DateTimeOffset.Now.AddHours(1)
                 });
         }
+    }
+
+    public async Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request)
+    {
+        switch (request.Type)
+        {
+            case "token":
+            {
+                var token = await _activityProvider.GetTokenDecimalsAsync(request.Symbol);
+                _logger.LogDebug("Query from Portkey index data is {data}",JsonConvert.SerializeObject(token));
+                var symbolInfos = token.TokenInfo.Where(t=>t.ChainId == request.ChainId).ToList();
+                if (symbolInfos.Count > 0)
+                {
+                    return true;
+                }
+                break;
+            }
+            case "nft":
+            {
+                var param = new GetNftItemInfosDto
+                {
+                    GetNftItemInfos = new List<GetNftItemInfo>()
+                    {
+                        new GetNftItemInfo()
+                        {
+                            ChainId = request.ChainId,
+                            Symbol = request.Symbol
+                        }
+                    }
+                };
+                var nftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(param,0,10);
+                _logger.LogDebug("User assert is {nft}",JsonConvert.SerializeObject(nftItemInfos));
+                if (nftItemInfos.NftItemInfos.Count > 0)
+                {
+                    return true;
+                }
+                break;
+            }
+            default:
+                return false;
+        }
+
+        return false;
     }
 
     private async Task<decimal> CalculateTotalBalanceInUsdAsync(List<IndexerTokenInfo> tokenInfos)

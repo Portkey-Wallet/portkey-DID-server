@@ -1,9 +1,6 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
-using CAServer.Commons;
 using CAServer.Entities.Es;
-using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
 using CAServer.FreeMint.Etos;
 using CAServer.FreeMint.Provider;
@@ -11,7 +8,6 @@ using CAServer.Grains.Grain.FreeMint;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -48,14 +44,13 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
 
     public async Task<GetMintInfoDto> GetMintInfoAsync()
     {
+        var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
         var mintInfoDto = new GetMintInfoDto()
         {
-            CollectionInfo = _freeMintOptions.CollectionInfo
+            CollectionInfo = _freeMintOptions.CollectionInfo,
+            IsLimitExceed = grain.CheckLimitExceed().Result,
+            LimitCount = _freeMintOptions.LimitCount
         };
-
-        var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
-        var resultDto = await grain.GetTokenId();
-        mintInfoDto.TokenId = resultDto.Data;
         return mintInfoDto;
     }
 
@@ -64,7 +59,6 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         var collectionInfo = _freeMintOptions.CollectionInfo;
         var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
 
-        // set grain info , status->pending
         var confirmInfo = ObjectMapper.Map<ConfirmRequestDto, ConfirmGrainDto>(requestDto);
         var saveResult = await grain.SaveMintInfo(new MintNftDto()
         {
@@ -77,18 +71,24 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
             throw new UserFriendlyException(saveResult.Message);
         }
 
+        var mintNftInfo = saveResult.Data;
         var eto = new FreeMintEto
         {
             UserId = CurrentUser.GetId(),
             CollectionInfo = collectionInfo,
-            ConfirmInfo = saveResult.Data
+            ConfirmInfo = mintNftInfo
         };
 
         await _distributedEventBus.PublishAsync(eto, false, false);
-        _logger.LogInformation("publish free mint eto, data:{data}", JsonConvert.SerializeObject(eto));
-        return new ConfirmDto()
+        _logger.LogInformation("publish free mint eto, userId:{userId}, itemId:{itemId}, tokenId:{tokenId}", eto.UserId,
+            eto.ConfirmInfo.ItemId, eto.ConfirmInfo.TokenId);
+
+        return new ConfirmDto
         {
-            ItemId = saveResult.Data.ItemId
+            ItemId = mintNftInfo.ItemId,
+            Name = mintNftInfo.Name,
+            TokenId = mintNftInfo.TokenId,
+            Symbol = $"{_freeMintOptions.CollectionInfo.CollectionName.ToUpper()}-{mintNftInfo.TokenId}"
         };
     }
 

@@ -40,6 +40,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.Growth.Dtos;
 using CAServer.Growth.Etos;
 using CAServer.Guardian;
 using CAServer.Hubs;
@@ -107,8 +108,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
     public CAServerApplicationAutoMapperProfile()
     {
         CreateMap<GuardianEto, GuardianIndex>();
-        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
         CreateMap<GoogleUserInfoDto, CAServer.Verifier.Dtos.UserExtraInfo>();
+        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
         CreateMap<UserTokenGrainDto, UserTokenEto>();
         CreateMap<UserTokenGrainDto, UserTokenDeleteEto>();
         CreateMap<UserTokenGrainDto, UserTokenDto>();
@@ -949,6 +950,13 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
+        CreateMap<ActivityConfig, ActivityConfigDto>();
+        CreateMap<RulesConfig, RulesConfigDto>();
+        CreateMap<BeInvitedConfig, BeInvitedConfigDto>();
+        CreateMap<TaskConfigInfo, TaskConfig>();
+        CreateMap<NoticeInfo, Notice>();
+        
+        
         CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
         CreateMap<FreeMintIndex, GetItemInfoDto>();
     }

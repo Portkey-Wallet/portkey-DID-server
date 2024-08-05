@@ -10,6 +10,7 @@ public class MintNftDto
 
 public class ConfirmGrainDto
 {
+    public string ItemId { get; set; }
     public string ImageUrl { get; set; }
     public string Name { get; set; }
     public string TokenId { get; set; }

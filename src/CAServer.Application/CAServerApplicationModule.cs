@@ -90,6 +90,12 @@ public class CAServerApplicationModule : AbpModule
         Configure<NftToFtOptions>(configuration.GetSection("NftToFt"));
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         Configure<FreeMintOptions>(configuration.GetSection("FreeMint"));
+        Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
+        Configure<BeInvitedConfigOptions>(configuration.GetSection("BeInvitedConfig"));
+        Configure<HamsterOptions>(configuration.GetSection("Hamster"));
+        Configure<ActivityDateRangeOptions>(configuration.GetSection("ActivityDateRange"));
+        
+        
         
 
         context.Services.AddMemoryCache();
@@ -170,7 +176,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<GrowthOptions>(configuration.GetSection("Growth"));
         Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         Configure<ETransferOptions>(configuration.GetSection("ETransfer"));
-        Configure<ActivityDateRangeOptions>(configuration.GetSection("ETransfer"));
         
         AddMessagePushService(context, configuration);
     }
