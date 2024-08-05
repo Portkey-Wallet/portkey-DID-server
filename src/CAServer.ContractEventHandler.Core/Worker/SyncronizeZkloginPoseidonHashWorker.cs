@@ -48,7 +48,8 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
         
-        Timer.Period = 1000 * 36000;
+        Timer.Period = 1000 * 600;
+        Timer.RunOnStart = true;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
