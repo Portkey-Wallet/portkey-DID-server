@@ -50,8 +50,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
     public GrowthProvider(INESTRepository<GrowthIndex, string> growthRepository, IGraphQLHelper graphQlHelper,
         INESTRepository<ReferralRecordIndex, string> referralRecordRepository,
-        IOptionsSnapshot<HamsterOptions> hamsterOptions)
-        INESTRepository<ReferralRecordIndex, string> referralRecordRepository,
+        IOptionsSnapshot<HamsterOptions> hamsterOptions,
         INESTRepository<InviteRepairIndex, string> inviteRepairRepository)
     {
         _growthRepository = growthRepository;
