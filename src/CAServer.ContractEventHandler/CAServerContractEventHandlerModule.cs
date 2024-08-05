@@ -135,10 +135,11 @@ public class CAServerContractEventHandlerModule : AbpModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         //StartOrleans(context.ServiceProvider);
+        context.AddBackgroundWorkerAsync<SyncronizeZkloginPoseidonHashWorker>();
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
         context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
-        context.AddBackgroundWorkerAsync<SyncronizeZkloginPoseidonHashWorker>();
+        
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 

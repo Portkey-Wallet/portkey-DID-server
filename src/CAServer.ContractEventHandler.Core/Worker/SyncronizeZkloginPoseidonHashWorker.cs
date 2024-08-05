@@ -13,7 +13,6 @@ using Google.Protobuf.Collections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Volo.Abp.BackgroundWorkers;
@@ -47,7 +46,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
         
-        Timer.Period = 600000;
+        Timer.Period = 100000;
         Timer.RunOnStart = true;
     }
 
