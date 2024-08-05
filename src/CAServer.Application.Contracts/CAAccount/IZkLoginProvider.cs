@@ -19,4 +19,6 @@ public interface IZkLoginProvider
     public Task<GuardianEto> UpdateGuardianAsync(string guardianIdentifier, string salt, string identifierHash);
     
     public Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto);
+
+    public Task TriggerZkLoginWorker(string caHash);
 }
