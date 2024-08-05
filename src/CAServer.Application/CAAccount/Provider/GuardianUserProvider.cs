@@ -184,20 +184,4 @@ public class GuardianUserProvider
 
         return true;
     }
-
-    public async Task<GuardianGrainDto> GetGuardianAsync(string guardianIdentifier)
-    {
-        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
-        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
-        var guardianGrainDto = await guardianGrain.GetGuardianAsync(guardianIdentifier);
-
-        _logger.LogInformation("AddGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
-        if (guardianGrainDto.Success)
-        {
-            return guardianGrainDto.Data;
-        }
-
-        return null;
-    }
-
 }
