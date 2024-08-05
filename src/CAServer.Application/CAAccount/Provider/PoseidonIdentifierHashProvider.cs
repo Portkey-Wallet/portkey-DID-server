@@ -8,11 +8,6 @@ using Volo.Abp.Auditing;
 
 namespace CAServer.CAAccount.Provider;
 
-public interface IPoseidonIdentifierHashProvider
-{
-    public string GenerateIdentifierHash(string subject, byte[] salt);
-}
-
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
 public class PoseidonIdentifierHashProvider : CAServerAppService, IPoseidonIdentifierHashProvider
@@ -26,14 +21,13 @@ public class PoseidonIdentifierHashProvider : CAServerAppService, IPoseidonIdent
         }
 
         var subjectBytes = Encoding.ASCII.GetBytes(subject);
-        return "";
-        // var hashString =
-        //     new Poseidon.Net.Poseidon().Hash(ChunksToFieldElements(subjectBytes, CircuitParameters.MaxSubLength, 31));
-        //
-        // return new Poseidon.Net.Poseidon().Hash(new List<string>()
-        // {
-        //     hashString, ChunksToFieldElements(salt, CircuitParameters.SaltLength, CircuitParameters.SaltLength).First()
-        // });
+        var hashString =
+            new Poseidon.Net.Poseidon().Hash(ChunksToFieldElements(subjectBytes, CircuitParameters.MaxSubLength, 31));
+        
+        return new Poseidon.Net.Poseidon().Hash(new List<string>()
+        {
+            hashString, ChunksToFieldElements(salt, CircuitParameters.SaltLength, CircuitParameters.SaltLength).First()
+        });
     }
 
     private List<string> ChunksToFieldElements(byte[] bytes, int requiredLength, int chunkSize = 31)

@@ -79,6 +79,35 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
         return result;
     }
+    
+    public async Task<GrainResultDto<GuardianGrainDto>> AppendGuardianPoseidonHashAsync(string identifier, string identifierPoseidonHash)
+    {
+        var result = new GrainResultDto<GuardianGrainDto>();
+
+        if (!State.Identifier.Equals(identifier))
+        {
+            result.Success = false;
+            result.Message = "Guardian does not exist.";
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            return result;
+        }
+        
+        if (State.IsDeleted)
+        {
+            result.Success = false;
+            result.Message = "Guardian has been removed.";
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            return result;
+        }
+
+        State.IdentifierPoseidonHash = identifierPoseidonHash;
+        
+        await WriteStateAsync();
+        result.Success = true;
+
+        result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        return result;
+    }
 
     public Task<GrainResultDto<GuardianGrainDto>> GetGuardianAsync(string identifier)
     {

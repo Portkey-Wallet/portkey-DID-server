@@ -10,6 +10,8 @@ public interface IGuardianGrain : IGrainWithStringKey
     Task<GrainResultDto<GuardianGrainDto>> UpdateGuardianAsync(string identifier, string salt,
         string identifierHash);
 
+    Task<GrainResultDto<GuardianGrainDto>> AppendGuardianPoseidonHashAsync(string identifier, string identifierPoseidonHash);
+
     Task<GrainResultDto<GuardianGrainDto>> GetGuardianAsync(string identifier);
     
     Task<GrainResultDto<GuardianGrainDto>> DeleteGuardian();

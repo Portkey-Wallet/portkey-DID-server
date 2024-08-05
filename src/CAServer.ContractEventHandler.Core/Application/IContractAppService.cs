@@ -57,6 +57,8 @@ public interface IContractAppService : ISingletonDependency
     // Task InitializeIndexAsync(long blockHeight);
 
     Task<bool> RefundAsync(Guid redPackageId);
+
+    Task AppendGuardianPoseidonHash();
 }
 
 public class ContractAppService : IContractAppService
@@ -1450,5 +1452,10 @@ public class ContractAppService : IContractAppService
                     TimeSpan.FromSeconds(ContractEventConstants.SyncHolderUpdateVersionCacheExpireTime)
             });
         }
+    }
+
+    public async Task AppendGuardianPoseidonHash()
+    {
+        throw new NotImplementedException();
     }
 }

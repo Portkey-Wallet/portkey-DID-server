@@ -107,6 +107,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 {
     public CAServerApplicationAutoMapperProfile()
     {
+        CreateMap<GuardianEto, GuardianIndex>();
         CreateMap<GoogleUserInfoDto, CAServer.Verifier.Dtos.UserExtraInfo>();
         CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
         CreateMap<UserTokenGrainDto, UserTokenEto>();
