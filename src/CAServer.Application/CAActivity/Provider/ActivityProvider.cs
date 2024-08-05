@@ -114,7 +114,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
                 }",
             Variables = new
             {
-                symbol, skipCount = 0, maxResultCount = 1
+                symbol, skipCount = 0, maxResultCount = 10
             }
         });
     }
