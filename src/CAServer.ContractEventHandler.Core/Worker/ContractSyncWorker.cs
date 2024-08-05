@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -6,7 +5,6 @@ using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Nightingale;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
@@ -19,7 +17,6 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly ContractSyncOptions _contractSyncOptions;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
     private readonly N9EClientFactory _n9EClientFactory;
-    private readonly ILogger<ContractSyncWorker> _logger;
 
     private const string WorkerName = "ContractSyncWorker";
 
@@ -27,8 +24,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     public ContractSyncWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IContractAppService contractAppService, IOptions<ContractSyncOptions> workerOptions,
         IBackgroundWorkerRegistrarProvider registrarProvider, IHostApplicationLifetime hostApplicationLifetime,
-        N9EClientFactory n9EClientFactory,
-        ILogger<ContractSyncWorker> logger) : base(
+        N9EClientFactory n9EClientFactory) : base(
         timer,
         serviceScopeFactory)
     {
@@ -36,7 +32,6 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         _contractAppService = contractAppService;
         _registrarProvider = registrarProvider;
         _n9EClientFactory = n9EClientFactory;
-        _logger = logger;
         Timer.Period = 1000 * _contractSyncOptions.Sync;
 
         hostApplicationLifetime.ApplicationStopped.Register(() =>
@@ -47,7 +42,6 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogInformation("ContractSyncWorker is starting");
         if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _contractSyncOptions.Sync,
                 _contractSyncOptions.WorkerNodeExpirationTime))
         {
