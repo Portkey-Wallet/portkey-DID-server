@@ -18,6 +18,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly ContractSyncOptions _contractSyncOptions;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
     private readonly N9EClientFactory _n9EClientFactory;
+    private readonly IZkloginPoseidongHashService _zklogin;
 
     private const string WorkerName = "ContractSyncWorker";
 
@@ -25,7 +26,8 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     public ContractSyncWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IContractAppService contractAppService, IOptions<ContractSyncOptions> workerOptions,
         IBackgroundWorkerRegistrarProvider registrarProvider, IHostApplicationLifetime hostApplicationLifetime,
-        N9EClientFactory n9EClientFactory) : base(
+        N9EClientFactory n9EClientFactory,
+        IZkloginPoseidongHashService zklogin) : base(
         timer,
         serviceScopeFactory)
     {
@@ -33,6 +35,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         _contractAppService = contractAppService;
         _registrarProvider = registrarProvider;
         _n9EClientFactory = n9EClientFactory;
+        _zklogin = zklogin;
         Timer.Period = 1000 * _contractSyncOptions.Sync;
 
         hostApplicationLifetime.ApplicationStopped.Register(() =>
@@ -61,5 +64,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
             await _n9EClientFactory.TrackTransactionSync(N9EClientConstant.Biz, WorkerName,
                 stopwatch.ElapsedMilliseconds);
         }
+
+        await _zklogin.DoWorkAsync();
     }
 }
