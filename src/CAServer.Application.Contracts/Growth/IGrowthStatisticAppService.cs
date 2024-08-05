@@ -11,4 +11,5 @@ public interface IGrowthStatisticAppService
     Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input);
     Task InitReferralRankAsync();
     Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input);
+    Task RepairHamsterDataAsync();
 }

@@ -70,7 +70,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash , 0 ,
+        var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0,
             Int16.MaxValue);
         return growthInfo?.Count ?? 0;
     }
@@ -111,19 +111,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task CalculateReferralRankAsync()
     {
         var startTime = 0L;
-        var referralTimes =  await _cacheProvider.Get(ReferralCalculateTimesCache);
+        var referralTimes = await _cacheProvider.Get(ReferralCalculateTimesCache);
         if (!referralTimes.HasValue)
         {
-            //_activityDateRangeOptions.ActivityDateRanges.TryGetValue(ActivityEnums.Invition.ToString(),out var dateRange);
             startTime = StringToTimeStamp(CommonConstant.DefaultReferralActivityStartTime);
         }
         else
         {
             startTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - 30000;
         }
-        
+
         var endTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        
+
         var indexerReferralInfo =
             await _growthProvider.GetReferralInfoAsync(new List<string>(), new List<string>(),
                 new List<string> { MethodName.CreateCAHolder }, startTime, endTime);
@@ -175,6 +174,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress,
                 score + 1);
         }
+
         var expire = TimeSpan.FromDays(ExpireTime);
         await _cacheProvider.Set(ReferralCalculateTimesCache, "Init", expire);
     }
@@ -331,6 +331,37 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         };
         return referralRecordRank;
         //return new ReferralRecordsRankResponseDto();
+    }
+
+    public async Task RepairHamsterDataAsync()
+    {
+        var repairList = await _growthProvider.GetInviteRepairIndexAsync();
+        if (repairList == null || repairList.Count == 0)
+        {
+            _logger.LogDebug("No data need to be repaired.");
+            return;
+        }
+        foreach (var repair in repairList)
+        {
+            var inviteCodes = repairList.Select(t => t.ReferralCode).ToList();
+            //need to be added score
+            var growthInfos = await _growthProvider.GetGrowthInfosAsync(null, inviteCodes);
+            var growthInfoDic = growthInfos.Where(t => !t.InviteCode.IsNullOrEmpty())
+                .ToDictionary(t => t.InviteCode, t => t.CaHash);
+            var caHolderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(new List<string>(), growthInfoDic[repair.ReferralCode]);
+            var referralRecord = new ReferralRecordIndex
+            {
+                CaHash = repair.CaHash,
+                ReferralCode = repair.ReferralCode,
+                IsDirectlyInvite = 0,
+                ReferralCaHash = growthInfoDic[repair.ReferralCode],
+                ReferralDate = repair.RegisterTime,
+                ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+            };
+            await _growthProvider.AddReferralRecordAsync(referralRecord);
+        }
+        
     }
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)

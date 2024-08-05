@@ -26,21 +26,27 @@ public interface IGrowthProvider
         int limit);
 
     Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
+
+    Task<List<InviteRepairIndex>> GetInviteRepairIndexAsync();
 }
 
 public class GrowthProvider : IGrowthProvider, ISingletonDependency
 {
     private readonly INESTRepository<GrowthIndex, string> _growthRepository;
     private readonly INESTRepository<ReferralRecordIndex, string> _referralRecordRepository;
+    private readonly INESTRepository<InviteRepairIndex, string> _inviteRepairRepository;
+
 
     private readonly IGraphQLHelper _graphQlHelper;
 
     public GrowthProvider(INESTRepository<GrowthIndex, string> growthRepository, IGraphQLHelper graphQlHelper,
-        INESTRepository<ReferralRecordIndex, string> referralRecordRepository)
+        INESTRepository<ReferralRecordIndex, string> referralRecordRepository,
+        INESTRepository<InviteRepairIndex, string> inviteRepairRepository)
     {
         _growthRepository = growthRepository;
         _graphQlHelper = graphQlHelper;
         _referralRecordRepository = referralRecordRepository;
+        _inviteRepairRepository = inviteRepairRepository;
     }
 
     public async Task<GrowthIndex> GetGrowthInfoByLinkCodeAsync(string shortLinkCode)
@@ -133,14 +139,22 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
     public async Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex)
     {
-        var record=
+        var record =
             await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1);
         if (!record.IsNullOrEmpty())
         {
             return false;
         }
+
         await _referralRecordRepository.AddAsync(referralRecordIndex);
         return true;
+    }
 
+    public async Task<List<InviteRepairIndex>> GetInviteRepairIndexAsync()
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<InviteRepairIndex>, QueryContainer>>();
+        QueryContainer Filter(QueryContainerDescriptor<InviteRepairIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (total, data) = await _inviteRepairRepository.GetListAsync(Filter, skip: 0, limit: Int16.MaxValue);
+        return data;
     }
 }
