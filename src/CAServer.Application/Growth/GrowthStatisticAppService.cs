@@ -600,6 +600,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         result.Data = data;
+        result.ActivityTitle = _beInvitedConfigOptions.ActivityTitle;
         return result;
     }
 
