@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Grains.Grain.Guardian;
 
 namespace CAServer.CAAccount;
 
@@ -13,6 +12,4 @@ public interface IGuardianUserProvider
     public Task AddUserInfoAsync(CAServer.Verifier.Dtos.UserExtraInfo userExtraInfo);
 
     public Task<bool> AppendGuardianPoseidonHashAsync(string guardianIdentifier, string identifierPoseidonHash);
-
-    public Task<GuardianGrainDto> GetGuardianAsync(string guardianIdentifier);
 }
