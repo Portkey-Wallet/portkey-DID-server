@@ -1,11 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Growth.Dtos;
+using CAServer.Options;
 using GraphQL;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
+using Microsoft.Extensions.Options;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
@@ -23,9 +30,10 @@ public interface IGrowthProvider
     Task<List<GrowthIndex>> GetAllGrowthInfosAsync(int skip, int limit);
 
     Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash, int skip,
-        int limit);
+        int limit, DateTime? startDate, DateTime? endDate, List<int> referralTypes);
 
     Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
+    Task<ScoreInfos> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime);
 
     Task<List<InviteRepairIndex>> GetInviteRepairIndexAsync();
 }
@@ -38,14 +46,18 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
 
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly HamsterOptions _hamsterOptions;
 
     public GrowthProvider(INESTRepository<GrowthIndex, string> growthRepository, IGraphQLHelper graphQlHelper,
+        INESTRepository<ReferralRecordIndex, string> referralRecordRepository,
+        IOptionsSnapshot<HamsterOptions> hamsterOptions)
         INESTRepository<ReferralRecordIndex, string> referralRecordRepository,
         INESTRepository<InviteRepairIndex, string> inviteRepairRepository)
     {
         _growthRepository = growthRepository;
         _graphQlHelper = graphQlHelper;
         _referralRecordRepository = referralRecordRepository;
+        _hamsterOptions = hamsterOptions.Value;
         _inviteRepairRepository = inviteRepairRepository;
     }
 
@@ -117,7 +129,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     }
 
     public async Task<List<ReferralRecordIndex>> GetReferralRecordListAsync(string caHash, string referralCaHash,
-        int skip, int limit)
+        int skip, int limit, DateTime? startDate, DateTime? endDate, List<int> referralTypes)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ReferralRecordIndex>, QueryContainer>>();
 
@@ -131,6 +143,23 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralCaHash).Terms(referralCaHash)));
         }
 
+        if (!referralTypes.IsNullOrEmpty())
+        {
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ReferralType).Terms(referralTypes)));
+        }
+
+        if (startDate != null)
+        {
+            mustQuery.Add(q =>
+                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").GreaterThanOrEquals(startDate)));
+        }
+
+        if (endDate != null)
+        {
+            mustQuery.Add(q =>
+                q.DateRange(i => i.Field(f => f.ReferralDate).TimeZone("GMT+8").LessThanOrEquals(endDate)));
+        }
+
         QueryContainer Filter(QueryContainerDescriptor<ReferralRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (total, data) = await _referralRecordRepository.GetListAsync(Filter, sortExp: k => k.ReferralDate,
             sortType: SortOrder.Descending, skip: skip, limit: limit);
@@ -140,7 +169,8 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     public async Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex)
     {
         var record =
-            await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1);
+            await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1,
+                null, null, new List<int> { referralRecordIndex.ReferralType});
         if (!record.IsNullOrEmpty())
         {
             return false;
@@ -156,5 +186,26 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         QueryContainer Filter(QueryContainerDescriptor<InviteRepairIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (total, data) = await _inviteRepairRepository.GetListAsync(Filter, skip: 0, limit: Int16.MaxValue);
         return data;
+    }
+
+    public async Task<ScoreInfos> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,
+        DateTime endTime)
+    {
+        var graphQlClient = new GraphQLHttpClient(_hamsterOptions.HamsterEndPoints,
+            new NewtonsoftJsonSerializer());
+        var sendQueryAsync = await graphQlClient.SendQueryAsync<ScoreInfos>(new GraphQLRequest
+        {
+            Query = @"
+         query($caAddressList:[String!]!,$beginTime:DateTime,$endTime:DateTime) {
+              getScoreInfos(getScoreInfosDto: {caAddressList:$caAddressList,beginTime:$beginTime,endTime:$endTime}){
+                     caAddress,sumScore,symbol,decimals}
+                }",
+            Variables = new
+            {
+                caAddressList, beginTime, endTime
+            }
+        });
+
+        return sendQueryAsync.Data;
     }
 }

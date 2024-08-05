@@ -113,6 +113,20 @@ public static class CommonConstant
     public const string NftToFtStartVersion = "1.18.0";
 
     public const string ReferralKey = "Portkey:ReferralBank";
+    public const string HamsterRankKey = "Portkey:HamsterBank";
+    
 
     public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
+
+    public const string SingUp = " created a Portkey account";
+    public const string HamsterScore = " collected {0} $ACORNS";
+    
+    
+    public const int InitTokenId = 10;
+    public const string FreeMintTokenIdGrainId = "FreeMint-TokenId";
+    public const int FreeMintTotalSupply = 1;
+    public const int FreeMintDecimals = 0;
+
+    public const string PortkeyS3Mark = "did";
+    public const string ImS3Mark = "im";
 }
