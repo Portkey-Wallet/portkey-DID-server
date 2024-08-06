@@ -156,11 +156,8 @@ public class ZkLoginProvider
         };
     }
 
-    public async Task TriggerZkLoginWorker(string caHash)
+    public async Task TriggerZkLoginWorker(ZkEto caHashes)
     {
-        await _distributedEventBus.PublishAsync(new ZkEto
-        {
-            CaHash = caHash
-        });
+        await _distributedEventBus.PublishAsync(caHashes);
     }
 }

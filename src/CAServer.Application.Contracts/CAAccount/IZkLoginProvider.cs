@@ -20,5 +20,5 @@ public interface IZkLoginProvider
     
     public Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto);
 
-    public Task TriggerZkLoginWorker(string caHash);
+    public Task TriggerZkLoginWorker(ZkEto caHashes);
 }

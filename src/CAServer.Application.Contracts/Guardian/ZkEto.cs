@@ -1,6 +1,8 @@
+using System.Collections.Generic;
+
 namespace CAServer.Guardian;
 
 public class ZkEto
 {
-    public string CaHash { get; set; }
+    public List<string> CaHashList { get; set; }
 }
