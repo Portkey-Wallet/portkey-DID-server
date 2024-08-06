@@ -73,18 +73,18 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         sw.Start();
         var totalHolders = await _contactProvider.GetAllCaHolderWithTotalAsync(0, 1);
         var total = totalHolders.Item1;
-        var times = total / 50 + 1;
+        var times = total / 10 + 1;
         for (var i = 0; i < times; i++)
         {
             var swLoop = new Stopwatch();
             swLoop.Start();
             try
             {
-                await SaveDataUnderChainAndHandlerOnChainData(i * 50, 50);
+                await SaveDataUnderChainAndHandlerOnChainData(i * 10, 10);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:100", i * 100);
+                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:10", i * 100);
             }
             swLoop.Stop();
             _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker loop:{0} cost:{1}ms", i, swLoop.ElapsedMilliseconds);
@@ -234,15 +234,4 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         _logger.LogInformation("GetHolderInfoFromChainAsync cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
     }
-    // List<string> caHashList = new List<string>() { 
-    //     "cffe2371fcca50e10515095efb9f03ab7171897252cf523044a2bc952a4f2f29",
-    //     "37546fb10af04e681ed65a8bb16d03fe35fdb516b79b9b026a288f945dd12d97",
-    //     "271fd1f512bbb4a6e89f1a0f990be00aed6cd348355eed0fe6de62529817ab41",
-    //     "4ae341df4cdc13b6d28ae5def6abca431464abb84160fc380772e00568933bbf",
-    //     "92872be6b1969f4dd1f0c6c280324ae709a7cb0594d5eebb43f2449ca588603f",
-    //     "013dffaa460b4ce053060b2497a0ade59d23093d4087050e9e4747a2ba160383",
-    //     "aab857749aa9114f1bbf306d52cc4f9219ab201c6b5ebbab0283e8252e4cac2b",
-    //     "15e08db5cb7688f8f52ae5ef5fc9b79c866e5fedc7ca694f5d28f86902875a97",
-    //     "f9221e8a600a047f04009a602672c88cfc09f063b2474cc44d901a078299db63",
-    //     "d106d48b2f9283c5577c848efb440b4498024335dd01e56236b7b5343af727f1" };
 }
