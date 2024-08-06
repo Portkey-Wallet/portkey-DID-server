@@ -64,33 +64,33 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        // if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 86400, 86400))
-        // {
-        //     return;
-        // }
-        // _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
-        // var sw = new Stopwatch();
-        // sw.Start();
-        // var totalHolders = await _contactProvider.GetAllCaHolderWithTotalAsync(0, 1);
-        // var total = totalHolders.Item1;
-        // var times = total / 100 + 1;
-        // for (var i = 0; i < times; i++)
-        // {
-        //     var swLoop = new Stopwatch();
-        //     swLoop.Start();
-        //     try
-        //     {
-        //         await SaveDataUnderChainAndHandlerOnChainData(i * 100, 100);
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:100", i * 100);
-        //     }
-        //     swLoop.Stop();
-        //     _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker loop:{0} cost:{1}ms", i, swLoop.ElapsedMilliseconds);
-        // }
-        // sw.Stop();
-        // _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ending... cost:{0}ms", sw.ElapsedMilliseconds);
+        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 86400, 86400))
+        {
+            return;
+        }
+        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
+        var sw = new Stopwatch();
+        sw.Start();
+        var totalHolders = await _contactProvider.GetAllCaHolderWithTotalAsync(0, 1);
+        var total = totalHolders.Item1;
+        var times = total / 100 + 1;
+        for (var i = 0; i < times; i++)
+        {
+            var swLoop = new Stopwatch();
+            swLoop.Start();
+            try
+            {
+                await SaveDataUnderChainAndHandlerOnChainData(i * 100, 100);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:100", i * 100);
+            }
+            swLoop.Stop();
+            _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker loop:{0} cost:{1}ms", i, swLoop.ElapsedMilliseconds);
+        }
+        sw.Stop();
+        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ending... cost:{0}ms", sw.ElapsedMilliseconds);
     }
 
     private async Task SaveDataUnderChainAndHandlerOnChainData(int skip, int limit)
