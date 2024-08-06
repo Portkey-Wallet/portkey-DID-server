@@ -53,7 +53,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
-        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IOptionsSnapshot<ActivityDateRangeOptions> activityDateRangeOptions)
+        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions,
+        IOptionsSnapshot<ActivityDateRangeOptions> activityDateRangeOptions)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -94,20 +95,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
     {
-        // if (!CurrentUser.Id.HasValue)
-        // {
-        //     throw new AbpAuthorizationException("Unauthorized.");
-        // }
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new AbpAuthorizationException("Unauthorized.");
+        }
 
-        //var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
         var hasNextPage = true;
         var details = GetActivityDetails(input.ActivityEnums);
 
         var referralRecordList = input.ActivityEnums switch
         {
-            ActivityEnums.Invitation => await _growthProvider.GetReferralRecordListAsync(null, input.CaHash,
+            ActivityEnums.Invitation => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash,
                 input.Skip, input.Limit, null, null, new List<int> { 0 }),
-            ActivityEnums.Hamster => await _growthProvider.GetReferralRecordListAsync(null, input.CaHash, input.Skip,
+            ActivityEnums.Hamster => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip,
                 input.Limit, Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                 new List<int> { 0, 1 }),
             _ => throw new UserFriendlyException("Invalidate Activity.")
@@ -457,7 +458,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var caHolderInfo =
                 await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
                     caHash);
-            
+
             await _cacheProvider.AddScoreAsync(CommonConstant.HamsterRankKey,
                 caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress, result.Count);
 
@@ -800,7 +801,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         await GetReferralInfoListAsync(result.ReferralInfos);
         return result;
     }
-    
+
     public async Task<ValidateHamsterScoreResponseDto> ValidateHamsterScoreAsync(string address)
     {
         var validateAddresses = await _cacheProvider.SetMembersAsync(ValidateAddressesKey);
@@ -818,17 +819,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 }
             };
         }
+
         var hamsterScoreList =
             await _growthProvider.GetHamsterScoreListAsync(new List<string> { address },
-                Convert.ToDateTime(_activityDateRangeOptions.StartDate), Convert.ToDateTime(_activityDateRangeOptions.EndDate));
-        _logger.LogDebug("Get Hamster Data is {data}",JsonConvert.SerializeObject(hamsterScoreList));
+                Convert.ToDateTime(_activityDateRangeOptions.StartDate),
+                Convert.ToDateTime(_activityDateRangeOptions.EndDate));
+        _logger.LogDebug("Get Hamster Data is {data}", JsonConvert.SerializeObject(hamsterScoreList));
         if (hamsterScoreList == null || hamsterScoreList.GetScoreInfos.Count <= 0)
         {
             return new ValidateHamsterScoreResponseDto
             {
                 Result = new Result
                 {
-                    
                     ValidateResult = false
                 }
             };
@@ -844,7 +846,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 ValidateResult = true
             }
         };
-
     }
 
     private async Task GetReferralInfoListAsync(List<Referral> referralInfos)
