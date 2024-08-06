@@ -64,7 +64,7 @@ public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingle
             var guardiansFromEs = await _guardianUserProvider.GetGuardianListAsync(identifierHashList);
             foreach (var getHolderInfoOutput in chainIdToCaHolder)
             {
-                var guardiansOfAppendInput = new RepeatedField<GuardianInfoWithPoseidon>();
+                var guardiansOfAppendInput = new RepeatedField<PoseidonGuardian>();
                 foreach (var guardian in getHolderInfoOutput.Value.GuardianList.Guardians)
                 {
                     var guardianFromEs = guardiansFromEs.FirstOrDefault(g => g.IdentifierHash.Equals(guardian.IdentifierHash.ToHex()));
@@ -76,11 +76,11 @@ public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingle
                     _logger.LogInformation("identifier:{0} (poseidon)identifierHash:{1} salt:{2}", guardianFromEs.Identifier, poseidonHash, (guardianFromEs.Salt));
                     //save poseidon hash in mongodb and es
                     await _guardianUserProvider.AppendGuardianPoseidonHashAsync(guardianFromEs.Identifier, poseidonHash);
-                    guardiansOfAppendInput.Add(new GuardianInfoWithPoseidon
+                    guardiansOfAppendInput.Add(new PoseidonGuardian
                     {
                         Type = guardian.Type,
                         IdentifierHash = guardian.IdentifierHash,
-                        PoseidonIdentifierHash = poseidonHash
+                        PoseidonHash = poseidonHash
                     });
                 }
                 var appendGuardianInput = new AppendGuardianInput()
@@ -88,7 +88,11 @@ public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingle
                     CaHash = Hash.LoadFromHex(caHash),
                     Guardians = { guardiansOfAppendInput }
                 };
-                var resultCreateCaHolder = await _contractProvider.AppendGuardianPoseidonHashAsync(getHolderInfoOutput.Key, appendGuardianInput);
+                var appendGuardianRequest = new AppendGuardianRequest()
+                {
+                    Input = { appendGuardianInput }
+                };
+                var resultCreateCaHolder = await _contractProvider.AppendGuardianPoseidonHashAsync(getHolderInfoOutput.Key, appendGuardianRequest);
                 if (resultCreateCaHolder.Status != TransactionState.Mined)
                 {
                     _logger.LogError("SyncronizeZkloginPoseidonHashWorker invoke contract error resultCreateCaHolder:{0}", JsonConvert.SerializeObject(resultCreateCaHolder));

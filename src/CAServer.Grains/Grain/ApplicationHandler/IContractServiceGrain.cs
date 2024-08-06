@@ -26,5 +26,5 @@ public interface IContractServiceGrain : IGrainWithGuidKey
 
     Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto);
     
-    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput);
+    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest);
 }

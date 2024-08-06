@@ -468,9 +468,9 @@ public class ContractService : IContractService, ISingletonDependency
         return result.TransactionResultDto;
     }
     
-    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput)
+    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
     {
-        var result = await SendTransactionToChainAsync(chainId, appendGuardianInput, MethodName.AppendGuardianPoseidonHash);
+        var result = await SendTransactionToChainAsync(chainId, appendGuardianRequest, MethodName.AppendGuardianPoseidonHash);
         return result.TransactionResultDto;
     }
 }

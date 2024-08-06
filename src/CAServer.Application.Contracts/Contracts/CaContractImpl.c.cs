@@ -331,7 +331,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddGuardianInput> __Marshaller_ca_AddGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddGuardianInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveGuardianInput> __Marshaller_ca_RemoveGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveGuardianInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.UpdateGuardianInput> __Marshaller_ca_UpdateGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.UpdateGuardianInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AppendGuardianInput> __Marshaller_ca_AppendGuardianInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AppendGuardianInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AppendGuardianRequest> __Marshaller_ca_AppendGuardianRequest = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AppendGuardianRequest.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SetGuardianForLoginInput> __Marshaller_ca_SetGuardianForLoginInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SetGuardianForLoginInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.UnsetGuardianForLoginInput> __Marshaller_ca_UnsetGuardianForLoginInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.UnsetGuardianForLoginInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ManagerForwardCallInput> __Marshaller_ca_ManagerForwardCallInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ManagerForwardCallInput.Parser.ParseFrom);
@@ -404,6 +404,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.KidPublicKeyOutput> __Marshaller_caimpl_KidPublicKeyOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.KidPublicKeyOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.CircomBigInt> __Marshaller_caimpl_CircomBigInt = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.CircomBigInt.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ZkNonceList> __Marshaller_caimpl_ZkNonceList = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ZkNonceList.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.CurrentKids> __Marshaller_caimpl_CurrentKids = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.CurrentKids.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -456,11 +457,11 @@ namespace Portkey.Contracts.CA {
         __Marshaller_ca_UpdateGuardianInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CA.AppendGuardianInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AppendGuardianPoseidonHash = new aelf::Method<global::Portkey.Contracts.CA.AppendGuardianInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Portkey.Contracts.CA.AppendGuardianRequest, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AppendGuardianPoseidonHash = new aelf::Method<global::Portkey.Contracts.CA.AppendGuardianRequest, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
         "AppendGuardianPoseidonHash",
-        __Marshaller_ca_AppendGuardianInput,
+        __Marshaller_ca_AppendGuardianRequest,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::Portkey.Contracts.CA.SetGuardianForLoginInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetGuardianForLogin = new aelf::Method<global::Portkey.Contracts.CA.SetGuardianForLoginInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -981,6 +982,13 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_StringValue,
         __Marshaller_google_protobuf_Empty);
 
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveApplePublicKeyByKid = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "RemoveApplePublicKeyByKid",
+        __Marshaller_google_protobuf_StringValue,
+        __Marshaller_google_protobuf_Empty);
+
     static readonly aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetOracleAddress = new aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
@@ -1008,6 +1016,48 @@ namespace Portkey.Contracts.CA {
         "GetZkNonceListByCaHash",
         __Marshaller_aelf_Hash,
         __Marshaller_caimpl_ZkNonceList);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CurrentKids> __Method_GetGoogleKids = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CurrentKids>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetGoogleKids",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_caimpl_CurrentKids);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CurrentKids> __Method_GetAppleKids = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CurrentKids>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetAppleKids",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_caimpl_CurrentKids);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CurrentKids> __Method_GetFacebookKids = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.CurrentKids>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetFacebookKids",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_caimpl_CurrentKids);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AppendGoogleKids = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "AppendGoogleKids",
+        __Marshaller_google_protobuf_StringValue,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AppendAppleKids = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "AppendAppleKids",
+        __Marshaller_google_protobuf_StringValue,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AppendFacebookKids = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "AppendFacebookKids",
+        __Marshaller_google_protobuf_StringValue,
+        __Marshaller_google_protobuf_Empty);
 
     #endregion
 
@@ -1071,7 +1121,7 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty AppendGuardianPoseidonHash(global::Portkey.Contracts.CA.AppendGuardianInput input)
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AppendGuardianPoseidonHash(global::Portkey.Contracts.CA.AppendGuardianRequest input)
       {
         throw new global::System.NotImplementedException();
       }
@@ -1446,6 +1496,11 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveApplePublicKeyByKid(global::Google.Protobuf.WellKnownTypes.StringValue input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty SetOracleAddress(global::AElf.Types.Address input)
       {
         throw new global::System.NotImplementedException();
@@ -1462,6 +1517,36 @@ namespace Portkey.Contracts.CA {
       }
 
       public virtual global::Portkey.Contracts.CA.ZkNonceList GetZkNonceListByCaHash(global::AElf.Types.Hash input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.CurrentKids GetGoogleKids(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.CurrentKids GetAppleKids(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.CurrentKids GetFacebookKids(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AppendGoogleKids(global::Google.Protobuf.WellKnownTypes.StringValue input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AppendAppleKids(global::Google.Protobuf.WellKnownTypes.StringValue input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AppendFacebookKids(global::Google.Protobuf.WellKnownTypes.StringValue input)
       {
         throw new global::System.NotImplementedException();
       }
@@ -1554,10 +1639,17 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_GetApplePublicKeyByKid, serviceImpl.GetApplePublicKeyByKid)
           .AddMethod(__Method_GetFacebookPublicKeyByKid, serviceImpl.GetFacebookPublicKeyByKid)
           .AddMethod(__Method_RemoveFacebookPublicKeyByKid, serviceImpl.RemoveFacebookPublicKeyByKid)
+          .AddMethod(__Method_RemoveApplePublicKeyByKid, serviceImpl.RemoveApplePublicKeyByKid)
           .AddMethod(__Method_SetOracleAddress, serviceImpl.SetOracleAddress)
           .AddMethod(__Method_SetCircomBigInt, serviceImpl.SetCircomBigInt)
           .AddMethod(__Method_GetCircomBigInt, serviceImpl.GetCircomBigInt)
-          .AddMethod(__Method_GetZkNonceListByCaHash, serviceImpl.GetZkNonceListByCaHash).Build();
+          .AddMethod(__Method_GetZkNonceListByCaHash, serviceImpl.GetZkNonceListByCaHash)
+          .AddMethod(__Method_GetGoogleKids, serviceImpl.GetGoogleKids)
+          .AddMethod(__Method_GetAppleKids, serviceImpl.GetAppleKids)
+          .AddMethod(__Method_GetFacebookKids, serviceImpl.GetFacebookKids)
+          .AddMethod(__Method_AppendGoogleKids, serviceImpl.AppendGoogleKids)
+          .AddMethod(__Method_AppendAppleKids, serviceImpl.AppendAppleKids)
+          .AddMethod(__Method_AppendFacebookKids, serviceImpl.AppendFacebookKids).Build();
     }
 
   }

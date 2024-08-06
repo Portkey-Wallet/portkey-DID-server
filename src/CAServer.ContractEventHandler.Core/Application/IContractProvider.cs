@@ -72,7 +72,7 @@ public interface IContractProvider : ISingletonDependency
     public Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
         GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom);
 
-    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput);
+    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest);
 }
 
 public class ContractProvider : IContractProvider
@@ -639,11 +639,11 @@ public class ContractProvider : IContractProvider
             chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);
     }
     
-    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput)
+    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
     {
         try
         {
-            var result = await _contractServiceProxy.AppendGuardianPoseidonHashAsync(chainId, appendGuardianInput);
+            var result = await _contractServiceProxy.AppendGuardianPoseidonHashAsync(chainId, appendGuardianRequest);
 
             _logger.LogInformation(
                 "AppendGuardianPoseidonHash to chain: {id} result:" +
@@ -655,7 +655,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "AppendGuardianPoseidonHash error: {message}",
-                JsonConvert.SerializeObject(appendGuardianInput, Formatting.Indented));
+                JsonConvert.SerializeObject(appendGuardianRequest, Formatting.Indented));
             return new TransactionResultDto
             {
                 Status = TransactionState.Failed,
