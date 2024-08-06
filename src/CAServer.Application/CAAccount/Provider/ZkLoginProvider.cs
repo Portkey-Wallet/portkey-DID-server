@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
+using CAServer.Dtos;
+using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
@@ -30,6 +34,8 @@ public class ZkLoginProvider
     private readonly IGoogleZkProvider _googleZkProvider;
     private readonly IAppleZkProvider _appleZkProvider;
     private readonly IFacebookZkProvider _facebookZkProvider;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
+    
     public ZkLoginProvider(
         IClusterClient clusterClient,
         ILogger<ZkLoginProvider> logger,
@@ -37,7 +43,8 @@ public class ZkLoginProvider
         IObjectMapper objectMapper,
         IGoogleZkProvider googleZkProvider,
         IAppleZkProvider appleZkProvider,
-        IFacebookZkProvider facebookZkProvider)
+        IFacebookZkProvider facebookZkProvider,
+        INESTRepository<CAHolderIndex, Guid> caHolderRepository)
     {
         _clusterClient = clusterClient;
         _logger = logger;
@@ -46,6 +53,7 @@ public class ZkLoginProvider
         _googleZkProvider = googleZkProvider;
         _appleZkProvider = appleZkProvider;
         _facebookZkProvider = facebookZkProvider;
+        _caHolderRepository = caHolderRepository;
     }
     public bool CanSupportZk(GuardianIdentifierType type)
     {
@@ -159,5 +167,16 @@ public class ZkLoginProvider
     public async Task TriggerZkLoginWorker(ZkEto caHashes)
     {
         await _distributedEventBus.PublishAsync(caHashes);
+    }
+    
+    public async Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit)
+    {
+        var res = await _caHolderRepository.GetListAsync(skip: skip, limit: limit);
+        var caHolders = _objectMapper.Map<List<CAHolderIndex>, List<CAHolderResultDto>>(res.Item2);
+        return new CAHolderReponse()
+        {
+            Total = res.Item1,
+            CaHolders = caHolders
+        };
     }
 }
