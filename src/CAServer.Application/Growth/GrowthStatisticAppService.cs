@@ -42,6 +42,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly HamsterOptions _hamsterOptions;
     private readonly ActivityDateRangeOptions _activityDateRangeOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
+    private const string RepairDataCache = "Hamster:DataRepairKey";
     private const string OverHamsterScoreLimitKey = "Portkey:OverHamsterScoreLimitKey";
     private const string ValidateAddressesKey = "Portkey:ValidateAddressesKey";
 
@@ -655,6 +656,54 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         return config != null ? config.ActivityConfig : new ActivityConfig();
     }
 
+
+    public async Task RepairHamsterDataAsync()
+    {
+        var repairList = await _growthProvider.GetInviteRepairIndexAsync();
+        if (repairList == null || repairList.Count == 0)
+        {
+            _logger.LogDebug("No data need to be repaired.");
+            return;
+        }
+
+        var count = 0;
+        foreach (var repair in repairList)
+        {
+            try
+            {
+                var inviteCodes = repairList.Select(t => t.ReferralCode).ToList();
+                //need to be added score
+                var growthInfos = await _growthProvider.GetGrowthInfosAsync(null, inviteCodes);
+                var growthInfoDic = growthInfos.Where(t => !t.InviteCode.IsNullOrEmpty())
+                    .ToDictionary(t => t.InviteCode, t => t.CaHash);
+                var caHolderInfo =
+                    await _activityProvider.GetCaHolderInfoAsync(new List<string>(),
+                        growthInfoDic[repair.ReferralCode]);
+                var referralRecord = new ReferralRecordIndex
+                {
+                    CaHash = repair.CaHash,
+                    ReferralCode = repair.ReferralCode,
+                    IsDirectlyInvite = 0,
+                    ReferralCaHash = growthInfoDic[repair.ReferralCode],
+                    ReferralDate = repair.RegisterTime,
+                    ReferralAddress = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress
+                };
+                await _growthProvider.AddReferralRecordAsync(referralRecord);
+                count++;
+            }
+            catch (Exception e)
+            {
+                _logger.LogDebug("Repair Data failed.Failed data is {data},reason is {msg}", repair.CaHash, e.Message);
+            }
+        }
+
+        if (count == repairList.Count)
+        {
+            var expire = TimeSpan.FromDays(360);
+            await _cacheProvider.Set(RepairDataCache, "Repair", expire);
+            _logger.LogDebug("All data has been repaired.");
+        }
+    }
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
