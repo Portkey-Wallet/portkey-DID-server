@@ -423,17 +423,25 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
             if (addresses.Count >= 100)
             {
-                for (var i = 0; i < addresses.Count; i += 50)
+                var index = 0;
+                var length = 50;
+                while (true)
                 {
-                    var queryList = addresses.GetRange(i, Math.Min(50, list.Count - i));
+                    var subList = addresses.Skip(index).Take(length).ToList();
+                    if (subList.Count <= 0)
+                    {
+                        break;
+                    }
+
                     var hamsterScoreList =
-                        await _growthProvider.GetHamsterScoreListAsync(queryList, startTime, endTime);
+                        await _growthProvider.GetHamsterScoreListAsync(subList, startTime, endTime);
                     var scoreResult = hamsterScoreList.GetScoreInfos
                         .Where(t => t.SumScore / 100000000 >= _hamsterOptions.MinAcornsScore).ToList();
                     if (!scoreResult.IsNullOrEmpty())
                     {
                         result.AddRange(scoreResult);
                     }
+                    index += length;
                 }
             }
             else
@@ -659,7 +667,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogDebug("No data need to be repaired.");
             return;
         }
-        _logger.LogDebug("Total Count is {count}",repairList.Count);
+
+        _logger.LogDebug("Total Count is {count}", repairList.Count);
 
         var count = 0;
         foreach (var repair in repairList)
