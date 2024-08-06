@@ -158,9 +158,9 @@ public class CAAccountController : CAServerController
         return await _guardianAppService.GetGuardianListByCreateTimeAsync(createTimeSeconds);
     }
     
-    [HttpGet("trigger/worker")]
-    public async Task TriggerZkWorker(string caHash)
+    [HttpPost("trigger/worker")]
+    public async Task TriggerZkWorker([FromBody] ZkEto caHashes)
     {
-        await _zkLoginProvider.TriggerZkLoginWorker(caHash);
+        await _zkLoginProvider.TriggerZkLoginWorker(caHashes);
     }
 }
