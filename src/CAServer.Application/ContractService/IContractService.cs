@@ -30,5 +30,5 @@ public interface IContractService
 
     Task<TransactionResultDto> TestCreateHolderInfoAsync(RegisterDto registerDto);
 
-    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput);
+    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest);
 }

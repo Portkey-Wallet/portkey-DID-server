@@ -431,9 +431,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
-    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianInput appendGuardianInput)
+    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
     {
-        var result = await SendTransactionToChainAsync(chainId, appendGuardianInput, MethodName.AppendGuardianPoseidonHash);
+        var result = await SendTransactionToChainAsync(chainId, appendGuardianRequest, MethodName.AppendGuardianPoseidonHash);
         DeactivateOnIdle();
         return result.TransactionResultDto;
     }
