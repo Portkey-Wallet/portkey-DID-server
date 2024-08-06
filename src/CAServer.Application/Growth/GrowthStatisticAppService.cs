@@ -659,6 +659,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogDebug("No data need to be repaired.");
             return;
         }
+        _logger.LogDebug("Total Count is {count}",repairList.Count);
 
         var count = 0;
         foreach (var repair in repairList)

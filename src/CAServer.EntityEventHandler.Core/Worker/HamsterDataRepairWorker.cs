@@ -22,7 +22,8 @@ public class HamsterDataRepairWorker : AsyncPeriodicBackgroundWorkerBase
         _logger = logger;
         _cacheProvider = cacheProvider;
         _growthStatisticAppService = growthStatisticAppService;
-        Timer.Period = WorkerConst.TimePeriod;
+        Timer.Period = WorkerConst.InitReferralTimePeriod;
+        Timer.RunOnStart = true;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
