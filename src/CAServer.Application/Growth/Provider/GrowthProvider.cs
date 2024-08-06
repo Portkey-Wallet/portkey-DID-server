@@ -34,24 +34,30 @@ public interface IGrowthProvider
 
     Task<bool> AddReferralRecordAsync(ReferralRecordIndex referralRecordIndex);
     Task<ScoreInfos> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime);
+
+    Task<List<InviteRepairIndex>> GetInviteRepairIndexAsync();
 }
 
 public class GrowthProvider : IGrowthProvider, ISingletonDependency
 {
     private readonly INESTRepository<GrowthIndex, string> _growthRepository;
     private readonly INESTRepository<ReferralRecordIndex, string> _referralRecordRepository;
+    private readonly INESTRepository<InviteRepairIndex, string> _inviteRepairRepository;
+
 
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly HamsterOptions _hamsterOptions;
 
     public GrowthProvider(INESTRepository<GrowthIndex, string> growthRepository, IGraphQLHelper graphQlHelper,
         INESTRepository<ReferralRecordIndex, string> referralRecordRepository,
-        IOptionsSnapshot<HamsterOptions> hamsterOptions)
+        IOptionsSnapshot<HamsterOptions> hamsterOptions,
+        INESTRepository<InviteRepairIndex, string> inviteRepairRepository)
     {
         _growthRepository = growthRepository;
         _graphQlHelper = graphQlHelper;
         _referralRecordRepository = referralRecordRepository;
         _hamsterOptions = hamsterOptions.Value;
+        _inviteRepairRepository = inviteRepairRepository;
     }
 
     public async Task<GrowthIndex> GetGrowthInfoByLinkCodeAsync(string shortLinkCode)
@@ -171,6 +177,14 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
 
         await _referralRecordRepository.AddAsync(referralRecordIndex);
         return true;
+    }
+
+    public async Task<List<InviteRepairIndex>> GetInviteRepairIndexAsync()
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<InviteRepairIndex>, QueryContainer>>();
+        QueryContainer Filter(QueryContainerDescriptor<InviteRepairIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (total, data) = await _inviteRepairRepository.GetListAsync(Filter, skip: 0, limit: Int16.MaxValue);
+        return data;
     }
 
     public async Task<ScoreInfos> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,

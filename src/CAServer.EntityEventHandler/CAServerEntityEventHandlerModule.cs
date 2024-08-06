@@ -197,6 +197,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ReferralRankWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitAddChatBotContactsWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterActivityWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterDataRepairWorker>());
         
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
