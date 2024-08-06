@@ -95,20 +95,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
     {
-        if (!CurrentUser.Id.HasValue)
-        {
-            throw new AbpAuthorizationException("Unauthorized.");
-        }
-
-        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        // if (!CurrentUser.Id.HasValue)
+        // {
+        //     throw new AbpAuthorizationException("Unauthorized.");
+        // }
+        //
+        // var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
         var hasNextPage = true;
         var details = GetActivityDetails(input.ActivityEnums);
 
         var referralRecordList = input.ActivityEnums switch
         {
-            ActivityEnums.Invitation => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash,
+            ActivityEnums.Invitation => await _growthProvider.GetReferralRecordListAsync(null, input.CaHash,
                 input.Skip, input.Limit, null, null, new List<int> { 0 }),
-            ActivityEnums.Hamster => await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, input.Skip,
+            ActivityEnums.Hamster => await _growthProvider.GetReferralRecordListAsync(null, input.CaHash, input.Skip,
                 input.Limit, Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                 new List<int> { 0, 1 }),
             _ => throw new UserFriendlyException("Invalidate Activity.")
