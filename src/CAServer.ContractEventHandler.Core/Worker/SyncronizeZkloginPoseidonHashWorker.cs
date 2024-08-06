@@ -73,14 +73,14 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         sw.Start();
         var totalHolders = await _contactProvider.GetAllCaHolderWithTotalAsync(0, 1);
         var total = totalHolders.Item1;
-        var times = total / 100 + 1;
+        var times = total / 50 + 1;
         for (var i = 0; i < times; i++)
         {
             var swLoop = new Stopwatch();
             swLoop.Start();
             try
             {
-                await SaveDataUnderChainAndHandlerOnChainData(i * 100, 100);
+                await SaveDataUnderChainAndHandlerOnChainData(i * 50, 50);
             }
             catch (Exception e)
             {
