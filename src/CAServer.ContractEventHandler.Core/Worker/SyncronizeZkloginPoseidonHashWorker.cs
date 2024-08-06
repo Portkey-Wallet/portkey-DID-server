@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.CAAccount;
-using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Common;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Guardian;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -18,6 +19,7 @@ using Portkey.Contracts.CA;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 using ChainOptions = CAServer.ContractEventHandler.Core.Application.ChainOptions;
+using IContractProvider = CAServer.ContractEventHandler.Core.Application.IContractProvider;
 
 
 namespace CAServer.ContractEventHandler.Core.Worker;
@@ -29,26 +31,39 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
     private readonly IGuardianUserProvider _guardianUserProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
+    private const string WorkerName = "SyncronizeZkloginPoseidonHashWorker";
     
     public SyncronizeZkloginPoseidonHashWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IPoseidonIdentifierHashProvider poseidonProvider,
         ILogger<SyncronizeZkloginPoseidonHashWorker> logger,
         IGuardianUserProvider guardianUserProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
-        IContractProvider contractProvider) : base(timer, serviceScopeFactory)
+        IContractProvider contractProvider,
+        IBackgroundWorkerRegistrarProvider registrarProvider,
+        IHostApplicationLifetime hostApplicationLifetime) : base(timer, serviceScopeFactory)
     {
         _poseidonProvider = poseidonProvider;
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
+        _registrarProvider = registrarProvider;
         
         Timer.Period = 1000 * 86400;
         Timer.RunOnStart = true;
+        hostApplicationLifetime.ApplicationStopped.Register(() =>
+        {
+            _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
+        });
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 86400, 86400))
+        {
+            return;
+        }
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
         var sw = new Stopwatch();
         sw.Start();
@@ -105,8 +120,13 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                     CaHash = Hash.LoadFromHex(caHash),
                     Guardians = { guardiansOfAppendInput }
                 };
-                contractRequest[getHolderInfoOutput.Key] ??= new RepeatedField<AppendGuardianInput>();
-                contractRequest[getHolderInfoOutput.Key].Add(appendGuardianInput);
+                if (!contractRequest.TryGetValue(getHolderInfoOutput.Key, out RepeatedField<AppendGuardianInput> value))
+                {
+                    value = new RepeatedField<AppendGuardianInput>();
+                    contractRequest[getHolderInfoOutput.Key] = value;
+                }
+
+                value.Add(appendGuardianInput);
             }
         }
         var tasks = contractRequest
