@@ -106,11 +106,8 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
 
     private async Task<List<ZkPoseidonDto>> SaveDataUnderChainAndHandlerOnChainData(int skip, int limit)
     {
-        var guardiansDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, string.Empty, skip, limit);
-        var caHashList = guardiansDto.CaHolderInfo.Select(ca => ca.CaHash).ToList();
-        // data from es, less than 8000
-        // var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(skip, limit);
-        // var caHashList = caHoldersByPage.Select(holder => holder.CaHash).ToList();
+        var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(skip, limit);
+        var caHashList = caHoldersByPage.Select(holder => holder.CaHash).ToList();
         var contractRequest = new Dictionary<string, RepeatedField<AppendGuardianInput>>();
         var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         //users' loop
@@ -121,7 +118,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             {
                 continue;
             }
-
+            
             var identifierHashList = ExtractGuardianIdentifierHashFromChains(chainIdToCaHolder.Values.ToList());
             var guardiansFromEs = await _guardianUserProvider.GetGuardianListAsync(identifierHashList);
             //chains' loop
@@ -251,14 +248,13 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
 
     private static List<string> ExtractGuardianIdentifierHashFromChains(List<GetHolderInfoOutput> caHolderResult)
     {
-        // var identifierHash = new List<string>(); //todo npe
-        // foreach (var getHolderInfoOutput in caHolderResult)
-        // {
-        //     identifierHash.AddRange(getHolderInfoOutput.GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList());
-        // }
-        //
-        // return identifierHash.Distinct().ToList();
-        return caHolderResult.IsNullOrEmpty() ? new List<string>() : caHolderResult[0].GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList();
+        var identifierHash = new List<string>();
+        foreach (var getHolderInfoOutput in caHolderResult)
+        {
+            identifierHash.AddRange(getHolderInfoOutput.GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList());
+        }
+
+        return identifierHash.Distinct().ToList();
     }
 
     private async Task<Dictionary<string, GetHolderInfoOutput>> ListHolderInfosFromContract(string caHash)

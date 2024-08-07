@@ -164,15 +164,9 @@ public class CAAccountController : CAServerController
         await _zkLoginProvider.TriggerZkLoginWorker(caHashes);
     }
     
-    [HttpGet("caholders/es")]
+    [HttpGet("caholders")]
     public async Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit)
     {
         return await _zkLoginProvider.GetAllCaHolderWithTotalAsync(skip, limit);
-    }
-
-    [HttpGet("caholders")]
-    public async Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit)
-    {
-        return await _zkLoginProvider.GetCaHolderInfoAsync(skip, limit);
     }
 }

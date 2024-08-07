@@ -45,7 +45,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         try
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
-            var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userId, requestDto.GuardianIdentifierHash, requestDto.Salt, requestDto.PoseidonIdentifierHash);
+            var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userId, requestDto.GuardianIdentifierHash, requestDto.Salt);
             var securityToken = await ValidateTokenAsync(requestDto.AccessToken);
             var userInfo = GetUserInfoFromToken(securityToken);
 
@@ -54,7 +54,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
 
             if (!hashInfo.Item3)
             {
-                await _guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
+                await _guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
             _logger.LogInformation("send Dtos.UserExtraInfo of Apple:{0}", JsonConvert.SerializeObject(userInfo));
             await _guardianUserProvider.AddUserInfoAsync(

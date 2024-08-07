@@ -22,6 +22,4 @@ public class ZkLoginInfoRequestDto
     
     //the timestamp of generating zk nonce, used to verify nonce and nonce payload
     public long Timestamp { get; set; }
-
-    public string PoseidonIdentifierHash { get; set; }
 }
