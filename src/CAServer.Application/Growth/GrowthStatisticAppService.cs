@@ -242,8 +242,14 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 await _activityProvider.GetCaHolderInfoAsync(new List<string>(), caHolder.CaHash);
             var currentCaHolder = await _activityProvider.GetCaHolderAsync(caHolder.CaHash);
             _logger.LogDebug("CurrentUser holder info is {info}", JsonConvert.SerializeObject(currentCaHolder));
-            var currentRank = await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
-                caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress);
+            var currentRank = input.ActivityEnums switch
+            {
+                ActivityEnums.Invitation => await _cacheProvider.GetRankAsync(CommonConstant.ReferralKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress),
+                ActivityEnums.Hamster => await _cacheProvider.GetRankAsync(CommonConstant.HamsterRankKey,
+                    caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress),
+                _ => throw new UserFriendlyException("Invalidate Activity.")
+            };
             if (currentRank == -1)
             {
                 currentUserReferralInfo.Rank = 0;
