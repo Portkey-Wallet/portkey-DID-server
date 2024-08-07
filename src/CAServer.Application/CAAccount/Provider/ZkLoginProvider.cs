@@ -187,7 +187,35 @@ public class ZkLoginProvider
     public async Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit)
     {
         var guardiansDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, string.Empty, skip, limit);
-        var guardiansAppDto = _objectMapper.Map<GuardiansDto, GuardiansAppDto>(guardiansDto);
-        return guardiansAppDto;
+        List<GuardianAppDto> caHolderInfo = new List<GuardianAppDto>();
+        foreach (var guardianDto in guardiansDto.CaHolderInfo)
+        {
+            List<GuardianInfoBase> guardians = new List<GuardianInfoBase>();
+            foreach (var guardianInfoBase in guardianDto.GuardianList.Guardians)
+            {
+                guardians.Add(new GuardianInfoBase()
+                {
+                    GuardianIdentifier = guardianInfoBase.GuardianIdentifier,
+                    IdentifierHash = guardianInfoBase.IdentifierHash,
+                    Salt = guardianInfoBase.Salt,
+                    Type = guardianInfoBase.Type,
+                    ManuallySupportForZk = guardianInfoBase.ManuallySupportForZk
+                });
+            }
+            caHolderInfo.Add(new GuardianAppDto()
+            {
+                CaHash = guardianDto.CaHash,
+                ChainId = guardianDto.ChainId,
+                CaAddress = guardianDto.CaAddress,
+                GuardianList = new GuardianBaseListDto()
+                {
+                    Guardians = guardians
+                }
+            });
+        }
+        return new GuardiansAppDto()
+        {
+            CaHolderInfo = caHolderInfo
+        };
     }
 }
