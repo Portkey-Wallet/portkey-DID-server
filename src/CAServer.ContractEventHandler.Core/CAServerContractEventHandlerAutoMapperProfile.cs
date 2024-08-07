@@ -34,6 +34,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
                         ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
+                PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo == null ? "" : e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
                 ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
                 {
                     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
@@ -92,6 +93,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                         VerificationDoc = g.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
                             ? string.Empty : g.VerificationInfo.VerificationDoc
                     },
+                    PoseidonIdentifierHash = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.PoseidonIdentifierHash,
                     ZkLoginInfo = new ZkLoginInfo
                     {
                         IdentifierHash = g.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()

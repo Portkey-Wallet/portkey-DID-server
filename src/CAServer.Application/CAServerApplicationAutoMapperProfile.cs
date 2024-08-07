@@ -160,6 +160,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
                         ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
+                PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo == null ? "" : e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
                 ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
                 {
                     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
@@ -359,6 +360,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
+                PoseidonIdentifierHash = e.GuardianInfo.PoseidonIdentifierHash,
                 ZkLoginInfo = new Portkey.Contracts.CA.ZkLoginInfo()
                 {
                     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
@@ -461,16 +463,16 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         Signature = g.VerificationInfo.Signature,
                         VerificationDoc = g.VerificationInfo.VerificationDoc
                     },
-                    ZkLoginInfo = g.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo()
+                    ZkLoginInfo = new ZkLoginInfo()
                     {
-                        IdentifierHash = g.ZkLoginInfo.IdentifierHash,
-                        Issuer = g.ZkLoginInfo.Issuer,
-                        Kid = g.ZkLoginInfo.Kid,
-                        Nonce = g.ZkLoginInfo.Nonce,
-                        ZkProof = g.ZkLoginInfo.ZkProof,
-                        Salt = g.ZkLoginInfo.Salt,
-                        CircuitId = g.ZkLoginInfo.CircuitId,
-                        PoseidonIdentifierHash = g.PoseidonIdentifierHash,
+                        IdentifierHash = g.ZkLoginInfo == null ? Hash.Empty : g.ZkLoginInfo.IdentifierHash,
+                        Issuer = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Issuer,
+                        Kid = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Kid,
+                        Nonce = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Nonce,
+                        ZkProof = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.ZkProof,
+                        Salt = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Salt,
+                        CircuitId = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.CircuitId,
+                        PoseidonIdentifierHash = g.ZkLoginInfo == null ? "" : g.PoseidonIdentifierHash,
                         IdentifierHashType = g.PoseidonIdentifierHash.IsNullOrEmpty() 
                             ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
                         NoncePayload = new NoncePayload()
