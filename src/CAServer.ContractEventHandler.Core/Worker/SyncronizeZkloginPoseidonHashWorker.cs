@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.CAAccount;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Common;
 using CAServer.Contacts.Provider;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -74,13 +75,18 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         var totalHolders = await _contactProvider.GetAllCaHolderWithTotalAsync(0, 1);
         var total = totalHolders.Item1;
         var times = total / 30 + 1;
+        var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         for (var i = 0; i < times; i++)
         {
             var swLoop = new Stopwatch();
             swLoop.Start();
             try
             {
-                await SaveDataUnderChainAndHandlerOnChainData(i * 30, 30);
+                var singleLoopResult = await SaveDataUnderChainAndHandlerOnChainData(i * 30, 30);
+                if (!singleLoopResult.IsNullOrEmpty())
+                {
+                    saveErrorPoseidonDtos.AddRange(singleLoopResult);   
+                }
             }
             catch (Exception e)
             {
@@ -89,15 +95,21 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             swLoop.Stop();
             _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker loop:{0} cost:{1}ms", i, swLoop.ElapsedMilliseconds);
         }
+
+        if (!saveErrorPoseidonDtos.IsNullOrEmpty())
+        {
+            _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker save error guardians:{0}", JsonConvert.SerializeObject(saveErrorPoseidonDtos));
+        }
         sw.Stop();
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ending... cost:{0}ms", sw.ElapsedMilliseconds);
     }
 
-    private async Task SaveDataUnderChainAndHandlerOnChainData(int skip, int limit)
+    private async Task<List<ZkPoseidonDto>> SaveDataUnderChainAndHandlerOnChainData(int skip, int limit)
     {
         var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(skip, limit);
         var caHashList = caHoldersByPage.Select(holder => holder.CaHash).ToList();
         var contractRequest = new Dictionary<string, RepeatedField<AppendGuardianInput>>();
+        var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         //users' loop
         foreach (var caHash in caHashList)
         {
@@ -124,7 +136,20 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                     var poseidonHash = _poseidonProvider.GenerateIdentifierHash(guardianFromEs.Identifier, ByteArrayHelper.HexStringToByteArray(guardianFromEs.Salt));
                     _logger.LogInformation("identifier:{0} (poseidon)identifierHash:{1} salt:{2}", guardianFromEs.Identifier, poseidonHash, (guardianFromEs.Salt));
                     //save poseidon hash in mongodb and es
-                    await _guardianUserProvider.AppendGuardianPoseidonHashAsync(guardianFromEs.Identifier, poseidonHash);
+                    var mongoEsAppendResult = await _guardianUserProvider.AppendGuardianPoseidonHashAsync(guardianFromEs.Identifier, poseidonHash);
+                    if (!mongoEsAppendResult)
+                    {
+                        saveErrorPoseidonDtos.Add(new ZkPoseidonDto()
+                        {
+                            ChainId = getHolderInfoOutput.Key,
+                            CaHash = caHash,
+                            GuardianIdentifier = guardianFromEs.Identifier,
+                            Salt = guardianFromEs.Salt,
+                            PoseidonHash = poseidonHash,
+                            ErrorMessage = "append to mongo and es error"
+                        });
+                        continue;
+                    }
                     guardiansOfAppendInput.Add(new PoseidonGuardian
                     {
                         Type = guardian.Type,
@@ -148,11 +173,12 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         }
 
         var tasks = contractRequest
-            .Select(r => ContractInvocationTask(r.Key, r.Value)).ToList();
+            .Select(r => ContractInvocationTask(r.Key, r.Value, saveErrorPoseidonDtos)).ToList();
         await Task.WhenAll(tasks);
+        return saveErrorPoseidonDtos;
     }
 
-    private async Task ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs)
+    private async Task ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs, List<ZkPoseidonDto> saveErrorPoseidonDtos)
     {
         var sw = new Stopwatch();
         sw.Start();
@@ -164,6 +190,18 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         if (resultCreateCaHolder.Status != TransactionState.Mined)
         {
             _logger.LogError("SyncronizeZkloginPoseidonHashWorker invoke contract error resultCreateCaHolder:{0}", JsonConvert.SerializeObject(resultCreateCaHolder));
+            foreach (var appendGuardianInput in inputs)
+            {
+                saveErrorPoseidonDtos.AddRange(appendGuardianInput.Guardians.Select(poseidonGuardian => new ZkPoseidonDto()
+                {
+                    ChainId = chainId,
+                    CaHash = appendGuardianInput.CaHash.ToHex(),
+                    IdentifierHash = poseidonGuardian.IdentifierHash.ToHex(),
+                    GuardianType = poseidonGuardian.Type,
+                    PoseidonHash = poseidonGuardian.PoseidonHash,
+                    ErrorMessage = "append to contract error"
+                }));
+            }
         }
         // else
         // {
