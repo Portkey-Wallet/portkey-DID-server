@@ -153,12 +153,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             registerDto.GuardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(input.ZkLoginInfo.Jwt, input.ZkLoginInfo.Nonce, input.ZkLoginInfo.ZkProof,
                 input.ZkLoginInfo.Salt, input.ZkLoginInfo.CircuitId,
-                input.Manager, input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Timestamp, input.ZkLoginInfo.PoseidonIdentifierHash);
+                input.Manager, input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Timestamp);
         }
     }
 
-    private ZkLoginInfoDto GetZkJwtAuthInfo(string jwt, string nonce, string zkProof, string salt,
-        string circuitId, string manager, string identifierHash, long timestamp, string poseidonIdentifierHash)
+    private ZkLoginInfoDto GetZkJwtAuthInfo(string jwt, string nonce, string zkProof, string salt, string circuitId, string manager, string identifierHash, long timestamp)
     {
         var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwt);
         InternalRapidSnarkProofRepr proofRepr = JsonConvert.DeserializeObject<InternalRapidSnarkProofRepr>(zkProof);
@@ -184,8 +183,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                         ManagerAddress = manager,
                         Timestamp = timestamp
                     }
-                },
-                PoseidonIdentifierHash = poseidonIdentifierHash
+                }
             };
     }
 
@@ -213,8 +211,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                     ManagerAddress = "",
                     Timestamp = 0
                 }
-            },
-            PoseidonIdentifierHash = ""
+            }
         };
     }
 
@@ -293,8 +290,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             if (recoveryGuardian.ZkLoginInfo != null)
             {
                 guardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt, recoveryGuardian.ZkLoginInfo.Nonce,
-                    recoveryGuardian.ZkLoginInfo.ZkProof, recoveryGuardian.ZkLoginInfo.Salt, recoveryGuardian.ZkLoginInfo.CircuitId,
-                    input.Manager, recoveryGuardian.ZkLoginInfo.IdentifierHash, recoveryGuardian.ZkLoginInfo.Timestamp, recoveryGuardian.ZkLoginInfo.PoseidonIdentifierHash);
+                    recoveryGuardian.ZkLoginInfo.ZkProof, recoveryGuardian.ZkLoginInfo.Salt,
+                    recoveryGuardian.ZkLoginInfo.CircuitId, input.Manager, recoveryGuardian.ZkLoginInfo.IdentifierHash, recoveryGuardian.ZkLoginInfo.Timestamp);
             } else
             {
                 guardianInfo.ZkLoginInfo = GetDefaultZkJwtAuthInfo();

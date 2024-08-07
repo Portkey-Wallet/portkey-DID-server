@@ -33,10 +33,10 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         try
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
-            var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userInfo.Id, requestDto.GuardianIdentifierHash, requestDto.Salt, requestDto.PoseidonIdentifierHash);
+            var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userInfo.Id, requestDto.GuardianIdentifierHash, requestDto.Salt);
             if (!hashInfo.Item3)
             {
-                await _guardianUserProvider.AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
+                await _guardianUserProvider.AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
             }
             await _guardianUserProvider.AddUserInfoAsync(ObjectMapper.Map<GoogleUserInfoDto, CAServer.Verifier.Dtos.UserExtraInfo>(userInfo));
             return hashInfo.Item1;
