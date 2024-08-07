@@ -155,7 +155,7 @@ public class GuardianUserProvider
         }
         if (!existedGuardian.Data.IdentifierPoseidonHash.IsNullOrEmpty() && identifierPoseidonHash.Equals(existedGuardian.Data.IdentifierPoseidonHash))
         {
-            return false;
+            return true;
         }
         var guardianGrainDto =
             await guardianGrain.AppendGuardianPoseidonHashAsync(guardianIdentifier, identifierPoseidonHash);

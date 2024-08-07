@@ -118,7 +118,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             {
                 continue;
             }
-            
+
             var identifierHashList = ExtractGuardianIdentifierHashFromChains(chainIdToCaHolder.Values.ToList());
             var guardiansFromEs = await _guardianUserProvider.GetGuardianListAsync(identifierHashList);
             //chains' loop
@@ -248,13 +248,14 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
 
     private static List<string> ExtractGuardianIdentifierHashFromChains(List<GetHolderInfoOutput> caHolderResult)
     {
-        var identifierHash = new List<string>();
-        foreach (var getHolderInfoOutput in caHolderResult)
-        {
-            identifierHash.AddRange(getHolderInfoOutput.GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList());
-        }
-
-        return identifierHash.Distinct().ToList();
+        // var identifierHash = new List<string>(); //todo npe
+        // foreach (var getHolderInfoOutput in caHolderResult)
+        // {
+        //     identifierHash.AddRange(getHolderInfoOutput.GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList());
+        // }
+        //
+        // return identifierHash.Distinct().ToList();
+        return caHolderResult.IsNullOrEmpty() ? new List<string>() : caHolderResult[0].GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList();
     }
 
     private async Task<Dictionary<string, GetHolderInfoOutput>> ListHolderInfosFromContract(string caHash)
