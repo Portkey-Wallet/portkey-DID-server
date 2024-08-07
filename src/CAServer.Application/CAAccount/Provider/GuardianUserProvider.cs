@@ -151,7 +151,7 @@ public class GuardianUserProvider
         if (!existedGuardian.Success || existedGuardian.Data == null)
         {
             _logger.LogError("get guardian from mongodb error, guardianIdentifier:{0},identifierPoseidonHash:{1}", guardianIdentifier, identifierPoseidonHash);
-            throw new UserFriendlyException("get guardian from mongodb error");
+            return false;
         }
         if (!existedGuardian.Data.IdentifierPoseidonHash.IsNullOrEmpty() && identifierPoseidonHash.Equals(existedGuardian.Data.IdentifierPoseidonHash))
         {

@@ -202,8 +202,8 @@ public class ContractProvider : IContractProvider
             return new GetHolderInfoOutput();
         }
 
-        _logger.LogDebug(MethodName.GetHolderInfo + " result: {output}",
-            JsonConvert.SerializeObject(output.ToString(), Formatting.Indented));
+        // _logger.LogDebug(MethodName.GetHolderInfo + " result: {output}",
+        //     JsonConvert.SerializeObject(output.ToString(), Formatting.Indented));
 
         return output;
     }
