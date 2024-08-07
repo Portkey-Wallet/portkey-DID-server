@@ -16,6 +16,8 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
 
     public string GuardianIdentifierHash { get; set; }
     public string Salt { get; set; }
+    
+    public string PoseidonIdentifierHash { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
