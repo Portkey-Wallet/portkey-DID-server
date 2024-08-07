@@ -73,18 +73,18 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         sw.Start();
         var totalHolders = await _contactProvider.GetAllCaHolderWithTotalAsync(0, 1);
         var total = totalHolders.Item1;
-        var times = total / 10 + 1;
+        var times = total / 30 + 1;
         for (var i = 0; i < times; i++)
         {
             var swLoop = new Stopwatch();
             swLoop.Start();
             try
             {
-                await SaveDataUnderChainAndHandlerOnChainData(i * 10, 10);
+                await SaveDataUnderChainAndHandlerOnChainData(i * 30, 30);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:10", i * 100);
+                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:30", i * 100);
             }
             swLoop.Stop();
             _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker loop:{0} cost:{1}ms", i, swLoop.ElapsedMilliseconds);
