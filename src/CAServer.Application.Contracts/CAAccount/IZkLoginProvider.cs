@@ -23,4 +23,6 @@ public interface IZkLoginProvider
     public Task TriggerZkLoginWorker(ZkEto caHashes);
     
     Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit);
+
+    Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit);
 }

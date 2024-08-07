@@ -14,6 +14,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -34,41 +35,62 @@ public class GuardianUserProvider
     private readonly IObjectMapper _objectMapper;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
+    private readonly IPoseidonIdentifierHashProvider _poseidonProvider;
 
     public GuardianUserProvider(
         ILogger<GuardianUserProvider> logger,
         IClusterClient clusterClient,
         IObjectMapper objectMapper,
         IDistributedEventBus distributedEventBus,
-        INESTRepository<GuardianIndex, string> guardianRepository)
+        INESTRepository<GuardianIndex, string> guardianRepository,
+        IPoseidonIdentifierHashProvider poseidonProvider)
     {
         _logger = logger;
         _clusterClient = clusterClient;
         _objectMapper = objectMapper;
         _distributedEventBus = distributedEventBus;
         _guardianRepository = guardianRepository;
+        _poseidonProvider = poseidonProvider;
     }
 
     public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier,
-        string guardianIdentifierHash, string guardianSalt)
+        string guardianIdentifierHash, string guardianSalt, string poseidonHash)
     {
         var guardianGrainResult = GetGuardian(guardianIdentifier);
 
         _logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
             JsonConvert.SerializeObject(guardianGrainResult));
 
-        if (guardianGrainResult.Success)
+        if (guardianGrainResult.Success && guardianGrainResult.Data != null)
         {
-            return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt,
-                true));
+            if (!guardianIdentifierHash.IsNullOrEmpty() && !guardianIdentifierHash.Equals(guardianGrainResult.Data.IdentifierHash)
+                || !guardianSalt.IsNullOrEmpty() && !guardianSalt.Equals(guardianGrainResult.Data.Salt))
+            {
+                throw new UserFriendlyException("the identifierHash and salt are different from db");
+            }
+            if (!guardianGrainResult.Data.IdentifierPoseidonHash.IsNullOrEmpty()
+                && guardianGrainResult.Data.IdentifierPoseidonHash.Equals(poseidonHash)
+                || poseidonHash.IsNullOrEmpty())
+            {
+                return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, true));
+            }
+            return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, false));
         }
 
         var salt = guardianSalt.IsNullOrEmpty()
             ? GetSalt()
             : ByteArrayHelper.HexStringToByteArray(guardianSalt);
-        var identifierHash = guardianIdentifierHash.IsNullOrEmpty()
-            ? GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt)
-            : Hash.LoadFromHex(guardianIdentifierHash);
+        Hash identifierHash;
+        if (poseidonHash.IsNullOrEmpty())
+        {
+            identifierHash = guardianIdentifierHash.IsNullOrEmpty()
+                ? GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt)
+                : Hash.LoadFromHex(guardianIdentifierHash);
+        }
+        else
+        {
+            identifierHash = HashHelper.ComputeFrom(poseidonHash);
+        }
 
         return Task.FromResult(Tuple.Create(identifierHash.ToHex(), salt.ToHex(), false));
     }
@@ -102,11 +124,15 @@ public class GuardianUserProvider
         return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
 
-    public async Task AddGuardianAsync(string guardianIdentifier, string salt, string identifierHash)
+    public async Task AddGuardianAsync(string guardianIdentifier, string salt, string identifierHash, string poseidonHash)
     {
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
         var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
-        var guardianGrainDto = await guardianGrain.AddGuardianAsync(guardianIdentifier, salt, identifierHash);
+        if (poseidonHash.IsNullOrEmpty())
+        {
+            poseidonHash = _poseidonProvider.GenerateIdentifierHash(guardianIdentifier, ByteArrayHelper.HexStringToByteArray(salt));
+        }
+        var guardianGrainDto = await guardianGrain.AddGuardianWithPoseidonHashAsync(guardianIdentifier, salt, identifierHash, poseidonHash);
 
         _logger.LogInformation("AddGuardianAsync result: {result}", JsonConvert.SerializeObject(guardianGrainDto));
         if (guardianGrainDto.Success)

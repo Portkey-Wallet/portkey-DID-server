@@ -36,4 +36,6 @@ public class ZkLoginInfoDto
 	
 	// the payload that is used to calculate the nonce, where nonce = hash(serialize(nonce_payload))
 	public NoncePayload NoncePayload { get; set;}
+	
+	public string PoseidonIdentifierHash { get; set; }
 }

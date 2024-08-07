@@ -5,11 +5,13 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
+using CAServer.Contacts.Provider;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
@@ -35,6 +37,7 @@ public class ZkLoginProvider
     private readonly IAppleZkProvider _appleZkProvider;
     private readonly IFacebookZkProvider _facebookZkProvider;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
+    private readonly IContactProvider _contactProvider;
     
     public ZkLoginProvider(
         IClusterClient clusterClient,
@@ -44,7 +47,8 @@ public class ZkLoginProvider
         IGoogleZkProvider googleZkProvider,
         IAppleZkProvider appleZkProvider,
         IFacebookZkProvider facebookZkProvider,
-        INESTRepository<CAHolderIndex, Guid> caHolderRepository)
+        INESTRepository<CAHolderIndex, Guid> caHolderRepository,
+        IContactProvider contactProvider)
     {
         _clusterClient = clusterClient;
         _logger = logger;
@@ -54,6 +58,7 @@ public class ZkLoginProvider
         _appleZkProvider = appleZkProvider;
         _facebookZkProvider = facebookZkProvider;
         _caHolderRepository = caHolderRepository;
+        _contactProvider = contactProvider;
     }
     public bool CanSupportZk(GuardianIdentifierType type)
     {
@@ -119,7 +124,6 @@ public class ZkLoginProvider
     
     public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
-        var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
         string identifierHash = null;
         if (GuardianIdentifierType.Google.Equals(requestDto.Type))
         {
@@ -178,5 +182,12 @@ public class ZkLoginProvider
             Total = res.Item1,
             CaHolders = caHolders
         };
+    }
+
+    public async Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit)
+    {
+        var guardiansDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, string.Empty, skip, limit);
+        var guardiansAppDto = _objectMapper.Map<GuardiansDto, GuardiansAppDto>(guardiansDto);
+        return guardiansAppDto;
     }
 }
