@@ -45,7 +45,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         try
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
-            var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userId, requestDto.GuardianIdentifierHash, requestDto.Salt, requestDto.PoseidonIdentifierHash);
+            var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userId, requestDto.Salt, requestDto.PoseidonIdentifierHash);
             var securityToken = await ValidateTokenAsync(requestDto.AccessToken);
             var userInfo = GetUserInfoFromToken(securityToken);
 

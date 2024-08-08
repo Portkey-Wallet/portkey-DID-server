@@ -53,8 +53,7 @@ public class GuardianUserProvider
         _poseidonProvider = poseidonProvider;
     }
 
-    public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier,
-        string guardianIdentifierHash, string guardianSalt, string poseidonHash)
+    public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier, string guardianSalt, string poseidonHash)
     {
         var guardianGrainResult = GetGuardian(guardianIdentifier);
 
@@ -63,8 +62,7 @@ public class GuardianUserProvider
 
         if (guardianGrainResult.Success && guardianGrainResult.Data != null)
         {
-            if (!guardianIdentifierHash.IsNullOrEmpty() && !guardianIdentifierHash.Equals(guardianGrainResult.Data.IdentifierHash)
-                || !guardianSalt.IsNullOrEmpty() && !guardianSalt.Equals(guardianGrainResult.Data.Salt))
+            if (!guardianSalt.IsNullOrEmpty() && !guardianSalt.Equals(guardianGrainResult.Data.Salt))
             {
                 throw new UserFriendlyException("the identifierHash and salt are different from db");
             }
@@ -77,21 +75,8 @@ public class GuardianUserProvider
             return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, false));
         }
 
-        var salt = guardianSalt.IsNullOrEmpty()
-            ? GetSalt()
-            : ByteArrayHelper.HexStringToByteArray(guardianSalt);
-        Hash identifierHash;
-        if (poseidonHash.IsNullOrEmpty())
-        {
-            identifierHash = guardianIdentifierHash.IsNullOrEmpty()
-                ? GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt)
-                : Hash.LoadFromHex(guardianIdentifierHash);
-        }
-        else
-        {
-            identifierHash = HashHelper.ComputeFrom(poseidonHash);
-        }
-
+        var salt = ByteArrayHelper.HexStringToByteArray(guardianSalt);
+        Hash identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt);
         return Task.FromResult(Tuple.Create(identifierHash.ToHex(), salt.ToHex(), false));
     }
 
@@ -151,7 +136,7 @@ public class GuardianUserProvider
             GrainIdHelper.GenerateGrainId("UserExtraInfo", userExtraInfo.Id);
         var userExtraInfoGrain = _clusterClient.GetGrain<IUserExtraInfoGrain>(userExtraInfoGrainId);
         var userInfoResultDto = await userExtraInfoGrain.GetAsync();
-        if (userInfoResultDto != null && userInfoResultDto.Success)
+        if (userInfoResultDto is { Success: true })
         {
             return;
         }
