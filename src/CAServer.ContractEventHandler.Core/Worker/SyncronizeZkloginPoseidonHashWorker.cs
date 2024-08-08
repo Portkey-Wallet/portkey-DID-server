@@ -65,6 +65,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        //todo put 86400 in apollo config
         if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 86400, 86400))
         {
             return;
@@ -72,9 +73,8 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
         var sw = new Stopwatch();
         sw.Start();
-        var totalHolders = await _contactProvider.GetAllCaHolderWithTotalAsync(0, 1);
-        var total = totalHolders.Item1;
-        var times = total / 30 + 1;
+        var total = 14600; //todo put the param in apollo config
+        var times = total / 30 + 1; //todo put 30 size in apollo config
         var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         for (var i = 0; i < times; i++)
         {
@@ -83,9 +83,9 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             try
             {
                 var singleLoopResult = await SaveDataUnderChainAndHandlerOnChainData(i * 30, 30);
-                if (!singleLoopResult.IsNullOrEmpty())
+                if (singleLoopResult.Item1 && !singleLoopResult.Item2.IsNullOrEmpty())
                 {
-                    saveErrorPoseidonDtos.AddRange(singleLoopResult);   
+                    saveErrorPoseidonDtos.AddRange(singleLoopResult.Item2);   
                 }
             }
             catch (Exception e)
@@ -104,15 +104,20 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ending... cost:{0}ms", sw.ElapsedMilliseconds);
     }
 
-    private async Task<List<ZkPoseidonDto>> SaveDataUnderChainAndHandlerOnChainData(int skip, int limit)
+    private async Task<(bool, List<ZkPoseidonDto>)> SaveDataUnderChainAndHandlerOnChainData(int skip, int limit)
     {
+        var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         var guardiansDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, string.Empty, skip, limit);
+        if (guardiansDto == null || guardiansDto.CaHolderInfo.IsNullOrEmpty())
+        {
+            _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished last loop skip:{0} limit:{1}", skip, limit);
+            return new ValueTuple<bool, List<ZkPoseidonDto>>(false, saveErrorPoseidonDtos);
+        }
         var caHashList = guardiansDto.CaHolderInfo.Select(ca => ca.CaHash).ToList();
         // data from es, less than 8000
         // var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(skip, limit);
         // var caHashList = caHoldersByPage.Select(holder => holder.CaHash).ToList();
         var contractRequest = new Dictionary<string, RepeatedField<AppendGuardianInput>>();
-        var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         //users' loop
         foreach (var caHash in caHashList)
         {
@@ -178,7 +183,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         var tasks = contractRequest
             .Select(r => ContractInvocationTask(r.Key, r.Value, saveErrorPoseidonDtos)).ToList();
         await Task.WhenAll(tasks);
-        return saveErrorPoseidonDtos;
+        return new ValueTuple<bool, List<ZkPoseidonDto>>(true, saveErrorPoseidonDtos);
     }
 
     private async Task ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs, List<ZkPoseidonDto> saveErrorPoseidonDtos)

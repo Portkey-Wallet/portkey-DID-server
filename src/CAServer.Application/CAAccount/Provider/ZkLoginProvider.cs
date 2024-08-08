@@ -187,31 +187,39 @@ public class ZkLoginProvider
     public async Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit)
     {
         var guardiansDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, string.Empty, skip, limit);
+        _logger.LogInformation("GetCaHolderInfo skip:{0} limit:{1} guardiansDto:{2}", skip, limit, JsonConvert.SerializeObject(guardiansDto));
         List<GuardianAppDto> caHolderInfo = new List<GuardianAppDto>();
         foreach (var guardianDto in guardiansDto.CaHolderInfo)
         {
             List<GuardianInfoBase> guardians = new List<GuardianInfoBase>();
-            foreach (var guardianInfoBase in guardianDto.GuardianList.Guardians)
+            if (guardianDto != null && guardianDto.GuardianList != null && !guardianDto.GuardianList.Guardians.IsNullOrEmpty())
             {
-                guardians.Add(new GuardianInfoBase()
+                foreach (var guardianInfoBase in guardianDto.GuardianList.Guardians)
                 {
-                    GuardianIdentifier = guardianInfoBase.GuardianIdentifier,
-                    IdentifierHash = guardianInfoBase.IdentifierHash,
-                    Salt = guardianInfoBase.Salt,
-                    Type = guardianInfoBase.Type,
-                    ManuallySupportForZk = guardianInfoBase.ManuallySupportForZk
+                    guardians.Add(new GuardianInfoBase()
+                    {
+                        GuardianIdentifier = guardianInfoBase.GuardianIdentifier,
+                        IdentifierHash = guardianInfoBase.IdentifierHash,
+                        Salt = guardianInfoBase.Salt,
+                        Type = guardianInfoBase.Type,
+                        ManuallySupportForZk = guardianInfoBase.ManuallySupportForZk
+                    });
+                }
+            }
+
+            if (guardianDto != null)
+            {
+                caHolderInfo.Add(new GuardianAppDto()
+                {
+                    CaHash = guardianDto.CaHash,
+                    ChainId = guardianDto.ChainId,
+                    CaAddress = guardianDto.CaAddress,
+                    GuardianList = new GuardianBaseListDto()
+                    {
+                        Guardians = guardians
+                    }
                 });
             }
-            caHolderInfo.Add(new GuardianAppDto()
-            {
-                CaHash = guardianDto.CaHash,
-                ChainId = guardianDto.ChainId,
-                CaAddress = guardianDto.CaAddress,
-                GuardianList = new GuardianBaseListDto()
-                {
-                    Guardians = guardians
-                }
-            });
         }
         return new GuardiansAppDto()
         {
