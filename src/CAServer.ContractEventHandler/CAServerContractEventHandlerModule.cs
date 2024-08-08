@@ -141,6 +141,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
         context.AddBackgroundWorkerAsync<ChainHeightWorker>();
         
+        // context.AddBackgroundWorkerAsync<SyncronizeZkloginPoseidonHashWorker>();
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 

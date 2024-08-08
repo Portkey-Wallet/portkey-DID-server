@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using AElf.Client.Dto;
 using CAServer.CAAccount;
+using CAServer.Dtos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
@@ -26,4 +27,8 @@ public interface IContractService
         string redPackageContractAddress, string methodName);
 
     Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto);
+
+    Task<TransactionResultDto> TestCreateHolderInfoAsync(RegisterDto registerDto);
+
+    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest);
 }

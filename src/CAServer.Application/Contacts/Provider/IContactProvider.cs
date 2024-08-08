@@ -41,6 +41,7 @@ public interface IContactProvider
     Task<List<ContactIndex>> GetAllContactsAsync(int skip, int limit);
 
     Task<List<CAHolderIndex>> GetAllCaHolderAsync(int skip, int limit);
+    Task<Tuple<long, List<CAHolderIndex>>> GetAllCaHolderWithTotalAsync(int skip, int limit);
     Task<ContactIndex> GetContactByIdAsync(Guid id);
     Task<ContactIndex> GetContactByPortKeyIdAsync(Guid userId, string toString);
 }
@@ -322,6 +323,11 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     {
         var res = await _caHolderRepository.GetListAsync(skip: skip, limit: limit);
         return res.Item2;
+    }
+    
+    public async Task<Tuple<long, List<CAHolderIndex>>> GetAllCaHolderWithTotalAsync(int skip, int limit)
+    {
+        return await _caHolderRepository.GetListAsync(skip: skip, limit: limit);
     }
 
     public async Task<ContactIndex> GetContactByIdAsync(Guid id)

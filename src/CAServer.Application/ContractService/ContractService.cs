@@ -1,12 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
+using AutoMapper.Internal.Mappers;
 using CAServer.CAAccount;
 using CAServer.Commons;
+using CAServer.Dtos;
+using CAServer.Etos;
+using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
@@ -20,8 +25,9 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
-using Volo.Abp.ObjectMapping;
+using Volo.Abp.EventBus.Distributed;
 using ChainOptions = CAServer.Options.ChainOptions;
+using IObjectMapper = Volo.Abp.ObjectMapping.IObjectMapper;
 
 namespace CAServer.ContractService;
 
@@ -33,10 +39,11 @@ public class ContractService : IContractService, ISingletonDependency
     private readonly ILogger<ContractService> _logger;
     private readonly ISignatureProvider _signatureProvider;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly IDistributedEventBus _distributedEventBus;
 
     public ContractService(IOptions<ChainOptions> chainOptions, IOptions<ContractServiceOptions> contractGrainOptions,
         IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractService> logger,
-        IIndicatorScope indicatorScope)
+        IIndicatorScope indicatorScope, IDistributedEventBus distributedEventBus)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -44,6 +51,7 @@ public class ContractService : IContractService, ISingletonDependency
         _contractServiceOptions = contractGrainOptions.Value;
         _chainOptions = chainOptions.Value;
         _signatureProvider = signatureProvider;
+        _distributedEventBus = distributedEventBus;
     }
 
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
@@ -61,7 +69,8 @@ public class ContractService : IContractService, ISingletonDependency
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
             _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
-
+            _logger.LogInformation("SendTransactionToChain ownAddress:{0} contractAddress:{1} methodName:{2} param:{3}",
+                ownAddress, chainInfo.ContractAddress, methodName, JsonConvert.SerializeObject(param));
             var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.GenerateTransactionAsync.ToString());
 
@@ -172,6 +181,27 @@ public class ContractService : IContractService, ISingletonDependency
             _logger.LogError(e, "ForwardTransactionToChainAsync error,chain:{chain}", chainId);
             return new TransactionInfoDto();
         }
+    }
+    
+    public async Task<TransactionResultDto> TestCreateHolderInfoAsync(RegisterDto registerDto)
+    {
+        var registerGrainDto = _objectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto);
+        _logger.LogInformation("........TestCreateHolderInfoAsync RegisterGrainDto:{0}", JsonConvert.SerializeObject(registerGrainDto));
+        var registerCreateEto = _objectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(registerGrainDto);
+        if (registerGrainDto.GuardianInfo.ZkLoginInfo != null)
+        {
+            registerCreateEto.GuardianInfo.ZkLoginInfo = registerGrainDto.GuardianInfo.ZkLoginInfo;
+        }
+        _logger.LogInformation("........TestCreateHolderInfoAsync AccountRegisterCreateEto:{0}", JsonConvert.SerializeObject(registerCreateEto));
+        await _distributedEventBus.PublishAsync(registerCreateEto);
+        // CreateHolderDto createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(registerCreateEto);
+        // _logger.LogInformation("........TestCreateHolderInfoAsync CreateHolderDto:{0}", JsonConvert.SerializeObject(createHolderDto));
+        // var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
+        // _logger.LogInformation("........TestCreateHolderInfoAsync param:{0}", JsonConvert.SerializeObject(param));
+        // var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
+        // _logger.LogInformation("........TestCreateHolderInfoAsync result:{0}", JsonConvert.SerializeObject(result));
+        // return result.TransactionResultDto;
+        return new TransactionResultDto();
     }
 
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
@@ -435,6 +465,12 @@ public class ContractService : IContractService, ISingletonDependency
             _objectMapper.Map<AssignProjectDelegateeDto, AssignProjectDelegateeInput>(assignProjectDelegateeDto);
         var result = await SendTransactionToChainAsync(assignProjectDelegateeDto.ChainId, param,
             MethodName.AssignProjectDelegatee);
+        return result.TransactionResultDto;
+    }
+    
+    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
+    {
+        var result = await SendTransactionToChainAsync(chainId, appendGuardianRequest, MethodName.AppendGuardianPoseidonHash);
         return result.TransactionResultDto;
     }
 }

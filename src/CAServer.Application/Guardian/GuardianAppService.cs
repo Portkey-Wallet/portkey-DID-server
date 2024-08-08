@@ -4,9 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
+using AElf.Types;
 using CAServer.AppleAuth.Provider;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
@@ -16,6 +19,7 @@ using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -38,7 +42,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly AppleTransferOptions _appleTransferOptions;
     private readonly StopRegisterOptions _stopRegisterOptions;
     private readonly INicknameProvider _nicknameProvider;
-    
+    private readonly IZkLoginProvider _zkLoginProvider;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
@@ -46,7 +50,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
         IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
-        INicknameProvider nicknameProvider)
+        INicknameProvider nicknameProvider,
+        IZkLoginProvider zkLoginProvider)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -58,6 +63,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _appleTransferOptions = appleTransferOptions.Value;
         _stopRegisterOptions = stopRegisterOptions.Value; 
         _nicknameProvider = nicknameProvider;
+        _zkLoginProvider = zkLoginProvider;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -92,9 +98,38 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var identifiers = hashDic?.Values.ToList();
 
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
-
+        _logger.LogInformation(".....GetUserExtraInfoAsync userExtraInfos:{0}", JsonConvert.SerializeObject(userExtraInfos));
         await AddGuardianInfoAsync(guardianResult.GuardianList?.Guardians, hashDic, userExtraInfos);
+        SetGuardianVerifiedZkField(guardianResult, holderInfo);
         return guardianResult;
+    }
+
+    private void SetGuardianVerifiedZkField(GuardianResultDto guardianResult, GetHolderInfoOutput holderInfo)
+    {
+        if (guardianResult.GuardianList is null || guardianResult.GuardianList.Guardians.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        foreach (var guardian in guardianResult.GuardianList.Guardians)
+        {
+            var guardianVerifiedByZk = holderInfo.GuardianList.Guardians.FirstOrDefault(
+                g => g.IdentifierHash.Equals(Hash.LoadFromHex(guardian.IdentifierHash)));
+            if (guardianVerifiedByZk is null)
+            {
+                continue;
+            }
+            var zkLoginInfo = guardianVerifiedByZk.ZkLoginInfo;
+            guardian.VerifiedByZk = zkLoginInfo is not null
+                                    && zkLoginInfo.IdentifierHash != null && !Hash.Empty.Equals(zkLoginInfo.IdentifierHash)
+                                    && zkLoginInfo.Salt is not (null or "")
+                                    && zkLoginInfo.Nonce is not (null or "")
+                                    && zkLoginInfo.ZkProof is not (null or "")
+                                    && zkLoginInfo.CircuitId is not (null or "")
+                                    && zkLoginInfo.Issuer is not (null or "")
+                                    && zkLoginInfo.Kid is not (null or "")
+                                    && zkLoginInfo.NoncePayload is not null;
+        }
     }
 
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
@@ -105,7 +140,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
 
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
+        _logger.LogInformation("=======GetRegisterInfoAsync GetHash guardianIdentifier:{0},guardianIdentifierHash:{1}", requestDto.LoginGuardianIdentifier, guardianIdentifierHash);
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
+        _logger.LogInformation("GetGuardiansAsync guardianIdentifierHash:{0},caHash:{1},guardians:{2}",
+            guardianIdentifierHash, requestDto.CaHash, JsonConvert.SerializeObject(guardians));
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
 
         var originChainId = guardian == null
@@ -130,6 +168,20 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         return ObjectMapper.Map<List<GuardianIndex>, List<GuardianIndexDto>>(result);
     }
+    
+    public async Task<List<GuardianIndexDto>> GetGuardianListByCreateTimeAsync(long createTimeSeconds)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Range(i => i.Field(f => f.CreateTime.ToUtcMilliSeconds()).GreaterThanOrEquals(createTimeSeconds)));
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardians = await _guardianRepository.GetListAsync(Filter);
+
+        var result = guardians.Item2.Where(t => t.IsDeleted == false).ToList();
+
+        return ObjectMapper.Map<List<GuardianIndex>, List<GuardianIndexDto>>(result);
+    }
 
     private string GetHash(string guardianIdentifier)
     {
@@ -139,6 +191,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
         var guardianGrainDto = guardianGrain.GetGuardianAsync(guardianIdentifier).Result;
+        _logger.LogInformation("GetGuardianAsync guardianIdentifier:{0} guardianGrainDto:{1}", guardianIdentifier, JsonConvert.SerializeObject(guardianGrainDto));
         if (!guardianGrainDto.Success)
         {
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
@@ -160,6 +213,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 var holderInfo =
                     await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                _logger.LogInformation("GetOriginChainIdAsync guardianIdentifierHash:{0},caHash:{1},chainId:{2},holderInfo:{3}",
+                    guardianIdentifierHash, caHash, chainId, JsonConvert.SerializeObject(holderInfo));
                 if (holderInfo.CreateChainId > 0)
                 {
                     return ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId);
@@ -194,7 +249,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             return;
         }
-
+        _logger.LogInformation("AddGuardianInfoAsync guardians:{0} userExtraInfos:{1}",
+            JsonConvert.SerializeObject(guardians), JsonConvert.SerializeObject(userExtraInfos));
         foreach (var guardian in guardians)
         {
             guardian.GuardianIdentifier = hashDic.GetValueOrDefault(guardian.IdentifierHash);
@@ -294,6 +350,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         return guardianGrainDto == null || guardianGrainDto.IsDeleted ? null : guardianGrainDto.IdentifierHash;
     }
 
+    public async Task<List<UserExtraInfoIndexDto>> GetUserExtraInfoDtoAsync(List<string> identifiers)
+    {
+        var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
+        return ObjectMapper.Map<List<UserExtraInfoIndex>, List<UserExtraInfoIndexDto>>(userExtraInfos);
+    }
 
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
     {

@@ -14,6 +14,7 @@ public static class MethodName
     public const string TransferCryptoBoxes = "TransferCryptoBoxes";
     public const string RefundCryptoBox = "RefundCryptoBox";
     public const string AssignProjectDelegatee = "AssignProjectDelegatee";
+    public const string AppendGuardianPoseidonHash = "AppendGuardianPoseidonHash";
 }
 
 public static class TransactionState

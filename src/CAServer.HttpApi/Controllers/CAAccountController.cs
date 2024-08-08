@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -23,16 +24,18 @@ public class CAAccountController : CAServerController
     private readonly ITransactionFeeAppService _transactionFeeAppService;
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
+    private readonly IZkLoginProvider _zkLoginProvider;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService)
+        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
         _transactionFeeAppService = transactionFeeAppService;
         _currentUser = currentUser;
         _growthAppService = growthAppService;
+        _zkLoginProvider = zkLoginProvider;
     }
 
     [HttpPost("register/request")]
@@ -123,11 +126,53 @@ public class CAAccountController : CAServerController
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         return await _caAccountService.RevokeValidateAsync(userId, type);
     }
+
+    [HttpPost("send/caholder/test")]
+    public async Task TestCreateHolderInfoAsync(RegisterDto registerDto)
+    {
+        await _caAccountService.TestCreateHolderInfoAsync(registerDto);
+    }
     
     [HttpGet("verify/caHolderExist")]
     public async Task<CAHolderExistsResponseDto> CaHolderExistByAddress(string address)
     {
         return await _caAccountService.VerifyCaHolderExistByAddressAsync(address);
     }
+
+    [HttpPost("update/guardian")]
+    public async Task<GuardianEto> UpdateGuardianInfoAsync([FromBody] DBGuardianDto guardianDto)
+    {
+        return await _zkLoginProvider.UpdateGuardianAsync(guardianDto.GuardianIdentifier, guardianDto.Salt,
+            guardianDto.IdentifierHash);
+    }
+
+    [HttpGet("guardian/userinfo")]
+    public async Task<List<UserExtraInfoIndexDto>> GetUserExtraInfoDtoAsync(string[] identifiers)
+    {
+        return await _guardianAppService.GetUserExtraInfoDtoAsync(identifiers.ToList());
+    }
+
+    [HttpGet("guardian")]
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(long createTimeSeconds)
+    {
+        return await _guardianAppService.GetGuardianListByCreateTimeAsync(createTimeSeconds);
+    }
     
+    [HttpPost("trigger/worker")]
+    public async Task TriggerZkWorker([FromBody] ZkEto caHashes)
+    {
+        await _zkLoginProvider.TriggerZkLoginWorker(caHashes);
+    }
+    
+    [HttpGet("caholders/es")]
+    public async Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit)
+    {
+        return await _zkLoginProvider.GetAllCaHolderWithTotalAsync(skip, limit);
+    }
+
+    [HttpGet("caholders")]
+    public async Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit)
+    {
+        return await _zkLoginProvider.GetCaHolderInfoAsync(skip, limit);
+    }
 }

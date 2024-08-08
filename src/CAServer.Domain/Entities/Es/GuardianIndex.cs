@@ -12,4 +12,6 @@ public class GuardianIndex : CAServerEsEntity<string>, IIndexBuild
     [Keyword] public string Salt { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime CreateTime { get; set; } = DateTime.UtcNow;
+    
+    [Keyword] public string IdentifierPoseidonHash { get; set; }
 }

@@ -7,4 +7,5 @@ public class GuardianEto
     public string OriginalIdentifier { get; set; }
     public string IdentifierHash { get; set; }
     public string Salt { get; set; }
+    public string IdentifierPoseidonHash { get; set; }
 }
