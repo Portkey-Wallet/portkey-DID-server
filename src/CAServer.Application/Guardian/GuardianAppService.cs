@@ -129,7 +129,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                                     && zkLoginInfo.Issuer is not (null or "")
                                     && zkLoginInfo.Kid is not (null or "")
                                     && zkLoginInfo.NoncePayload is not null;
-            guardian.PoseidonIdentifierHash = guardianVerifiedByZk.ZkLoginInfo.PoseidonIdentifierHash;
+            guardian.PoseidonIdentifierHash = zkLoginInfo is not null ? zkLoginInfo.PoseidonIdentifierHash 
+                : (guardianVerifiedByZk.PoseidonIdentifierHash.IsNullOrEmpty() ? "" : guardianVerifiedByZk.PoseidonIdentifierHash);
         }
     }
 
