@@ -90,7 +90,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:30", i * 100);
+                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:30", i * 30);
             }
             swLoop.Stop();
             _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker loop:{0} cost:{1}ms", i, swLoop.ElapsedMilliseconds);
@@ -114,9 +114,9 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             return new ValueTuple<bool, List<ZkPoseidonDto>>(false, saveErrorPoseidonDtos);
         }
 
-        if (skip == 100)
+        if (skip is 1 or 33 or 52)
         {
-            _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip100 limit30 guardiansDto:{0}", JsonConvert.SerializeObject(guardiansDto));
+            _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip:{0} limit30 guardiansDto:{1}", skip, JsonConvert.SerializeObject(guardiansDto));
         }
         var caHashList = guardiansDto.CaHolderInfo.Select(ca => ca.CaHash).ToList();
         // data from es, less than 8000
