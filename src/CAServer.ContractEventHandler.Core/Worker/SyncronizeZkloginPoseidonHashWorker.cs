@@ -132,6 +132,12 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             //chains' loop
             foreach (var getHolderInfoOutput in chainIdToCaHolder)
             {
+                if (getHolderInfoOutput.Value?.GuardianList == null
+                    || getHolderInfoOutput.Value.GuardianList.Guardians.IsNullOrEmpty())
+                {
+                    _logger.LogWarning("getHolderInfoOutput error data caHash:{0} getHolderInfoOutput:{1}", caHash, JsonConvert.SerializeObject(getHolderInfoOutput));
+                    continue;
+                }
                 var guardiansOfAppendInput = new RepeatedField<PoseidonGuardian>();
                 //guardians' loop
                 foreach (var guardian in getHolderInfoOutput.Value.GuardianList.Guardians)
