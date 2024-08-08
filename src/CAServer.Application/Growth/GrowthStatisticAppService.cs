@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAActivity.Provider;
 using CAServer.Cache;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.EnumType;
+using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.Guardian;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
 using CAServer.Options;
@@ -18,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
+using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
@@ -41,6 +45,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly HamsterOptions _hamsterOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
     private const string RepairDataCache = "Hamster:DataRepairKey";
+    private const string HamsterTonGiftsUserIdsKey = "Hamster:TonGifts:UserIdsKey";
+    private readonly IClusterClient _clusterClient;
+    private readonly IContractProvider _contractProvider;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -49,7 +56,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
-        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions)
+        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IClusterClient clusterClient, IContractProvider contractProvider)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -57,6 +64,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _activityProvider = activityProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
+        _clusterClient = clusterClient;
+        _contractProvider = contractProvider;
         _beInvitedConfigOptions = beInvitedConfigOptions.Value;
         _hamsterOptions = hamsterOptions.Value;
         _activityConfigOptions = activityConfigOptions.Value;
@@ -447,6 +456,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     {
                         result.AddRange(scoreResult);
                     }
+
                     index += length;
                 }
             }
@@ -645,6 +655,17 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         };
     }
 
+    public async Task<ValidateHamsterScoreResponseDto> ValidateHamsterScoreAsync(string userId)
+    {
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", userId);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardian = guardianGrain.GetGuardianAsync(userId).Result;
+        var identifierHash = guardian.Data.IdentifierHash;
+        
+        
+        
+    }
+
     private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)
     {
         _activityConfigOptions.ActivityConfigMap.TryGetValue(activityEnum.ToString(), out var config);
@@ -673,7 +694,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogDebug("No data need to be repaired.");
             return;
         }
-        _logger.LogDebug("Total Count is {count}",repairList.Count);
+
+        _logger.LogDebug("Total Count is {count}", repairList.Count);
 
         _logger.LogDebug("Total Count is {count}", repairList.Count);
 
@@ -713,6 +735,33 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var expire = TimeSpan.FromDays(360);
             await _cacheProvider.Set(RepairDataCache, "Repair", expire);
             _logger.LogDebug("All data has been repaired.");
+        }
+    }
+
+    public async Task CollectHamsterUserIdsAsync(string userId)
+    {
+        var expire = TimeSpan.FromDays(30);
+        await _cacheProvider.SetAddAsync(HamsterTonGiftsUserIdsKey, userId, expire);
+        
+    }
+
+    public async Task TonGiftsValidateAsync()
+    {
+        var userIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsUserIdsKey);
+        if (userIds.Length == 0)
+        {
+            _logger.LogDebug("No users need to be validate.");
+            return;
+        }
+        foreach (var id in userIds)
+        {
+            var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", id);
+            var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+            var guardian = guardianGrain.GetGuardianAsync(id).Result;
+            var identifierHash = guardian.Data.IdentifierHash;
+            
+            
+            
         }
     }
 
