@@ -113,6 +113,11 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished last loop skip:{0} limit:{1}", skip, limit);
             return new ValueTuple<bool, List<ZkPoseidonDto>>(false, saveErrorPoseidonDtos);
         }
+
+        if (skip == 100)
+        {
+            _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip100 limit30 guardiansDto:{0}", JsonConvert.SerializeObject(guardiansDto));
+        }
         var caHashList = guardiansDto.CaHolderInfo.Select(ca => ca.CaHash).ToList();
         // data from es, less than 8000
         // var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(skip, limit);
@@ -132,6 +137,12 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             //chains' loop
             foreach (var getHolderInfoOutput in chainIdToCaHolder)
             {
+                if (getHolderInfoOutput.Value?.GuardianList == null
+                    || getHolderInfoOutput.Value.GuardianList.Guardians.IsNullOrEmpty())
+                {
+                    _logger.LogWarning("getHolderInfoOutput error data caHash:{0} getHolderInfoOutput:{1}", caHash, JsonConvert.SerializeObject(getHolderInfoOutput));
+                    continue;
+                }
                 var guardiansOfAppendInput = new RepeatedField<PoseidonGuardian>();
                 //guardians' loop
                 foreach (var guardian in getHolderInfoOutput.Value.GuardianList.Guardians)
