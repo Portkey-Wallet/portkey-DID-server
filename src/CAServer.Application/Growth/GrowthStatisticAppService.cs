@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Mime;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAActivity.Provider;
 using CAServer.Cache;
@@ -47,7 +51,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private const string RepairDataCache = "Hamster:DataRepairKey";
     private const string HamsterTonGiftsUserIdsKey = "Hamster:TonGifts:UserIdsKey";
     private readonly IClusterClient _clusterClient;
-    private readonly IContractProvider _contractProvider;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly TonGiftsOptions _tonGiftsOptions;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -57,7 +62,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
         IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IClusterClient clusterClient,
-        IContractProvider contractProvider)
+        IHttpClientFactory httpClientFactory, IOptionsSnapshot<TonGiftsOptions> tonGiftsOptions)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -66,7 +71,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
         _clusterClient = clusterClient;
-        _contractProvider = contractProvider;
+        _httpClientFactory = httpClientFactory;
+        _tonGiftsOptions = tonGiftsOptions.Value;
         _beInvitedConfigOptions = beInvitedConfigOptions.Value;
         _hamsterOptions = hamsterOptions.Value;
         _activityConfigOptions = activityConfigOptions.Value;
@@ -806,13 +812,50 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             return;
         }
 
+        var ids = new List<string>();
         foreach (var id in userIds)
         {
             var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", id);
             var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
             var guardian = guardianGrain.GetGuardianAsync(id).Result;
+            if (!guardian.Message.IsNullOrEmpty())
+            {
+                _logger.LogDebug("TonGift validate error : query user from grain error:{error}", guardian.Message);
+                continue;
+            }
+
             var identifierHash = guardian.Data.IdentifierHash;
+            var caHolderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(identifierHash);
+            if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
+            {
+                _logger.LogDebug("TonGift validate error : query user from graphQl error: user not exists");
+                continue;
+            }
+
+            ids.Add(id);
         }
+
+        var param = new TonGiftsRequestDto()
+        {
+            TaskId = _tonGiftsOptions.TaskId,
+            Status = "completed",
+            UserIds = ids
+        };
+        var rawStr = JsonConvert.SerializeObject(param);
+        var t = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString();
+        var Hash = HMACSHA256Helper.ComputeHash("rawStr=" + param + "&t=" + t, _tonGiftsOptions.ApiKey);
+        var apiKey = _tonGiftsOptions.ApiKey;
+        const string url = "https://devmini.tongifts.app/";
+        var client = _httpClientFactory.CreateClient();
+        var tokenParam = JsonConvert.SerializeObject(new
+            { rawStr, apiKey, Hash, t });
+        var requestParam = new StringContent(tokenParam,
+            Encoding.UTF8,
+            MediaTypeNames.Application.Json);
+
+        var response = await client.PostAsync(url, requestParam);
+        var result = await response.Content.ReadAsStringAsync();
     }
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
