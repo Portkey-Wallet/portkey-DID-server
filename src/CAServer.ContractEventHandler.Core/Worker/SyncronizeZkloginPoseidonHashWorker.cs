@@ -113,6 +113,11 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished last loop skip:{0} limit:{1}", skip, limit);
             return new ValueTuple<bool, List<ZkPoseidonDto>>(false, saveErrorPoseidonDtos);
         }
+
+        if (skip == 100)
+        {
+            _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip100 limit30 guardiansDto:{0}", JsonConvert.SerializeObject(guardiansDto));
+        }
         var caHashList = guardiansDto.CaHolderInfo.Select(ca => ca.CaHash).ToList();
         // data from es, less than 8000
         // var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(skip, limit);
