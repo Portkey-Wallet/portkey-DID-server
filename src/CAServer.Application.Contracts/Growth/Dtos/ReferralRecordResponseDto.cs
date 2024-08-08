@@ -8,6 +8,8 @@ public class ReferralRecordResponseDto
     public bool HasNextPage { get; set; } = true;
 
     public List<ReferralRecordDetailDto> ReferralRecords { get; set; }
+    
+    
 
 }
 
@@ -20,6 +22,10 @@ public class ReferralRecordDetailDto
     public string ReferralDate { get; set; }
 
     public string Avatar { get; set; }
+
+    public string RecordDesc { get; set; }
+
+
 
 
 

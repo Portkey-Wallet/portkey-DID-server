@@ -13,4 +13,5 @@ public static class ActivityConstants
     public const string ReceiveName = "Receive";
     public const string SendName = "Send";
     public const string SwapExactTokensForTokensName = "SwapExactTokensForTokens";
+    public const string FreeMintNftName = "MintNft";
 }

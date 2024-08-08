@@ -18,4 +18,5 @@ public interface IUserAssetsAppService
     Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto);
 
     Task NftTraitsProportionCalculateAsync();
+    Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request);
 }

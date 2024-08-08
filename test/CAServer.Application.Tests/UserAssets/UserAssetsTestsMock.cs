@@ -282,6 +282,18 @@ public partial class UserAssetsTests
             m.GetNftItemTraitsInfoAsync(It.IsAny<GetNftItemInfosDto>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
             new IndexerNftItemInfos());
 
+        mockUserAssetsProvider
+            .Setup(t => t.GetNftItemInfosAsync(It.IsAny<GetNftItemInfosDto>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new IndexerNftItemInfos()
+            {
+                NftItemInfos = new List<NftItemInfo>()
+                {
+                    new NftItemInfo()
+                    {
+                        Symbol = "MockSymbol"
+                    }
+                }
+            });
 
         return mockUserAssetsProvider.Object;
     }
@@ -453,5 +465,23 @@ public partial class UserAssetsTests
             .ReturnsAsync(jsonStr);
 
         return searchAppService.Object;
+    }
+
+    private IActivityProvider GetMockActivityProvider()
+    {
+        var mockActivityProvider = new Mock<IActivityProvider>();
+        mockActivityProvider.Setup(t => t.GetTokenDecimalsAsync(It.IsAny<string>())).ReturnsAsync(
+            new IndexerSymbols()
+            {
+                TokenInfo = new List<SymbolInfo>()
+                {
+                    new SymbolInfo()
+                    {
+                        ChainId = "MockChainId",
+                        Decimals = 8
+                    }
+                }
+            });
+        return mockActivityProvider.Object;
     }
 }

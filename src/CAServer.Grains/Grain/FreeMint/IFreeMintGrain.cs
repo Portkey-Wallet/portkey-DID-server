@@ -11,7 +11,6 @@ public interface IFreeMintGrain : IGrainWithGuidKey
     Task<GrainResultDto<GetRecentStatusDto>> GetMintStatus(string itemId);
 
     Task<GrainResultDto<ItemMintInfo>> SaveMintInfo(MintNftDto mintNftDto);
-    Task<GrainResultDto<string>> GetTokenId();
-
     Task<GrainResultDto<ItemMintInfo>> ChangeMintStatus(string itemId, FreeMintStatus status);
+    Task<bool> CheckLimitExceed();
 }

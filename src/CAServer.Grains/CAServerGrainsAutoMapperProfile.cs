@@ -258,6 +258,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<PendingTreasuryOrderState, PendingTreasuryOrderDto>().ReverseMap();
         CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
+        CreateMap<InviteInfo, GrowthGrainDto>().ReverseMap();
         CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
     }
 }
