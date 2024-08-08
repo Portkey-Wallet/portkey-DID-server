@@ -42,7 +42,7 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
             // var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var facebookUser = ExtractUserInfoFromJwt(requestDto.Jwt);
             _logger.LogInformation("============Extract userinfo from jwt:{0}", JsonConvert.SerializeObject(facebookUser));
-            var userSaltAndHash = await _guardianUserProvider.GetSaltAndHashAsync(facebookUser.Id, requestDto.GuardianIdentifierHash, requestDto.Salt, requestDto.PoseidonIdentifierHash);
+            var userSaltAndHash = await _guardianUserProvider.GetSaltAndHashAsync(facebookUser.Id, requestDto.Salt, requestDto.PoseidonIdentifierHash);
             if (!userSaltAndHash.Item3)
             {
                 await _guardianUserProvider.AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1, requestDto.PoseidonIdentifierHash);

@@ -7,7 +7,7 @@ namespace CAServer.CAAccount;
 
 public interface IGuardianUserProvider
 {
-    public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier, string guardianIdentifierHash, string guardianSalt, string poseidonHash);
+    public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier, string guardianSalt, string poseidonHash);
 
     public Task AddGuardianAsync(string guardianIdentifier, string salt, string identifierHash, string poseidonHash);
 
