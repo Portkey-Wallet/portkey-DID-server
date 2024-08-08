@@ -56,7 +56,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
-        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IClusterClient clusterClient, IContractProvider contractProvider)
+        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IClusterClient clusterClient,
+        IContractProvider contractProvider)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -660,10 +661,65 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", userId);
         var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
         var guardian = guardianGrain.GetGuardianAsync(userId).Result;
+        if (!guardian.Message.IsNullOrEmpty())
+        {
+            return new ValidateHamsterScoreResponseDto
+            {
+                Result =
+                {
+                    ValidateResult = false
+                },
+                ErrorMsg =
+                {
+                    Message = guardian.Message
+                }
+            };
+        }
+
         var identifierHash = guardian.Data.IdentifierHash;
-        
-        
-        
+        var caHolderInfo =
+            await _activityProvider.GetCaHolderInfoAsync(identifierHash);
+        if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
+        {
+            return new ValidateHamsterScoreResponseDto()
+            {
+                Result =
+                {
+                    ValidateResult = false
+                },
+                ErrorMsg =
+                {
+                    Message = "Account not exist."
+                }
+            };
+        }
+
+        var address = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+        var hamsterScoreList =
+            await _growthProvider.GetHamsterScoreListAsync(new List<string> { address }, DateTime.UtcNow.AddDays(-1),
+                DateTime.UtcNow);
+        if (hamsterScoreList == null || hamsterScoreList.GetScoreInfos.Count == 0)
+        {
+            return new ValidateHamsterScoreResponseDto()
+            {
+                Result =
+                {
+                    ValidateResult = false
+                },
+                ErrorMsg =
+                {
+                    Message = "Validate failed."
+                }
+            };
+        }
+
+        return new ValidateHamsterScoreResponseDto
+        {
+            Result =
+            {
+                ValidateResult = true
+            }
+        };
     }
 
     private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)
@@ -696,9 +752,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         _logger.LogDebug("Total Count is {count}", repairList.Count);
-
-        _logger.LogDebug("Total Count is {count}", repairList.Count);
-
         var count = 0;
         foreach (var repair in repairList)
         {
@@ -742,7 +795,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         var expire = TimeSpan.FromDays(30);
         await _cacheProvider.SetAddAsync(HamsterTonGiftsUserIdsKey, userId, expire);
-        
     }
 
     public async Task TonGiftsValidateAsync()
@@ -753,15 +805,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogDebug("No users need to be validate.");
             return;
         }
+
         foreach (var id in userIds)
         {
             var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", id);
             var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
             var guardian = guardianGrain.GetGuardianAsync(id).Result;
             var identifierHash = guardian.Data.IdentifierHash;
-            
-            
-            
         }
     }
 
