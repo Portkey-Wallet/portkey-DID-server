@@ -127,7 +127,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                 continue;
             }
 
-            var identifierHashList = ExtractGuardianIdentifierHashFromChains(chainIdToCaHolder.Values.ToList());
+            var identifierHashList = ExtractGuardianIdentifierHashFromChains(chainIdToCaHolder);
             var guardiansFromEs = await _guardianUserProvider.GetGuardianListAsync(identifierHashList);
             //chains' loop
             foreach (var getHolderInfoOutput in chainIdToCaHolder)
@@ -254,16 +254,20 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         return true;
     }
 
-    private static List<string> ExtractGuardianIdentifierHashFromChains(List<GetHolderInfoOutput> caHolderResult)
+    private static List<string> ExtractGuardianIdentifierHashFromChains(Dictionary<string, GetHolderInfoOutput> chainIdToCaHolder)
     {
-        // var identifierHash = new List<string>(); //todo npe
-        // foreach (var getHolderInfoOutput in caHolderResult)
-        // {
-        //     identifierHash.AddRange(getHolderInfoOutput.GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList());
-        // }
-        //
-        // return identifierHash.Distinct().ToList();
-        return caHolderResult.IsNullOrEmpty() ? new List<string>() : caHolderResult[0].GuardianList.Guardians.Select(g => g.IdentifierHash.ToHex()).ToList();
+        foreach (var chainId2HolderInfoOutput in chainIdToCaHolder)
+        {
+            var createChainId = ChainHelper.ConvertChainIdToBase58(chainId2HolderInfoOutput.Value.CreateChainId);
+            if (chainId2HolderInfoOutput.Key.Equals(createChainId))
+            {
+                return chainId2HolderInfoOutput.Value.GuardianList.Guardians
+                    .Select(g => g.IdentifierHash.ToHex())
+                    .ToList();
+            }
+        }
+
+        return new List<string>();
     }
 
     private async Task<Dictionary<string, GetHolderInfoOutput>> ListHolderInfosFromContract(string caHash)
