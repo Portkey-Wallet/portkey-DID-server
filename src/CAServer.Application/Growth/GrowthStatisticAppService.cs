@@ -30,6 +30,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
+using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
 
@@ -672,11 +673,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             return new ValidateHamsterScoreResponseDto
             {
-                Result =
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg =
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = guardian.Message
                 }
@@ -690,11 +691,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             return new ValidateHamsterScoreResponseDto()
             {
-                Result =
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg =
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = "Account not exist."
                 }
@@ -705,29 +706,24 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var hamsterScoreList =
             await _growthProvider.GetHamsterScoreListAsync(new List<string> { address }, DateTime.UtcNow.AddDays(-1),
                 DateTime.UtcNow);
-        _logger.LogDebug("query from hamster data is {data},scoreList is {list}",
-            JsonConvert.SerializeObject(hamsterScoreList), hamsterScoreList.GetScoreInfos);
-
-
         if (hamsterScoreList.GetScoreInfos?.Count == 0)
         {
-            _logger.LogDebug("No Score is queried by this userId.");
-            // return new ValidateHamsterScoreResponseDto
-            // {
-            //     Result =
-            //     {
-            //         ValidateResult = false
-            //     },
-            //     ErrorMsg =
-            //     {
-            //         Message = "Validate failed."
-            //     }
-            // };
+            return new ValidateHamsterScoreResponseDto
+            {
+                Result = new Result()
+                {
+                    ValidateResult = false
+                },
+                ErrorMsg = new ErrorMsg()
+                {
+                    Message = "Validate failed."
+                }
+            };
         }
 
         return new ValidateHamsterScoreResponseDto
         {
-            Result =
+            Result = new Result()
             {
                 ValidateResult = true
             }
