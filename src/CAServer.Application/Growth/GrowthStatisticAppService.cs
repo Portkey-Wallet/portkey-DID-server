@@ -703,8 +703,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var address = caHolderInfo.CaHolderInfo?.FirstOrDefault()?.CaAddress;
+        var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
         var hamsterScoreList =
-            await _growthProvider.GetHamsterScoreListAsync(new List<string> { address }, DateTime.UtcNow.AddDays(-1),
+            await _growthProvider.GetHamsterScoreListAsync(new List<string> { formatAddress }, DateTime.UtcNow.AddDays(-1),
                 DateTime.UtcNow);
         if (hamsterScoreList.GetScoreInfos?.Count == 0)
         {
