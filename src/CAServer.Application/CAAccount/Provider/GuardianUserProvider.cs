@@ -69,7 +69,7 @@ public class GuardianUserProvider
                 var newIdentifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), guardianSaltBytes);
                 return Task.FromResult(Tuple.Create(newIdentifierHash.ToHex(), guardianSalt, true));
             }
-            return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, false));
+            return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, true));
         }
 
         var salt = ByteArrayHelper.HexStringToByteArray(guardianSalt);
