@@ -667,6 +667,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", userId);
         var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
         var guardian = guardianGrain.GetGuardianAsync(userId).Result;
+        _logger.LogDebug("TeleGram from grain is {grainDto}", JsonConvert.SerializeObject(guardian));
         if (!guardian.Message.IsNullOrEmpty())
         {
             return new ValidateHamsterScoreResponseDto
