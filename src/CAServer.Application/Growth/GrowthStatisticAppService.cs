@@ -711,17 +711,18 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         if (hamsterScoreList.GetScoreInfos?.Count == 0)
         {
-            return new ValidateHamsterScoreResponseDto()
-            {
-                Result =
-                {
-                    ValidateResult = false
-                },
-                ErrorMsg =
-                {
-                    Message = "Validate failed."
-                }
-            };
+            _logger.LogDebug("No Score is queried by this userId.");
+            // return new ValidateHamsterScoreResponseDto
+            // {
+            //     Result =
+            //     {
+            //         ValidateResult = false
+            //     },
+            //     ErrorMsg =
+            //     {
+            //         Message = "Validate failed."
+            //     }
+            // };
         }
 
         return new ValidateHamsterScoreResponseDto
