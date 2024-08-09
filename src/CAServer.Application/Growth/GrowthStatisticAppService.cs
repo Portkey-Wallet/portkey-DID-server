@@ -686,7 +686,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var identifierHash = guardian.Data.IdentifierHash;
         var caHolderInfo =
             await _activityProvider.GetCaHolderInfoAsync(identifierHash);
-        if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
+        if (caHolderInfo == null || caHolderInfo.CaHolderInfo?.Count == 0)
         {
             return new ValidateHamsterScoreResponseDto()
             {
@@ -701,12 +701,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             };
         }
 
-        var address = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+        var address = caHolderInfo.CaHolderInfo?.FirstOrDefault()?.CaAddress;
         var hamsterScoreList =
             await _growthProvider.GetHamsterScoreListAsync(new List<string> { address }, DateTime.UtcNow.AddDays(-1),
                 DateTime.UtcNow);
-        _logger.LogDebug("query from hamster data is {data}",JsonConvert.SerializeObject(hamsterScoreList));
-        if (hamsterScoreList == null || hamsterScoreList.GetScoreInfos?.Count == 0)
+        _logger.LogDebug("query from hamster data is {data},scoreList is {list}",
+            JsonConvert.SerializeObject(hamsterScoreList), hamsterScoreList.GetScoreInfos);
+
+
+        if (hamsterScoreList.GetScoreInfos?.Count == 0)
         {
             return new ValidateHamsterScoreResponseDto()
             {
