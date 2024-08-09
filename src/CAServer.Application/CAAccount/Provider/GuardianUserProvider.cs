@@ -61,14 +61,6 @@ public class GuardianUserProvider
             JsonConvert.SerializeObject(guardianGrainResult));
         if (guardianGrainResult.Success && guardianGrainResult.Data != null)
         {
-            if (!guardianSalt.IsNullOrEmpty() && !guardianSalt.Equals(guardianGrainResult.Data.Salt)
-                || !poseidonHash.IsNullOrEmpty()
-                && !poseidonHash.Equals(guardianGrainResult.Data.IdentifierPoseidonHash))
-            {
-                var guardianSaltBytes = ByteArrayHelper.HexStringToByteArray(guardianSalt);
-                var newIdentifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), guardianSaltBytes);
-                return Task.FromResult(Tuple.Create(newIdentifierHash.ToHex(), guardianSalt, true));
-            }
             return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, true));
         }
 
