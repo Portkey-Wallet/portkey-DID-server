@@ -193,7 +193,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         {
             Query = @"
 			    query(loginGuardianIdentifierHash:[String],$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderInfo(dto: {loginGuardianIdentifierHash:loginGuardianIdentifierHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    caHolderInfo(dto: {loginGuardianIdentifierHash:$loginGuardianIdentifierHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                             id,chainId,caHash,caAddress,originChainId,managerInfos{address,extraData},guardianList{guardians{verifierId,identifierHash,salt,isLoginGuardian,type}}}
                 }",
             Variables = new
