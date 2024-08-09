@@ -59,18 +59,15 @@ public class GuardianUserProvider
 
         _logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
             JsonConvert.SerializeObject(guardianGrainResult));
-
         if (guardianGrainResult.Success && guardianGrainResult.Data != null)
         {
-            if (!guardianSalt.IsNullOrEmpty() && !guardianSalt.Equals(guardianGrainResult.Data.Salt))
+            if (!guardianSalt.IsNullOrEmpty() && !guardianSalt.Equals(guardianGrainResult.Data.Salt)
+                || !poseidonHash.IsNullOrEmpty()
+                && !poseidonHash.Equals(guardianGrainResult.Data.IdentifierPoseidonHash))
             {
-                throw new UserFriendlyException("the identifierHash and salt are different from db");
-            }
-            if (!guardianGrainResult.Data.IdentifierPoseidonHash.IsNullOrEmpty()
-                && guardianGrainResult.Data.IdentifierPoseidonHash.Equals(poseidonHash)
-                || poseidonHash.IsNullOrEmpty())
-            {
-                return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, true));
+                var guardianSaltBytes = ByteArrayHelper.HexStringToByteArray(guardianSalt);
+                var newIdentifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), guardianSaltBytes);
+                return Task.FromResult(Tuple.Create(newIdentifierHash.ToHex(), guardianSalt, true));
             }
             return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, false));
         }
