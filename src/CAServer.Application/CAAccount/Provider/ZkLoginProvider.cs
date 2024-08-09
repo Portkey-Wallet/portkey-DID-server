@@ -63,8 +63,7 @@ public class ZkLoginProvider
     public bool CanSupportZk(GuardianIdentifierType type)
     {
         return GuardianIdentifierType.Google.Equals(type)
-               || GuardianIdentifierType.Apple.Equals(type)
-               || GuardianIdentifierType.Facebook.Equals(type);
+               || GuardianIdentifierType.Apple.Equals(type);
     }
 
     public bool CanExecuteZk(GuardianIdentifierType type, ZkLoginInfoRequestDto zkLoginInfo)

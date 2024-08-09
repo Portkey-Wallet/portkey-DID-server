@@ -21,6 +21,7 @@ using Portkey.Contracts.CA;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 using ChainOptions = CAServer.ContractEventHandler.Core.Application.ChainOptions;
+using GuardianType = CAServer.Account.GuardianType;
 using IContractProvider = CAServer.ContractEventHandler.Core.Application.IContractProvider;
 
 
@@ -113,21 +114,14 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished last loop skip:{0} limit:{1}", skip, limit);
             return new ValueTuple<bool, List<ZkPoseidonDto>>(false, saveErrorPoseidonDtos);
         }
-
-        if (skip is 1 or 33 or 52)
-        {
-            _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip:{0} limit30 guardiansDto:{1}", skip, JsonConvert.SerializeObject(guardiansDto));
-        }
         var caHashList = guardiansDto.CaHolderInfo.Select(ca => ca.CaHash).ToList();
-        // data from es, less than 8000
-        // var caHoldersByPage = await _contactProvider.GetAllCaHolderAsync(skip, limit);
-        // var caHashList = caHoldersByPage.Select(holder => holder.CaHash).ToList();
         var contractRequest = new Dictionary<string, RepeatedField<AppendGuardianInput>>();
         //users' loop
         foreach (var caHash in caHashList)
         {
             var chainIdToCaHolder = await ListHolderInfosFromContract(caHash);
-            if (chainIdToCaHolder.IsNullOrEmpty())
+            if (chainIdToCaHolder.IsNullOrEmpty() || chainIdToCaHolder.Values.IsNullOrEmpty()
+                || chainIdToCaHolder.Values.All(holderInfo => holderInfo.GuardianList.Guardians.All(NoNeedRefreshGuardianPoseidonHash)))
             {
                 continue;
             }
@@ -148,7 +142,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                 foreach (var guardian in getHolderInfoOutput.Value.GuardianList.Guardians)
                 {
                     var guardianFromEs = guardiansFromEs.FirstOrDefault(g => g.IdentifierHash.Equals(guardian.IdentifierHash.ToHex()));
-                    if (!CheckGuardianInfo(guardianFromEs, guardian))
+                    if (NoNeedRefreshGuardianPoseidonHash(guardian))
                     {
                         continue;
                     }
@@ -197,8 +191,27 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         return new ValueTuple<bool, List<ZkPoseidonDto>>(true, saveErrorPoseidonDtos);
     }
 
+    private bool NoNeedRefreshGuardianPoseidonHash(Portkey.Contracts.CA.Guardian guardian)
+    {
+        if (!SupportZkLoginGuardian(guardian.Type))
+        {
+            return true;
+        }
+        return !guardian.PoseidonIdentifierHash.IsNullOrEmpty();
+    }
+
+    private bool SupportZkLoginGuardian(Portkey.Contracts.CA.GuardianType guardianType)
+    {
+        return guardianType.Equals(GuardianType.GUARDIAN_TYPE_OF_APPLE)
+               || guardianType.Equals(GuardianType.GUARDIAN_TYPE_OF_GOOGLE);
+    }
+
     private async Task ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs, List<ZkPoseidonDto> saveErrorPoseidonDtos)
     {
+        if (chainId.IsNullOrEmpty() || inputs.IsNullOrEmpty())
+        {
+            return;
+        }
         var sw = new Stopwatch();
         sw.Start();
         var request = new AppendGuardianRequest
@@ -248,22 +261,22 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         }
     }
 
-    private bool CheckGuardianInfo(GuardianIndexDto guardianFromEs, Portkey.Contracts.CA.Guardian guardian)
-    {
-        
-        if (guardianFromEs == null)
-        {
-            _logger.LogError("guardian from contract doesn't exist in es, guardian:{0}", JsonConvert.SerializeObject(guardian));
-            return false;
-        }
-        if (!guardian.Salt.Equals(guardianFromEs?.Salt))
-        {
-            _logger.LogError("guardian from contract has different salt from es, guardian:{0}, guardianFromEs:{1}", JsonConvert.SerializeObject(guardian), JsonConvert.SerializeObject(guardianFromEs));
-            return false;
-        }
-
-        return true;
-    }
+    // private bool CheckGuardianInfo(GuardianIndexDto guardianFromEs, Portkey.Contracts.CA.Guardian guardian)
+    // {
+    //     
+    //     if (guardianFromEs == null)
+    //     {
+    //         _logger.LogError("guardian from contract doesn't exist in es, guardian:{0}", JsonConvert.SerializeObject(guardian));
+    //         return false;
+    //     }
+    //     if (!guardian.Salt.Equals(guardianFromEs?.Salt))
+    //     {
+    //         _logger.LogError("guardian from contract has different salt from es, guardian:{0}, guardianFromEs:{1}", JsonConvert.SerializeObject(guardian), JsonConvert.SerializeObject(guardianFromEs));
+    //         return false;
+    //     }
+    //
+    //     return true;
+    // }
 
     private static List<string> ExtractGuardianIdentifierHashFromChains(Dictionary<string, GetHolderInfoOutput> chainIdToCaHolder)
     {
