@@ -11,7 +11,6 @@ using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
-using CAServer.Guardian.Provider;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
@@ -86,8 +85,7 @@ public class ZkLoginProvider
     private bool CanSupportZk(GuardianType type)
     {
         return GuardianType.GUARDIAN_TYPE_OF_GOOGLE.Equals(type)
-               || GuardianType.GUARDIAN_TYPE_OF_APPLE.Equals(type)
-               || GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.Equals(type);
+               || GuardianType.GUARDIAN_TYPE_OF_APPLE.Equals(type);
     }
 
     public bool CanExecuteZkByZkLoginInfoDto(GuardianType type, ZkLoginInfoDto zkLoginInfo)

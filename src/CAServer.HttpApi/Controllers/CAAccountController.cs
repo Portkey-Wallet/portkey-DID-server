@@ -25,10 +25,11 @@ public class CAAccountController : CAServerController
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
+    private readonly IGoogleZkProvider _googleZkProvider;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider)
+        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
@@ -36,6 +37,7 @@ public class CAAccountController : CAServerController
         _currentUser = currentUser;
         _growthAppService = growthAppService;
         _zkLoginProvider = zkLoginProvider;
+        _googleZkProvider = googleZkProvider;
     }
 
     [HttpPost("register/request")]
@@ -137,6 +139,12 @@ public class CAAccountController : CAServerController
     public async Task<CAHolderExistsResponseDto> CaHolderExistByAddress(string address)
     {
         return await _caAccountService.VerifyCaHolderExistByAddressAsync(address);
+    }
+    
+    [HttpGet("google-auth-redirect")]
+    public async Task<IActionResult> GetGoogleAuthRedirectUrlAsync()
+    {
+        return Redirect(_googleZkProvider.GetGoogleAuthRedirectUrl());
     }
 
     [HttpPost("update/guardian")]
