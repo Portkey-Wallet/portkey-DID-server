@@ -93,7 +93,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                 {
                     saveErrorPoseidonDtos.AddRange(singleLoopResult.Item2);   
                 }
-                if (singleLoopResult.Item1)
+                if (!singleLoopResult.Item1)
                 {
                     _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished at loop skip:{0} limit:{1}", skip, loopSize);
                     break;
@@ -121,7 +121,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         var guardiansDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, string.Empty, skip, limit);
         if (guardiansDto == null || guardiansDto.CaHolderInfo.IsNullOrEmpty())
         {
-            _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished last loop skip:{0} limit:{1}", skip, limit);
+            _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished last loop skip:{0} limit:{1} guardiansDto:{2}", skip, limit, guardiansDto == null ? null :JsonConvert.SerializeObject(guardiansDto));
             return new ValueTuple<bool, List<ZkPoseidonDto>>(false, saveErrorPoseidonDtos);
         }
         var caHashList = guardiansDto.CaHolderInfo.Select(ca => ca.CaHash).ToList();
@@ -311,8 +311,6 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
 
     private async Task<Dictionary<string, GetHolderInfoOutput>> ListHolderInfosFromContract(string caHash)
     {
-        var sw = new Stopwatch();
-        sw.Start();
         var chainIds = _chainOptions.ChainInfos.Keys;
         var result = new Dictionary<string, GetHolderInfoOutput>();
         foreach (var chainId in chainIds)
@@ -320,8 +318,6 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             var getHolderInfoOutput = await _contractProvider.GetHolderInfoFromChainAsync(chainId, null, caHash);
             result[chainId] = getHolderInfoOutput;
         }
-        sw.Stop();
-        _logger.LogInformation("GetHolderInfoFromChainAsync cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
     }
 }
