@@ -65,8 +65,8 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                                 ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
                             Timestamp = new Timestamp
                             {
-                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
-                                Nanos = (int)((e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
+                                Nanos = 0
                             }
                         }
                     }
@@ -123,8 +123,8 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                                     ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
                                 Timestamp = new Timestamp
                                 {
-                                    Seconds = g.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
-                                    Nanos = (int)((g.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                                    Seconds = g.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
+                                    Nanos = 0
                                 }
                             }
                         }

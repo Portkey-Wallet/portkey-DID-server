@@ -185,8 +185,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                                 ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
                             Timestamp = new Timestamp
                             {
-                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp / 1000,
-                                Nanos = (int)((e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp % 1000) * 1000000)
+                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
+                                Nanos = 0
                             }
                         }
                     },

@@ -90,22 +90,22 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    ZkProofInfo = e.GuardianInfo.ZkLoginInfo.ZkProofInfo,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = e.GuardianInfo.ZkLoginInfo.NoncePayload
                 }
-                // ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
-                // {
-                //     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
-                //     Salt = e.GuardianInfo.ZkLoginInfo.Salt,
-                //     Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
-                //     ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
-                //     ZkProofInfo = e.GuardianInfo.ZkLoginInfo.ZkProofInfo,
-                //     Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
-                //     Kid = e.GuardianInfo.ZkLoginInfo.Kid,
-                //     CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
-                //     PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
-                //     IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
-                //         ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
-                //     NoncePayload = e.GuardianInfo.ZkLoginInfo.NoncePayload
-                // }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -127,22 +127,22 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    ZkProofInfo = e.GuardianInfo.ZkLoginInfo.ZkProofInfo,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = e.GuardianInfo.ZkLoginInfo.NoncePayload
                 }
-                // ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
-                // {
-                //     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
-                //     Salt = e.GuardianInfo.ZkLoginInfo.Salt,
-                //     Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
-                //     ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
-                //     ZkProofInfo = e.GuardianInfo.ZkLoginInfo.ZkProofInfo,
-                //     Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
-                //     Kid = e.GuardianInfo.ZkLoginInfo.Kid,
-                //     CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
-                //     PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
-                //     IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
-                //         ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
-                //     NoncePayload = e.GuardianInfo.ZkLoginInfo.NoncePayload
-                // }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {

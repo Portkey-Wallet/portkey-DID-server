@@ -9,8 +9,8 @@ using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Common;
 using CAServer.Contacts.Provider;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.Guardian;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -36,6 +36,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
     private readonly IContractProvider _contractProvider;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
     private readonly IContactProvider _contactProvider;
+    private readonly ZkLoginWorkerOptions _zkLoginWorkerOptions;
     private const string WorkerName = "SyncronizeZkloginPoseidonHashWorker";
     
     public SyncronizeZkloginPoseidonHashWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
@@ -46,7 +47,8 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         IContractProvider contractProvider,
         IBackgroundWorkerRegistrarProvider registrarProvider,
         IHostApplicationLifetime hostApplicationLifetime,
-        IContactProvider contactProvider) : base(timer, serviceScopeFactory)
+        IContactProvider contactProvider,
+        IOptions<ZkLoginWorkerOptions> zkLoginWorkerOptions) : base(timer, serviceScopeFactory)
     {
         _poseidonProvider = poseidonProvider;
         _guardianUserProvider = guardianUserProvider;
@@ -55,8 +57,9 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         _chainOptions = chainOptions.Value;
         _registrarProvider = registrarProvider;
         _contactProvider = contactProvider;
+        _zkLoginWorkerOptions = zkLoginWorkerOptions.Value;
         
-        Timer.Period = 1000 * 86400;
+        Timer.Period = 1000 * _zkLoginWorkerOptions.PeriodSeconds;
         Timer.RunOnStart = true;
         hostApplicationLifetime.ApplicationStopped.Register(() =>
         {
@@ -66,32 +69,39 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        //todo put 86400 in apollo config
-        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 86400, 86400))
+        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ZkLoginWorkerOptions:{0}", JsonConvert.SerializeObject(_zkLoginWorkerOptions));
+        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _zkLoginWorkerOptions.PeriodSeconds, _zkLoginWorkerOptions.ExpirationSeconds))
         {
             return;
         }
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
         var sw = new Stopwatch();
         sw.Start();
-        var total = 14600; //todo put the param in apollo config
-        var times = total / 30 + 1; //todo put 30 size in apollo config
+        var loopSize = _zkLoginWorkerOptions.LoopSize;
+        var total = _zkLoginWorkerOptions.TotalHolders; 
+        var times = total / loopSize + 1; 
         var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         for (var i = 0; i < times; i++)
         {
             var swLoop = new Stopwatch();
             swLoop.Start();
+            var skip = i * loopSize;
             try
             {
-                var singleLoopResult = await SaveDataUnderChainAndHandlerOnChainData(i * 30, 30);
+                var singleLoopResult = await SaveDataUnderChainAndHandlerOnChainData(skip, loopSize);
                 if (singleLoopResult.Item1 && !singleLoopResult.Item2.IsNullOrEmpty())
                 {
                     saveErrorPoseidonDtos.AddRange(singleLoopResult.Item2);   
                 }
+                if (singleLoopResult.Item1)
+                {
+                    _logger.LogInformation("SaveDataUnderChainAndHandlerOnChainData finished at loop skip:{0} limit:{1}", skip, loopSize);
+                    break;
+                }
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:30", i * 30);
+                _logger.LogError(e, "SaveDataUnderChainAndHandlerOnChainData error skip:{0}, limit:{1}", skip, loopSize);
             }
             swLoop.Stop();
             _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker loop:{0} cost:{1}ms", i, swLoop.ElapsedMilliseconds);
@@ -121,7 +131,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         {
             var chainIdToCaHolder = await ListHolderInfosFromContract(caHash);
             if (chainIdToCaHolder.IsNullOrEmpty() || chainIdToCaHolder.Values.IsNullOrEmpty()
-                || chainIdToCaHolder.Values.All(holderInfo => holderInfo.GuardianList.Guardians.All(NoNeedRefreshGuardianPoseidonHash)))
+                || chainIdToCaHolder.Values.All(NoNeedRefreshCaHolder))
             {
                 continue;
             }
@@ -141,11 +151,11 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                 //guardians' loop
                 foreach (var guardian in getHolderInfoOutput.Value.GuardianList.Guardians)
                 {
-                    var guardianFromEs = guardiansFromEs.FirstOrDefault(g => g.IdentifierHash.Equals(guardian.IdentifierHash.ToHex()));
                     if (NoNeedRefreshGuardianPoseidonHash(guardian))
                     {
                         continue;
                     }
+                    var guardianFromEs = guardiansFromEs.FirstOrDefault(g => g.IdentifierHash.Equals(guardian.IdentifierHash.ToHex()));
                     var poseidonHash = _poseidonProvider.GenerateIdentifierHash(guardianFromEs.Identifier, ByteArrayHelper.HexStringToByteArray(guardianFromEs.Salt));
                     _logger.LogInformation("identifier:{0} (poseidon)identifierHash:{1} salt:{2}", guardianFromEs.Identifier, poseidonHash, (guardianFromEs.Salt));
                     //save poseidon hash in mongodb and es
@@ -191,9 +201,18 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         return new ValueTuple<bool, List<ZkPoseidonDto>>(true, saveErrorPoseidonDtos);
     }
 
+    private bool NoNeedRefreshCaHolder(GetHolderInfoOutput holderInfo)
+    {
+        if (holderInfo?.GuardianList == null || holderInfo.GuardianList.Guardians.IsNullOrEmpty())
+        {
+            return true;
+        }
+        return holderInfo.GuardianList.Guardians.All(NoNeedRefreshGuardianPoseidonHash);
+    }
+
     private bool NoNeedRefreshGuardianPoseidonHash(Portkey.Contracts.CA.Guardian guardian)
     {
-        if (!SupportZkLoginGuardian(guardian.Type))
+        if (guardian == null || !SupportZkLoginGuardian(guardian.Type))
         {
             return true;
         }
@@ -235,10 +254,6 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                 }));
             }
         }
-        // else
-        // {
-        //     await VerifiedPoseidonHashResult(getHolderInfoOutput, caHash);
-        // }
         sw.Stop();
         _logger.LogInformation("Invocation contract chainId:{0} cost:{1}ms", chainId, sw.ElapsedMilliseconds);
     }

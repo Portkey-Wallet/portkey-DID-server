@@ -1,8 +1,10 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using CAServer.Verifier.Dtos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -14,18 +16,22 @@ namespace CAServer.CAAccount.Provider;
 [DisableAuditing]
 public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
 {
+    private const string Domain = "com.portkey.finance://oauthredirect";
     private readonly IGuardianUserProvider _guardianUserProvider;
     private readonly ILogger<GoogleZkProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     
     public GoogleZkProvider(
         IGuardianUserProvider guardianUserProvider,
         ILogger<GoogleZkProvider> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IHttpContextAccessor httpContextAccessor)
     {
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _httpContextAccessor = httpContextAccessor;
     }
     
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
@@ -79,4 +85,35 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
 
         return googleUserInfo;
     }
+
+    public string GetGoogleAuthRedirectUrl()
+    {
+        var query = _httpContextAccessor?.HttpContext?.Request.Query;
+        _logger.LogInformation("GetGoogleAuthRedirectUrl query:{0}", JsonConvert.SerializeObject(query));
+        var queryString = GetQueryStringFromQueryCollection(query);
+        _logger.LogInformation("GetGoogleAuthRedirectUrl queryString:{0}", JsonConvert.SerializeObject(queryString));
+        var url = Domain + (queryString.StartsWith("?") ? queryString : "?" + queryString);
+        _logger.LogInformation("GetGoogleAuthRedirectUrl url:{0}", url);
+        return url;
+    }
+ 
+    private static string GetQueryStringFromQueryCollection(IQueryCollection queryCollection)
+    {
+        var queryBuilder = new StringBuilder();
+        foreach (var query in queryCollection)
+        {
+            foreach (var value in query.Value)
+            {
+                if (queryBuilder.Length > 0)
+                {
+                    queryBuilder.Append("&");
+                }
+                queryBuilder.Append(query.Key);
+                queryBuilder.Append("=");
+                queryBuilder.Append(value);
+            }
+        }
+        return queryBuilder.ToString();
+    }
+
 }
