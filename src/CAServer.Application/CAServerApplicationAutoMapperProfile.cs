@@ -161,7 +161,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
                         ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
-                PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo == null ? "" : e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
                 ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
                 {
                     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
@@ -361,7 +360,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
-                PoseidonIdentifierHash = e.GuardianInfo.PoseidonIdentifierHash,
                 ZkLoginInfo = new Portkey.Contracts.CA.ZkLoginInfo()
                 {
                     IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
@@ -473,9 +471,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProof = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.ZkProof,
                         Salt = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Salt,
                         CircuitId = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.CircuitId,
-                        PoseidonIdentifierHash = g.ZkLoginInfo == null ? "" : g.PoseidonIdentifierHash,
-                        IdentifierHashType = g.PoseidonIdentifierHash.IsNullOrEmpty() 
-                            ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                        IdentifierHashType = g.ZkLoginInfo == null ? IdentifierHashType.Sha256Hash : (g.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
+                            ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash),
                         NoncePayload = new NoncePayload()
                         {
                             AddManagerAddress = new AddManager()

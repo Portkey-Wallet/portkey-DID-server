@@ -89,7 +89,7 @@ public class ZkloginPoseidongHashService : IZkloginPoseidongHashService, ISingle
                     {
                         Type = guardian.Type,
                         IdentifierHash = guardian.IdentifierHash,
-                        PoseidonHash = poseidonHash
+                        PoseidonIdentifierHash = poseidonHash
                     });
                 }
 
