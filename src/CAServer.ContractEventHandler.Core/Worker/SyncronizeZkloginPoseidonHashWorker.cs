@@ -177,7 +177,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                     {
                         Type = guardian.Type,
                         IdentifierHash = guardian.IdentifierHash,
-                        PoseidonHash = poseidonHash
+                        PoseidonIdentifierHash = poseidonHash
                     });
                 }
                 var appendGuardianInput = new AppendGuardianInput()
@@ -249,7 +249,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                     CaHash = appendGuardianInput.CaHash.ToHex(),
                     IdentifierHash = poseidonGuardian.IdentifierHash.ToHex(),
                     GuardianType = poseidonGuardian.Type,
-                    PoseidonHash = poseidonGuardian.PoseidonHash,
+                    PoseidonHash = poseidonGuardian.PoseidonIdentifierHash,
                     ErrorMessage = "append to contract error"
                 }));
             }
