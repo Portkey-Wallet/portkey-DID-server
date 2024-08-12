@@ -104,7 +104,7 @@ public class ContractService : IContractService, ISingletonDependency
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
             _indicatorScope.End(sendIndicator);
-
+            _logger.LogDebug("SendTransactionToChainAsync chainId:{0} methodName:{1} result:{2}", chainId, methodName, JsonConvert.SerializeObject(result));
             await Task.Delay(_contractServiceOptions.Delay);
 
             var getIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
