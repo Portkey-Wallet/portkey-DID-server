@@ -111,7 +111,7 @@ public class ContractService : IContractService, ISingletonDependency
                 MonitorAelfClientType.GetTransactionResultAsync.ToString());
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _indicatorScope.End(getIndicator);
-            
+            _logger.LogDebug("SendTransactionToChainAsync chainId:{0} methodName:{1} transactionResult:{2}", chainId, methodName, JsonConvert.SerializeObject(transactionResult));
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -126,7 +126,7 @@ public class ContractService : IContractService, ISingletonDependency
 
                 _indicatorScope.End(retryGetIndicator);
             }
-            
+            _logger.LogDebug("SendTransactionToChainAsync chainId:{0} methodName:{1} succeed", chainId, methodName);
             return new TransactionInfoDto
             {
                 Transaction = transaction,
