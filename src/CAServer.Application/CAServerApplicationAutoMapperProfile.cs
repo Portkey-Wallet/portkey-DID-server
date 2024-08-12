@@ -471,6 +471,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProof = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.ZkProof,
                         Salt = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Salt,
                         CircuitId = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.CircuitId,
+                        PoseidonIdentifierHash = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.PoseidonIdentifierHash,
                         IdentifierHashType = g.ZkLoginInfo == null ? IdentifierHashType.Sha256Hash : (g.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
                             ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash),
                         NoncePayload = new NoncePayload()
