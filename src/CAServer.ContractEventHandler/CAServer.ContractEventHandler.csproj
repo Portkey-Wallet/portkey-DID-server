@@ -9,7 +9,7 @@
         <ProjectReference Include="..\CAServer.ContractEventHandler.Core\CAServer.ContractEventHandler.Core.csproj" />
         <ProjectReference Include="..\CAServer.MongoDB\CAServer.MongoDB.csproj" />
         <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
-        <PackageReference Include="Groth16.Net" Version="1.1.0" />
+        <PackageReference Include="Groth16.Net" Version="1.0.3" />
         <PackageReference Include="Poseidon.Net" Version="0.1.1" />
     </ItemGroup>
 
