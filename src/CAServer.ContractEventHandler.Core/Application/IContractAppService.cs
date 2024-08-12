@@ -342,6 +342,18 @@ public class ContractAppService : IContractAppService
         }
 
         var resultSocialRecovery = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
+        if (resultSocialRecovery == null)
+        {
+            recoveryResult.RecoveryMessage = "Transaction result: null";
+            recoveryResult.RecoverySuccess = false;
+
+            _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+
+            await _distributedEventBus.PublishAsync(recoveryResult);
+
+            return;
+        }
         _logger.LogInformation("SocialRecoveryAsync From contract reuslt:{}", JsonConvert.SerializeObject(resultSocialRecovery));
         var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");

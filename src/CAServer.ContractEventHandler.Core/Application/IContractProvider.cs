@@ -373,12 +373,15 @@ public class ContractProvider : IContractProvider
         {
             _logger.LogInformation("IContractProvider SocialRecoveryAsync request params:{0}", JsonConvert.SerializeObject(socialRecoveryDto));
             var result = await _contractServiceProxy.SocialRecoveryAsync(socialRecoveryDto);
-            _logger.LogInformation("IContractProvider SocialRecoveryAsync result:{0}", JsonConvert.SerializeObject(result));
-            _logger.LogInformation(
-                "SocialRecovery to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
-                socialRecoveryDto.ChainId,
-                result.TransactionId, result.BlockNumber, result.Status, result.Error);
+            _logger.LogInformation("IContractProvider SocialRecoveryAsync result:{0}", result == null ? null : JsonConvert.SerializeObject(result));
+            if (result != null)
+            {
+                _logger.LogInformation(
+                                "SocialRecovery to chain: {id} result:" +
+                                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                                socialRecoveryDto.ChainId,
+                                result.TransactionId, result.BlockNumber, result.Status, result.Error);
+            }
 
             return result;
         }
