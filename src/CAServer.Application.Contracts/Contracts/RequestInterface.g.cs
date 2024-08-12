@@ -27,24 +27,25 @@ namespace AetherLink.Contracts.Consumer {
             "ChdyZXF1ZXN0X2ludGVyZmFjZS5wcm90bxIGb3JhY2xlGg9hZWxmL2NvcmUu",
             "cHJvdG8aEmFlbGYvb3B0aW9ucy5wcm90bxoLYWNzMTIucHJvdG8aG2dvb2ds",
             "ZS9wcm90b2J1Zi9lbXB0eS5wcm90bxoeZ29vZ2xlL3Byb3RvYnVmL3dyYXBw",
-            "ZXJzLnByb3RvGh9nb29nbGUvcHJvdG9idWYvdGltZXN0YW1wLnByb3RvImUK",
-            "F1N0YXJ0T3JhY2xlUmVxdWVzdElucHV0EhcKD3N1YnNjcmlwdGlvbl9pZBgB",
-            "IAEoAxIaChJyZXF1ZXN0X3R5cGVfaW5kZXgYAiABKAUSFQoNc3BlY2lmaWNf",
-            "ZGF0YRgDIAEoDCJ5ChxIYW5kbGVPcmFjbGVGdWxmaWxsbWVudElucHV0Eh4K",
-            "CnJlcXVlc3RfaWQYASABKAsyCi5hZWxmLkhhc2gSEAoIcmVzcG9uc2UYAiAB",
-            "KAwSCwoDZXJyGAMgASgMEhoKEnJlcXVlc3RfdHlwZV9pbmRleBgEIAEoBSIv",
-            "Cg5PcmFjbGVSZXNwb25zZRIQCghyZXNwb25zZRgBIAEoDBILCgNlcnIYAiAB",
-            "KAwyugEKEFJlcXVlc3RJbnRlcmZhY2USTQoSU3RhcnRPcmFjbGVSZXF1ZXN0",
-            "Eh8ub3JhY2xlLlN0YXJ0T3JhY2xlUmVxdWVzdElucHV0GhYuZ29vZ2xlLnBy",
-            "b3RvYnVmLkVtcHR5ElcKF0hhbmRsZU9yYWNsZUZ1bGZpbGxtZW50EiQub3Jh",
-            "Y2xlLkhhbmRsZU9yYWNsZUZ1bGZpbGxtZW50SW5wdXQaFi5nb29nbGUucHJv",
-            "dG9idWYuRW1wdHlCIKoCHUFldGhlckxpbmsuQ29udHJhY3RzLkNvbnN1bWVy",
-            "YgZwcm90bzM="));
+            "ZXJzLnByb3RvGh9nb29nbGUvcHJvdG9idWYvdGltZXN0YW1wLnByb3RvIoMB",
+            "ChdTdGFydE9yYWNsZVJlcXVlc3RJbnB1dBIXCg9zdWJzY3JpcHRpb25faWQY",
+            "ASABKAMSGgoScmVxdWVzdF90eXBlX2luZGV4GAIgASgFEhUKDXNwZWNpZmlj",
+            "X2RhdGEYAyABKAwSHAoIdHJhY2VfaWQYBCABKAsyCi5hZWxmLkhhc2gilwEK",
+            "HEhhbmRsZU9yYWNsZUZ1bGZpbGxtZW50SW5wdXQSHgoKcmVxdWVzdF9pZBgB",
+            "IAEoCzIKLmFlbGYuSGFzaBIQCghyZXNwb25zZRgCIAEoDBILCgNlcnIYAyAB",
+            "KAwSGgoScmVxdWVzdF90eXBlX2luZGV4GAQgASgFEhwKCHRyYWNlX2lkGAUg",
+            "ASgLMgouYWVsZi5IYXNoIi8KDk9yYWNsZVJlc3BvbnNlEhAKCHJlc3BvbnNl",
+            "GAEgASgMEgsKA2VychgCIAEoDDK6AQoQUmVxdWVzdEludGVyZmFjZRJNChJT",
+            "dGFydE9yYWNsZVJlcXVlc3QSHy5vcmFjbGUuU3RhcnRPcmFjbGVSZXF1ZXN0",
+            "SW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHkSVwoXSGFuZGxlT3JhY2xl",
+            "RnVsZmlsbG1lbnQSJC5vcmFjbGUuSGFuZGxlT3JhY2xlRnVsZmlsbG1lbnRJ",
+            "bnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eUIgqgIdQWV0aGVyTGluay5D",
+            "b250cmFjdHMuQ29uc3VtZXJiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.WrappersReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Consumer.StartOracleRequestInput), global::AetherLink.Contracts.Consumer.StartOracleRequestInput.Parser, new[]{ "SubscriptionId", "RequestTypeIndex", "SpecificData" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput), global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput.Parser, new[]{ "RequestId", "Response", "Err", "RequestTypeIndex" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Consumer.StartOracleRequestInput), global::AetherLink.Contracts.Consumer.StartOracleRequestInput.Parser, new[]{ "SubscriptionId", "RequestTypeIndex", "SpecificData", "TraceId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput), global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput.Parser, new[]{ "RequestId", "Response", "Err", "RequestTypeIndex", "TraceId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Consumer.OracleResponse), global::AetherLink.Contracts.Consumer.OracleResponse.Parser, new[]{ "Response", "Err" }, null, null, null, null)
           }));
     }
@@ -89,6 +90,7 @@ namespace AetherLink.Contracts.Consumer {
       subscriptionId_ = other.subscriptionId_;
       requestTypeIndex_ = other.requestTypeIndex_;
       specificData_ = other.specificData_;
+      traceId_ = other.traceId_ != null ? other.traceId_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -134,6 +136,18 @@ namespace AetherLink.Contracts.Consumer {
       }
     }
 
+    /// <summary>Field number for the "trace_id" field.</summary>
+    public const int TraceIdFieldNumber = 4;
+    private global::AElf.Types.Hash traceId_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::AElf.Types.Hash TraceId {
+      get { return traceId_; }
+      set {
+        traceId_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -152,6 +166,7 @@ namespace AetherLink.Contracts.Consumer {
       if (SubscriptionId != other.SubscriptionId) return false;
       if (RequestTypeIndex != other.RequestTypeIndex) return false;
       if (SpecificData != other.SpecificData) return false;
+      if (!object.Equals(TraceId, other.TraceId)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -162,6 +177,7 @@ namespace AetherLink.Contracts.Consumer {
       if (SubscriptionId != 0L) hash ^= SubscriptionId.GetHashCode();
       if (RequestTypeIndex != 0) hash ^= RequestTypeIndex.GetHashCode();
       if (SpecificData.Length != 0) hash ^= SpecificData.GetHashCode();
+      if (traceId_ != null) hash ^= TraceId.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -192,6 +208,10 @@ namespace AetherLink.Contracts.Consumer {
         output.WriteRawTag(26);
         output.WriteBytes(SpecificData);
       }
+      if (traceId_ != null) {
+        output.WriteRawTag(34);
+        output.WriteMessage(TraceId);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -214,6 +234,10 @@ namespace AetherLink.Contracts.Consumer {
         output.WriteRawTag(26);
         output.WriteBytes(SpecificData);
       }
+      if (traceId_ != null) {
+        output.WriteRawTag(34);
+        output.WriteMessage(TraceId);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -232,6 +256,9 @@ namespace AetherLink.Contracts.Consumer {
       }
       if (SpecificData.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(SpecificData);
+      }
+      if (traceId_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(TraceId);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -253,6 +280,12 @@ namespace AetherLink.Contracts.Consumer {
       }
       if (other.SpecificData.Length != 0) {
         SpecificData = other.SpecificData;
+      }
+      if (other.traceId_ != null) {
+        if (traceId_ == null) {
+          TraceId = new global::AElf.Types.Hash();
+        }
+        TraceId.MergeFrom(other.TraceId);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -281,6 +314,13 @@ namespace AetherLink.Contracts.Consumer {
             SpecificData = input.ReadBytes();
             break;
           }
+          case 34: {
+            if (traceId_ == null) {
+              TraceId = new global::AElf.Types.Hash();
+            }
+            input.ReadMessage(TraceId);
+            break;
+          }
         }
       }
     #endif
@@ -306,6 +346,13 @@ namespace AetherLink.Contracts.Consumer {
           }
           case 26: {
             SpecificData = input.ReadBytes();
+            break;
+          }
+          case 34: {
+            if (traceId_ == null) {
+              TraceId = new global::AElf.Types.Hash();
+            }
+            input.ReadMessage(TraceId);
             break;
           }
         }
@@ -353,6 +400,7 @@ namespace AetherLink.Contracts.Consumer {
       response_ = other.response_;
       err_ = other.err_;
       requestTypeIndex_ = other.requestTypeIndex_;
+      traceId_ = other.traceId_ != null ? other.traceId_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -410,6 +458,18 @@ namespace AetherLink.Contracts.Consumer {
       }
     }
 
+    /// <summary>Field number for the "trace_id" field.</summary>
+    public const int TraceIdFieldNumber = 5;
+    private global::AElf.Types.Hash traceId_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::AElf.Types.Hash TraceId {
+      get { return traceId_; }
+      set {
+        traceId_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -429,6 +489,7 @@ namespace AetherLink.Contracts.Consumer {
       if (Response != other.Response) return false;
       if (Err != other.Err) return false;
       if (RequestTypeIndex != other.RequestTypeIndex) return false;
+      if (!object.Equals(TraceId, other.TraceId)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -440,6 +501,7 @@ namespace AetherLink.Contracts.Consumer {
       if (Response.Length != 0) hash ^= Response.GetHashCode();
       if (Err.Length != 0) hash ^= Err.GetHashCode();
       if (RequestTypeIndex != 0) hash ^= RequestTypeIndex.GetHashCode();
+      if (traceId_ != null) hash ^= TraceId.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -474,6 +536,10 @@ namespace AetherLink.Contracts.Consumer {
         output.WriteRawTag(32);
         output.WriteInt32(RequestTypeIndex);
       }
+      if (traceId_ != null) {
+        output.WriteRawTag(42);
+        output.WriteMessage(TraceId);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -500,6 +566,10 @@ namespace AetherLink.Contracts.Consumer {
         output.WriteRawTag(32);
         output.WriteInt32(RequestTypeIndex);
       }
+      if (traceId_ != null) {
+        output.WriteRawTag(42);
+        output.WriteMessage(TraceId);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -521,6 +591,9 @@ namespace AetherLink.Contracts.Consumer {
       }
       if (RequestTypeIndex != 0) {
         size += 1 + pb::CodedOutputStream.ComputeInt32Size(RequestTypeIndex);
+      }
+      if (traceId_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(TraceId);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -548,6 +621,12 @@ namespace AetherLink.Contracts.Consumer {
       }
       if (other.RequestTypeIndex != 0) {
         RequestTypeIndex = other.RequestTypeIndex;
+      }
+      if (other.traceId_ != null) {
+        if (traceId_ == null) {
+          TraceId = new global::AElf.Types.Hash();
+        }
+        TraceId.MergeFrom(other.TraceId);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -583,6 +662,13 @@ namespace AetherLink.Contracts.Consumer {
             RequestTypeIndex = input.ReadInt32();
             break;
           }
+          case 42: {
+            if (traceId_ == null) {
+              TraceId = new global::AElf.Types.Hash();
+            }
+            input.ReadMessage(TraceId);
+            break;
+          }
         }
       }
     #endif
@@ -615,6 +701,13 @@ namespace AetherLink.Contracts.Consumer {
           }
           case 32: {
             RequestTypeIndex = input.ReadInt32();
+            break;
+          }
+          case 42: {
+            if (traceId_ == null) {
+              TraceId = new global::AElf.Types.Hash();
+            }
+            input.ReadMessage(TraceId);
             break;
           }
         }
