@@ -96,7 +96,7 @@ public class ContractService : IContractService, ISingletonDependency
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
             _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
-
+            _logger.LogInformation("SendTransactionToChainAsync Signature:{0} RawTransaction:{1}", transaction.Signature, transaction.ToByteArray().ToHex());
             var sendIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.SendTransactionAsync.ToString());
             var result = await client.SendTransactionAsync(new SendTransactionInput
