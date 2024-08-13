@@ -864,7 +864,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var s = HMACSHA256Helper.ComputeHash(
             "userIds=" + JsonConvert.SerializeObject(ids) + "&taskId=" + _tonGiftsOptions.ApiKey + "&status=completed",
             _tonGiftsOptions.ApiKey);
-        var url = "https://devmini.tongifts.app/";
+        //TODO add to apollo 
+        var url = _tonGiftsOptions.Url;
         var parameters = new Dictionary<string, string>
         {
             { "userIds", JsonConvert.SerializeObject(ids) },

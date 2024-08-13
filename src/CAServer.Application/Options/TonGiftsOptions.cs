@@ -8,4 +8,11 @@ public class TonGiftsOptions
 
 
     public string TaskId { get; set; }
+    public string Url { get; set; }
+    //var url = "https://devmini.tongifts.app/";
+
+
+
+    
+    
 }
