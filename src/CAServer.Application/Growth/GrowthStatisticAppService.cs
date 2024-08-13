@@ -51,9 +51,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
     private const string RepairDataCache = "Hamster:DataRepairKey";
     private const string HamsterTonGiftsUserIdsKey = "Hamster:TonGifts:UserIdsKey";
+    private const string HamsterTonGiftsVerifiedUserIdsKey = "Hamster:TonGifts:VerifiedUserIdsKey";
+
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly TonGiftsOptions _tonGiftsOptions;
+    
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -705,7 +708,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var address = caHolderInfo.CaHolderInfo?.FirstOrDefault()?.CaAddress;
         var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
         var hamsterScoreList =
-            await _growthProvider.GetHamsterScoreListAsync(new List<string> { formatAddress }, DateTime.UtcNow.AddDays(-1),
+            await _growthProvider.GetHamsterScoreListAsync(new List<string> { formatAddress },
+                DateTime.UtcNow.AddDays(-1),
                 DateTime.UtcNow);
         if (hamsterScoreList.GetScoreInfos?.Count == 0)
         {
@@ -809,6 +813,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public async Task TonGiftsValidateAsync()
     {
         var userIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsUserIdsKey);
+        var verifiedUserIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsVerifiedUserIdsKey);
         if (userIds.Length == 0)
         {
             _logger.LogDebug("No users need to be validate.");
@@ -818,6 +823,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var ids = new List<string>();
         foreach (var id in userIds)
         {
+            if (verifiedUserIds.Contains(id))
+            {
+                _logger.LogDebug("The user has been verified.");
+                continue;
+            }
+
             var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", id);
             var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
             var guardian = guardianGrain.GetGuardianAsync(id).Result;
@@ -836,29 +847,44 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 continue;
             }
 
-            ids.Add(id);
+            var address = _hamsterOptions.AddressPrefix + caHolderInfo.CaHolderInfo?.FirstOrDefault()?.CaAddress +
+                          _hamsterOptions.AddressSuffix;
+            var score = await _growthProvider.GetHamsterScoreListAsync(
+                new List<string> { address },
+                DateTime.UtcNow.AddDays(-1),
+                DateTime.UtcNow);
+            if (score.GetScoreInfos != null && score.GetScoreInfos.Count > 0)
+            {
+                ids.Add(id);
+            }
         }
 
-        var param = new TonGiftsRequestDto()
-        {
-            TaskId = _tonGiftsOptions.TaskId,
-            Status = "completed",
-            UserIds = ids
-        };
-        var rawStr = JsonConvert.SerializeObject(param);
+
         var t = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString();
-        var Hash = HMACSHA256Helper.ComputeHash("rawStr=" + param + "&t=" + t, _tonGiftsOptions.ApiKey);
-        var apiKey = _tonGiftsOptions.ApiKey;
-        const string url = "https://devmini.tongifts.app/";
+        var s = HMACSHA256Helper.ComputeHash(
+            "userIds=" + JsonConvert.SerializeObject(ids) + "&taskId=" + _tonGiftsOptions.ApiKey + "&status=completed",
+            _tonGiftsOptions.ApiKey);
+        var url = "https://devmini.tongifts.app/";
+        var parameters = new Dictionary<string, string>
+        {
+            { "userIds", JsonConvert.SerializeObject(ids) },
+            { "taskId", _tonGiftsOptions.TaskId },
+            { "status", "completed" },
+            { "k", _tonGiftsOptions.ApiKey },
+            { "t", t },
+            { "s", s },
+        };
+   
         var client = _httpClientFactory.CreateClient();
-        var tokenParam = JsonConvert.SerializeObject(new
-            { rawStr, apiKey, Hash, t });
+        var tokenParam = JsonConvert.SerializeObject(parameters);
         var requestParam = new StringContent(tokenParam,
             Encoding.UTF8,
             MediaTypeNames.Application.Json);
-
         var response = await client.PostAsync(url, requestParam);
         var result = await response.Content.ReadAsStringAsync();
+        //TODO Deal with result,find success and failed userIds
+        //TODO The class is TonGiftsResponseDto;
+        //TODO UserIds add to  HamsterTonGiftsVerifiedUserIdsKey, And failed Add to HamsterTonGiftsUserIdsKey
     }
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
