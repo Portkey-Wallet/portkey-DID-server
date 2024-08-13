@@ -30,6 +30,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
+using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
 
@@ -671,7 +672,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             return new ValidateHamsterScoreResponseDto
             {
-                Result =
+                Result = new Result
                 {
                     ValidateResult = false
                 },
@@ -708,11 +709,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             return new ValidateHamsterScoreResponseDto()
             {
-                Result =
+                Result = new Result
                 {
                     ValidateResult = false
                 },
-                ErrorMsg =
+                ErrorMsg = new ErrorMsg
                 {
                     Message = "Validate failed."
                 }
@@ -721,7 +722,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         return new ValidateHamsterScoreResponseDto
         {
-            Result =
+            Result = new Result
             {
                 ValidateResult = true
             }
