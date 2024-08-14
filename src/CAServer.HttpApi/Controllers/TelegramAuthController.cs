@@ -63,4 +63,11 @@ public class TelegramAuthController : CAServerController
             Token = token
         };
     }
+    
+    [HttpPost("bot/register")]
+    public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot([FromHeader] string applicant, [FromBody] RegisterTelegramBotDto registerTelegramBotDto)
+    {
+        _logger.LogInformation(".....RegisterTelegramBot Applicant is:{0}", applicant);
+        return await _telegramAuthService.RegisterTelegramBot(registerTelegramBotDto);
+    }
 }

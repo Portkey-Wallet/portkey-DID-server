@@ -156,6 +156,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        Configure<TelegramVerifierOptions>(configuration.GetSection("TelegramVerifier"));
         // Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
         Configure<ManagerCountLimitOptions>(configuration.GetSection("ManagerCountLimit"));
         Configure<UserGuideInfoOptions>(configuration.GetSection("GuideInfo"));
