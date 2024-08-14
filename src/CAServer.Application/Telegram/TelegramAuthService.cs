@@ -21,15 +21,17 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
     private readonly TelegramAuthOptions _telegramAuthOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly IHttpClientService _httpClientService;
+    private readonly TelegramVerifierOptions _telegramVerifierOptions;
 
     public TelegramAuthService(ILogger<TelegramAuthService> logger,
         IOptionsSnapshot<TelegramAuthOptions> telegramAuthOptions, IObjectMapper objectMapper,
-        IHttpClientService httpClientService)
+        IHttpClientService httpClientService, IOptionsSnapshot<TelegramVerifierOptions> telegramVerifierOptions)
     {
         _logger = logger;
         _telegramAuthOptions = telegramAuthOptions.Value;
         _objectMapper = objectMapper;
         _httpClientService = httpClientService;
+        _telegramVerifierOptions = telegramVerifierOptions.Value;
     }
 
     public Task<TelegramBotDto> GetTelegramBotInfoAsync()
@@ -83,5 +85,38 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
         }
 
         return resultDto.Data;
+    }
+
+    public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot(RegisterTelegramBotDto request)
+    {
+        if (request == null || request.Secret.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("Invalid secret input");
+        }
+        var url = $"{_telegramVerifierOptions.Url}/api/app/auth/bot/register";
+        var resultDto = await _httpClientService.PostAsync<ResponseResultDto<TelegramBotInfoDto>>(url, request);
+        if (resultDto == null)
+        {
+            return new TelegramAuthResponseDto<TelegramBotInfoDto>
+            {
+                Success = false,
+                Message = "no result returned"
+            };
+        }
+
+        if (!resultDto.Success)
+        {
+            return new TelegramAuthResponseDto<TelegramBotInfoDto>
+            {
+                Success = false,
+                Message = resultDto.Message
+            };
+        }
+        return new TelegramAuthResponseDto<TelegramBotInfoDto>
+        {
+            Success = resultDto.Success,
+            Message = resultDto.Message,
+            Data = resultDto.Data
+        };
     }
 }
