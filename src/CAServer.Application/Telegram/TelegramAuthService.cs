@@ -8,6 +8,7 @@ using CAServer.Telegram.Options;
 using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.ObjectMapping;
@@ -95,6 +96,8 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
         }
         var url = $"{_telegramVerifierOptions.Url}/api/app/auth/bot/register";
         var resultDto = await _httpClientService.PostAsync<ResponseResultDto<TelegramBotInfoDto>>(url, request);
+        _logger.LogInformation("RegisterTelegramBot url:{0} params:{1} response:{2}",
+            url, JsonConvert.SerializeObject(resultDto), resultDto == null ? null : JsonConvert.SerializeObject(resultDto));
         if (resultDto == null)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>
