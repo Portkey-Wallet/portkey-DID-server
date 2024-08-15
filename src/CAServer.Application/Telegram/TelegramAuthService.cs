@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Telegram.Dtos;
 using CAServer.Telegram.Options;
 using CAServer.Verifier;
@@ -90,9 +92,10 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
 
     public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot(RegisterTelegramBotDto request)
     {
-        if (request == null || request.Secret.IsNullOrEmpty())
+        var checkResult = CheckSecret(request);
+        if (!checkResult.Success)
         {
-            throw new UserFriendlyException("Invalid secret input");
+            return checkResult;
         }
         var url = $"{_telegramVerifierOptions.Url}/api/app/auth/bot/register";
         var resultDto = await _httpClientService.PostAsync<ResponseResultDto<TelegramBotInfoDto>>(url, request);
@@ -120,6 +123,60 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
             Success = resultDto.Success,
             Message = resultDto.Message,
             Data = resultDto.Data
+        };
+    }
+
+    private TelegramAuthResponseDto<TelegramBotInfoDto> CheckSecret(RegisterTelegramBotDto request)
+    {
+        if (request == null || request.Secret.IsNullOrEmpty())
+        {
+            return new TelegramAuthResponseDto<TelegramBotInfoDto>
+            {
+                Success = false,
+                Message = "Invalid input, secret needs"
+            };
+        }
+
+        var secret = request.Secret;
+        if (!secret.Contains(CommonConstant.Colon))
+        {
+            return new TelegramAuthResponseDto<TelegramBotInfoDto>
+            {
+                Success = false,
+                Message = "Secret Format is invalid"
+            };
+        }
+
+        var secrets = secret.Split(CommonConstant.Colon);
+        if (secrets.Length != 2)
+        {
+            return new TelegramAuthResponseDto<TelegramBotInfoDto>
+            {
+                Success = false,
+                Message = "Secret Format is invalid"
+            };
+        }
+        if (secrets[0].IsNullOrEmpty() || !Regex.IsMatch(secrets[0], @"^\d+$")
+            || secret[0].ToString().Length < 10 || secret[0].ToString().Length > 20)
+        {
+            return new TelegramAuthResponseDto<TelegramBotInfoDto>
+            {
+                Success = false,
+                Message = "Secret Format is invalid, botId is invalid"
+            };
+        }
+
+        if (!Regex.IsMatch(secrets[1], @"^[a-zA-Z0-9_-]+$"))
+        {
+            return new TelegramAuthResponseDto<TelegramBotInfoDto>
+            {
+                Success = false,
+                Message = "Secret Content Format is invalid"
+            };
+        }
+        return new TelegramAuthResponseDto<TelegramBotInfoDto>
+        {
+            Success = true,
         };
     }
 }
