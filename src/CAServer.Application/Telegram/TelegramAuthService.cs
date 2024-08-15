@@ -28,7 +28,7 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
 
     public TelegramAuthService(ILogger<TelegramAuthService> logger,
         IOptionsSnapshot<TelegramAuthOptions> telegramAuthOptions, IObjectMapper objectMapper,
-        IHttpClientService httpClientService, IOptionsSnapshot<TelegramVerifierOptions> telegramVerifierOptions)
+        IHttpClientService httpClientService, IOptions<TelegramVerifierOptions> telegramVerifierOptions)
     {
         _logger = logger;
         _telegramAuthOptions = telegramAuthOptions.Value;
@@ -148,6 +148,7 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
         }
 
         var secrets = secret.Split(CommonConstant.Colon);
+        _logger.LogInformation("==================secrets:{0}", JsonConvert.SerializeObject(secrets));
         if (secrets.Length != 2)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>
@@ -157,7 +158,8 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
             };
         }
         if (secrets[0].IsNullOrEmpty() || !Regex.IsMatch(secrets[0], @"^\d+$")
-            || secret[0].ToString().Length < 10 || secret[0].ToString().Length > 20)
+            || secret[0].ToString().Length <= _telegramVerifierOptions.BotIdMinimumLength
+            || secret[0].ToString().Length >= _telegramVerifierOptions.BotIdMaximumLength)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>
             {
@@ -166,7 +168,9 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
             };
         }
 
-        if (!Regex.IsMatch(secrets[1], @"^[a-zA-Z0-9_-]+$"))
+        if (secrets[1].IsNullOrEmpty() || !Regex.IsMatch(secrets[1], @"^[a-zA-Z0-9_-]+$")
+            || secret[1].ToString().Length <= _telegramVerifierOptions.SecretMinimumLength
+            || secret[1].ToString().Length >= _telegramVerifierOptions.SecretMaximumLength)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>
             {
