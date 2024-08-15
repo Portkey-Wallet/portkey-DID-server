@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.RateLimiting;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
@@ -25,6 +26,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -92,6 +94,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         
+        ConfigureRateLimiter(context);
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -111,6 +114,19 @@ public class CAServerHttpApiHostModule : AbpModule
         context.Services.AddSignalR().AddStackExchangeRedis(configuration["Redis:Configuration"],
             options => { options.Configuration.ChannelPrefix = "CAServer"; });
         ConfigAuditing();
+    }
+
+    private void ConfigureRateLimiter(ServiceConfigurationContext context)
+    {
+        context.Services.AddRateLimiter(limiter => limiter.AddTokenBucketLimiter(policyName:"token", options =>
+        {
+            options.TokenLimit = 5;
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 10;
+            options.ReplenishmentPeriod = TimeSpan.FromSeconds(60);
+            options.TokensPerPeriod = 3;
+            options.AutoReplenishment = true;
+        }));
     }
 
     private void ConfigureCache(IConfiguration configuration)
