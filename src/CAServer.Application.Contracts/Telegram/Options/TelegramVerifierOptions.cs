@@ -6,6 +6,6 @@ public class TelegramVerifierOptions
     public int Timeout { get; set; }
     public int BotIdMinimumLength { get; set; } = 9;
     public int BotIdMaximumLength { get; set; } = 11;
-    public int SecretMinimumLength { get; set; } = 45;
-    public int SecretMaximumLength { get; set; } = 47;
+    public int SecretMinimumLength { get; set; } = 34;
+    public int SecretMaximumLength { get; set; } = 36;
 }

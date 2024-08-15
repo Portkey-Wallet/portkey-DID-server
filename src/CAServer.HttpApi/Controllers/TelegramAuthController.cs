@@ -65,8 +65,7 @@ public class TelegramAuthController : CAServerController
         };
     }
     
-    [EnableRateLimiting("token")]
-    [HttpPost("bot/register")]
+    [HttpPost("bot/register"), EnableRateLimiting("token")]
     public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot([FromBody] RegisterTelegramBotDto registerTelegramBotDto)
     {
         return await _telegramAuthService.RegisterTelegramBot(registerTelegramBotDto);

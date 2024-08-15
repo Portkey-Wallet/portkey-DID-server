@@ -120,12 +120,12 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         context.Services.AddRateLimiter(limiter => limiter.AddTokenBucketLimiter(policyName:"token", options =>
         {
-            options.TokenLimit = 5;
+            options.TokenLimit = 3;
             options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            options.QueueLimit = 10;
+            options.QueueLimit = 0;
             options.ReplenishmentPeriod = TimeSpan.FromSeconds(60);
-            options.TokensPerPeriod = 3;
-            options.AutoReplenishment = true;
+            options.TokensPerPeriod = 1;
+            options.AutoReplenishment = false;
         }));
     }
 
