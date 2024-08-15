@@ -40,6 +40,7 @@ public class Program
             app.MapHub<CAHub>("ca");
             //app.MapHub<DataReportingHub>("dataReporting");
             await app.InitializeApplicationAsync();
+            app.UseRateLimiter();
             await app.RunAsync();
             return 0;
         }
