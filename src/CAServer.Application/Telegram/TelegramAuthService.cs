@@ -18,8 +18,12 @@ using Volo.Abp.ObjectMapping;
 namespace CAServer.Telegram;
 
 [RemoteService(false), DisableAuditing]
-public class TelegramAuthService : CAServerAppService, ITelegramAuthService
+public partial class TelegramAuthService : CAServerAppService, ITelegramAuthService
 {
+    [GeneratedRegex("^\\d+$")]
+    private static partial Regex DigitRegex();
+    [GeneratedRegex("^[a-zA-Z0-9_-]+$")]
+    private static partial Regex DigitLetterDashUnderScoreRegex();
     private readonly ILogger<TelegramAuthService> _logger;
     private readonly TelegramAuthOptions _telegramAuthOptions;
     private readonly IObjectMapper _objectMapper;
@@ -148,7 +152,6 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
         }
 
         var secrets = secret.Split(CommonConstant.Colon);
-        _logger.LogInformation("==================secrets:{0}", JsonConvert.SerializeObject(secrets));
         if (secrets.Length != 2)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>
@@ -157,9 +160,12 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
                 Message = "Secret Format is invalid"
             };
         }
-        if (secrets[0].IsNullOrEmpty() || !Regex.IsMatch(secrets[0], @"^\d+$")
-            || secret[0].ToString().Length <= _telegramVerifierOptions.BotIdMinimumLength
-            || secret[0].ToString().Length >= _telegramVerifierOptions.BotIdMaximumLength)
+
+        var botId = secrets[0];
+        if (botId.IsNullOrEmpty()
+            || !DigitRegex().IsMatch(botId)
+            || botId.Length <= _telegramVerifierOptions.BotIdMinimumLength
+            || botId.Length >= _telegramVerifierOptions.BotIdMaximumLength)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>
             {
@@ -168,9 +174,11 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
             };
         }
 
-        if (secrets[1].IsNullOrEmpty() || !Regex.IsMatch(secrets[1], @"^[a-zA-Z0-9_-]+$")
-            || secret[1].ToString().Length <= _telegramVerifierOptions.SecretMinimumLength
-            || secret[1].ToString().Length >= _telegramVerifierOptions.SecretMaximumLength)
+        var token = secrets[1];
+        if (token.IsNullOrEmpty()
+            || !DigitLetterDashUnderScoreRegex().IsMatch(token)
+            || token.Length <= _telegramVerifierOptions.SecretMinimumLength
+            || token.Length >= _telegramVerifierOptions.SecretMaximumLength)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>
             {
