@@ -43,9 +43,9 @@ public class Program
                 .AddFixedWindowLimiter(policyName: "fixed", options =>
                 {
                     options.PermitLimit = 1;
-                    options.Window = TimeSpan.FromSeconds(1);
+                    options.Window = TimeSpan.FromSeconds(10);
                     options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    options.QueueLimit = 1;
+                    options.QueueLimit = 0;
                 }));
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
