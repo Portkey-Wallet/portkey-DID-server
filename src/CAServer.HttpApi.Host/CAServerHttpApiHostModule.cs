@@ -94,7 +94,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         
-        ConfigureRateLimiter(context);
+        // ConfigureRateLimiter(context);
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -120,10 +120,10 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         context.Services.AddRateLimiter(limiter => limiter.AddTokenBucketLimiter(policyName:"token", options =>
         {
-            options.TokenLimit = 3;
+            options.TokenLimit = 1;
             options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
             options.QueueLimit = 0;
-            options.ReplenishmentPeriod = TimeSpan.FromSeconds(60);
+            options.ReplenishmentPeriod = TimeSpan.FromSeconds(1);
             options.TokensPerPeriod = 1;
             options.AutoReplenishment = false;
         }));
