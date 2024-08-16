@@ -27,15 +27,15 @@ public interface IETransferClientProvider
 public class ETransferClientProvider : IETransferClientProvider, ISingletonDependency
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ETransferOptions _options;
+    private readonly IOptionsMonitor<ETransferOptions> _options;
     private readonly IHttpClientService _httpClientService;
     private readonly ILogger<ETransferClientProvider> _logger;
 
-    public ETransferClientProvider(IHttpContextAccessor httpContextAccessor, IOptionsSnapshot<ETransferOptions> options,
+    public ETransferClientProvider(IHttpContextAccessor httpContextAccessor, IOptionsMonitor<ETransferOptions> options,
         IHttpClientService httpClientService, ILogger<ETransferClientProvider> logger)
     {
         _httpContextAccessor = httpContextAccessor;
-        _options = options.Value;
+        _options = options;
         _httpClientService = httpClientService;
         _logger = logger;
     }
@@ -44,7 +44,7 @@ public class ETransferClientProvider : IETransferClientProvider, ISingletonDepen
     {
         try
         {
-            return await _httpClientService.GetAsync<ResponseWrapDto<T>>(GetUrl(uri), GetAuthHeader());
+            return await _httpClientService.GetAsync<ResponseWrapDto<T>>(GetUrl(uri), GetHeader());
         }
         catch (Exception e)
         {
@@ -70,18 +70,25 @@ public class ETransferClientProvider : IETransferClientProvider, ISingletonDepen
     public async Task<T> PostFormAsync<T>(string uri, object requestParam)
     {
         var param = GetFormParam(requestParam);
-        return await _httpClientService.PostAsync<T>(GetUrl(uri), RequestMediaType.Form, param, GetAuthHeader());
+        return await _httpClientService.PostAsync<T>(GetUrl(uri), RequestMediaType.Form, param, GetHeader());
     }
 
-    private Dictionary<string, string> GetAuthHeader()
+    private Dictionary<string, string> GetHeader()
     {
-        var authHeader = new Dictionary<string, string>();
+        var headers = new Dictionary<string, string>();
         var authToken = _httpContextAccessor.HttpContext?.Request.Headers.GetOrDefault(ETransferConstant.AuthHeader)
             .FirstOrDefault();
-        if (authToken.IsNullOrEmpty()) return authHeader;
+        if (!authToken.IsNullOrEmpty())
+        {
+            headers.Add(CommonConstant.AuthHeader, authToken);
+        }
 
-        authHeader.Add(CommonConstant.AuthHeader, authToken);
-        return authHeader;
+        if (!_options.CurrentValue.Version.IsNullOrEmpty())
+        {
+              headers.Add(CommonConstant.VersionName, _options.CurrentValue.Version);
+        }
+
+        return headers;
     }
 
     private Dictionary<string, string> GetFormParam(object requestParam)
@@ -112,7 +119,7 @@ public class ETransferClientProvider : IETransferClientProvider, ISingletonDepen
     {
         var url = uri.StartsWith(CommonConstant.ProtocolName)
             ? uri
-            : $"{_options.BaseUrl.TrimEnd('/')}/{_options.Prefix}/{uri.TrimStart('/')}";
+            : $"{_options.CurrentValue.BaseUrl.TrimEnd('/')}/{_options.CurrentValue.Prefix}/{uri.TrimStart('/')}";
 
         var queryString = _httpContextAccessor.HttpContext?.Request.QueryString;
         if (queryString.HasValue && !url.Contains("?"))
@@ -122,6 +129,4 @@ public class ETransferClientProvider : IETransferClientProvider, ISingletonDepen
 
         return url;
     }
-
-
 }

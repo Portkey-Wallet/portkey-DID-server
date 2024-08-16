@@ -7,4 +7,5 @@ public class ETransferOptions
     public string BaseUrl { get; set; }
     public string Prefix { get; set; } = string.Empty;
     public int Timeout { get; set; } = 20;
+    public string Version { get; set; }
 }

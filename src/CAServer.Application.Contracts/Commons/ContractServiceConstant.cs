@@ -133,4 +133,6 @@ public static class CommonConstant
 
     public const string HamsterPassSymbol = "HAMSTERPASS-1";
     public const string HamsterKingSymbol = "KINGHAMSTER-1";
+
+    public const string VersionName = "Version";
 }
