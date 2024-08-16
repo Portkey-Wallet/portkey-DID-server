@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Hubs;
 using CAServer.Nightingale;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -36,11 +39,21 @@ public class Program
                 .UseSerilog();
 
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
+            builder.Services.AddRateLimiter(_ => _
+                .AddFixedWindowLimiter(policyName: "fixed", options =>
+                {
+                    options.PermitLimit = 1;
+                    options.Window = TimeSpan.FromSeconds(1);
+                    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    options.QueueLimit = 1;
+                }));
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
             //app.MapHub<DataReportingHub>("dataReporting");
-            await app.InitializeApplicationAsync();
             app.UseRateLimiter();
+            app.MapGet("/api/app/telegramAuth/bot/register",
+                () => Results.Ok("You have visited too many times")).RequireRateLimiting("fixed");
+            await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;
         }
