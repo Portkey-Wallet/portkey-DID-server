@@ -51,7 +51,7 @@ public class Program
             app.MapHub<CAHub>("ca");
             //app.MapHub<DataReportingHub>("dataReporting");
             app.UseRateLimiter();
-            app.MapGet("/api/app/telegramAuth/bot/register",
+            app.MapPost("/api/app/telegramAuth/bot/register",
                 () => Results.Ok("You have visited too many times")).RequireRateLimiting("fixed");
             await app.InitializeApplicationAsync();
             await app.RunAsync();
