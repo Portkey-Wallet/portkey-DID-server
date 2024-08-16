@@ -5,7 +5,6 @@ using CAServer.Telegram;
 using CAServer.Telegram.Dtos;
 using CAServer.Telegram.Options;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -65,7 +64,8 @@ public class TelegramAuthController : CAServerController
         };
     }
     
-    [HttpPost("bot/register"), EnableRateLimiting("fixed")]
+    [HttpPost("bot/register")]
+    // [EnableRateLimiting("fixed")]
     public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot([FromBody] RegisterTelegramBotDto registerTelegramBotDto)
     {
         return await _telegramAuthService.RegisterTelegramBot(registerTelegramBotDto);
