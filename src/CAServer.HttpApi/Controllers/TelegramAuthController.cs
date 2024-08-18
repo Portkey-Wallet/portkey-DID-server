@@ -67,7 +67,6 @@ public class TelegramAuthController : CAServerController
     [HttpPost("bot/register")]
     public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot([FromBody] RegisterTelegramBotDto registerTelegramBotDto)
     {
-        _logger.LogInformation("******************************************************");
         return await _telegramAuthService.RegisterTelegramBot(registerTelegramBotDto);
     }
 }

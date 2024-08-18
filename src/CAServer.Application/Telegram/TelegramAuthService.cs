@@ -117,8 +117,6 @@ public partial class TelegramAuthService : CAServerAppService, ITelegramAuthServ
         }
         var url = $"{_telegramVerifierOptions.Url}/api/app/auth/bot/register";
         var resultDto = await _httpClientService.PostAsync<ResponseResultDto<TelegramBotInfoDto>>(url, request);
-        _logger.LogInformation("RegisterTelegramBot url:{0} params:{1} response:{2}",
-            url, JsonConvert.SerializeObject(resultDto), resultDto == null ? null : JsonConvert.SerializeObject(resultDto));
         if (resultDto == null)
         {
             return new TelegramAuthResponseDto<TelegramBotInfoDto>

@@ -8,4 +8,8 @@ public class TelegramVerifierOptions
     public int BotIdMaximumLength { get; set; } = 11;
     public int SecretMinimumLength { get; set; } = 34;
     public int SecretMaximumLength { get; set; } = 36;
+
+    public int ReplenishmentPeriodSeconds { get; set; } = 60;
+    public int TokenLimit { get; set; } = 5;
+    public int TokensPerPeriod { get; set; } = 5;
 }
