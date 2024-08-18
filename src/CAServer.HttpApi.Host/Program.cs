@@ -39,20 +39,18 @@ public class Program
                 .UseSerilog();
 
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
-            builder.Services.AddRateLimiter(o => o
-                .AddFixedWindowLimiter(policyName: "fixed", options =>
-                {
-                    options.PermitLimit = 1;
-                    options.Window = TimeSpan.FromSeconds(10);
-                    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    options.QueueLimit = 0;
-                }));
+            // builder.Services.AddRateLimiter(o => o
+            //     .AddFixedWindowLimiter(policyName: "fixed", options =>
+            //     {
+            //         options.PermitLimit = 1;
+            //         options.Window = TimeSpan.FromSeconds(10);
+            //         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            //         options.QueueLimit = 0;
+            //     }));
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
             //app.MapHub<DataReportingHub>("dataReporting");
-            app.UseRateLimiter();
-            // app.MapPost("/api/app/telegramAuth/bot/register",
-            //     () => Results.Ok("You have visited too many times")).RequireRateLimiting("fixed");
+            // app.UseRateLimiter();
             await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;
