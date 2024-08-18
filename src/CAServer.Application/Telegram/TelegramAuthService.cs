@@ -30,23 +30,19 @@ public partial class TelegramAuthService : CAServerAppService, ITelegramAuthServ
     private readonly IObjectMapper _objectMapper;
     private readonly IHttpClientService _httpClientService;
     private readonly TelegramVerifierOptions _telegramVerifierOptions;
-    private readonly RateLimiter _rateLimiter;
+    private readonly ITelegramRateLimiter _telegramRateLimiter;
 
     public TelegramAuthService(ILogger<TelegramAuthService> logger,
         IOptionsSnapshot<TelegramAuthOptions> telegramAuthOptions, IObjectMapper objectMapper,
-        IHttpClientService httpClientService, IOptions<TelegramVerifierOptions> telegramVerifierOptions)
+        IHttpClientService httpClientService, IOptions<TelegramVerifierOptions> telegramVerifierOptions,
+        ITelegramRateLimiter telegramRateLimiter)
     {
         _logger = logger;
         _telegramAuthOptions = telegramAuthOptions.Value;
         _objectMapper = objectMapper;
         _httpClientService = httpClientService;
         _telegramVerifierOptions = telegramVerifierOptions.Value;
-        _rateLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-        {
-            ReplenishmentPeriod = TimeSpan.FromSeconds(60),
-            TokenLimit = 3,
-            TokensPerPeriod = 3
-        });
+        _telegramRateLimiter = telegramRateLimiter;
     }
 
     public Task<TelegramBotDto> GetTelegramBotInfoAsync()
@@ -101,13 +97,19 @@ public partial class TelegramAuthService : CAServerAppService, ITelegramAuthServ
 
         return resultDto.Data;
     }
+    private async Task<T> RequestAsync<T>(Func<Task<T>> task)
+    {
+        await _telegramRateLimiter.RecordRequestAsync();
+        return await task();
+    }
 
     public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot(RegisterTelegramBotDto request)
     {
-        if (!_rateLimiter.AttemptAcquire().IsAcquired)
-        {
-            throw new UserFriendlyException("You have visited too many times");
-        }
+        return await RequestAsync(async () => await DoRegisterTelegramBot(request));
+    }
+
+    private async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> DoRegisterTelegramBot(RegisterTelegramBotDto request)
+    {
         var checkResult = CheckSecret(request);
         if (!checkResult.Success)
         {
@@ -134,6 +136,7 @@ public partial class TelegramAuthService : CAServerAppService, ITelegramAuthServ
                 Message = resultDto.Message
             };
         }
+
         return new TelegramAuthResponseDto<TelegramBotInfoDto>
         {
             Success = resultDto.Success,

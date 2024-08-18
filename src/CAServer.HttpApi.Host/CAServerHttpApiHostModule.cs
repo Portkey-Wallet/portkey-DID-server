@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Threading.RateLimiting;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
@@ -26,7 +25,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
