@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -29,6 +30,7 @@ public partial class TelegramAuthService : CAServerAppService, ITelegramAuthServ
     private readonly IObjectMapper _objectMapper;
     private readonly IHttpClientService _httpClientService;
     private readonly TelegramVerifierOptions _telegramVerifierOptions;
+    private readonly RateLimiter _rateLimiter;
 
     public TelegramAuthService(ILogger<TelegramAuthService> logger,
         IOptionsSnapshot<TelegramAuthOptions> telegramAuthOptions, IObjectMapper objectMapper,
@@ -39,6 +41,12 @@ public partial class TelegramAuthService : CAServerAppService, ITelegramAuthServ
         _objectMapper = objectMapper;
         _httpClientService = httpClientService;
         _telegramVerifierOptions = telegramVerifierOptions.Value;
+        _rateLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+        {
+            ReplenishmentPeriod = TimeSpan.FromSeconds(60),
+            TokenLimit = 3,
+            TokensPerPeriod = 3
+        });
     }
 
     public Task<TelegramBotDto> GetTelegramBotInfoAsync()
@@ -96,6 +104,10 @@ public partial class TelegramAuthService : CAServerAppService, ITelegramAuthServ
 
     public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot(RegisterTelegramBotDto request)
     {
+        if (!_rateLimiter.AttemptAcquire().IsAcquired)
+        {
+            throw new UserFriendlyException("You have visited too many times");
+        }
         var checkResult = CheckSecret(request);
         if (!checkResult.Success)
         {
