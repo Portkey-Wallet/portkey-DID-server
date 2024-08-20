@@ -8,6 +8,7 @@ using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Contacts.Provider;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
+using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
@@ -164,11 +165,6 @@ public class ZkLoginProvider
             GuardianIdentifierHash = identifierHash
         };
     }
-
-    public async Task TriggerZkLoginWorker(ZkEto caHashes)
-    {
-        await _distributedEventBus.PublishAsync(caHashes);
-    }
     
     public async Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit)
     {
@@ -222,5 +218,12 @@ public class ZkLoginProvider
         {
             CaHolderInfo = caHolderInfo
         };
+    }
+
+    public async Task AppendSinglePoseidonAsync(AppendSinglePoseidonDto request)
+    {
+        var eto = _objectMapper.Map<AppendSinglePoseidonDto, ZkSinglePoseidonHashEto>(request);
+        
+        await _distributedEventBus.PublishAsync(eto);
     }
 }

@@ -19,10 +19,10 @@ public interface IZkLoginProvider
     public Task<GuardianEto> UpdateGuardianAsync(string guardianIdentifier, string salt, string identifierHash);
     
     public Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto);
-
-    public Task TriggerZkLoginWorker(ZkEto caHashes);
     
     Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit);
 
     Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit);
+
+    public Task AppendSinglePoseidonAsync(AppendSinglePoseidonDto request);
 }
