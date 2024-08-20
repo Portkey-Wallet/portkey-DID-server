@@ -35,4 +35,7 @@ public interface IActivityProvider
         long endBlockHeight);
 
     Task<CaHolderTransactionIndex> GetNotSuccessTransactionAsync(string caAddress, string transactionId);
+    
+    Task<GuardiansDto> GetCaHolderInfoAsync(string identifierHash, int skipCount = 0,
+        int maxResultCount = 10);
 }

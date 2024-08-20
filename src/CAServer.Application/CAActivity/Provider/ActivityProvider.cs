@@ -186,4 +186,20 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         QueryContainer Filter(QueryContainerDescriptor<CaHolderTransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
         return await _transactionRepository.GetAsync(Filter);
     }
+
+    public async Task<GuardiansDto> GetCaHolderInfoAsync(string loginGuardianIdentifierHash, int skipCount = 0, int maxResultCount = 10)
+    {
+        return await _graphQlHelper.QueryAsync<GuardiansDto>(new GraphQLRequest
+        {
+            Query = @"
+			    query(loginGuardianIdentifierHash:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderInfo(dto: {loginGuardianIdentifierHash:loginGuardianIdentifierHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                            id,chainId,caHash,caAddress,originChainId,managerInfos{address,extraData},guardianList{guardians{verifierId,identifierHash,salt,isLoginGuardian,type}}}
+                }",
+            Variables = new
+            {
+                loginGuardianIdentifierHash , skipCount, maxResultCount
+            }
+        });
+    }
 }
