@@ -5,6 +5,7 @@ using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
@@ -166,12 +167,6 @@ public class CAAccountController : CAServerController
         return await _guardianAppService.GetGuardianListByCreateTimeAsync(createTimeSeconds);
     }
     
-    [HttpPost("trigger/worker")]
-    public async Task TriggerZkWorker([FromBody] ZkEto caHashes)
-    {
-        await _zkLoginProvider.TriggerZkLoginWorker(caHashes);
-    }
-    
     [HttpGet("caholders/es")]
     public async Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit)
     {
@@ -182,5 +177,13 @@ public class CAAccountController : CAServerController
     public async Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit)
     {
         return await _zkLoginProvider.GetCaHolderInfoAsync(skip, limit);
+    }
+    
+    [HttpPost("single/poseidon")]
+    [Authorize]
+    public async Task AppendSinglePoseidonAsync([FromBody]AppendSinglePoseidonDto request)
+    {
+        var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
+        await _zkLoginProvider.AppendSinglePoseidonAsync(request);
     }
 }

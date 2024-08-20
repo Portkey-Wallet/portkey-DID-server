@@ -989,13 +989,6 @@ namespace Portkey.Contracts.CA {
         __Marshaller_aelf_Address,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveApplePublicKeyByKid = new aelf::Method<global::Google.Protobuf.WellKnownTypes.StringValue, global::Google.Protobuf.WellKnownTypes.Empty>(
-        aelf::MethodType.Action,
-        __ServiceName,
-        "RemoveApplePublicKeyByKid",
-        __Marshaller_google_protobuf_StringValue,
-        __Marshaller_google_protobuf_Empty);
-
     static readonly aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.ZkNonceList> __Method_GetZkNonceListByCaHash = new aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.ZkNonceList>(
         aelf::MethodType.View,
         __ServiceName,
@@ -1459,11 +1452,6 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveApplePublicKeyByKid(global::Google.Protobuf.WellKnownTypes.StringValue input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
       public virtual global::Portkey.Contracts.CA.ZkNonceList GetZkNonceListByCaHash(global::AElf.Types.Hash input)
       {
         throw new global::System.NotImplementedException();
@@ -1568,7 +1556,6 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_GetGooglePublicKeyByKid, serviceImpl.GetGooglePublicKeyByKid)
           .AddMethod(__Method_GetApplePublicKeyByKid, serviceImpl.GetApplePublicKeyByKid)
           .AddMethod(__Method_SetOracleAddress, serviceImpl.SetOracleAddress)
-          .AddMethod(__Method_RemoveApplePublicKeyByKid, serviceImpl.RemoveApplePublicKeyByKid)
           .AddMethod(__Method_GetZkNonceListByCaHash, serviceImpl.GetZkNonceListByCaHash)
           .AddMethod(__Method_GetGoogleKids, serviceImpl.GetGoogleKids)
           .AddMethod(__Method_GetAppleKids, serviceImpl.GetAppleKids).Build();
