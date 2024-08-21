@@ -164,12 +164,11 @@ public class CAServerAuthServerModule : AbpModule
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:Auth:"; });
 
         var dataProtectionBuilder = context.Services.AddDataProtection().SetApplicationName("CAServer");
-        //todo change the code before online, cause ca server throw exceptions
-        //if (!hostingEnvironment.IsDevelopment())
-        // {
+        if (!hostingEnvironment.IsDevelopment())
+        {
             var redis = ConnectionMultiplexer.Connect(configuration["Redis:Configuration"]);
             dataProtectionBuilder.PersistKeysToStackExchangeRedis(redis, "CAServer-Protection-Keys");
-        // }
+        }
 
         context.Services.AddSingleton<IDistributedLockProvider>(sp =>
         {

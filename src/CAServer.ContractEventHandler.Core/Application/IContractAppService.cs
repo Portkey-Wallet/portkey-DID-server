@@ -195,7 +195,6 @@ public class ContractAppService : IContractAppService
                 message.ReferralInfo = null;
             }
             createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(message);
-            _logger.LogInformation("CreateHolderInfo createHolderDto:{0}", JsonConvert.SerializeObject(createHolderDto));
         }
         catch (Exception e)
         {
@@ -325,7 +324,6 @@ public class ContractAppService : IContractAppService
                 message.ReferralInfo = null;
             }
             socialRecoveryDto = _objectMapper.Map<AccountRecoverCreateEto, SocialRecoveryDto>(message);
-            _logger.LogInformation("SocialRecovery socialRecoveryDto:{0}", JsonConvert.SerializeObject(socialRecoveryDto));
         }
         catch (Exception e)
         {
@@ -354,7 +352,6 @@ public class ContractAppService : IContractAppService
 
             return;
         }
-        _logger.LogInformation("SocialRecoveryAsync From contract reuslt:{}", JsonConvert.SerializeObject(resultSocialRecovery));
         var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");
         if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)

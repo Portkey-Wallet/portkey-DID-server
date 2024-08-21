@@ -205,8 +205,8 @@ public class ContractProvider : IContractProvider
             return new GetHolderInfoOutput();
         }
 
-        // _logger.LogDebug(MethodName.GetHolderInfo + " result: {output}",
-        //     JsonConvert.SerializeObject(output.ToString(), Formatting.Indented));
+        _logger.LogDebug(MethodName.GetHolderInfo + " result: {output}",
+            JsonConvert.SerializeObject(output.ToString(), Formatting.Indented));
 
         return output;
     }
@@ -374,9 +374,7 @@ public class ContractProvider : IContractProvider
     {
         try
         {
-            _logger.LogInformation("IContractProvider SocialRecoveryAsync request params:{0}", JsonConvert.SerializeObject(socialRecoveryDto));
             var result = await _contractServiceProxy.SocialRecoveryAsync(socialRecoveryDto);
-            _logger.LogInformation("IContractProvider SocialRecoveryAsync result:{0}", result == null ? null : JsonConvert.SerializeObject(result));
             if (result != null)
             {
                 _logger.LogInformation(

@@ -57,15 +57,19 @@ public class GuardianUserProvider
     {
         var guardianGrainResult = GetGuardian(guardianIdentifier);
 
-        _logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
-            JsonConvert.SerializeObject(guardianGrainResult));
+        _logger.LogInformation("GetGuardian info guardianIdentifier:{0}, salt:{1}, poseidon:{2}, guardianIdentifier: {3}",
+            guardianIdentifier, guardianSalt, poseidonHash, JsonConvert.SerializeObject(guardianGrainResult));
         if (guardianGrainResult.Success && guardianGrainResult.Data != null)
         {
             return Task.FromResult(Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, true));
         }
 
+        if (guardianSalt.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("the guardian's salt is invalid");
+        }
         var salt = ByteArrayHelper.HexStringToByteArray(guardianSalt);
-        Hash identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt);
+        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt);
         return Task.FromResult(Tuple.Create(identifierHash.ToHex(), salt.ToHex(), false));
     }
 

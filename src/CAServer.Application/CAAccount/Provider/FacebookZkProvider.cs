@@ -41,7 +41,6 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
         {
             // var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var facebookUser = ExtractUserInfoFromJwt(requestDto.Jwt);
-            _logger.LogInformation("============Extract userinfo from jwt:{0}", JsonConvert.SerializeObject(facebookUser));
             var userSaltAndHash = await _guardianUserProvider.GetSaltAndHashAsync(facebookUser.Id, requestDto.Salt, requestDto.PoseidonIdentifierHash);
             if (!userSaltAndHash.Item3)
             {
@@ -90,7 +89,6 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
             ChainId = requestDto.ChainId,
             VerifierId = requestDto.VerifierId,
         });
-        _logger.LogInformation("===================GetFacebookUserInfo verifyFacebookUserInfoDto:{0}", JsonConvert.SerializeObject(verifyFacebookUserInfoDto));
         if (!verifyFacebookUserInfoDto.Success)
         {
             throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
@@ -113,7 +111,6 @@ public class FacebookZkProvider : CAServerAppService,  IFacebookZkProvider
         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url));
 
         var result = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation("Get Response From Facebook {0}", result);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             _logger.LogError("FacebookRequest Error {Message}", response.ToString());

@@ -103,6 +103,22 @@ public class RegisterRequestDto : IValidatableObject
                     new[] { "CircuitId" }
                 );
             }
+            
+            if (ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo PoseidonIdentifierHash.",
+                    new[] { "PoseidonIdentifierHash" }
+                );
+            }
+                    
+            if (ZkLoginInfo.Timestamp <= 0)
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo Timestamp.",
+                    new[] { "Timestamp" }
+                );
+            }
         }
     }
 }

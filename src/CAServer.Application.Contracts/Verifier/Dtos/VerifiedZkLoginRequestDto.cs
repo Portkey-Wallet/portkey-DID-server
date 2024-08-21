@@ -39,22 +39,22 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
             );
         }
 
-        // if (OperationType.CreateCAHolder.Equals(OperationType) || OperationType.AddGuardian.Equals(OperationType))
-        // {
-        //     if (GuardianIdentifierHash.IsNullOrEmpty())
-        //     {
-        //         yield return new ValidationResult(
-        //             "Invalid guardianIdentifierHash when CreateCAHolder and AddGuardian.",
-        //             new[] { "guardianIdentifierHash" }
-        //         );
-        //     }
-        //     if (Salt.IsNullOrEmpty())
-        //     {
-        //         yield return new ValidationResult(
-        //             "Invalid salt when CreateCAHolder and AddGuardian.",
-        //             new[] { "salt" }
-        //         );
-        //     }
-        // }
+        if (OperationType.CreateCAHolder.Equals(OperationType) || OperationType.AddGuardian.Equals(OperationType))
+        {
+            if (PoseidonIdentifierHash.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid guardianIdentifierHash when CreateCAHolder and AddGuardian.",
+                    new[] { "PoseidonIdentifierHash" }
+                );
+            }
+            if (Salt.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid salt when CreateCAHolder and AddGuardian.",
+                    new[] { "salt" }
+                );
+            }
+        }
     }
 }

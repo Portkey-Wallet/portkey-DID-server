@@ -76,7 +76,6 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
             throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
         }
 
-        _logger.LogInformation("GetUserInfo from google: {userInfo}", result);
         var googleUserInfo = JsonConvert.DeserializeObject<GoogleUserInfoDto>(result);
         if (googleUserInfo == null)
         {
@@ -89,11 +88,8 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
     public string GetGoogleAuthRedirectUrl()
     {
         var query = _httpContextAccessor?.HttpContext?.Request.Query;
-        _logger.LogInformation("GetGoogleAuthRedirectUrl query:{0}", JsonConvert.SerializeObject(query));
         var queryString = GetQueryStringFromQueryCollection(query);
-        _logger.LogInformation("GetGoogleAuthRedirectUrl queryString:{0}", JsonConvert.SerializeObject(queryString));
         var url = Domain + (queryString.StartsWith("?") ? queryString : "?" + queryString);
-        _logger.LogInformation("GetGoogleAuthRedirectUrl url:{0}", url);
         return url;
     }
  
