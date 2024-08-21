@@ -80,7 +80,7 @@ public class ZkLoginProvider
                && zkLoginInfo.Nonce is not (null or "")
                && zkLoginInfo.ZkProof is not (null or "")
                && zkLoginInfo.CircuitId is not (null or "")
-               /*&& zkLoginInfo.Timestamp > 0*/;
+               && zkLoginInfo.Timestamp > 0;
     }
     
     private bool CanSupportZk(GuardianType type)

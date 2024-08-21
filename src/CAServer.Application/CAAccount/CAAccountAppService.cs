@@ -110,9 +110,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
-        _logger.LogInformation("RegisterRequest started.......................");
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
-        _logger.LogInformation("RegisterRequest guardianGrainDto:{0}", JsonConvert.SerializeObject(guardianGrainDto));
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
         SetZkLoginParams(input, registerDto);
@@ -229,7 +227,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
             throw new UserFriendlyException(guardianGrainDto.Message);
         }
-        _logger.LogInformation("....GetGuardian guardianIdentifier:{0}, guardianGrainDto:{1}", guardianIdentifier, JsonConvert.SerializeObject(guardianGrainDto.Data));
         return guardianGrainDto.Data;
     }
 
@@ -745,10 +742,5 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _logger.LogInformation("GetHolderInfoAsync loginGuardianIdentifierHash:{0},chainId:{1},output:{2}",
             loginGuardianIdentifierHash, chainId, JsonConvert.SerializeObject(output));
         return output?.CaHash?.ToHex();
-    }
-
-    public async Task TestCreateHolderInfoAsync(RegisterDto registerDto)
-    {
-        await _contractService.TestCreateHolderInfoAsync(registerDto);
     }
 }

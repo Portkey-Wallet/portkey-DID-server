@@ -16,9 +16,7 @@ public interface ICAAccountAppService
     Task<AuthorizeDelegateResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeRequestDto input);
     Task<RevokeResultDto> RevokeAccountAsync(RevokeAccountInput input);
     Task<CancelCheckResultDto> RevokeValidateAsync(Guid userId, string type);
-
-    Task TestCreateHolderInfoAsync(RegisterDto registerDto);
-
+    
     Task<CAHolderExistsResponseDto> VerifyCaHolderExistByAddressAsync(string address);
 
 }

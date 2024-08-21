@@ -73,6 +73,22 @@ public class RecoveryRequestDto : IValidatableObject
                             new[] { "CircuitId" }
                         );
                     }
+
+                    if (recoveryGuardian.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty())
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkLoginInfo PoseidonIdentifierHash.",
+                            new[] { "PoseidonIdentifierHash" }
+                        );
+                    }
+                    
+                    if (recoveryGuardian.ZkLoginInfo.Timestamp <= 0)
+                    {
+                        yield return new ValidationResult(
+                            "Invalid ZkLoginInfo Timestamp.",
+                            new[] { "Timestamp" }
+                        );
+                    }
                 }
             }
         }

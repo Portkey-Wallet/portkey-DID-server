@@ -97,13 +97,14 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
                 ValidateIssuer = true,
                 ValidIssuer = "https://appleid.apple.com",
                 ValidateAudience = true,
+                //_appleAuthOptions.Audiences, in appsettings.json, not in appolo
                 ValidAudiences = new List<string>{
                     "com.portkey.finance",
                     "com.portkey.did",
                     "did.portkey",
                     "com.portkey.did.tran",
                     "com.portkey.did.extension.service"
-                }, //_appleAuthOptions.Audiences, todo
+                },
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = jwk

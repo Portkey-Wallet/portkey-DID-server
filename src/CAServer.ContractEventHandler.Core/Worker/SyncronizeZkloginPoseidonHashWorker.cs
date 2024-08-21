@@ -78,7 +78,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         var sw = new Stopwatch();
         sw.Start();
         var loopSize = _zkLoginWorkerOptions.LoopSize;
-        var total = _zkLoginWorkerOptions.TotalHolders; 
+        var total = _zkLoginWorkerOptions.TotalHolders;
         var times = total / loopSize + 1; 
         var saveErrorPoseidonDtos = new List<ZkPoseidonDto>();
         for (var i = 0; i < times; i++)
@@ -157,7 +157,6 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                     }
                     var guardianFromEs = guardiansFromEs.FirstOrDefault(g => g.IdentifierHash.Equals(guardian.IdentifierHash.ToHex()));
                     var poseidonHash = _poseidonProvider.GenerateIdentifierHash(guardianFromEs.Identifier, ByteArrayHelper.HexStringToByteArray(guardianFromEs.Salt));
-                    _logger.LogInformation("identifier:{0} (poseidon)identifierHash:{1} salt:{2}", guardianFromEs.Identifier, poseidonHash, (guardianFromEs.Salt));
                     //save poseidon hash in mongodb and es
                     var mongoEsAppendResult = await _guardianUserProvider.AppendGuardianPoseidonHashAsync(guardianFromEs.Identifier, poseidonHash);
                     if (!mongoEsAppendResult)
@@ -231,8 +230,6 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         {
             return;
         }
-        var sw = new Stopwatch();
-        sw.Start();
         var request = new AppendGuardianRequest
         {
             Input = { inputs }
@@ -254,27 +251,25 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                 }));
             }
         }
-        sw.Stop();
-        _logger.LogInformation("Invocation contract chainId:{0} cost:{1}ms", chainId, sw.ElapsedMilliseconds);
     }
 
-    private async Task VerifiedPoseidonHashResult(KeyValuePair<string, GetHolderInfoOutput> getHolderInfoOutput, string caHash)
-    {
-        var retryTimes = 0;
-        while (retryTimes < 6)
-        {
-            var holderInfoOutput = await _contractProvider.GetHolderInfoFromChainAsync(getHolderInfoOutput.Key, null, caHash);
-            var queryResult = holderInfoOutput.GuardianList.Guardians.All(g => !g.PoseidonIdentifierHash.IsNullOrEmpty());
-            _logger.LogInformation("GetHolderInfoFromChain retried {0} times, result:{1}", retryTimes, queryResult);
-            if (queryResult)
-            {
-                break;
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(5));
-            retryTimes++;
-        }
-    }
+    // private async Task VerifiedPoseidonHashResult(KeyValuePair<string, GetHolderInfoOutput> getHolderInfoOutput, string caHash)
+    // {
+    //     var retryTimes = 0;
+    //     while (retryTimes < 6)
+    //     {
+    //         var holderInfoOutput = await _contractProvider.GetHolderInfoFromChainAsync(getHolderInfoOutput.Key, null, caHash);
+    //         var queryResult = holderInfoOutput.GuardianList.Guardians.All(g => !g.PoseidonIdentifierHash.IsNullOrEmpty());
+    //         _logger.LogInformation("GetHolderInfoFromChain retried {0} times, result:{1}", retryTimes, queryResult);
+    //         if (queryResult)
+    //         {
+    //             break;
+    //         }
+    //
+    //         await Task.Delay(TimeSpan.FromSeconds(5));
+    //         retryTimes++;
+    //     }
+    // }
 
     // private bool CheckGuardianInfo(GuardianIndexDto guardianFromEs, Portkey.Contracts.CA.Guardian guardian)
     // {
