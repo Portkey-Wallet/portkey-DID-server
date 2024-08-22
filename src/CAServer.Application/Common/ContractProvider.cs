@@ -104,12 +104,10 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         {
             return null;
         }
-
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
         string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
-
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction =

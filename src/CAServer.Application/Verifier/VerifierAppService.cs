@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.AccountValidator;
+using CAServer.AppleVerify;
 using CAServer.CAAccount.Dtos;
 using CAServer.Cache;
 using CAServer.Common;
@@ -25,13 +26,16 @@ using CAServer.TwitterAuth.Dtos;
 using CAServer.TwitterAuth.Etos;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -52,6 +56,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
     private readonly IHttpClientService _httpClientService;
+    private readonly IDistributedCache<AppleKeys> _distributedCache;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -67,7 +72,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
+        IDistributedCache<AppleKeys> distributedCache)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -167,7 +173,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
             }
-
             await AddUserInfoAsync(
                 ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
 
@@ -213,7 +218,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
-
             await AddUserInfoAsync(
                 ObjectMapper.Map<AppleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.AppleUserExtraInfo));
 
@@ -592,7 +596,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             _logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
                 JsonConvert.SerializeObject(guardianGrainDto.Data));
-
+            
             await _distributedEventBus.PublishAsync(
                 ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data));
         }

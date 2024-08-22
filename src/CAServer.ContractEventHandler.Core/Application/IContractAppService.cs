@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,6 +57,8 @@ public interface IContractAppService : ISingletonDependency
     // Task InitializeIndexAsync(long blockHeight);
 
     Task<bool> RefundAsync(Guid redPackageId);
+    
+    Task AppendSinglePoseidonHash(ZkSinglePoseidonHashEto eto);
 }
 
 public class ContractAppService : IContractAppService
@@ -79,6 +82,7 @@ public class ContractAppService : IContractAppService
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
     private const int AcceleratedThreadCount = 3;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -90,7 +94,8 @@ public class ContractAppService : IContractAppService
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount,
         IRedPackageCreateResultService redPackageCreateResultService,
-        INESTRepository<RedPackageIndex, Guid> redPackageRepository)
+        INESTRepository<RedPackageIndex, Guid> redPackageRepository,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -110,6 +115,7 @@ public class ContractAppService : IContractAppService
         _packageAccount = packageAccount.Value;
         _redPackageCreateResultService = redPackageCreateResultService;
         _redPackageRepository = redPackageRepository;
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -237,6 +243,19 @@ public class ContractAppService : IContractAppService
             return;
         }
 
+        if (resultCreateCaHolder.Logs.Select(l => l.Name).Contains(LogEvent.CAHolderErrorOccured))
+        {
+            try
+            {
+                var caHolderErrorOccured = resultCreateCaHolder.Logs
+                    .FirstOrDefault(l => l.Name.Contains(LogEvent.CAHolderErrorOccured));
+                _logger.LogInformation("Register error, message:{0}", JsonConvert.SerializeObject(caHolderErrorOccured));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "register extract caHolderErrorOccured error");
+            }
+        }
         if (!resultCreateCaHolder.Logs.Select(l => l.Name).Contains(LogEvent.CAHolderCreated))
         {
             registerResult.RegisterMessage = "Transaction status: FAILED" + ". Error: Verification failed";
@@ -321,7 +340,18 @@ public class ContractAppService : IContractAppService
         }
 
         var resultSocialRecovery = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
+        if (resultSocialRecovery == null)
+        {
+            recoveryResult.RecoveryMessage = "Transaction result: null";
+            recoveryResult.RecoverySuccess = false;
 
+            _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+
+            await _distributedEventBus.PublishAsync(recoveryResult);
+
+            return;
+        }
         var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");
         if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)
@@ -1430,6 +1460,30 @@ public class ContractAppService : IContractAppService
                 AbsoluteExpirationRelativeToNow =
                     TimeSpan.FromSeconds(ContractEventConstants.SyncHolderUpdateVersionCacheExpireTime)
             });
+        }
+    }
+
+    public async Task AppendSinglePoseidonHash(ZkSinglePoseidonHashEto eto)
+    {
+        foreach (var chainId in _chainOptions.ChainInfos.Keys)
+        {
+            try
+            {
+                var result = await _contractProvider.AppendSingleGuardianPoseidonAsync(chainId, eto.Type,
+                    new AppendSingleGuardianPoseidonInput()
+                    {
+                        CaHash = Hash.LoadFromHex(eto.CaHash),
+                        IdentifierHash = Hash.LoadFromHex(eto.IdentifierHash),
+                        PoseidonIdentifierHash = eto.PoseidonIdentifierHash
+                    });
+                _logger.LogInformation("AppendSinglePoseidonHash chainId:{0} guardianType:{1} identifierHash:{2} poseidon:{3} trasactionResult:{4}",
+                    chainId, eto.Type, eto.IdentifierHash, eto.PoseidonIdentifierHash, JsonConvert.SerializeObject(result));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "AppendSinglePoseidonHash error chainId:{0} eto:{1}",
+                    chainId, JsonConvert.SerializeObject(eto));
+            }
         }
     }
 }

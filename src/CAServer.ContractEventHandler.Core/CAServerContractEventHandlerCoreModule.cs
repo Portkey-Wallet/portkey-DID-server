@@ -29,6 +29,7 @@ public class CAServerContractEventHandlerCoreModule : AbpModule
         Configure<CrossChainOptions>(configuration.GetSection("CrossChain"));
         Configure<SyncOriginChainIdOptions>(configuration.GetSection("SyncOriginChainId"));
         Configure<BlockInfoOptions>(configuration.GetSection("BlockInfo"));
+        Configure<ZkLoginWorkerOptions>(configuration.GetSection("ZkLoginWorker"));
         context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
