@@ -672,11 +672,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             return new ValidateHamsterScoreResponseDto
             {
-                Result = new Result
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg =
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = guardian.Message
                 }
@@ -686,34 +686,36 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var identifierHash = guardian.Data.IdentifierHash;
         var caHolderInfo =
             await _activityProvider.GetCaHolderInfoAsync(identifierHash);
-        if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
+        if (caHolderInfo == null || caHolderInfo.CaHolderInfo?.Count == 0)
         {
             return new ValidateHamsterScoreResponseDto()
             {
-                Result =
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg =
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = "Account not exist."
                 }
             };
         }
 
-        var address = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+        var address = caHolderInfo.CaHolderInfo?.FirstOrDefault()?.CaAddress;
+        var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
         var hamsterScoreList =
-            await _growthProvider.GetHamsterScoreListAsync(new List<string> { address }, DateTime.UtcNow.AddDays(-1),
+            await _growthProvider.GetHamsterScoreListAsync(new List<string> { formatAddress },
+                DateTime.UtcNow.AddDays(-1),
                 DateTime.UtcNow);
         if (hamsterScoreList.GetScoreInfos?.Count == 0)
         {
-            return new ValidateHamsterScoreResponseDto()
+            return new ValidateHamsterScoreResponseDto
             {
-                Result = new Result
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg = new ErrorMsg
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = "Validate failed."
                 }
@@ -722,7 +724,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         return new ValidateHamsterScoreResponseDto
         {
-            Result = new Result
+            Result = new Result()
             {
                 ValidateResult = true
             }
