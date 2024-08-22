@@ -197,7 +197,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "accessToken", input.AccessToken }
         };
 
-
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifyFacebookUserInfoDto>>(url, parameters);
     }
 

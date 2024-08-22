@@ -1,5 +1,6 @@
 using AElf.Client.Dto;
 using CAServer.CAAccount;
+using CAServer.CAAccount.Dtos;
 using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
@@ -25,4 +26,8 @@ public interface IContractServiceGrain : IGrainWithGuidKey
         string redPackageContractAddress,string methodName);
 
     Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto);
+    
+    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest);
+    
+    Task<TransactionResultDto> AppendSingleGuardianPoseidonAsync(string chainId, GuardianIdentifierType guardianIdentifierType, AppendSingleGuardianPoseidonInput input);
 }

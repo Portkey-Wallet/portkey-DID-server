@@ -43,6 +43,7 @@ using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Etos;
 using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Hubs;
 using CAServer.ImTransfer.Dtos;
 using CAServer.ImTransfer.Etos;
@@ -99,6 +100,7 @@ using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.IdentityModel.Tokens;
 using Enum = System.Enum;
+using GuardianDto = CAServer.Guardian.GuardianDto;
 using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
 
 namespace CAServer;
@@ -107,6 +109,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
 {
     public CAServerApplicationAutoMapperProfile()
     {
+        CreateMap<GuardiansDto, GuardiansAppDto>();
+        CreateMap<GuardianEto, GuardianIndex>();
+        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
         CreateMap<GoogleUserInfoDto, CAServer.Verifier.Dtos.UserExtraInfo>();
         CreateMap<UserTokenGrainDto, UserTokenEto>();
         CreateMap<UserTokenGrainDto, UserTokenDeleteEto>();
@@ -142,6 +147,63 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RegisterDto, CAAccountEto>();
         CreateMap<RecoveryDto, RecoveryGrainDto>();
         CreateMap<RecoveryGrainDto, AccountRecoverCreateEto>();
+        CreateMap<AccountRegisterCreateEto, CreateHolderDto>()
+            .ForMember(d => d.GuardianInfo, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
+            {
+                Type = (Portkey.Contracts.CA.GuardianType)(int)e.GuardianInfo.Type,
+                IdentifierHash = Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
+                    Signature = e.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace() 
+                        ? ByteString.Empty : ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
+                        ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.ZkLoginInfo.IdentifierHash),
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Kid,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = new NoncePayload
+                    {
+                        AddManagerAddress = new AddManager
+                        {
+                            CaHash = e.CaHash.IsNullOrWhiteSpace()
+                                ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                            ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
+                                ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
+                            Timestamp = new Timestamp
+                            {
+                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
+                                Nanos = 0
+                            }
+                        }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofPiC }
+                    }
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = Address.FromBase58(e.ManagerInfo.Address),
+                ExtraData = e.ManagerInfo.ExtraData
+            }));
 
         CreateMap<RecoveryDto, CAAccountRecoveryEto>();
         CreateMap<RegisterGrainDto, AccountRegisterCompletedEto>();
@@ -157,7 +219,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ChainGrainDto, ChainCreateEto>();
         CreateMap<ChainGrainDto, ChainUpdateEto>();
         CreateMap<ChainGrainDto, ChainDeleteEto>();
-
+        CreateMap<GoogleUserInfoDto, Verifier.Dtos.UserExtraInfo>();
         CreateMap<VerificationSignatureRequestDto, VierifierCodeRequestInput>();
 
         CreateMap<ChainDto, ChainUpdateEto>();
@@ -253,6 +315,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<GuardianGrainDto, GuardianEto>();
         CreateMap<GuardianGrainDto, GuardianDeleteEto>();
         CreateMap<GuardianIndex, GuardianIndexDto>().ReverseMap();
+        CreateMap<UserExtraInfoIndex, UserExtraInfoIndexDto>();
 
         CreateMap<ManagerInfo, ManagerInfoDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.Address.ToBase58()));
@@ -296,6 +359,36 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = new Portkey.Contracts.CA.ZkLoginInfo()
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = new NoncePayload()
+                    {
+                        AddManagerAddress = new AddManager()
+                        {
+                            CaHash = e.CaHash,
+                            ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                            Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                        }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
+                    }
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -318,6 +411,36 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = new ZkLoginInfo()
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = new NoncePayload()
+                    {
+                        AddManagerAddress = new AddManager()
+                        {
+                            CaHash = e.CaHash,
+                            ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                            Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                        }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
+                    }
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -338,6 +461,40 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         Id = g.VerificationInfo.Id,
                         Signature = g.VerificationInfo.Signature,
                         VerificationDoc = g.VerificationInfo.VerificationDoc
+                    },
+                    ZkLoginInfo = new ZkLoginInfo()
+                    {
+                        IdentifierHash = g.ZkLoginInfo == null ? Hash.Empty : g.ZkLoginInfo.IdentifierHash,
+                        Issuer = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Issuer,
+                        Kid = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Kid,
+                        Nonce = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Nonce,
+                        ZkProof = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.ZkProof,
+                        Salt = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Salt,
+                        CircuitId = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.CircuitId,
+                        PoseidonIdentifierHash = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.PoseidonIdentifierHash,
+                        IdentifierHashType = g.ZkLoginInfo == null ? IdentifierHashType.Sha256Hash : (g.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
+                            ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash),
+                        NoncePayload = new NoncePayload()
+                        {
+                            AddManagerAddress = new AddManager()
+                            {
+                                CaHash = e.CaHash.IsNullOrEmpty() ? Hash.Empty : e.CaHash,
+                                ManagerAddress = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
+                                                                       || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null 
+                                    ? new Address() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                                Timestamp = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
+                                                                  || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null
+                                    ? new Timestamp() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                            }
+                        },
+                        ZkProofInfo = g.ZkLoginInfo == null ? new ZkProofInfo() : new ZkProofInfo
+                        {
+                            ZkProofPiA = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                            ZkProofPiB1 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                            ZkProofPiB2 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                            ZkProofPiB3 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                            ZkProofPiC = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
+                        }
                     }
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -380,7 +537,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature));
-
+            
         CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
             {
                 dest.ManagerInfo = new Account.ManagerInfo();

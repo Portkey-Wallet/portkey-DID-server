@@ -4,6 +4,7 @@ using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
@@ -23,16 +24,20 @@ public class CAAccountController : CAServerController
     private readonly ITransactionFeeAppService _transactionFeeAppService;
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
+    private readonly IZkLoginProvider _zkLoginProvider;
+    private readonly IGoogleZkProvider _googleZkProvider;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService)
+        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
         _transactionFeeAppService = transactionFeeAppService;
         _currentUser = currentUser;
         _growthAppService = growthAppService;
+        _zkLoginProvider = zkLoginProvider;
+        _googleZkProvider = googleZkProvider;
     }
 
     [HttpPost("register/request")]
@@ -130,4 +135,37 @@ public class CAAccountController : CAServerController
         return await _caAccountService.VerifyCaHolderExistByAddressAsync(address);
     }
     
+    [HttpGet("google-auth-redirect")]
+    public async Task<IActionResult> GetGoogleAuthRedirectUrlAsync()
+    {
+        return Redirect(_googleZkProvider.GetGoogleAuthRedirectUrl());
+    }
+
+    [HttpPost("update/guardian")]
+    [Authorize]
+    public async Task<GuardianEto> UpdateGuardianInfoAsync([FromBody] DBGuardianDto guardianDto)
+    {
+        return await _zkLoginProvider.UpdateGuardianAsync(guardianDto.GuardianIdentifier, guardianDto.Salt,
+            guardianDto.IdentifierHash);
+    }
+    
+    [HttpGet("caholders/es")]
+    public async Task<CAHolderReponse> GetAllCaHolderWithTotalAsync(int skip, int limit)
+    {
+        return await _zkLoginProvider.GetAllCaHolderWithTotalAsync(skip, limit);
+    }
+
+    [HttpGet("caholders")]
+    public async Task<GuardiansAppDto> GetCaHolderInfoAsync(int skip, int limit)
+    {
+        return await _zkLoginProvider.GetCaHolderInfoAsync(skip, limit);
+    }
+    
+    [HttpPost("single/poseidon")]
+    [Authorize]
+    public async Task AppendSinglePoseidonAsync([FromBody]AppendSinglePoseidonDto request)
+    {
+        var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
+        await _zkLoginProvider.AppendSinglePoseidonAsync(request);
+    }
 }
