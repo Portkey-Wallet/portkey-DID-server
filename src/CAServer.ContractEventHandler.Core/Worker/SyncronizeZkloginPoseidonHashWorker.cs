@@ -237,7 +237,8 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         {
             tasks.Add(DoSingleTask(chainId, saveErrorPoseidonDtos, splitInput));
         }
-
+        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker chainId:{0} inputSize:{1} taskSize:{2}",
+            chainId, inputs.Count, tasks.Count);
         return tasks;
     }
 
