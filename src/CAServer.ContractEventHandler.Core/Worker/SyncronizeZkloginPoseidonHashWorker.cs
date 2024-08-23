@@ -224,21 +224,34 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                || guardianType.Equals(GuardianType.GUARDIAN_TYPE_OF_GOOGLE);
     }
 
-    private async Task ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs, List<ZkPoseidonDto> saveErrorPoseidonDtos)
+    private async Task<List<Task>> ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs, List<ZkPoseidonDto> saveErrorPoseidonDtos)
     {
+        var tasks = new List<Task>();
         if (chainId.IsNullOrEmpty() || inputs.IsNullOrEmpty())
         {
-            return;
+            return tasks;
         }
+
+        var splitInputs = SplitList<AppendGuardianInput>(inputs, _zkLoginWorkerOptions.SplitSize);
+        foreach (var splitInput in splitInputs)
+        {
+            tasks.Add(DoSingleTask(chainId, saveErrorPoseidonDtos, splitInput));
+        }
+
+        return tasks;
+    }
+
+    private async Task DoSingleTask(string chainId, List<ZkPoseidonDto> saveErrorPoseidonDtos, RepeatedField<AppendGuardianInput> splitInput)
+    {
         var request = new AppendGuardianRequest
         {
-            Input = { inputs }
+            Input = { splitInput }
         };
         var resultCreateCaHolder = await _contractProvider.AppendGuardianPoseidonHashAsync(chainId, request);
         if (resultCreateCaHolder.Status != TransactionState.Mined)
         {
             _logger.LogError("SyncronizeZkloginPoseidonHashWorker invoke contract error resultCreateCaHolder:{0}", JsonConvert.SerializeObject(resultCreateCaHolder));
-            foreach (var appendGuardianInput in inputs)
+            foreach (var appendGuardianInput in splitInput)
             {
                 saveErrorPoseidonDtos.AddRange(appendGuardianInput.Guardians.Select(poseidonGuardian => new ZkPoseidonDto()
                 {
@@ -250,6 +263,18 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                     ErrorMessage = "append to contract error"
                 }));
             }
+        }
+    }
+
+    private static IEnumerable<RepeatedField<T>> SplitList<T>(RepeatedField<T> source, int size)
+    {
+        var list = source.ToList();
+        for (var i = 0; i < list.Count; i += size)
+        {
+            yield return new RepeatedField<T>()
+            {
+                list.GetRange(i, Math.Min(size, source.Count - i))
+            };
         }
     }
 
