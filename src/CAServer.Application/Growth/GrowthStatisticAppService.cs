@@ -1,15 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Mime;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAActivity.Provider;
 using CAServer.Cache;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.EnumType;
+using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.Guardian;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
 using CAServer.Options;
@@ -18,10 +25,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
+using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
+using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
 
@@ -41,6 +50,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly HamsterOptions _hamsterOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
     private const string RepairDataCache = "Hamster:DataRepairKey";
+    private const string HamsterTonGiftsUserIdsKey = "Hamster:TonGifts:UserIdsKey";
+    private readonly IClusterClient _clusterClient;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly TonGiftsOptions _tonGiftsOptions;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
@@ -49,7 +62,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
-        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions)
+        IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IClusterClient clusterClient,
+        IHttpClientFactory httpClientFactory, IOptionsSnapshot<TonGiftsOptions> tonGiftsOptions)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
@@ -57,6 +71,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _activityProvider = activityProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
+        _clusterClient = clusterClient;
+        _httpClientFactory = httpClientFactory;
+        _tonGiftsOptions = tonGiftsOptions.Value;
         _beInvitedConfigOptions = beInvitedConfigOptions.Value;
         _hamsterOptions = hamsterOptions.Value;
         _activityConfigOptions = activityConfigOptions.Value;
@@ -447,6 +464,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                     {
                         result.AddRange(scoreResult);
                     }
+
                     index += length;
                 }
             }
@@ -645,6 +663,74 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         };
     }
 
+    public async Task<ValidateHamsterScoreResponseDto> ValidateHamsterScoreAsync(string userId)
+    {
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", userId);
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardian = guardianGrain.GetGuardianAsync(userId).Result;
+        if (!guardian.Message.IsNullOrEmpty())
+        {
+            return new ValidateHamsterScoreResponseDto
+            {
+                Result = new Result()
+                {
+                    ValidateResult = false
+                },
+                ErrorMsg = new ErrorMsg()
+                {
+                    Message = guardian.Message
+                }
+            };
+        }
+
+        var identifierHash = guardian.Data.IdentifierHash;
+        var caHolderInfo =
+            await _activityProvider.GetCaHolderInfoAsync(identifierHash);
+        if (caHolderInfo == null || caHolderInfo.CaHolderInfo?.Count == 0)
+        {
+            return new ValidateHamsterScoreResponseDto()
+            {
+                Result = new Result()
+                {
+                    ValidateResult = false
+                },
+                ErrorMsg = new ErrorMsg()
+                {
+                    Message = "Account not exist."
+                }
+            };
+        }
+
+        var address = caHolderInfo.CaHolderInfo?.FirstOrDefault()?.CaAddress;
+        var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
+        var hamsterScoreList =
+            await _growthProvider.GetHamsterScoreListAsync(new List<string> { formatAddress },
+                DateTime.UtcNow.AddDays(-1),
+                DateTime.UtcNow);
+        if (hamsterScoreList.GetScoreInfos?.Count == 0)
+        {
+            return new ValidateHamsterScoreResponseDto
+            {
+                Result = new Result()
+                {
+                    ValidateResult = false
+                },
+                ErrorMsg = new ErrorMsg()
+                {
+                    Message = "Validate failed."
+                }
+            };
+        }
+
+        return new ValidateHamsterScoreResponseDto
+        {
+            Result = new Result()
+            {
+                ValidateResult = true
+            }
+        };
+    }
+
     private ActivityConfig GetActivityDetails(ActivityEnums activityEnum)
     {
         _activityConfigOptions.ActivityConfigMap.TryGetValue(activityEnum.ToString(), out var config);
@@ -673,10 +759,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogDebug("No data need to be repaired.");
             return;
         }
-        _logger.LogDebug("Total Count is {count}",repairList.Count);
 
         _logger.LogDebug("Total Count is {count}", repairList.Count);
-
         var count = 0;
         foreach (var repair in repairList)
         {
@@ -714,6 +798,67 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             await _cacheProvider.Set(RepairDataCache, "Repair", expire);
             _logger.LogDebug("All data has been repaired.");
         }
+    }
+
+    public async Task CollectHamsterUserIdsAsync(string userId)
+    {
+        var expire = TimeSpan.FromDays(30);
+        await _cacheProvider.SetAddAsync(HamsterTonGiftsUserIdsKey, userId, expire);
+    }
+
+    public async Task TonGiftsValidateAsync()
+    {
+        var userIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsUserIdsKey);
+        if (userIds.Length == 0)
+        {
+            _logger.LogDebug("No users need to be validate.");
+            return;
+        }
+
+        var ids = new List<string>();
+        foreach (var id in userIds)
+        {
+            var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", id);
+            var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+            var guardian = guardianGrain.GetGuardianAsync(id).Result;
+            if (!guardian.Message.IsNullOrEmpty())
+            {
+                _logger.LogDebug("TonGift validate error : query user from grain error:{error}", guardian.Message);
+                continue;
+            }
+
+            var identifierHash = guardian.Data.IdentifierHash;
+            var caHolderInfo =
+                await _activityProvider.GetCaHolderInfoAsync(identifierHash);
+            if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
+            {
+                _logger.LogDebug("TonGift validate error : query user from graphQl error: user not exists");
+                continue;
+            }
+
+            ids.Add(id);
+        }
+
+        var param = new TonGiftsRequestDto()
+        {
+            TaskId = _tonGiftsOptions.TaskId,
+            Status = "completed",
+            UserIds = ids
+        };
+        var rawStr = JsonConvert.SerializeObject(param);
+        var t = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString();
+        var Hash = HMACSHA256Helper.ComputeHash("rawStr=" + param + "&t=" + t, _tonGiftsOptions.ApiKey);
+        var apiKey = _tonGiftsOptions.ApiKey;
+        const string url = "https://devmini.tongifts.app/";
+        var client = _httpClientFactory.CreateClient();
+        var tokenParam = JsonConvert.SerializeObject(new
+            { rawStr, apiKey, Hash, t });
+        var requestParam = new StringContent(tokenParam,
+            Encoding.UTF8,
+            MediaTypeNames.Application.Json);
+
+        var response = await client.PostAsync(url, requestParam);
+        var result = await response.Content.ReadAsStringAsync();
     }
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)

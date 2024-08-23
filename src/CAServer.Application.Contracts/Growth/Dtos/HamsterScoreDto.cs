@@ -4,7 +4,7 @@ namespace CAServer.Growth.Dtos;
 
 public class ScoreInfos
 {
-    public List<HamsterScoreDto> GetScoreInfos { get; set; }
+    public List<HamsterScoreDto> GetScoreInfos { get; set; } = new List<HamsterScoreDto>();
 
 }
 
