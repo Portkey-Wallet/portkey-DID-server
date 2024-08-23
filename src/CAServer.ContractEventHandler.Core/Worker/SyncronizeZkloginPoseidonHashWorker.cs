@@ -193,7 +193,8 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                 value.Add(appendGuardianInput);
             }
         }
-
+        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip:{0} limit:{1} contractRequest.Keys:{2} contractRequest.Values:{3}",
+            skip, limit, contractRequest.Keys.Count, contractRequest.Values.Count);
         var tasks = new List<Task>();
         foreach (var chainId in contractRequest.Keys)
         {
