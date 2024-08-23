@@ -70,10 +70,10 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ZkLoginWorkerOptions:{0}", JsonConvert.SerializeObject(_zkLoginWorkerOptions));
-        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _zkLoginWorkerOptions.PeriodSeconds, _zkLoginWorkerOptions.ExpirationSeconds))
-        {
-            return;
-        }
+        // if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _zkLoginWorkerOptions.PeriodSeconds, _zkLoginWorkerOptions.ExpirationSeconds))
+        // {
+        //     return;
+        // }
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
         var sw = new Stopwatch();
         sw.Start();
@@ -203,7 +203,7 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
         }
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip:{0} limit:{1} taskSize:{2} splitSize:{3}",
             skip, limit, tasks.Count, _zkLoginWorkerOptions.SplitSize);
-        // var tasks1 = contractRequest
+        // var tasks = contractRequest
         //     .Select(r => ContractInvocationTask(r.Key, r.Value, saveErrorPoseidonDtos)).ToList();
         await Task.WhenAll(tasks);
         return new ValueTuple<bool, List<ZkPoseidonDto>>(true, saveErrorPoseidonDtos);
