@@ -70,10 +70,10 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ZkLoginWorkerOptions:{0}", JsonConvert.SerializeObject(_zkLoginWorkerOptions));
-        // if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _zkLoginWorkerOptions.PeriodSeconds, _zkLoginWorkerOptions.ExpirationSeconds))
-        // {
-        //     return;
-        // }
+        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _zkLoginWorkerOptions.PeriodSeconds, _zkLoginWorkerOptions.ExpirationSeconds))
+        {
+            return;
+        }
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
         var sw = new Stopwatch();
         sw.Start();
@@ -194,8 +194,17 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             }
         }
 
-        var tasks = contractRequest
-            .Select(r => ContractInvocationTask(r.Key, r.Value, saveErrorPoseidonDtos)).ToList();
+        var tasks = new List<Task>();
+        foreach (var chainId in contractRequest.Keys)
+        {
+            var appendGuardianInput = contractRequest[chainId].ToList();
+            var splitList = SplitList(appendGuardianInput, _zkLoginWorkerOptions.SplitSize);
+            tasks.AddRange(splitList.Select(appendGuardianInputs => ContractInvocationTask(chainId, new RepeatedField<AppendGuardianInput>() { appendGuardianInputs }, saveErrorPoseidonDtos)));
+        }
+        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker skip:{0} limit:{1} taskSize:{2} splitSize:{3}",
+            skip, limit, tasks.Count, _zkLoginWorkerOptions.SplitSize);
+        // var tasks1 = contractRequest
+        //     .Select(r => ContractInvocationTask(r.Key, r.Value, saveErrorPoseidonDtos)).ToList();
         await Task.WhenAll(tasks);
         return new ValueTuple<bool, List<ZkPoseidonDto>>(true, saveErrorPoseidonDtos);
     }
@@ -224,35 +233,21 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
                || guardianType.Equals(GuardianType.GUARDIAN_TYPE_OF_GOOGLE);
     }
 
-    private async Task<List<Task>> ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs, List<ZkPoseidonDto> saveErrorPoseidonDtos)
+    private async Task ContractInvocationTask(string chainId, RepeatedField<AppendGuardianInput> inputs, List<ZkPoseidonDto> saveErrorPoseidonDtos)
     {
-        var tasks = new List<Task>();
         if (chainId.IsNullOrEmpty() || inputs.IsNullOrEmpty())
         {
-            return tasks;
+            return;
         }
-
-        var splitInputs = SplitList<AppendGuardianInput>(inputs, _zkLoginWorkerOptions.SplitSize);
-        foreach (var splitInput in splitInputs)
-        {
-            tasks.Add(DoSingleTask(chainId, saveErrorPoseidonDtos, splitInput));
-        }
-        _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker chainId:{0} inputSize:{1} taskSize:{2}",
-            chainId, inputs.Count, tasks.Count);
-        return tasks;
-    }
-
-    private async Task DoSingleTask(string chainId, List<ZkPoseidonDto> saveErrorPoseidonDtos, RepeatedField<AppendGuardianInput> splitInput)
-    {
         var request = new AppendGuardianRequest
         {
-            Input = { splitInput }
+            Input = { inputs }
         };
         var resultCreateCaHolder = await _contractProvider.AppendGuardianPoseidonHashAsync(chainId, request);
         if (resultCreateCaHolder.Status != TransactionState.Mined)
         {
             _logger.LogError("SyncronizeZkloginPoseidonHashWorker invoke contract error resultCreateCaHolder:{0}", JsonConvert.SerializeObject(resultCreateCaHolder));
-            foreach (var appendGuardianInput in splitInput)
+            foreach (var appendGuardianInput in inputs)
             {
                 saveErrorPoseidonDtos.AddRange(appendGuardianInput.Guardians.Select(poseidonGuardian => new ZkPoseidonDto()
                 {
@@ -266,16 +261,12 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
             }
         }
     }
-
-    private static IEnumerable<RepeatedField<T>> SplitList<T>(RepeatedField<T> source, int size)
+    
+    private static IEnumerable<List<T>> SplitList<T>(List<T> source, int size)
     {
-        var list = source.ToList();
-        for (var i = 0; i < list.Count; i += size)
+        for (int i = 0; i < source.Count; i += size)
         {
-            yield return new RepeatedField<T>()
-            {
-                list.GetRange(i, Math.Min(size, source.Count - i))
-            };
+            yield return source.GetRange(i, Math.Min(size, source.Count - i));
         }
     }
 
