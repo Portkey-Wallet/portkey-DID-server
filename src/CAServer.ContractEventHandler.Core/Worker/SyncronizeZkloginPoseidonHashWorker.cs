@@ -70,10 +70,10 @@ public class SyncronizeZkloginPoseidonHashWorker : AsyncPeriodicBackgroundWorker
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker ZkLoginWorkerOptions:{0}", JsonConvert.SerializeObject(_zkLoginWorkerOptions));
-        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _zkLoginWorkerOptions.PeriodSeconds, _zkLoginWorkerOptions.ExpirationSeconds))
-        {
-            return;
-        }
+        // if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _zkLoginWorkerOptions.PeriodSeconds, _zkLoginWorkerOptions.ExpirationSeconds))
+        // {
+        //     return;
+        // }
         _logger.LogInformation("SyncronizeZkloginPoseidonHashWorker starting.........");
         var sw = new Stopwatch();
         sw.Start();
