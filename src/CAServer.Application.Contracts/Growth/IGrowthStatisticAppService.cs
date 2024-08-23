@@ -14,5 +14,9 @@ public interface IGrowthStatisticAppService
     Task<RewardProgressResponseDto> GetRewardProgressAsync(ActivityEnums activityEnum);
     Task<BeInvitedConfigResponseDto> GetBeInvitedConfigAsync();
     Task<ActivityBaseInfoDto> ActivityBaseInfoAsync();
+    
+    Task<ValidateHamsterScoreResponseDto> ValidateHamsterScoreAsync(string userId);
     Task RepairHamsterDataAsync();
+    Task CollectHamsterUserIdsAsync(string userId);
+    Task TonGiftsValidateAsync();
 }

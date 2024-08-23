@@ -389,6 +389,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userId = GetTelegramUserId(requestDto.AccessToken);
+            _logger.LogDebug("TeleGram userid is {uid}",userId);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
