@@ -726,19 +726,17 @@ public class ContractAppService : IContractAppService
         {
             return false;
         }
-        return guardianInfos.All(guardianInfo => CanExecuteBySignature(guardianInfo)
-                || CanExecuteZkByZkLoginInfoDto(guardianInfo));
+        return guardianInfos.All(guardianInfo => CanExecuteBySignature(guardianInfo) || CanExecuteZk(guardianInfo));
     }
 
     private bool CanExecuteBySignature(GuardianInfo guardianInfo)
     {
         return guardianInfo?.VerificationInfo != null &&
                !guardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() &&
-               GetVerificationDocLength(guardianInfo.VerificationInfo
-                   .VerificationDoc) >= 8;
+               GetVerificationDocLength(guardianInfo.VerificationInfo.VerificationDoc) >= 8;
     }
 
-    private bool CanExecuteZkByZkLoginInfoDto(GuardianInfo guardian)
+    private bool CanExecuteZk(GuardianInfo guardian)
     {
         if (guardian?.ZkLoginInfo == null)
         {
@@ -748,6 +746,7 @@ public class ContractAppService : IContractAppService
         {
             return false;
         }
+
         var zkLoginInfo = guardian.ZkLoginInfo;
         return zkLoginInfo?.IdentifierHash != null
                && zkLoginInfo.Salt is not (null or "")
@@ -757,6 +756,7 @@ public class ContractAppService : IContractAppService
                && zkLoginInfo.Issuer is not (null or "")
                && zkLoginInfo.Kid is not (null or "")
                && zkLoginInfo.NoncePayload is not null;
+
     }
 
     private int GetVerificationDocLength(string verificationDoc)
