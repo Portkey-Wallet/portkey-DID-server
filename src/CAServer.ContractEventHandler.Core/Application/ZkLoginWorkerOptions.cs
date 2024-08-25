@@ -4,7 +4,7 @@ public class ZkLoginWorkerOptions
 {
     public int PeriodSeconds { get; set; } = 86400;
 
-    public int LoopSize { get; set; } = 160;
+    public int LoopSize { get; set; } = 20;
 
     public int TotalHolders { get; set; }
 
