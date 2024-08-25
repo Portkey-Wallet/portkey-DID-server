@@ -394,6 +394,9 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
         //todo for test, remove bofore online
         input.SecondaryEmail = input.SecondaryEmail.IsNullOrEmpty() ? "327676366@qq.com" : input.SecondaryEmail;
+        _logger.LogDebug("GetResultFromVerifier before request url:{0} accessToken:{1} identifierHash:{2} salt:{3}" +
+                         "operationType:{4} chainId:{5} secondaryEmail:{6}", 
+            url, input.AccessToken, identifierHash, salt, input.OperationType, input.ChainId, input.SecondaryEmail);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
             string.IsNullOrWhiteSpace(input.TargetChainId)
@@ -415,8 +418,17 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             Encoding.UTF8,
             MediaTypeNames.Application.Json);
 
-        var response = await client.PostAsync(url, param);
-        var result = await response.Content.ReadAsStringAsync();
+        string result = null;
+        HttpResponseMessage response = null;
+        try
+        {
+            response = await client.PostAsync(url, param);
+            result = await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,"GetResultFromVerifierAsync post error url:{0} params:{1}", url, tokenParam);
+        }
 
         if (string.IsNullOrWhiteSpace(result))
         {
