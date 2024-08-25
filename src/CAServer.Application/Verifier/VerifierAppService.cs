@@ -11,6 +11,7 @@ using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.AppleVerify;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Provider;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
@@ -57,7 +58,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IContractProvider _contractProvider;
     private readonly IHttpClientService _httpClientService;
     private readonly IDistributedCache<AppleKeys> _distributedCache;
-
+    private readonly ICAAccountProvider _accountProvider;
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
@@ -73,7 +74,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
         ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
-        IDistributedCache<AppleKeys> distributedCache)
+        IDistributedCache<AppleKeys> distributedCache,
+        ICAAccountProvider accountProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -87,6 +89,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
+        _distributedCache = distributedCache;
+        _accountProvider = accountProvider;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -161,6 +165,15 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
+            if (hashInfo.Item3)
+            {
+                //4、verifyGoogleToken接口，已有Guardian的通过Guardian的IdentifierHash查询es中的cahash和secondaryEmail发送交易前的通知邮件
+                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
+            }
+            else
+            {
+                // todo  新增的Guardian让前端补个loginGuardianIdentifierHash或者cahash参数
+            }
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 
@@ -175,7 +188,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             }
             await AddUserInfoAsync(
                 ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
-
             return new VerificationCodeResponse
             {
                 VerificationDoc = response.Data.VerificationDoc,
@@ -201,12 +213,30 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    private async Task<string> GetSecondaryEmailAsync(string guardianIdentifierHash)
+    {
+        if (guardianIdentifierHash.IsNullOrEmpty())
+        {
+            return string.Empty;
+        }
+        var guardianIndex = await _accountProvider.GetIdentifiersAsync(guardianIdentifierHash);
+        return guardianIndex != null ? guardianIndex.SecondaryEmail : string.Empty;
+    }
+
     public async Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto)
     {
         try
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
+            if (hashInfo.Item3)
+            {
+                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
+            }
+            else
+            {
+                //todo
+            }
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -254,6 +284,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             await StatisticTwitterAsync(userId);
             
             var hashInfo = await GetSaltAndHashAsync(userId);
+            if (hashInfo.Item3)
+            {
+                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
+            }
+            else
+            {
+                //todo
+            }
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -267,7 +305,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
-
             await AddUserInfoAsync(
                 ObjectMapper.Map<TwitterUserExtraInfo, Dtos.UserExtraInfo>(response.Data.TwitterUserExtraInfo));
 
@@ -318,7 +355,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new UserFriendlyException("Failed to get user info");
         }
-
         return userInfo.Data.Id;
     }
 
@@ -391,6 +427,15 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userId = GetTelegramUserId(requestDto.AccessToken);
             _logger.LogDebug("TeleGram userid is {uid}",userId);
             var hashInfo = await GetSaltAndHashAsync(userId);
+            if (hashInfo.Item3)
+            {
+                //4、verifyTelegramToken接口，已有Guardian的通过Guardian的IdentifierHash查询es中的cahash和secondaryEmail发送交易前的通知邮件
+                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
+            }
+            else
+            {
+                //todo
+            }
             var response =
                 await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -402,7 +447,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
-
             await AddUserInfoAsync(
                 ObjectMapper.Map<TelegramUserExtraInfo, Dtos.UserExtraInfo>(response.Data.UserExtraInfo));
 
@@ -437,6 +481,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
+            if (userSaltAndHash.Item3)
+            {
+                requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? await GetSecondaryEmailAsync(userSaltAndHash.Item1) : facebookUser.Email;
+            }
+            else
+            {
+                //todo
+            }
             var response =
                 await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
                     userSaltAndHash.Item2);
@@ -449,7 +501,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
             }
-
             await AddUserInfoAsync(
                 ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
             return new VerificationCodeResponse

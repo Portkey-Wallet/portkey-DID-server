@@ -192,7 +192,8 @@ public class CAServerEntityEventHandlerModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TokenPriceBackgroundWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftPreGrabQuotaExpiredWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftStatisticsWorker>());
+        // backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftStatisticsWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<SendingTransactionInfoByEmailAfterApprovalWorker>());
         //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitReferralRankWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ReferralRankWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitAddChatBotContactsWorker>());

@@ -12,4 +12,6 @@ public class VerifyTokenRequestDto
     [Required] public OperationType OperationType { get; set; }
 
     public string OperationDetails { get; set; }
+    
+    public string SecondaryEmail { get; set; }
 }

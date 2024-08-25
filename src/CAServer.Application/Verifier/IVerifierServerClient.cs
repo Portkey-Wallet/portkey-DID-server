@@ -7,7 +7,16 @@ namespace CAServer.Verifier;
 public interface IVerifierServerClient
 {
     Task<ResponseResultDto<VerifierServerResponse>> SendVerificationRequestAsync(VerifierCodeRequestDto dto);
+
+    Task<ResponseResultDto<VerifierServerResponse>> SendSecondaryEmailVerificationRequestAsync(
+        string secondaryEmail, string verifierSessionId);
+
+    Task<ResponseResultDto<VerifierServerResponse>> SendNotificationBeforeApprovalAsync(
+        VerifierCodeRequestDto dto);
     Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input);
+
+    Task<ResponseResultDto<VerificationCodeResponse>> VerifySecondaryEmailCodeAsync(string verifierSessionId,
+        string verificationCode, string verifierEndpoint);
 
     Task<ResponseResultDto<VerifyGoogleTokenDto>> VerifyGoogleTokenAsync(VerifyTokenRequestDto input,
         string identifierHash, string salt);
