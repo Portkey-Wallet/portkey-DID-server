@@ -128,7 +128,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
         
-        var url = endPoint + "/api/app/account/sendVerificationRequest";
+        var url = endPoint + "/api/app/account/send/secondary/email/verify";
         var parameters = new Dictionary<string, string>
         {
             { "secondaryEmail", secondaryEmail },
@@ -395,8 +395,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         //todo for test, remove bofore online
         input.SecondaryEmail = input.SecondaryEmail.IsNullOrEmpty() ? "327676366@qq.com" : input.SecondaryEmail;
         _logger.LogDebug("GetResultFromVerifier before request url:{0} accessToken:{1} identifierHash:{2} salt:{3}" +
-                         "operationType:{4} chainId:{5} secondaryEmail:{6}", 
-            url, input.AccessToken, identifierHash, salt, input.OperationType, input.ChainId, input.SecondaryEmail);
+                         "operationType:{4} chainId:{5} secondaryEmail:{6} operationDetails:{7}", 
+            url, input.AccessToken, identifierHash, salt, input.OperationType, input.ChainId, input.SecondaryEmail, operationDetails);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
             string.IsNullOrWhiteSpace(input.TargetChainId)
