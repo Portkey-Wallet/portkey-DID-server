@@ -175,4 +175,28 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         var secondaryEmailCache = await _distributedCache.GetAsync(key);
         return (key, secondaryEmailCache);
     }
+
+    public async Task<ResponseWrapDto<GetSecondaryEmailResponse>> GetSecondaryEmailAsync(Guid userId)
+    {
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+
+        var caHolderResult = await grain.GetCaHolder();
+        if (!caHolderResult.Success || caHolderResult.Data == null)
+        {
+            return new ResponseWrapDto<GetSecondaryEmailResponse>()
+            {
+                Code = ((int)ResponseCode.RequestError).ToString(),
+                Message = caHolderResult.Message
+            };
+        }
+        return new ResponseWrapDto<GetSecondaryEmailResponse>()
+        {
+            Code = ((int)ResponseCode.Succeed).ToString(),
+            Message = ResponseCode.Succeed.ToString(),
+            Data = new GetSecondaryEmailResponse()
+            {
+                SecondaryEmail = caHolderResult.Data.SecondaryEmail
+            }
+        };
+    }
 }

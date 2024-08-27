@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CAServer.CAAccount;
 using CAServer.Dtos;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 using CAServer.CAAccount.Cmd;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
+using CAServer.Commons;
 using CAServer.Growth;
 using CAServer.Guardian;
 using CAServer.Transfer.Dtos;
@@ -175,20 +177,39 @@ public class CAAccountController : CAServerController
     }
     
     [HttpPost("secondary/email/verify")]
+    [Authorize]
     public async Task<ResponseWrapDto<VerifySecondaryEmailResponse>> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
     {
         return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
     }
     
     [HttpPost("verifyCode/secondary/email")]
+    [Authorize]
     public async Task<ResponseWrapDto<VerifySecondaryEmailCodeResponse>> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
     {
         return await _secondaryEmailAppService.VerifySecondaryEmailCodeAsync(cmd);
     }
 
     [HttpPost("set/secondary/email")]
+    [Authorize]
     public async Task<ResponseWrapDto<SetSecondaryEmailResponse>> SetSecondaryEmailAsync(SetSecondaryEmailCmd cmd)
     {
         return await _secondaryEmailAppService.SetSecondaryEmailAsync(cmd);
+    }
+
+    [HttpGet("secondary/email")]
+    [Authorize]
+    public async Task<ResponseWrapDto<GetSecondaryEmailResponse>> GetSecondaryEmailAsync()
+    {
+        var userId = _currentUser.Id ?? Guid.Empty;
+        if (userId == Guid.Empty)
+        {
+            return new ResponseWrapDto<GetSecondaryEmailResponse>()
+            {
+                Code = ((int)ResponseCode.NoPermission).ToString(),
+                Message = "user not exist"
+            };
+        }
+        return await _secondaryEmailAppService.GetSecondaryEmailAsync(userId);
     }
 }
