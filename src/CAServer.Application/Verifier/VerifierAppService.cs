@@ -174,6 +174,15 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 // todo  新增的Guardian让前端补个loginGuardianIdentifierHash或者cahash参数
             }
+
+            if (!requestDto.OperationDetails.IsNullOrEmpty())
+            {
+                var detailsDto = JsonConvert.DeserializeObject<OperationDetailsDto>(requestDto.OperationDetails);
+                detailsDto.GuardianType = (int)GuardianIdentifierType.Google;
+                detailsDto.IdentifierHash = hashInfo.Item1.IsNullOrEmpty() ? string.Empty : hashInfo.Item1;
+                detailsDto.VerifierId = requestDto.VerifierId;
+                requestDto.OperationDetails = JsonConvert.SerializeObject(detailsDto);
+            }
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 

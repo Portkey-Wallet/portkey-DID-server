@@ -292,6 +292,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public async Task<ResponseResultDto<VerifyGoogleTokenDto>> VerifyGoogleTokenAsync(VerifyTokenRequestDto input,
         string identifierHash, string salt)
     {
+        _logger.LogDebug("VerifyGoogleTokenAsync input:{0}", JsonConvert.SerializeObject(input));
         var requestUri = "/api/app/account/verifyGoogleToken";
         return await GetResultAsync<VerifyGoogleTokenDto>(input, requestUri, identifierHash, salt);
     }
@@ -388,10 +389,10 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var url = endPoint + requestUri;
-
+        _logger.LogInformation("accelerateManagerProvider.GenerateOperationDetails before OperationType:{0}, OperationDetails:{1}",input.OperationType, input.OperationDetails);
         var operationDetails =
             _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
-
+        _logger.LogInformation("accelerateManagerProvider.GenerateOperationDetails after OperationDetails:{1}", operationDetails);
         //todo for test, remove bofore online
         input.SecondaryEmail = input.SecondaryEmail.IsNullOrEmpty() ? "327676366@qq.com" : input.SecondaryEmail;
         _logger.LogDebug("GetResultFromVerifier before request url:{0} accessToken:{1} identifierHash:{2} salt:{3}" +
