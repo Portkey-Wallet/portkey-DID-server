@@ -5,7 +5,6 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Commons;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
-using CAServer.Transfer.Dtos;
 using CAServer.Verifier;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -42,17 +41,13 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         _distributedEventBus = distributedEventBus;
     }
     
-    public async Task<ResponseWrapDto<VerifySecondaryEmailResponse>> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
+    public async Task<VerifySecondaryEmailResponse> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
     {
         var verifierSessionId = new Guid().ToString();
         var result = await _verifierServerClient.SendSecondaryEmailVerificationRequestAsync(cmd.SecondaryEmail, verifierSessionId);
         if (!result.Success || result.Data == null)
         {
-            return new ResponseWrapDto<VerifySecondaryEmailResponse>
-            {
-                Code = ((int)ResponseCode.BusinessError).ToString(),
-                Message = result.Message
-            };
+            throw new UserFriendlyException(result.Message);
         }
 
         var key = GetCacheKey(CurrentUser.Id.ToString(), result.Data.VerifierSessionId.ToString());
@@ -66,14 +61,9 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
             //todo convert to cache
             AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(600)
         });
-        return new ResponseWrapDto<VerifySecondaryEmailResponse>
+        return  new VerifySecondaryEmailResponse()
         {
-            Code = ((int)ResponseCode.Succeed).ToString(),
-            Message = ResponseCode.Succeed.ToString(),
-            Data = new VerifySecondaryEmailResponse()
-            {
-                VerifierSessionId = result.Data.VerifierSessionId.ToString()
-            }
+            VerifierSessionId = result.Data.VerifierSessionId.ToString()
         };
     }
 
@@ -82,53 +72,35 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         return string.Format(CachePrefix, userId, sessionId);
     }
 
-    public async Task<ResponseWrapDto<VerifySecondaryEmailCodeResponse>> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
+    public async Task<VerifySecondaryEmailCodeResponse> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
     {
         var (key, secondaryEmailCache) = await CheckCacheAndGetEmail(cmd.VerifierSessionId);
         if (secondaryEmailCache == null || secondaryEmailCache.SecondaryEmail.IsNullOrEmpty())
         {
-            return new ResponseWrapDto<VerifySecondaryEmailCodeResponse>()
-            {
-                Code = ((int)ResponseCode.SessionTimeout).ToString(),
-                Message = ResponseCode.SessionTimeout.ToString(),
-            };
+            throw new UserFriendlyException(ResponseCode.SessionTimeout.ToString());
         }
 
         var result = await _verifierServerClient.VerifySecondaryEmailCodeAsync(
             cmd.VerifierSessionId, cmd.VerificationCode, secondaryEmailCache.VerifierServerEndpoint);
         if (!result.Success || result.Data == null)
         {
-            return new ResponseWrapDto<VerifySecondaryEmailCodeResponse>
+            return new VerifySecondaryEmailCodeResponse()
             {
-                Code = ((int)ResponseCode.BusinessError).ToString(),
-                Message = result.Message,
-                Data = new VerifySecondaryEmailCodeResponse()
-                {
-                    VerifiedResult = false
-                }
+                VerifiedResult = false
             };
         }
-        return new ResponseWrapDto<VerifySecondaryEmailCodeResponse>
+        return new VerifySecondaryEmailCodeResponse()
         {
-            Code = ((int)ResponseCode.Succeed).ToString(),
-            Message = ResponseCode.Succeed.ToString(),
-            Data = new VerifySecondaryEmailCodeResponse()
-            {
-                VerifiedResult = true
-            }
+            VerifiedResult = true
         };
     }
 
-    public async Task<ResponseWrapDto<SetSecondaryEmailResponse>> SetSecondaryEmailAsync(SetSecondaryEmailCmd cmd)
+    public async Task<SetSecondaryEmailResponse> SetSecondaryEmailAsync(SetSecondaryEmailCmd cmd)
     {
         var (key, secondaryEmailCache) = await CheckCacheAndGetEmail(cmd.VerifierSessionId);
         if (secondaryEmailCache == null || secondaryEmailCache.SecondaryEmail.IsNullOrEmpty())
         {
-            return new ResponseWrapDto<SetSecondaryEmailResponse>()
-            {
-                Code = ((int)ResponseCode.SessionTimeout).ToString(),
-                Message = ResponseCode.SessionTimeout.ToString(),
-            };
+            throw new UserFriendlyException(ResponseCode.SessionTimeout.ToString());
         }
         
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(CurrentUser.GetId());
@@ -136,14 +108,9 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         var result = await grain.AppendOrUpdateSecondaryEmailAsync(secondaryEmailCache.SecondaryEmail);
         if (!result.Success || result.Data == null)
         {
-            return new ResponseWrapDto<SetSecondaryEmailResponse>()
+            return new SetSecondaryEmailResponse()
             {
-                Code = ((int)ResponseCode.BusinessError).ToString(),
-                Message = result.Message,
-                Data = new SetSecondaryEmailResponse()
-                {
-                    SetResult = false
-                }
+                SetResult = false
             };
         }
         //保存成功以后，发布邮箱保存或者更新的事件，事件中主要涉及cahash和secondaryEmail
@@ -158,14 +125,9 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         //4、verifyGoogleToken接口，已有Guardian的通过Guardian的IdentifierHash查询es中的cahash和secondaryEmail发送交易前的通知邮件
         //   新增的Guardian让前端补个loginGuardianIdentifierHash或者cahash参数
         await _distributedCache.RemoveAsync(key);
-        return new ResponseWrapDto<SetSecondaryEmailResponse>()
+        return new SetSecondaryEmailResponse()
         {
-            Code = ((int)ResponseCode.Succeed).ToString(),
-            Message = ResponseCode.Succeed.ToString(),
-            Data = new SetSecondaryEmailResponse()
-            {
-                SetResult = true
-            }
+            SetResult = true
         };
     }
 
@@ -176,27 +138,18 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         return (key, secondaryEmailCache);
     }
 
-    public async Task<ResponseWrapDto<GetSecondaryEmailResponse>> GetSecondaryEmailAsync(Guid userId)
+    public async Task<GetSecondaryEmailResponse> GetSecondaryEmailAsync(Guid userId)
     {
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
-
         var caHolderResult = await grain.GetCaHolder();
         if (!caHolderResult.Success || caHolderResult.Data == null)
         {
-            return new ResponseWrapDto<GetSecondaryEmailResponse>()
-            {
-                Code = ((int)ResponseCode.RequestError).ToString(),
-                Message = caHolderResult.Message
-            };
-        }
-        return new ResponseWrapDto<GetSecondaryEmailResponse>()
+            throw new UserFriendlyException(caHolderResult.Message);
+        };
+        
+        return new GetSecondaryEmailResponse()
         {
-            Code = ((int)ResponseCode.Succeed).ToString(),
-            Message = ResponseCode.Succeed.ToString(),
-            Data = new GetSecondaryEmailResponse()
-            {
-                SecondaryEmail = caHolderResult.Data.SecondaryEmail
-            }
+            SecondaryEmail = caHolderResult.Data.SecondaryEmail
         };
     }
 }

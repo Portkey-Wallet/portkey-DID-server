@@ -7,10 +7,8 @@ using System.Threading.Tasks;
 using CAServer.CAAccount.Cmd;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
-using CAServer.Commons;
 using CAServer.Growth;
 using CAServer.Guardian;
-using CAServer.Transfer.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
 using Volo.Abp.Users;
@@ -178,37 +176,33 @@ public class CAAccountController : CAServerController
     
     [HttpPost("secondary/email/verify")]
     [Authorize]
-    public async Task<ResponseWrapDto<VerifySecondaryEmailResponse>> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
+    public async Task<VerifySecondaryEmailResponse> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
     {
         return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
     }
     
     [HttpPost("verifyCode/secondary/email")]
     [Authorize]
-    public async Task<ResponseWrapDto<VerifySecondaryEmailCodeResponse>> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
+    public async Task<VerifySecondaryEmailCodeResponse> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
     {
         return await _secondaryEmailAppService.VerifySecondaryEmailCodeAsync(cmd);
     }
 
     [HttpPost("set/secondary/email")]
     [Authorize]
-    public async Task<ResponseWrapDto<SetSecondaryEmailResponse>> SetSecondaryEmailAsync(SetSecondaryEmailCmd cmd)
+    public async Task<SetSecondaryEmailResponse> SetSecondaryEmailAsync(SetSecondaryEmailCmd cmd)
     {
         return await _secondaryEmailAppService.SetSecondaryEmailAsync(cmd);
     }
 
     [HttpGet("secondary/email")]
     [Authorize]
-    public async Task<ResponseWrapDto<GetSecondaryEmailResponse>> GetSecondaryEmailAsync()
+    public async Task<GetSecondaryEmailResponse> GetSecondaryEmailAsync()
     {
         var userId = _currentUser.Id ?? Guid.Empty;
         if (userId == Guid.Empty)
         {
-            return new ResponseWrapDto<GetSecondaryEmailResponse>()
-            {
-                Code = ((int)ResponseCode.NoPermission).ToString(),
-                Message = "user not exist"
-            };
+            throw new UserFriendlyException("user not exist");
         }
         return await _secondaryEmailAppService.GetSecondaryEmailAsync(userId);
     }
