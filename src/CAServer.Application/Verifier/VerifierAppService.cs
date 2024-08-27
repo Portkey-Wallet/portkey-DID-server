@@ -18,6 +18,7 @@ using CAServer.Commons;
 using CAServer.Dtos;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
@@ -38,6 +39,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Verifier;
@@ -60,6 +62,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IDistributedCache<AppleKeys> _distributedCache;
     private readonly ICAAccountProvider _accountProvider;
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
+    private readonly IdentityUserManager _userManager;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
@@ -75,7 +78,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
         ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
         IDistributedCache<AppleKeys> distributedCache,
-        ICAAccountProvider accountProvider)
+        ICAAccountProvider accountProvider,
+        IdentityUserManager userManager)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -91,6 +95,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
         _distributedCache = distributedCache;
         _accountProvider = accountProvider;
+        _userManager = userManager;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -167,22 +172,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
             if (hashInfo.Item3)
             {
-                //4、verifyGoogleToken接口，已有Guardian的通过Guardian的IdentifierHash查询es中的cahash和secondaryEmail发送交易前的通知邮件
+                //existed guardian, get secondary email by guardian's identifierHash
                 requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
             }
-            else
+            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
             {
-                // todo  新增的Guardian让前端补个loginGuardianIdentifierHash或者cahash参数
+                //add guardian operation, get secondary email by caHash
+                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
             }
-
-            if (!requestDto.OperationDetails.IsNullOrEmpty())
-            {
-                var detailsDto = JsonConvert.DeserializeObject<OperationDetailsDto>(requestDto.OperationDetails);
-                detailsDto.GuardianType = (int)GuardianIdentifierType.Google;
-                detailsDto.IdentifierHash = hashInfo.Item1.IsNullOrEmpty() ? string.Empty : hashInfo.Item1;
-                detailsDto.VerifierId = requestDto.VerifierId;
-                requestDto.OperationDetails = JsonConvert.SerializeObject(detailsDto);
-            }
+            requestDto.GuardianIdentifier = userInfo.Id;
+            requestDto.Type = GuardianIdentifierType.Google;
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 
@@ -222,6 +221,28 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    private async Task<string> GetSecondaryEmailByCaHash(string caHash)
+    {
+        var userId = await GetUserId(caHash);
+        var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        var caHolder = await caHolderGrain.GetCaHolder();
+        if (!caHolder.Success || caHolder.Data == null)
+        {
+            throw new UserFriendlyException(caHolder.Message);
+        }
+        return caHolder.Data.SecondaryEmail;
+    }
+    
+    private async Task<Guid> GetUserId(string caHash)
+    {
+        var user = await _userManager.FindByNameAsync(caHash);
+        if (user != null)
+        {
+            return user.Id;
+        }
+        throw new UserFriendlyException("the user doesn't exist, caHash:" + caHash);
+    }
+
     private async Task<string> GetSecondaryEmailAsync(string guardianIdentifierHash)
     {
         if (guardianIdentifierHash.IsNullOrEmpty())
@@ -240,12 +261,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var hashInfo = await GetSaltAndHashAsync(userId);
             if (hashInfo.Item3)
             {
+                //existed guardian, get secondary email by guardian's identifierHash
                 requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
             }
-            else
+            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
             {
-                //todo
+                //add guardian operation, get secondary email by caHash
+                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
             }
+            requestDto.GuardianIdentifier = userId;
+            requestDto.Type = GuardianIdentifierType.Apple;
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -295,12 +320,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var hashInfo = await GetSaltAndHashAsync(userId);
             if (hashInfo.Item3)
             {
+                //existed guardian, get secondary email by guardian's identifierHash
                 requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
             }
-            else
+            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
             {
-                //todo
+                //add guardian operation, get secondary email by caHash
+                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
             }
+            requestDto.GuardianIdentifier = userId;
+            requestDto.Type = GuardianIdentifierType.Twitter;
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -438,13 +467,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var hashInfo = await GetSaltAndHashAsync(userId);
             if (hashInfo.Item3)
             {
-                //4、verifyTelegramToken接口，已有Guardian的通过Guardian的IdentifierHash查询es中的cahash和secondaryEmail发送交易前的通知邮件
+                //existed guardian, get secondary email by guardian's identifierHash
                 requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
             }
-            else
+            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
             {
-                //todo
+                //add guardian operation, get secondary email by caHash
+                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
             }
+            requestDto.GuardianIdentifier = userId;
+            requestDto.Type = GuardianIdentifierType.Telegram;
             var response =
                 await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -492,12 +524,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
             if (userSaltAndHash.Item3)
             {
+                //existed guardian, get secondary email by guardian's identifierHash
                 requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? await GetSecondaryEmailAsync(userSaltAndHash.Item1) : facebookUser.Email;
             }
             else
             {
-                //todo
+                //add guardian operation, get secondary email by caHash
+                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
             }
+            requestDto.GuardianIdentifier = facebookUser.Email;
+            requestDto.Type = GuardianIdentifierType.Facebook;
             var response =
                 await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
                     userSaltAndHash.Item2);

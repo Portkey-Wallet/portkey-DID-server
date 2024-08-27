@@ -292,7 +292,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public async Task<ResponseResultDto<VerifyGoogleTokenDto>> VerifyGoogleTokenAsync(VerifyTokenRequestDto input,
         string identifierHash, string salt)
     {
-        _logger.LogDebug("VerifyGoogleTokenAsync input:{0}", JsonConvert.SerializeObject(input));
         var requestUri = "/api/app/account/verifyGoogleToken";
         return await GetResultAsync<VerifyGoogleTokenDto>(input, requestUri, identifierHash, salt);
     }
@@ -389,32 +388,41 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var url = endPoint + requestUri;
-        _logger.LogInformation("accelerateManagerProvider.GenerateOperationDetails before OperationType:{0}, OperationDetails:{1}",input.OperationType, input.OperationDetails);
         var operationDetails =
             _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
-        _logger.LogInformation("accelerateManagerProvider.GenerateOperationDetails after OperationDetails:{1}", operationDetails);
+        var showOperationDetails = new ShowOperationDetailsDto
+        {
+            OperationType = GetOperationDecs(input.OperationType),
+            Token = GetDetailDesc(input.OperationDetails, "symbol"),
+            Amount = GetDetailDesc(input.OperationDetails, "amount"),
+            Chain = GetChainDetailDesc(input.TargetChainId ?? input.ChainId),
+            GuardianType = input.Type.ToString(),
+            GuardianAccount = input.GuardianIdentifier,
+            Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
+            IP = await GetIpDetailDesc()
+        };
+        var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
         //todo for test, remove bofore online
-        input.SecondaryEmail = input.SecondaryEmail.IsNullOrEmpty() ? "327676366@qq.com" : input.SecondaryEmail;
         _logger.LogDebug("GetResultFromVerifier before request url:{0} accessToken:{1} identifierHash:{2} salt:{3}" +
-                         "operationType:{4} chainId:{5} secondaryEmail:{6} operationDetails:{7}", 
-            url, input.AccessToken, identifierHash, salt, input.OperationType, input.ChainId, input.SecondaryEmail, operationDetails);
+                         "operationType:{4} chainId:{5} secondaryEmail:{6} showOperationDetailsJson:{7}", 
+            url, input.AccessToken, identifierHash, salt, input.OperationType, input.ChainId, input.SecondaryEmail, showOperationDetailsJson);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
             string.IsNullOrWhiteSpace(input.TargetChainId)
                 ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
-                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString(), operationDetails, input.SecondaryEmail);
-        _logger.LogDebug("GetResultFromVerifierAsync url:{0} secondaryEmail:{1}", url, input.SecondaryEmail);
+                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString(), operationDetails, input.SecondaryEmail, showOperationDetailsJson);
+        _logger.LogDebug("GetResultFromVerifierAsync url:{0} secondaryEmail:{1} result:{2}", url, input.SecondaryEmail, JsonConvert.SerializeObject(result));
         return result;
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
         string accessToken, string identifierHash, string salt,
-        OperationType verifierCodeOperationType, string chainId, string operationDetails, string secondaryEmail)
+        OperationType verifierCodeOperationType, string chainId, string operationDetails, string secondaryEmail, string showOperationDetails)
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
         var tokenParam = JsonConvert.SerializeObject(new
-            { accessToken, identifierHash, salt, operationType, chainId, operationDetails, secondaryEmail });
+            { accessToken, identifierHash, salt, operationType, chainId, operationDetails, secondaryEmail, showOperationDetails });
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
             MediaTypeNames.Application.Json);

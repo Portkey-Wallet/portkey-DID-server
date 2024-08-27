@@ -3,12 +3,10 @@ using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
-using CAServer.CAAccount.Cmd;
 using CAServer.Dtos;
 using CAServer.Google;
 using CAServer.IpWhiteList;
 using CAServer.Switch;
-using CAServer.Transfer.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Http;
@@ -37,12 +35,12 @@ public class CAVerifierController : CAServerController
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
-    private readonly ISecondaryEmailAppService _secondaryEmailAppService;
+    
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
         ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService,
-        IZkLoginProvider zkLoginProvider, ISecondaryEmailAppService secondaryEmailAppService)
+        IZkLoginProvider zkLoginProvider)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
@@ -52,7 +50,6 @@ public class CAVerifierController : CAServerController
         _currentUser = currentUser;
         _ipWhiteListAppService = ipWhiteListAppService;
         _zkLoginProvider = zkLoginProvider;
-        _secondaryEmailAppService = secondaryEmailAppService;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -317,23 +314,5 @@ public class CAVerifierController : CAServerController
         {
             throw new UserFriendlyException("OperationType is invalid");
         }
-    }
-
-    [HttpPost("secondary/email/verify")]
-    public async Task<ResponseWrapDto<VerifySecondaryEmailResponse>> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
-    {
-        return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
-    }
-    
-    [HttpPost("verifyCode/secondary/email")]
-    public async Task<ResponseWrapDto<VerifySecondaryEmailCodeResponse>> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
-    {
-        return await _secondaryEmailAppService.VerifySecondaryEmailCodeAsync(cmd);
-    }
-
-    [HttpPost("set/secondary/email")]
-    public async Task<ResponseWrapDto<SetSecondaryEmailResponse>> SetSecondaryEmailAsync(SetSecondaryEmailCmd cmd)
-    {
-        return await _secondaryEmailAppService.SetSecondaryEmailAsync(cmd);
     }
 }
