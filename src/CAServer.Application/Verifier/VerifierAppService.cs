@@ -170,18 +170,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
-            if (hashInfo.Item3)
-            {
-                //existed guardian, get secondary email by guardian's identifierHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
-            }
-            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
-            {
-                //add guardian operation, get secondary email by caHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
-            }
-            requestDto.GuardianIdentifier = userInfo.Id;
-            requestDto.Type = GuardianIdentifierType.Google;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userInfo.Id, GuardianIdentifierType.Google);
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 
@@ -219,6 +208,23 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             throw new UserFriendlyException(e.Message);
         }
+    }
+
+    private async Task AppendSecondaryEmailInfo(VerifyTokenRequestDto requestDto, string guardianIdentifierHash,
+        string guardianIdentifier, GuardianIdentifierType type)
+    {
+        if (requestDto.CaHash.IsNullOrEmpty())
+        {
+            //existed guardian, get secondary email by guardian's identifierHash
+            requestDto.SecondaryEmail = await GetSecondaryEmailAsync(guardianIdentifierHash);
+        }
+        else
+        {
+            //add guardian operation, get secondary email by caHash
+            requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
+        }
+        requestDto.GuardianIdentifier = guardianIdentifier;
+        requestDto.Type = type;
     }
 
     private async Task<string> GetSecondaryEmailByCaHash(string caHash)
@@ -259,18 +265,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
-            if (hashInfo.Item3)
-            {
-                //existed guardian, get secondary email by guardian's identifierHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
-            }
-            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
-            {
-                //add guardian operation, get secondary email by caHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
-            }
-            requestDto.GuardianIdentifier = userId;
-            requestDto.Type = GuardianIdentifierType.Apple;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Apple);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -318,18 +313,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             await StatisticTwitterAsync(userId);
             
             var hashInfo = await GetSaltAndHashAsync(userId);
-            if (hashInfo.Item3)
-            {
-                //existed guardian, get secondary email by guardian's identifierHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
-            }
-            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
-            {
-                //add guardian operation, get secondary email by caHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
-            }
-            requestDto.GuardianIdentifier = userId;
-            requestDto.Type = GuardianIdentifierType.Twitter;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Twitter);
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -465,18 +449,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userId = GetTelegramUserId(requestDto.AccessToken);
             _logger.LogDebug("TeleGram userid is {uid}",userId);
             var hashInfo = await GetSaltAndHashAsync(userId);
-            if (hashInfo.Item3)
-            {
-                //existed guardian, get secondary email by guardian's identifierHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailAsync(hashInfo.Item1);
-            }
-            else if (OperationType.AddGuardian.Equals(requestDto.OperationType))
-            {
-                //add guardian operation, get secondary email by caHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
-            }
-            requestDto.GuardianIdentifier = userId;
-            requestDto.Type = GuardianIdentifierType.Telegram;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Telegram);
             var response =
                 await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -522,18 +495,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
-            if (userSaltAndHash.Item3)
-            {
-                //existed guardian, get secondary email by guardian's identifierHash
-                requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? await GetSecondaryEmailAsync(userSaltAndHash.Item1) : facebookUser.Email;
-            }
-            else
-            {
-                //add guardian operation, get secondary email by caHash
-                requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
-            }
-            requestDto.GuardianIdentifier = facebookUser.Email;
-            requestDto.Type = GuardianIdentifierType.Facebook;
+            await AppendSecondaryEmailInfo(requestDto, userSaltAndHash.Item1, facebookUser.Id, GuardianIdentifierType.Facebook);
+            requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? requestDto.SecondaryEmail : facebookUser.Email;
             var response =
                 await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
                     userSaltAndHash.Item2);
