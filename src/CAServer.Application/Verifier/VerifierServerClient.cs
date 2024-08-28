@@ -134,7 +134,16 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "secondaryEmail", secondaryEmail },
             { "verifierSessionId", verifierSessionId }
         };
-        var response = await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        ResponseResultDto<VerifierServerResponse> response = null;
+        try
+        {
+            _logger.LogInformation("_httpService.PostResponseAsync url:{0} parameters:{1}", url, JsonConvert.SerializeObject(parameters));
+            response = await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "_httpService.PostResponseAsync error");
+        }
         if (response == null || !response.Success || response.Data == null)
         {
             return response;

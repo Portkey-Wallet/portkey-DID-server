@@ -78,7 +78,8 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
         }
 
         var servers = verifierServerDto.GuardianVerifierServers;
-        return RandomHelper.GetRandomOfList(servers).EndPoints[0];
+        // return RandomHelper.GetRandomOfList(servers).EndPoints[0];
+        return servers[0].EndPoints[0];
     }
 
     private int GetRandomNum(int t)
