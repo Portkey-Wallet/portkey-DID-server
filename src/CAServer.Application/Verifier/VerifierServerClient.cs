@@ -15,6 +15,7 @@ using CAServer.Options;
 using CAServer.Security.Dtos;
 using CAServer.Settings;
 using CAServer.Verifier.Dtos;
+using CAVerifierServer.Account;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -175,58 +176,15 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
 
-        var url = endPoint + "/api/app/account/sendNotification/after/approval";
+        var url = endPoint + "/api/app/account/sendNotification";
         var parameters = new Dictionary<string, string>
         {
-            // { "type", dto.Type },
-            { "guardianIdentifier", email },
-            // { "verifierSessionId", dto.VerifierSessionId.ToString() },
-            // { "operationDetails", operationDetails },
+            { "template", ((int)EmailTemplate.AfterApproval).ToString() },
+            { "email", email },
             { "showOperationDetails", showOperationDetailsJson }
         };
         var response = await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
         return response is { Success: true };
-    }
-    
-    public async Task<ResponseResultDto<VerifierServerResponse>> SendNotificationBeforeApprovalAsync(
-        VerifierCodeRequestDto dto)
-    {
-        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
-        _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
-        if (null == endPoint)
-        {
-            _logger.LogInformation("No Available Service Tips.{verifierId}", dto.VerifierId);
-            return new ResponseResultDto<VerifierServerResponse>
-            {
-                Success = false,
-                Message = "No Available Service Tips."
-            };
-        }
-
-        var operationDetails =
-            _accelerateManagerProvider.GenerateOperationDetails(dto.OperationType, dto.OperationDetails);
-        var showOperationDetails = new ShowOperationDetailsDto
-        {
-            OperationType = GetOperationDecs(dto.OperationType),
-            Token = GetDetailDesc(dto.OperationDetails, "symbol"),
-            Amount = GetDetailDesc(dto.OperationDetails, "amount"),
-            Chain = GetChainDetailDesc(dto.TargetChainId ?? dto.ChainId),
-            GuardianType = dto.Type,
-            GuardianAccount = dto.GuardianIdentifier,
-            Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
-            IP = await GetIpDetailDesc()
-        };
-
-        var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
-
-        var url = endPoint + "/api/app/account/sendNotification/before/approval";
-        var parameters = new Dictionary<string, string>
-        {
-            { "type", dto.Type },
-            { "operationDetails", operationDetails },
-            { "showOperationDetails", showOperationDetailsJson }
-        };
-        return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
 
     private ChainInfo GetMainChain()
