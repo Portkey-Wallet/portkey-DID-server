@@ -56,7 +56,7 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
         }
         _logger.LogDebug("SecondaryEmailHandler guardians from contract guardiansDto:{0}", JsonConvert.SerializeObject(guardiansDto));
         var guardians = guardiansDto.CaHolderInfo
-            .Where(dto => dto.CreateChainId.Equals(dto.ChainId))
+            .Where(dto => dto.OriginChainId.Equals(dto.ChainId) && dto.GuardianList != null)
             .Select(dto => dto.GuardianList).ToList();
         //3、es的Guardian数据新增或者更新cahash和secondaryEmail字段
         foreach (var guardian in guardians.SelectMany(guardianBaseList => guardianBaseList.Guardians))
