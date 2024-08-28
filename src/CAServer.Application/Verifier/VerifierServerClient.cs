@@ -278,12 +278,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
     
-    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifySecondaryEmailCodeAsync(string verifierSessionId, string verificationCode,
+    public async Task<ResponseResultDto<bool>> VerifySecondaryEmailCodeAsync(string verifierSessionId, string verificationCode,
         string secondaryEmail, string verifierEndpoint)
     {
         if (null == verifierEndpoint)
         {
-            return new ResponseResultDto<VerificationCodeResponse>
+            return new ResponseResultDto<bool>
             {
                 Success = false,
                 Message = "No Available Service Tips."
@@ -297,7 +297,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "verifierSessionId", verifierSessionId },
             { "code", verificationCode }
         };
-        return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
+        _logger.LogInformation("VerifySecondaryEmailCodeAsync url:{0} parameters:{1}", url, parameters.ToString());
+        return await _httpService.PostResponseAsync<ResponseResultDto<bool>>(url, parameters);
     }
 
     public async Task<ResponseResultDto<VerifyGoogleTokenDto>> VerifyGoogleTokenAsync(VerifyTokenRequestDto input,

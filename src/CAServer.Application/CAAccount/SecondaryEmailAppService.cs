@@ -85,7 +85,7 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         var result = await _verifierServerClient.VerifySecondaryEmailCodeAsync(
             cmd.VerifierSessionId, cmd.VerificationCode, secondaryEmailCache.SecondaryEmail, secondaryEmailCache.VerifierServerEndpoint);
         _logger.LogInformation("VerifySecondaryEmailCodeAsync result:{0}", JsonConvert.SerializeObject(result));
-        if (!result.Success || result.Data == null)
+        if (!result.Success)
         {
             return new VerifySecondaryEmailCodeResponse()
             {
