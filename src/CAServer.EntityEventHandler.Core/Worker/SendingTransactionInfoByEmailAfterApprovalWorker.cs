@@ -33,12 +33,13 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         _verifierServerClient = verifierServerClient;
         _clusterClient = clusterClient;
         _userManager = userManager;
-        Timer.Period = 1000 * 3600; //10 seconds
+        Timer.Period = 1000 * 30; //10 seconds
         Timer.RunOnStart = true;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        _logger.LogInformation("SendingTransactionInfoByEmailAfterApprovalWorker is starting");
         var approvedList = await _userSecurityProvider.GetManagerApprovedListByCaHashAsync(string.Empty, string.Empty, string.Empty, 10, 20);
         if (approvedList?.CaHolderManagerApproved?.Data == null)
         {
