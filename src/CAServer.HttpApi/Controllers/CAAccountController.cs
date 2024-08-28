@@ -206,4 +206,10 @@ public class CAAccountController : CAServerController
         }
         return await _secondaryEmailAppService.GetSecondaryEmailAsync(userId);
     }
+
+    [HttpGet("query/guardians")]
+    public async Task<List<GuardianIndexDto>> GetGuardians(string identifierHash)
+    {
+        return await _guardianAppService.GetGuardianListAsync(new List<string>(){identifierHash});
+    }
 }
