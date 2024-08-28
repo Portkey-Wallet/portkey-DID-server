@@ -33,7 +33,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         _verifierServerClient = verifierServerClient;
         _clusterClient = clusterClient;
         _userManager = userManager;
-        Timer.Period = 1000 * 30; //10 seconds
+        Timer.Period = 1000 * 86400; //10 seconds
         Timer.RunOnStart = true;
     }
 
