@@ -43,7 +43,7 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
     
     public async Task<VerifySecondaryEmailResponse> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
     {
-        var verifierSessionId = new Guid().ToString();
+        var verifierSessionId = Guid.NewGuid().ToString();
         var result = await _verifierServerClient.SendSecondaryEmailVerificationRequestAsync(cmd.SecondaryEmail, verifierSessionId);
         if (!result.Success || result.Data == null)
         {
