@@ -278,7 +278,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
     
-    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifySecondaryEmailCodeAsync(string verifierSessionId, string verificationCode, string verifierEndpoint)
+    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifySecondaryEmailCodeAsync(string verifierSessionId, string verificationCode,
+        string secondaryEmail, string verifierEndpoint)
     {
         if (null == verifierEndpoint)
         {
@@ -289,9 +290,10 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
-        var url = verifierEndpoint + "/api/app/account/verifyCode";
+        var url = verifierEndpoint + "/api/app/account/secondaryEmail/verifyCode";
         var parameters = new Dictionary<string, string>
         {
+            { "secondaryEmail", secondaryEmail },
             { "verifierSessionId", verifierSessionId },
             { "code", verificationCode }
         };

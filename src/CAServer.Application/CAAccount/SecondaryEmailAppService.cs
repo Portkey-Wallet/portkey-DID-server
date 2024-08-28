@@ -8,6 +8,7 @@ using CAServer.Grains.Grain.Contacts;
 using CAServer.Verifier;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -51,6 +52,7 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         }
 
         var key = GetCacheKey(CurrentUser.Id.ToString(), result.Data.VerifierSessionId.ToString());
+        _logger.LogInformation("VerifySecondaryEmailAsync GetCacheKey:{0} result:{1}", key, JsonConvert.SerializeObject(result));
         var value = new SecondaryEmailCacheDto()
         {
             SecondaryEmail = cmd.SecondaryEmail,
@@ -79,9 +81,10 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         {
             throw new UserFriendlyException(ResponseCode.SessionTimeout.ToString());
         }
-
+        
         var result = await _verifierServerClient.VerifySecondaryEmailCodeAsync(
-            cmd.VerifierSessionId, cmd.VerificationCode, secondaryEmailCache.VerifierServerEndpoint);
+            cmd.VerifierSessionId, cmd.VerificationCode, secondaryEmailCache.SecondaryEmail, secondaryEmailCache.VerifierServerEndpoint);
+        _logger.LogInformation("VerifySecondaryEmailCodeAsync result:{0}", JsonConvert.SerializeObject(result));
         if (!result.Success || result.Data == null)
         {
             return new VerifySecondaryEmailCodeResponse()
@@ -89,9 +92,14 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
                 VerifiedResult = false
             };
         }
+
+        var saveResult = await SetSecondaryEmailAsync(new SetSecondaryEmailCmd()
+        {
+            VerifierSessionId = cmd.VerifierSessionId
+        });
         return new VerifySecondaryEmailCodeResponse()
         {
-            VerifiedResult = true
+            VerifiedResult = saveResult is { SetResult: true }
         };
     }
 
@@ -104,8 +112,9 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         }
         
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(CurrentUser.GetId());
-
         var result = await grain.AppendOrUpdateSecondaryEmailAsync(secondaryEmailCache.SecondaryEmail);
+        _logger.LogInformation("SetSecondaryEmail AppendOrUpdateSecondaryEmail secondaryEmailCache:{0} result:{1}",
+            JsonConvert.SerializeObject(secondaryEmailCache), JsonConvert.SerializeObject(result));
         if (!result.Success || result.Data == null)
         {
             return new SetSecondaryEmailResponse()
@@ -135,6 +144,8 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
     {
         var key = GetCacheKey(CurrentUser.Id.ToString(), verifierSessionId);
         var secondaryEmailCache = await _distributedCache.GetAsync(key);
+        _logger.LogInformation("CheckCacheAndGetEmail userId:{0} verifierSessionId:{1} key:{2} secondaryEmailCache:{3}",
+            CurrentUser.Id.ToString(), verifierSessionId, key, JsonConvert.SerializeObject(secondaryEmailCache));
         return (key, secondaryEmailCache);
     }
 

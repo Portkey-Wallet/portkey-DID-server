@@ -16,7 +16,7 @@ public interface IVerifierServerClient
     Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input);
 
     Task<ResponseResultDto<VerificationCodeResponse>> VerifySecondaryEmailCodeAsync(string verifierSessionId,
-        string verificationCode, string verifierEndpoint);
+        string verificationCode, string secondaryEmail, string verifierEndpoint);
 
     Task<ResponseResultDto<VerifyGoogleTokenDto>> VerifyGoogleTokenAsync(VerifyTokenRequestDto input,
         string identifierHash, string salt);
