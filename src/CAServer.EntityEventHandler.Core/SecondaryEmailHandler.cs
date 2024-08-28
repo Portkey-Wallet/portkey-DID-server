@@ -40,9 +40,10 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
     
     public async Task HandleEventAsync(AccountEmailEto eventData)
     {
-        if (CollectionUtilities.IsNullOrEmpty(eventData.SecondaryEmail) || CollectionUtilities.IsNullOrEmpty(eventData.CaHash))
+        _logger.LogDebug("SecondaryEmailHandler receive AccountEmailEto:{0}", JsonConvert.SerializeObject(eventData));
+        if (string.IsNullOrEmpty(eventData.SecondaryEmail) || string.IsNullOrEmpty(eventData.CaHash))
         {
-            _logger.LogError("Error received AccountEmailEto:{0}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError("SecondaryEmailHandler Params Error received AccountEmailEto:{0}", JsonConvert.SerializeObject(eventData));
             return;
         }
         //1、消息接收者通过扫链GraphQlHelper通过cahash查询GuardianList
@@ -50,10 +51,10 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
         //2、GuardianList通过Guardian的IdentifierHash查询es
         if (guardiansDto == null || guardiansDto.CaHolderInfo.IsNullOrEmpty())
         {
-            _logger.LogError("query guardians from graphql failed guardiansDto:{0}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError("SecondaryEmailHandler query guardians from graphql failed guardiansDto:{0}", JsonConvert.SerializeObject(eventData));
             return;
         }
-
+        _logger.LogDebug("SecondaryEmailHandler guardians from contract guardiansDto:{0}", JsonConvert.SerializeObject(guardiansDto));
         var guardians = guardiansDto.CaHolderInfo
             .Where(dto => dto.CreateChainId.Equals(dto.ChainId))
             .Select(dto => dto.GuardianList).ToList();
@@ -64,6 +65,8 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
             try
             {
                 guardianIndex = await _accountProvider.GetIdentifiersAsync(guardian.IdentifierHash);
+                _logger.LogDebug("SecondaryEmailHandler GetIdentifiersAsync from es identifierHash:{0} guardianIndex:{1}",
+                    guardian.IdentifierHash, JsonConvert.SerializeObject(guardianIndex));
             }
             catch (Exception e)
             {
