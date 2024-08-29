@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Http;
@@ -24,19 +25,22 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IVerifierServerClient _verifierServerClient;
+    private readonly IGetVerifierServerProvider _verifierServerProvider;
     
     public GoogleZkProvider(
         IGuardianUserProvider guardianUserProvider,
         ILogger<GoogleZkProvider> logger,
         IHttpClientFactory httpClientFactory,
         IHttpContextAccessor httpContextAccessor,
-        IVerifierServerClient verifierServerClient)
+        IVerifierServerClient verifierServerClient,
+        IGetVerifierServerProvider verifierServerProvider)
     {
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _httpContextAccessor = httpContextAccessor;
         _verifierServerClient = verifierServerClient;
+        _verifierServerProvider = verifierServerProvider;
     }
     
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
@@ -45,6 +49,10 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userInfo.Id, requestDto.Salt, requestDto.PoseidonIdentifierHash);
+            if (requestDto.VerifierId.IsNullOrEmpty())
+            {
+                requestDto.VerifierId = await _verifierServerProvider.GetRandomVerifierServerEndPointAsync(requestDto.ChainId);
+            }
             var verifyTokenRequestDto = new VerifyTokenRequestDto()
             {
                 AccessToken = requestDto.AccessToken,
