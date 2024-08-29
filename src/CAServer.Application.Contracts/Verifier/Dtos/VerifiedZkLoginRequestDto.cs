@@ -12,6 +12,8 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
     public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
     [Required] public OperationType OperationType { get; set; }
+    public string OperationDetails { get; set; }
+    public string CaHash { get; set; }
     public string Jwt { get; set; }
 
     [Required] public string Salt { get; set; }
