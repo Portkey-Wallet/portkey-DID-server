@@ -369,7 +369,10 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             GuardianType = input.Type.ToString(),
             GuardianAccount = input.GuardianIdentifier,
             Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
-            IP = await GetIpDetailDesc()
+            IP = await GetIpDetailDesc(),
+            ToAddress = GetDetailDesc(input.OperationDetails, "toAddress"),
+            SingleLimit = GetDetailDesc(input.OperationDetails, "singleLimit"),
+            DailyLimit = GetDetailDesc(input.OperationDetails, "dailyLimit")
         };
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
         //todo for test, remove bofore online
