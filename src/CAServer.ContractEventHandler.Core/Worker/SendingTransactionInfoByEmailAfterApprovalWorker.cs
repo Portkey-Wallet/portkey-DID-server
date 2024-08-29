@@ -74,22 +74,19 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             return;
         }
         //todo skip and masResultCount should be put into apollo
-        var approvedList = await _userSecurityProvider.ListManagerApprovedInfoByCaHashAsync(string.Empty, string.Empty, string.Empty, 0, 100, lastHeight, currentHeight);
+        var approvedList = await _userSecurityProvider.ListManagerApprovedInfoByCaHashAsync(string.Empty, string.Empty, string.Empty, 0, 1000, lastHeight, currentHeight);
         if (approvedList?.CaHolderManagerApproved?.Data == null)
         {
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker no data current time:{0} height between {1}:{2}", DateTime.UtcNow, lastHeight, currentHeight);
             return;
         }
         _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker approvedList:{0}", JsonConvert.SerializeObject(approvedList));
         foreach (var managerApprovedDto in approvedList.CaHolderManagerApproved.Data)
         {
-            //ManagerApprovedDto
-            //string ChainId
-            //string CaHash
-            //string Spender
-            //string Symbol
-            //long Amount
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker dealing with business");
             if (managerApprovedDto == null || managerApprovedDto.CaHash.IsNullOrEmpty())
             {
+                _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker managerApprovedDto invalid");
                 continue;
             }
 
@@ -100,7 +97,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "GetSecondaryEmailByCaHash error caHash:{0} email:{1}", managerApprovedDto.CaHash, secondaryEmail);
+                _logger.LogError(e, "SendingTransactionInfoByEmailAfterApprovalWorker GetSecondaryEmailByCaHash error caHash:{0} email:{1}", managerApprovedDto.CaHash, secondaryEmail);
             }
 
             if (secondaryEmail.IsNullOrEmpty())
@@ -108,6 +105,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
                 secondaryEmail = "327676366@qq.com";
                 // continue;
             }
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker sending email:{0} managerApproved:{1}", secondaryEmail, JsonConvert.SerializeObject(managerApprovedDto));
             var response = await _verifierServerClient.SendNotificationAfterApprovalAsync(managerApprovedDto, secondaryEmail);
             if (!response)
             {
