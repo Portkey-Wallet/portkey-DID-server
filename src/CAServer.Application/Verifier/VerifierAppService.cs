@@ -170,7 +170,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userInfo.Id, GuardianIdentifierType.Google);
+            var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? userInfo.Id : userInfo.Email;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Google);
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 
@@ -495,7 +496,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
-            await AppendSecondaryEmailInfo(requestDto, userSaltAndHash.Item1, facebookUser.Id, GuardianIdentifierType.Facebook);
+            var guardianIdentifier = facebookUser.Email.IsNullOrEmpty() ? facebookUser.Id : facebookUser.Email;
+            await AppendSecondaryEmailInfo(requestDto, userSaltAndHash.Item1, guardianIdentifier, GuardianIdentifierType.Facebook);
             requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? requestDto.SecondaryEmail : facebookUser.Email;
             var response =
                 await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,

@@ -65,7 +65,8 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
                 OperationDetails = requestDto.OperationDetails,
                 CaHash = requestDto.CaHash
             };
-            await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, userInfo.Id, GuardianIdentifierType.Apple);
+            var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? userInfo.Id : userInfo.Email;
+            await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)

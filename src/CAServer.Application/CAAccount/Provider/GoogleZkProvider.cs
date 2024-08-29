@@ -54,7 +54,8 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
                 OperationDetails = requestDto.OperationDetails,
                 CaHash = requestDto.CaHash
             };
-            await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, userInfo.Id, GuardianIdentifierType.Google);
+            var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? userInfo.Id : userInfo.Email;
+            await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Google);
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
