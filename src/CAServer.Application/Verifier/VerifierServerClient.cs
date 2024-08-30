@@ -365,7 +365,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             Chain = GetChainDetailDesc(input.TargetChainId ?? input.ChainId),
             GuardianType = input.Type.ToString(),
             GuardianAccount = input.GuardianIdentifier,
-            Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
+            Time = DateTime.UtcNow + " UTC",
             IP = await GetIpDetailDesc(),
             ToAddress = GetDetailDesc(input.OperationDetails, "toAddress"),
             SingleLimit = GetDetailDesc(input.OperationDetails, "singleLimit"),
