@@ -80,7 +80,7 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
         return await _graphQlHelper.QueryAsync<IndexerManagerApprovedList>(new GraphQLRequest
         {
             Query = @"
-        		query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!,$startHeight:Int!,$endHeight:Int!) {
+        		query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!,$startHeight:Long!,$endHeight:Long!) {
                     caHolderManagerApproved(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount,startHeight:$startHeight,endHeight:$endHeight}){
                             data{
                                 chainId,
