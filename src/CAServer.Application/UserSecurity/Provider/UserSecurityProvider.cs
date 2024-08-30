@@ -81,13 +81,14 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
         {
             Query = @"
         		query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!,$startHeight:Int!,$endHeight:Int!) {
-                    caHolderManagerApproved(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount},startHeight:$startHeight},endHeight:$endHeight}){
+                    caHolderManagerApproved(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount,startHeight:$startHeight,endHeight:$endHeight}){
                             data{
                                 chainId,
                                 cAHash,
                                 spender,
                                 symbol,
-                                amount
+                                amount,
+                                blockHeight
                                 },
                             totalRecordCount
                             }
