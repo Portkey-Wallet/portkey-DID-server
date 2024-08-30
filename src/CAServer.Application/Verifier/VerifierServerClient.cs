@@ -96,8 +96,11 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             Chain = GetChainDetailDesc(dto.TargetChainId ?? dto.ChainId),
             GuardianType = dto.Type,
             GuardianAccount = dto.GuardianIdentifier,
-            Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
-            IP = await GetIpDetailDesc()
+            Time = DateTime.UtcNow + " UTC",
+            IP = await GetIpDetailDesc(),
+            ToAddress = GetDetailDesc(dto.OperationDetails, "toAddress"),
+            SingleLimit = GetDetailDesc(dto.OperationDetails, "singleLimit"),
+            DailyLimit = GetDetailDesc(dto.OperationDetails, "dailyLimit")
         };
 
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
