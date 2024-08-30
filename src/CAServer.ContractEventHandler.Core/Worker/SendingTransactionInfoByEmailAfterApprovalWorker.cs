@@ -61,10 +61,10 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         //todo move the config to apollo
-        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 10, 3600))
-        {
-            return;
-        }
+        // if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 10, 3600))
+        // {
+        //     return;
+        // }
         _logger.LogInformation("SendingTransactionInfoByEmailAfterApprovalWorker is starting");
         var (lastHeight, currentHeight, isValid) = await BlockHeightHandler();
         _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker lastHeight:{0} currentHeight:{1} isValid:{2}",
