@@ -170,8 +170,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             Token = managerApprovedDto.Symbol,
             Amount = managerApprovedDto.Amount.ToString(),
             Chain = managerApprovedDto.ChainId,
-            Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
-            IP = await GetIpDetailDesc()
+            Time = DateTime.UtcNow + " UTC"
+            // IP = await GetIpDetailDesc()
         };
 
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
