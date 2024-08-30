@@ -164,12 +164,9 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
         var showOperationDetails = new ShowOperationDetailsDto
         {
-            // OperationType = ,
             Token = managerApprovedDto.Symbol,
             Amount = managerApprovedDto.Amount.ToString(),
             Chain = managerApprovedDto.ChainId,
-            // GuardianType = dto.Type,
-            // GuardianAccount = dto.GuardianIdentifier,
             Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
             IP = await GetIpDetailDesc()
         };
@@ -179,7 +176,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         var url = endPoint + "/api/app/account/sendNotification";
         var parameters = new Dictionary<string, string>
         {
-            { "template", ((int)EmailTemplate.AfterApproval).ToString() },
+            { "template", EmailTemplate.AfterApproval.ToString() },
             { "email", email },
             { "showOperationDetails", showOperationDetailsJson }
         };

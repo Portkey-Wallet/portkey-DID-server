@@ -102,6 +102,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
 
             if (secondaryEmail.IsNullOrEmpty())
             {
+                _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker has not secondary email caHash:{0}", managerApprovedDto.CaHash);
                 secondaryEmail = "327676366@qq.com";
                 // continue;
             }

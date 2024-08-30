@@ -230,16 +230,22 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private async Task<string> GetSecondaryEmailByCaHash(string caHash)
     {
-        var userId = await GetUserId(caHash);
-        var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
-        var caHolder = await caHolderGrain.GetCaHolder();
+        var caHolder = await GetCaHolderByCaHash(caHash);
         if (!caHolder.Success || caHolder.Data == null)
         {
             throw new UserFriendlyException(caHolder.Message);
         }
         return caHolder.Data.SecondaryEmail;
     }
-    
+
+    private async Task<GrainResultDto<CAHolderGrainDto>> GetCaHolderByCaHash(string caHash)
+    {
+        var userId = await GetUserId(caHash);
+        var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        var caHolder = await caHolderGrain.GetCaHolder();
+        return caHolder;
+    }
+
     private async Task<Guid> GetUserId(string caHash)
     {
         var user = await _userManager.FindByNameAsync(caHash);
@@ -764,5 +770,15 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             _logger.LogError(e, "invalid jwt token, {token}", identityToken);
             throw new Exception("Invalid token");
         }
+    }
+    
+    public async Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash)
+    {
+        var result = await GetCaHolderByCaHash(caHash);
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+        return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
 }

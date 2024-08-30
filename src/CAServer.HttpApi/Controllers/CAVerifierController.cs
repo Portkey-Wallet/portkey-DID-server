@@ -283,7 +283,11 @@ public class CAVerifierController : CAServerController
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
     }
 
-
+    [HttpGet("getCaHolder")]
+    public async Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash)
+    {
+        return await _verifierAppService.GetHolderInfoByCaHashAsync(caHash);
+    }
 
     private string UserIpAddress(HttpContext context)
     {
