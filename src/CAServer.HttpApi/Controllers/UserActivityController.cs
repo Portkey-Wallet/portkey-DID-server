@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using CAServer.CAActivity;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
+using CAServer.CAActivity.Provider;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -45,5 +46,11 @@ public class UserActivityController
     public async Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto requestDto)
     {
         return await _userActivityAppService.GetCaHolderCreateTimeAsync(requestDto);
+    }
+
+    [HttpGet("transactions")]
+    public async Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType)
+    {
+        return await _userActivityAppService.GetTransactionByTransactionType(transactionType);
     }
 }   

@@ -1149,4 +1149,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return new List<decimal>();
         }
     }
+
+    public async Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType)
+    {
+        var filterTypes = new List<string> { transactionType };
+        var transactions = await _activityProvider.GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
+            string.Empty, filterTypes, 0, MaxResultCount);
+        _logger.LogInformation("=================transactions:{0}", JsonConvert.SerializeObject(transactions));
+        return transactions;
+    }
 }
