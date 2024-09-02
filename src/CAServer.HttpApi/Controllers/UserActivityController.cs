@@ -48,6 +48,7 @@ public class UserActivityController
         return await _userActivityAppService.GetCaHolderCreateTimeAsync(requestDto);
     }
 
+    [AllowAnonymous]
     [HttpGet("transactions")]
     public async Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType)
     {
