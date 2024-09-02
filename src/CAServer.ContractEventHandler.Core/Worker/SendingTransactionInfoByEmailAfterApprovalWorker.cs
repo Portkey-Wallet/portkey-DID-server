@@ -213,7 +213,9 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     {
         _logger.LogDebug("=======================CommonOperationTypeHandler starting");
         var transaction = await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), ContractAppServiceConstant.MainChainId, 
-            string.Empty, AElfContractMethodName.MethodNames, 0, 1000,  startHeight,  endHeight);
+            string.Empty, AElfContractMethodName.MethodNames, 0, 1000, startHeight,  endHeight);
+        _logger.LogDebug("=======================CommonOperationTypeHandler GetActivities startHeight:{0} endHeight:{1} chainId:{2} methods:{3}",
+            startHeight,  endHeight, ContractAppServiceConstant.MainChainId, AElfContractMethodName.MethodNames.ToString());
         if (transaction?.CaHolderTransaction == null || transaction.CaHolderTransaction.Data.IsNullOrEmpty())
         {
             return;
