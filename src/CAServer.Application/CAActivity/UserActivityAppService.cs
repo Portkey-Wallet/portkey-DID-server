@@ -1158,4 +1158,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _logger.LogInformation("=================transactions:{0}", JsonConvert.SerializeObject(transactions));
         return transactions;
     }
+
+    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, long startHeight, long endHeight)
+    {
+        return await _activityProvider.GetActivitiesWithBlockHeightAsync(null, string.Empty,
+            string.Empty, inputTransactionTypes, 0, 1000, startHeight, endHeight);
+    }
 }

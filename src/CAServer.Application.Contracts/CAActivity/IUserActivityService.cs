@@ -15,4 +15,6 @@ public interface IUserActivityAppService:IApplicationService
     Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto requestDto);
 
     Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType);
+
+    Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, long startHeight, long endHeight);
 }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAActivity;
 using CAServer.CAActivity.Dto;
@@ -53,5 +55,14 @@ public class UserActivityController
     public async Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType)
     {
         return await _userActivityAppService.GetTransactionByTransactionType(transactionType);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("activities")]
+    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(string[] inputTransactionTypes,
+        long startHeight, long endHeight)
+    {
+        return await _userActivityAppService.GetActivitiesWithBlockHeightAsync(inputTransactionTypes == null || inputTransactionTypes.Length == 0
+            ? null : inputTransactionTypes.ToList(), startHeight, endHeight);
     }
 }   
