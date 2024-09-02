@@ -58,11 +58,11 @@ public class UserActivityController
     }
 
     [AllowAnonymous]
-    [HttpGet("activities")]
+    [HttpGet("transactions/v2")]
     public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(string[] inputTransactionTypes,
         long startHeight, long endHeight)
     {
         return await _userActivityAppService.GetActivitiesWithBlockHeightAsync(inputTransactionTypes == null || inputTransactionTypes.Length == 0
             ? null : inputTransactionTypes.ToList(), startHeight, endHeight);
     }
-}   
+}
