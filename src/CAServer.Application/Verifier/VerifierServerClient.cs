@@ -156,24 +156,30 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return response;
     }
 
-    public async Task<bool> SendNotificationAfterApprovalAsync(ManagerApprovedDto managerApprovedDto, string email)
+    public async Task<bool> SendNotificationAfterApprovalAsync(string email, string chainId, OperationType operationType,
+        DateTime dateTime, ManagerApprovedDto managerApprovedDto = null)
     {
-        var endPoint = await _getVerifierServerProvider.GetRandomVerifierServerEndPointAsync(managerApprovedDto.ChainId);
+        var endPoint = await _getVerifierServerProvider.GetRandomVerifierServerEndPointAsync(chainId);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
         {
-            _logger.LogInformation("No Available Service Tips.{0}", managerApprovedDto.ChainId);
+            _logger.LogInformation("No Available Service Tips.{0}", chainId);
             return false;
         }
-        var showOperationDetails = new ShowOperationDetailsDto
-        {
-            Token = managerApprovedDto.Symbol,
-            Amount = managerApprovedDto.Amount.ToString(),
-            Chain = managerApprovedDto.ChainId,
-            Time = DateTime.UtcNow + " UTC"
-            // IP = await GetIpDetailDesc()
-        };
-
+        var showOperationDetails = managerApprovedDto == null ? new ShowOperationDetailsDto()
+            {
+                OperationType = GetOperationDecs(operationType),
+                Chain = GetChainDetailDesc(chainId),
+                Time = dateTime + " UTC",
+            }
+            : new ShowOperationDetailsDto
+            {
+                OperationType = GetOperationDecs(operationType),
+                Token = managerApprovedDto.Symbol,
+                Amount = managerApprovedDto.Amount.ToString(),
+                Chain = managerApprovedDto.ChainId,
+                Time = dateTime + " UTC"
+            };
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
 
         var url = endPoint + "/api/app/account/sendNotification";

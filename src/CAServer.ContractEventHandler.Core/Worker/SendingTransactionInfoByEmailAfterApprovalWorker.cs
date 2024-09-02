@@ -1,7 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using AeFinder.Sdk;
+using AElf.Client.Dto;
+using AElf.CSharp.Core;
+using AElf.Types;
+using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Security.Dtos;
+using CAServer.UserAssets;
 using CAServer.UserSecurity.Provider;
 using CAServer.Verifier;
 using Microsoft.Extensions.Caching.Distributed;
@@ -10,11 +19,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Caching;
 using Volo.Abp.Identity;
 using Volo.Abp.Threading;
 using IContractProvider = CAServer.ContractEventHandler.Core.Application.IContractProvider;
+using OperationType = CAServer.Verifier.OperationType;
 
 namespace CAServer.EntityEventHandler.Core.Worker;
 
@@ -30,6 +41,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private readonly IContractProvider _contractProvider;
     private readonly IDistributedCache<string> _distributedCache;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
+    private readonly IActivityProvider _activityProvider;
     
     public SendingTransactionInfoByEmailAfterApprovalWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IUserSecurityProvider userSecurityProvider,
@@ -40,7 +52,8 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         IContractProvider contractProvider,
         IDistributedCache<string> distributedCache,
         IHostApplicationLifetime hostApplicationLifetime,
-        IBackgroundWorkerRegistrarProvider registrarProvider) : base(timer, serviceScopeFactory)
+        IBackgroundWorkerRegistrarProvider registrarProvider,
+        IActivityProvider activityProvider) : base(timer, serviceScopeFactory)
     {
         _registrarProvider = registrarProvider;
         _userSecurityProvider = userSecurityProvider;
@@ -50,6 +63,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         _userManager = userManager;
         _contractProvider = contractProvider;
         _distributedCache = distributedCache;
+        _activityProvider = activityProvider;
         Timer.Period = 1000 * 10; //10 seconds
         Timer.RunOnStart = true;
         hostApplicationLifetime.ApplicationStopped.Register(() =>
@@ -73,6 +87,27 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         {
             return;
         }
+
+        try
+        {
+            await ApprovedOperationHandler(lastHeight, currentHeight);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "ApprovedOperationHandler failed");
+        }
+        try
+        {
+            await CommonOperationTypeHandler(lastHeight, currentHeight);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "CommonOperationHandler failed");
+        }
+    }
+
+    private async Task ApprovedOperationHandler(long lastHeight, long currentHeight)
+    {
         //todo skip and masResultCount should be put into apollo
         var approvedList = await _userSecurityProvider.ListManagerApprovedInfoByCaHashAsync(string.Empty, string.Empty, string.Empty, 0, 1000, lastHeight, currentHeight);
         if (approvedList?.CaHolderManagerApproved?.Data == null)
@@ -107,7 +142,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
                 // continue;
             }
             _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker sending email:{0} managerApproved:{1}", secondaryEmail, JsonConvert.SerializeObject(managerApprovedDto));
-            var response = await _verifierServerClient.SendNotificationAfterApprovalAsync(managerApprovedDto, secondaryEmail);
+            var response = await _verifierServerClient.SendNotificationAfterApprovalAsync(secondaryEmail, managerApprovedDto.ChainId, OperationType.Approve, DateTime.UtcNow, managerApprovedDto);
             if (!response)
             {
                 _logger.LogError("SendNotificationAfterApprovalAsync error caHash:{0} secondaryEmail:{1} managerApprovedDto:{2}",
@@ -172,6 +207,202 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
         });
         return (lastHeight, currentHeight, true);
+    }
+
+    private async Task CommonOperationTypeHandler(long startHeight, long endHeight)
+    {
+        _logger.LogDebug("=======================CommonOperationTypeHandler starting");
+        var transaction = await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), ContractAppServiceConstant.MainChainId, string.Empty, AElfContractMethodName.MethodNames, 0, 1000,  startHeight,  endHeight);
+        if (transaction?.CaHolderTransaction == null || transaction.CaHolderTransaction.Data.IsNullOrEmpty())
+        {
+            return;
+        }
+        _logger.LogDebug("CommonOperationTypeHandler starting transactionTotalAccount:{0}", transaction.CaHolderTransaction.TotalRecordCount);
+        var indexerTransactions = transaction.CaHolderTransaction.Data;
+        foreach (var indexerTransaction in indexerTransactions)
+        {
+            var transactionResultDto = await _contractProvider.GetTransactionResultAsync(ContractAppServiceConstant.MainChainId, indexerTransaction.TransactionId);
+            switch (indexerTransaction.MethodName)
+            {
+                case AElfContractMethodName.CreateCAHolder :
+                    await NotifyCaHolderCreated(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.SocialRecovery:
+                    await NotifySocialRecovered(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.AddGuardian:
+                    await NotifyGuardianAdded(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.RemoveGuardian:
+                    await NotifyGuardianRemoved(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.UpdateGuardian:
+                    await NotifyGuardianUpdated(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.SetGuardianForLogin:
+                    await NotifyLoginGuardianAdded(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.UnsetGuardianForLogin:
+                    await NotifyLoginGuardianAdded(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.SetTransferLimit:
+                    await NotifyTransferLimitChanged(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.RemoveManagerInfo:
+                    await NotifyManagerInfoRemoved(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                case AElfContractMethodName.GuardianApproveTransfer:
+                    await NotifyManagerApproved(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private async Task NotifyCaHolderCreated(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<CAHolderCreated>(logEventDtos, LogEvent.CAHolderCreated);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.CreateCAHolder, timestamp);
+    }
+    
+    private async Task NotifySocialRecovered(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<ManagerInfoSocialRecovered>(logEventDtos, LogEvent.ManagerInfoSocialRecovered);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.SocialRecovery, timestamp);
+    }
+    
+    private async Task NotifyGuardianAdded(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<GuardianAdded>(logEventDtos, LogEvent.GuardianAdded);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.AddGuardian, timestamp);
+    }
+    
+    private async Task NotifyGuardianRemoved(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<GuardianRemoved>(logEventDtos, LogEvent.GuardianRemoved);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.RemoveGuardian, timestamp);
+    }
+    
+    private async Task NotifyGuardianUpdated(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<GuardianUpdated>(logEventDtos, LogEvent.GuardianUpdated);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.UpdateGuardian, timestamp);
+    }
+    
+    private async Task NotifyLoginGuardianAdded(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<LoginGuardianAdded>(logEventDtos, LogEvent.LoginGuardianAdded);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.SetLoginGuardian, timestamp);
+    }
+    
+    private async Task NotifyTransferLimitChanged(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<TransferLimitChanged>(logEventDtos, LogEvent.TransferLimitChanged);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.ModifyTransferLimit, timestamp);
+    }
+    
+    private async Task NotifyManagerInfoRemoved(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<ManagerInfoRemoved>(logEventDtos, LogEvent.ManagerInfoRemoved);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.RevokeAccount, timestamp);
+    }
+    
+    private async Task NotifyManagerApproved(LogEventDto[] logEventDtos, string chainId, long timestamp)
+    {
+        var logEvent = ExtractLogEvent<ManagerApproved>(logEventDtos, LogEvent.ManagerApproved);
+        if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
+        {
+            return;
+        }
+        var managerApprovedDto = new ManagerApprovedDto
+        {
+            CaHash = logEvent.CaHash.ToHex(),
+            Spender = logEvent.Spender.ToBase58(),
+            Amount = logEvent.Amount,
+            Symbol = logEvent.Symbol,
+            ChainId = chainId
+        };
+        await DoNotification(chainId, logEvent.CaHash.ToHex(), OperationType.GuardianApproveTransfer, timestamp, managerApprovedDto);
+    }
+
+    private async Task DoNotification(string chainId, string caHash, OperationType operationType, long timestamp, ManagerApprovedDto managerApprovedDto = null)
+    {
+        string secondaryEmail = null;
+        try
+        {
+            secondaryEmail = await GetSecondaryEmailByCaHash(caHash);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "SendingTransactionInfoByEmailAfterApprovalWorker GetSecondaryEmailByCaHash error caHash:{0} email:{1}", caHash, secondaryEmail);
+        }
+
+        if (secondaryEmail.IsNullOrEmpty())
+        {
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker has not secondary email caHash:{0}", caHash);
+            secondaryEmail = "327676366@qq.com";
+        }
+
+        var response = await _verifierServerClient.SendNotificationAfterApprovalAsync(secondaryEmail, chainId, operationType,
+            TimeHelper.GetDateTimeFromTimeStamp(timestamp), managerApprovedDto);
+        if (!response)
+        {
+            _logger.LogError("SendNotificationAfterApprovalAsync error caHash:{0} secondaryEmail:{1}", caHash, secondaryEmail);
+        }
+    }
+
+    private T ExtractLogEvent<T>(LogEventDto[] logEventDtos, string logEventName) where T : IEvent<T>, new()
+    {
+        foreach (var logEventDto in logEventDtos)
+        {
+            if (!logEventDto.Name.Equals(logEventName))
+            {
+                continue;
+            }
+            return LogEventDeserializationHelper.DeserializeLogEvent<T>(logEventDto);
+        }
+        return new T();
     }
 
     private string GetCacheKey(string chainId)

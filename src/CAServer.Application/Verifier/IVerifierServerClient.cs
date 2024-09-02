@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Security.Dtos;
@@ -12,7 +13,8 @@ public interface IVerifierServerClient
     Task<ResponseResultDto<VerifierServerResponse>> SendSecondaryEmailVerificationRequestAsync(
         string secondaryEmail, string verifierSessionId);
 
-    Task<bool> SendNotificationAfterApprovalAsync(ManagerApprovedDto managerApprovedDto, string email);
+    Task<bool> SendNotificationAfterApprovalAsync(string email, string chainId, OperationType operationType, DateTime dateTime,
+        ManagerApprovedDto managerApprovedDto = null);
     
     Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input);
 
