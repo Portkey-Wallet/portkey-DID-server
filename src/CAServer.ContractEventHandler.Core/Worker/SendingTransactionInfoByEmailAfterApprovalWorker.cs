@@ -282,6 +282,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyCaHolderCreated(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<CAHolderCreated>(logEventDtos, LogEvent.CAHolderCreated);
+        _logger.LogDebug("NotifyCaHolderCreated logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -293,6 +294,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifySocialRecovered(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<ManagerInfoSocialRecovered>(logEventDtos, LogEvent.ManagerInfoSocialRecovered);
+        _logger.LogDebug("NotifySocialRecovered logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -304,6 +306,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyGuardianAdded(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<GuardianAdded>(logEventDtos, LogEvent.GuardianAdded);
+        _logger.LogDebug("NotifyGuardianAdded logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -315,6 +318,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyGuardianRemoved(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<GuardianRemoved>(logEventDtos, LogEvent.GuardianRemoved);
+        _logger.LogDebug("NotifyGuardianRemoved logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -326,6 +330,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyGuardianUpdated(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<GuardianUpdated>(logEventDtos, LogEvent.GuardianUpdated);
+        _logger.LogDebug("NotifyGuardianUpdated logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -337,6 +342,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyLoginGuardianAdded(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<LoginGuardianAdded>(logEventDtos, LogEvent.LoginGuardianAdded);
+        _logger.LogDebug("NotifyLoginGuardianAdded logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -348,6 +354,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyTransferLimitChanged(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<TransferLimitChanged>(logEventDtos, LogEvent.TransferLimitChanged);
+        _logger.LogDebug("NotifyTransferLimitChanged logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -359,6 +366,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyManagerInfoRemoved(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<ManagerInfoRemoved>(logEventDtos, LogEvent.ManagerInfoRemoved);
+        _logger.LogDebug("NotifyManagerInfoRemoved logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
@@ -370,6 +378,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private async Task NotifyManagerApproved(LogEventDto[] logEventDtos, string chainId, long timestamp)
     {
         var logEvent = ExtractLogEvent<ManagerApproved>(logEventDtos, LogEvent.ManagerApproved);
+        _logger.LogDebug("NotifyManagerApproved logEvent:{0}", JsonConvert.SerializeObject(logEvent));
         if (logEvent?.CaHash == null || Hash.Empty.Equals(logEvent.CaHash))
         {
             return;
