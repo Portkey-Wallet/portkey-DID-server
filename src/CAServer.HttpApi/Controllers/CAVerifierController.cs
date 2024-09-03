@@ -12,6 +12,7 @@ using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
@@ -214,6 +215,7 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifiedzk")]
     public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
+        _logger.LogDebug("VerifiedZkLogin requestDto:{0}",JsonConvert.SerializeObject(requestDto));
         ValidateOperationType(requestDto.OperationType);
         return await _zkLoginProvider.VerifiedZkLoginAsync(requestDto);
     }
