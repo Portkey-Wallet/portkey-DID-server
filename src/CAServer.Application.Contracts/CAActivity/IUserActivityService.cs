@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
+using CAServer.UserAssets;
 using Volo.Abp.Application.Services;
 
 namespace CAServer.CAActivity;
@@ -17,4 +18,6 @@ public interface IUserActivityAppService:IApplicationService
     Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType);
 
     Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, long startHeight, long endHeight);
+
+    Task<IndexerTransactions> GetActivitiesV3(List<CAAddressInfo> caAddressInfos);
 }

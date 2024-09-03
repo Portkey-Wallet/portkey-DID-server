@@ -1162,6 +1162,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, long startHeight, long endHeight)
     {
         return await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), string.Empty,
-            string.Empty, inputTransactionTypes, 0, 10, startHeight, endHeight);
+            string.Empty, inputTransactionTypes, 0, 100, startHeight, endHeight);
+    }
+
+    public async Task<IndexerTransactions> GetActivitiesV3(List<CAAddressInfo> caAddressInfos)
+    {
+        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, string.Empty,
+            string.Empty, null, 0, 20);
+        return transactions;
     }
 }

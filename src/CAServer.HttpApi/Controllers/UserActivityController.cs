@@ -63,4 +63,11 @@ public class UserActivityController
     {
         return await _userActivityAppService.GetActivitiesWithBlockHeightAsync(request.Types, request.StartHeight, request.EndHeight);
     }
+    
+    [AllowAnonymous]
+    [HttpPost("transactions/v3")]
+    public async Task<IndexerTransactions> GetActivitiesV3Async([FromBody]TransactionTypeDto request)
+    {
+        return await _userActivityAppService.GetActivitiesV3(request.CaAddressInfos);
+    }
 }
