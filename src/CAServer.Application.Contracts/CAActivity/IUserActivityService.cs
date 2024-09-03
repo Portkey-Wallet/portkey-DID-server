@@ -17,7 +17,7 @@ public interface IUserActivityAppService:IApplicationService
 
     Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType);
 
-    Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, long startHeight, long endHeight);
+    Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, string chainId, long startHeight, long endHeight);
 
-    Task<IndexerTransactions> GetActivitiesV3(List<CAAddressInfo> caAddressInfos);
+    Task<IndexerTransactions> GetActivitiesV3(List<CAAddressInfo> caAddressInfos, string chainId);
 }

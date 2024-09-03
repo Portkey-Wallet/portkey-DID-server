@@ -72,7 +72,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         _contractProvider = contractProvider;
         _distributedCache = distributedCache;
         _activityProvider = activityProvider;
-        Timer.Period = 1000 * _notifyWorkerOptions.PeriodSeconds; //10 seconds
+        Timer.Period = 1000 * _notifyWorkerOptions.PeriodSeconds;
         Timer.RunOnStart = true;
         hostApplicationLifetime.ApplicationStopped.Register(() =>
         {
@@ -87,9 +87,9 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             return;
         }
         _logger.LogInformation("SendingTransactionInfoByEmailAfterApprovalWorker is starting");
-        foreach (var chainId in _chainOptions.ChainInfos.Keys)
+        foreach (var chainInfo in _chainOptions.ChainInfos)
         {
-            var (lastHeight, currentHeight, isValid) = await BlockHeightHandler(chainId);
+            var (lastHeight, currentHeight, isValid) = await BlockHeightHandler(chainInfo.Key);
             _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker lastHeight:{0} currentHeight:{1} isValid:{2}",
                 lastHeight, currentHeight, isValid);
             if (!isValid)
@@ -99,7 +99,10 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
 
             try
             {
-                await ApprovedOperationHandler(lastHeight, currentHeight);
+                if (chainInfo.Value.IsMainChain)
+                {
+                    await ApprovedOperationHandler(lastHeight, currentHeight);
+                }
             }
             catch (Exception e)
             {
@@ -107,7 +110,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             }
             try
             {
-                await CommonOperationTypeHandler(chainId, lastHeight, currentHeight);
+                await CommonOperationTypeHandler(chainInfo.Key, lastHeight, currentHeight);
             }
             catch (Exception e)
             {
@@ -222,7 +225,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     {
         _logger.LogDebug("=======================CommonOperationTypeHandler starting");
         var transaction = await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), chainId, 
-            string.Empty, AElfContractMethodName.MethodNames, 0, _notifyWorkerOptions.MaxResultCount, startHeight,  endHeight);
+            null, AElfContractMethodName.MethodNames, 0, _notifyWorkerOptions.MaxResultCount, startHeight,  endHeight);
         _logger.LogDebug("=======================CommonOperationTypeHandler GetActivities startHeight:{0} endHeight:{1} chainId:{2} methods:{3} result:{4}",
             startHeight,  endHeight, chainId, JsonConvert.SerializeObject(AElfContractMethodName.MethodNames), JsonConvert.SerializeObject(transaction));
         if (transaction?.CaHolderTransaction == null || transaction.CaHolderTransaction.Data.IsNullOrEmpty())
@@ -234,6 +237,10 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         foreach (var indexerTransaction in indexerTransactions)
         {
             var transactionResultDto = await _contractProvider.GetTransactionResultAsync(chainId, indexerTransaction.TransactionId);
+            if (transactionResultDto == null || transactionResultDto.Logs.IsNullOrEmpty())
+            {
+                continue;
+            }
             switch (indexerTransaction.MethodName)
             {
                 case AElfContractMethodName.CreateCAHolder :

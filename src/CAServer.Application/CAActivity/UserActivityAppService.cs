@@ -196,7 +196,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
             request.Symbol, null, request.SkipCount, request.MaxResultCount);
         _logger.LogDebug("----------------------GetActivities caAddress:{0}, chainId:{1}, symbol:{2}, transactions:{3}",
-            request.CaAddressInfos, request.ChainId, request.Symbol, JsonConvert.SerializeObject(transactions));
+            JsonConvert.SerializeObject(request.CaAddressInfos), request.ChainId, request.Symbol, JsonConvert.SerializeObject(transactions));
         if (transactions.CaHolderTransaction.Data.Count < request.MaxResultCount)
         {
             hasNextPage = false;
@@ -1161,15 +1161,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return transactions;
     }
 
-    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, long startHeight, long endHeight)
+    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, string chainId, long startHeight, long endHeight)
     {
-        return await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), string.Empty,
+        return await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), chainId,
             string.Empty, inputTransactionTypes, 0, 100, startHeight, endHeight);
     }
 
-    public async Task<IndexerTransactions> GetActivitiesV3(List<CAAddressInfo> caAddressInfos)
+    public async Task<IndexerTransactions> GetActivitiesV3(List<CAAddressInfo> caAddressInfos, string chainId)
     {
-        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, string.Empty,
+        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, chainId,
             string.Empty, null, 0, 20);
         return transactions;
     }
