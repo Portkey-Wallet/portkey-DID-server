@@ -24,21 +24,12 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         var usedZk = GuardianIdentifierType.Google.Equals(Type) 
-                     || GuardianIdentifierType.Apple.Equals(Type)
-                     || GuardianIdentifierType.Facebook.Equals(Type);
+                     || GuardianIdentifierType.Apple.Equals(Type);
         if (!usedZk)
         {
             yield return new ValidationResult(
                 "Invalid input type.",
                 new[] { "GuardianIdentifierType" }
-            );
-        }
-
-        if (Type == GuardianIdentifierType.Facebook && Jwt.IsNullOrEmpty())
-        {
-            yield return new ValidationResult(
-                "Invalid input jwt.",
-                new[] { "Jwt" }
             );
         }
 
