@@ -473,6 +473,10 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 }
 
                 var response = property.Value.ToString();
+                if ("singleLimit".Equals(keyword) || "dailyLimit".Equals(keyword) && "-1".Equals(response.Trim()))
+                {
+                    return "No Limit";
+                }
                 return response;
             }
         }
