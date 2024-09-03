@@ -386,7 +386,6 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker has not secondary email caHash:{0}", caHash);
             secondaryEmail = "327676366@qq.com";
         }
-
         var response = await _verifierServerClient.SendNotificationAfterApprovalAsync(secondaryEmail, chainId, operationType,
             TimeHelper.GetDateTimeFromTimeStamp(timestamp), managerApprovedDto);
         if (!response)
