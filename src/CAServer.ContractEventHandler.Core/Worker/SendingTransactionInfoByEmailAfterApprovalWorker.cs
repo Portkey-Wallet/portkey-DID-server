@@ -8,6 +8,7 @@ using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Security.Dtos;
 using CAServer.UserAssets;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -42,6 +44,8 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
     private readonly IDistributedCache<string> _distributedCache;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
     private readonly IActivityProvider _activityProvider;
+    private readonly NotifyWorkerOptions _notifyWorkerOptions;
+    private readonly ChainOptions _chainOptions;
     
     public SendingTransactionInfoByEmailAfterApprovalWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IUserSecurityProvider userSecurityProvider,
@@ -53,8 +57,12 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         IDistributedCache<string> distributedCache,
         IHostApplicationLifetime hostApplicationLifetime,
         IBackgroundWorkerRegistrarProvider registrarProvider,
-        IActivityProvider activityProvider) : base(timer, serviceScopeFactory)
+        IActivityProvider activityProvider,
+        IOptions<NotifyWorkerOptions> notifyWorkerOptions,
+        IOptions<ChainOptions> chainOptions) : base(timer, serviceScopeFactory)
     {
+        _notifyWorkerOptions = notifyWorkerOptions.Value;
+        _chainOptions = chainOptions.Value;
         _registrarProvider = registrarProvider;
         _userSecurityProvider = userSecurityProvider;
         _logger = logger;
@@ -64,7 +72,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         _contractProvider = contractProvider;
         _distributedCache = distributedCache;
         _activityProvider = activityProvider;
-        Timer.Period = 1000 * 10; //10 seconds
+        Timer.Period = 1000 * _notifyWorkerOptions.PeriodSeconds; //10 seconds
         Timer.RunOnStart = true;
         hostApplicationLifetime.ApplicationStopped.Register(() =>
         {
@@ -74,42 +82,43 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        //todo move the config to apollo
-        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, 10, 3600))
+        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _notifyWorkerOptions.PeriodSeconds, _notifyWorkerOptions.ExpirationSeconds))
         {
             return;
         }
         _logger.LogInformation("SendingTransactionInfoByEmailAfterApprovalWorker is starting");
-        var (lastHeight, currentHeight, isValid) = await BlockHeightHandler();
-        _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker lastHeight:{0} currentHeight:{1} isValid:{2}",
-            lastHeight, currentHeight, isValid);
-        if (!isValid)
+        foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            return;
-        }
+            var (lastHeight, currentHeight, isValid) = await BlockHeightHandler(chainId);
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker lastHeight:{0} currentHeight:{1} isValid:{2}",
+                lastHeight, currentHeight, isValid);
+            if (!isValid)
+            {
+                return;
+            }
 
-        try
-        {
-            await ApprovedOperationHandler(lastHeight, currentHeight);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "ApprovedOperationHandler failed");
-        }
-        try
-        {
-            await CommonOperationTypeHandler(lastHeight, currentHeight);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "CommonOperationHandler failed");
+            try
+            {
+                await ApprovedOperationHandler(lastHeight, currentHeight);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "ApprovedOperationHandler failed");
+            }
+            try
+            {
+                await CommonOperationTypeHandler(chainId, lastHeight, currentHeight);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "CommonOperationHandler failed");
+            }
         }
     }
 
     private async Task ApprovedOperationHandler(long lastHeight, long currentHeight)
     {
-        //todo skip and masResultCount should be put into apollo
-        var approvedList = await _userSecurityProvider.ListManagerApprovedInfoByCaHashAsync(string.Empty, string.Empty, string.Empty, 0, 1000, lastHeight, currentHeight);
+        var approvedList = await _userSecurityProvider.ListManagerApprovedInfoByCaHashAsync(string.Empty, string.Empty, string.Empty, 0, _notifyWorkerOptions.MaxResultCount, lastHeight, currentHeight);
         if (approvedList?.CaHolderManagerApproved?.Data == null)
         {
             _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker no data current time:{0} height between {1}:{2}", DateTime.UtcNow, lastHeight, currentHeight);
@@ -151,19 +160,19 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         }
     }
 
-    private async Task<(long lastHeight, long currentHeight, bool isValid)> BlockHeightHandler()
+    private async Task<(long lastHeight, long currentHeight, bool isValid)> BlockHeightHandler(string chainId)
     {
         long lastHeight = -1;
         long currentHeight = -1;
-        var cacheKey = GetCacheKey(ContractAppServiceConstant.MainChainId);
+        var cacheKey = GetCacheKey(chainId);
         var lastHeightCache = await _distributedCache.GetAsync(cacheKey);
         if (lastHeightCache.IsNullOrEmpty())
         {
-            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker chainId:{0} last height is:{1}", ContractAppServiceConstant.MainChainId, lastHeight);
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker chainId:{0} last height is:{1}", chainId, lastHeight);
 
             try
             {
-                currentHeight = await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
+                currentHeight = await _contractProvider.GetBlockHeightAsync(chainId);
                 await _distributedCache.SetAsync(cacheKey, currentHeight.ToString(), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
@@ -188,7 +197,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         
         try
         {
-            currentHeight = await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
+            currentHeight = await _contractProvider.GetBlockHeightAsync(chainId);
         }
         catch (Exception e)
         {
@@ -209,13 +218,13 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         return (lastHeight, currentHeight, true);
     }
 
-    private async Task CommonOperationTypeHandler(long startHeight, long endHeight)
+    private async Task CommonOperationTypeHandler(string chainId, long startHeight, long endHeight)
     {
         _logger.LogDebug("=======================CommonOperationTypeHandler starting");
-        var transaction = await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), ContractAppServiceConstant.MainChainId, 
-            string.Empty, AElfContractMethodName.MethodNames, 0, 1000, startHeight,  endHeight);
+        var transaction = await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), chainId, 
+            string.Empty, AElfContractMethodName.MethodNames, 0, _notifyWorkerOptions.MaxResultCount, startHeight,  endHeight);
         _logger.LogDebug("=======================CommonOperationTypeHandler GetActivities startHeight:{0} endHeight:{1} chainId:{2} methods:{3} result:{4}",
-            startHeight,  endHeight, ContractAppServiceConstant.MainChainId, JsonConvert.SerializeObject(AElfContractMethodName.MethodNames), JsonConvert.SerializeObject(transaction));
+            startHeight,  endHeight, chainId, JsonConvert.SerializeObject(AElfContractMethodName.MethodNames), JsonConvert.SerializeObject(transaction));
         if (transaction?.CaHolderTransaction == null || transaction.CaHolderTransaction.Data.IsNullOrEmpty())
         {
             return;
@@ -224,38 +233,38 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         var indexerTransactions = transaction.CaHolderTransaction.Data;
         foreach (var indexerTransaction in indexerTransactions)
         {
-            var transactionResultDto = await _contractProvider.GetTransactionResultAsync(ContractAppServiceConstant.MainChainId, indexerTransaction.TransactionId);
+            var transactionResultDto = await _contractProvider.GetTransactionResultAsync(chainId, indexerTransaction.TransactionId);
             switch (indexerTransaction.MethodName)
             {
                 case AElfContractMethodName.CreateCAHolder :
-                    await NotifyCaHolderCreated(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyCaHolderCreated(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.SocialRecovery:
-                    await NotifySocialRecovered(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifySocialRecovered(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.AddGuardian:
-                    await NotifyGuardianAdded(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyGuardianAdded(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.RemoveGuardian:
-                    await NotifyGuardianRemoved(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyGuardianRemoved(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.UpdateGuardian:
-                    await NotifyGuardianUpdated(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyGuardianUpdated(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.SetGuardianForLogin:
-                    await NotifyLoginGuardianAdded(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyLoginGuardianAdded(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.UnsetGuardianForLogin:
-                    await NotifyLoginGuardianAdded(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyLoginGuardianAdded(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.SetTransferLimit:
-                    await NotifyTransferLimitChanged(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyTransferLimitChanged(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.RemoveManagerInfo:
-                    await NotifyManagerInfoRemoved(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyManagerInfoRemoved(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 case AElfContractMethodName.GuardianApproveTransfer:
-                    await NotifyManagerApproved(transactionResultDto.Logs, ContractAppServiceConstant.MainChainId, indexerTransaction.Timestamp);
+                    await NotifyManagerApproved(transactionResultDto.Logs, chainId, indexerTransaction.Timestamp);
                     break;
                 default:
                     break;
@@ -378,19 +387,21 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "SendingTransactionInfoByEmailAfterApprovalWorker GetSecondaryEmailByCaHash error caHash:{0} email:{1}", caHash, secondaryEmail);
+            _logger.LogError(e, "CommonOperationTypeHandler GetSecondaryEmailByCaHash error caHash:{0} email:{1}", caHash, secondaryEmail);
         }
 
         if (secondaryEmail.IsNullOrEmpty())
         {
-            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker has not secondary email caHash:{0}", caHash);
+            _logger.LogDebug("CommonOperationTypeHandler has not secondary email caHash:{0}", caHash);
             secondaryEmail = "327676366@qq.com";
         }
+
+        timestamp = timestamp <= 0 ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() : timestamp * 1000;
         var response = await _verifierServerClient.SendNotificationAfterApprovalAsync(secondaryEmail, chainId, operationType,
             TimeHelper.GetDateTimeFromTimeStamp(timestamp), managerApprovedDto);
         if (!response)
         {
-            _logger.LogError("SendNotificationAfterApprovalAsync error caHash:{0} secondaryEmail:{1}", caHash, secondaryEmail);
+            _logger.LogError("CommonOperationTypeHandler error caHash:{0} secondaryEmail:{1}", caHash, secondaryEmail);
         }
     }
 
