@@ -555,13 +555,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             }
             var verificationStrategy = _verificationStrategies
                 .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
-            if (verificationStrategy == null)
-            {
-                throw new UserFriendlyException("verification Strategy not exist");
-            }
+            // if (verificationStrategy == null)
+            // {
+            //     throw new UserFriendlyException("verification Strategy not exist");
+            // }
             return new VerificationCodeResponse
             {
-                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)
+                // Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)
+                Extra = hashInfo.Item2
             };
         }
         catch (Exception e)
