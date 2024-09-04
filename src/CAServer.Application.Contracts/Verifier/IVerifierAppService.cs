@@ -19,5 +19,5 @@ public interface IVerifierAppService
     Task<VerificationCodeResponse> VerifyTwitterTokenAsync(VerifyTokenRequestDto requestDto);
     Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash);
 
-    public Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyTokenRequestDto requestDto);
+    public Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyEdaAlgorithmRequestDto requestDto);
 }

@@ -538,11 +538,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    public async Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyTokenRequestDto requestDto)
+    public async Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyEdaAlgorithmRequestDto requestDto)
     {
         try
         {
-            var hashInfo = await GetSaltAndHashAsync(requestDto.GuardianIdentifier);
+            var hashInfo = await GetSaltAndHashAsync(requestDto.VerificationDetails.Address);
             
             if (!hashInfo.Item3)
             {
@@ -550,6 +550,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             }
             var verificationStrategy = _verificationStrategies
                 .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
+            if (verificationStrategy == null)
+            {
+                throw new UserFriendlyException("verification Strategy not exist");
+            }
             return new VerificationCodeResponse
             {
                 Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)

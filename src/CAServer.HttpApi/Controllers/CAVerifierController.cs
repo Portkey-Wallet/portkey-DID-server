@@ -256,7 +256,7 @@ public class CAVerifierController : CAServerController
     }
     
     [HttpPost("verifyTonWalletToken")]
-    public async Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyTokenRequestDto requestDto)
+    public async Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyEdaAlgorithmRequestDto requestDto)
     {
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyTonWalletAsync(requestDto);
