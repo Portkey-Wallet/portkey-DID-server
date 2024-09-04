@@ -478,24 +478,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(requestDto.VerificationDetails.Address, hashInfo.Item2, hashInfo.Item1);
             }
-
-            _logger.LogDebug("=======verificationAlgorithmStrategy _verificationStrategies:{0}", _verificationStrategies?.ToString());
-            foreach (var strategy in _verificationStrategies)
-            {
-                _logger.LogDebug("=======verificationAlgorithmStrategy VerifierType:{0} Strategy:{1}", strategy.VerifierType, strategy.ToString());
-                _logger.LogDebug("=======verificationAlgorithmStrategy equals to ton wallet:{0}", strategy.VerifierType.Equals(VerifierType.TonWallet));
-                _logger.LogDebug("=======verificationAlgorithmStrategy extra:{0}", strategy.ExtraHandler(hashInfo.Item2));
-            }
+            
             var verificationStrategy = _verificationStrategies
                 .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
-            // if (verificationStrategy == null)
-            // {
-            //     throw new UserFriendlyException("verification Strategy not exist");
-            // }
+            if (verificationStrategy == null)
+            {
+                throw new UserFriendlyException("verification Strategy not exist");
+            }
             return new VerificationCodeResponse
             {
-                // Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)
-                Extra = hashInfo.Item2
+                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)
             };
         }
         catch (Exception e)
