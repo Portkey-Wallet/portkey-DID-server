@@ -8,6 +8,7 @@ using CAServer.Account;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Enums;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -542,8 +543,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature))
-            .ForPath(t => t.GuardianInfo.VerificationDo.VerifierType, m => m.MapFrom(f => f.VerificationRequestInfo.VerifierType))
-            .ForPath(t => t.GuardianInfo.VerificationDo.VerificationDetails, m => m.MapFrom(f => f.VerificationRequestInfo.VerificationDetails));
+            .ForPath(t => t.GuardianInfo.VerificationDo.VerifierType, m => m.MapFrom(f =>
+                f.VerificationRequestInfo == null ? VerifierType.Unknown : f.VerificationRequestInfo.VerifierType))
+            .ForPath(t => t.GuardianInfo.VerificationDo.VerificationDetails, m => m.MapFrom(f =>
+                f.VerificationRequestInfo == null ? null : f.VerificationRequestInfo.VerificationDetails));
             
         CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
             {
@@ -564,7 +567,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         VerificationDoc = t.VerificationDoc,
                         Signature = t.Signature
                     },
-                    VerificationDo = new VerificationDo()
+                    VerificationDo = t.VerificationRequestInfo == null ? new VerificationDo() : new VerificationDo()
                     {
                         VerifierType = t.VerificationRequestInfo.VerifierType,
                         VerificationDetails = t.VerificationRequestInfo.VerificationDetails
