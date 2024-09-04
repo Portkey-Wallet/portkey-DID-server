@@ -548,6 +548,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(requestDto.VerificationDetails.Address, hashInfo.Item2, hashInfo.Item1);
             }
+            foreach (var strategy in _verificationStrategies)
+            {
+                _logger.LogDebug("=======verificationAlgorithmStrategy VerifierType:{0} Strategy:{1}", strategy.VerifierType, strategy.ToString());
+                _logger.LogDebug("=======verificationAlgorithmStrategy equals to ton wallet:{0}", strategy.VerifierType.Equals(VerifierType.TonWallet));
+            }
             var verificationStrategy = _verificationStrategies
                 .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
             if (verificationStrategy == null)
