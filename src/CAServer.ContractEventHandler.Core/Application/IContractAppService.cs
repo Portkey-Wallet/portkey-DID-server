@@ -329,7 +329,7 @@ public class ContractAppService : IContractAppService
     private (bool, IVerificationAlgorithmStrategy) CheckAndGetVerificationStrategy(CAServer.Account.GuardianInfo guardianInfo)
     {
         var verificationStrategy = _verificationStrategies
-            .FirstOrDefault(v => v.VerifierType.Equals(guardianInfo.VerificationDo.VerifierType.ToString()));
+            .FirstOrDefault(v => v.VerifierType.Equals(guardianInfo.VerificationDo.VerifierType));
         return verificationStrategy == null ? new ValueTuple<bool, IVerificationAlgorithmStrategy>(false, null)
             : new ValueTuple<bool, IVerificationAlgorithmStrategy>(true, verificationStrategy);
     }

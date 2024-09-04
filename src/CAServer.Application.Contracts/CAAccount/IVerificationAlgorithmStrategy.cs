@@ -6,7 +6,7 @@ namespace CAServer.CAAccount;
 
 public interface IVerificationAlgorithmStrategy
 {
-    string VerifierType { get; }
+    VerifierType VerifierType { get; }
     
     public VerificationExt Converter(VerificationDo verificationDo);
 
