@@ -13,7 +13,7 @@ public class VerifyTokenRequestDto
     [Required] public OperationType OperationType { get; set; }
 
     public string OperationDetails { get; set; }
-
+    
     public string GuardianIdentifier { get; set; }
     
     public GuardianIdentifierType Type { get; set; }
@@ -21,4 +21,6 @@ public class VerifyTokenRequestDto
     public string SecondaryEmail { get; set; }
     
     public string CaHash { get; set; }
+    
+    public VerificationDetails VerificationDetails { get; set; }
 }
