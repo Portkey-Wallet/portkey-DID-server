@@ -8,7 +8,7 @@ namespace CAServer.CAAccount.Strategy;
 
 public class TonWalletVerificationStrategy : CAServerAppService, IVerificationAlgorithmStrategy
 {
-    public string VerifierType => "TonWallet";
+    public VerifierType VerifierType => VerifierType.TonWallet;
     
     private readonly ILogger<TonWalletVerificationStrategy> _logger;
     public TonWalletVerificationStrategy(ILogger<TonWalletVerificationStrategy> logger)

@@ -3,7 +3,9 @@ using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
 using CAServer.Amazon;
 using CAServer.AppleAuth;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Provider;
+using CAServer.CAAccount.Strategy;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
@@ -114,7 +116,7 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
-
+        context.Services.AddSingleton<IVerificationAlgorithmStrategy, TonWalletVerificationStrategy>();
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
 

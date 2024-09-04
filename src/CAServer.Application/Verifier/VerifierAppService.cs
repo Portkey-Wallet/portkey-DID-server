@@ -483,11 +483,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             foreach (var strategy in _verificationStrategies)
             {
                 _logger.LogDebug("=======verificationAlgorithmStrategy VerifierType:{0} Strategy:{1}", strategy.VerifierType, strategy.ToString());
-                _logger.LogDebug("=======verificationAlgorithmStrategy equals to ton wallet:{0}", strategy.VerifierType.Equals(VerifierType.TonWallet.ToString()));
+                _logger.LogDebug("=======verificationAlgorithmStrategy equals to ton wallet:{0}", strategy.VerifierType.Equals(VerifierType.TonWallet));
                 _logger.LogDebug("=======verificationAlgorithmStrategy extra:{0}", strategy.ExtraHandler(hashInfo.Item2));
             }
             var verificationStrategy = _verificationStrategies
-                .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet.ToString()));
+                .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
             // if (verificationStrategy == null)
             // {
             //     throw new UserFriendlyException("verification Strategy not exist");
