@@ -12,6 +12,7 @@ using CAServer.AccountValidator;
 using CAServer.AppleVerify;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Enums;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
@@ -57,7 +58,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
     private readonly IHttpClientService _httpClientService;
-    private readonly IVerificationAlgorithmStrategy _algorithmStrategy;
+    private readonly IEnumerable<IVerificationAlgorithmStrategy> _verificationStrategies;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -74,7 +75,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
         ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
-        IVerificationAlgorithmStrategy algorithmStrategy)
+        IEnumerable<IVerificationAlgorithmStrategy> verificationStrategies)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -87,7 +88,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
-        _algorithmStrategy = algorithmStrategy;
+        _verificationStrategies = verificationStrategies;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -477,10 +478,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(requestDto.VerificationDetails.Address, hashInfo.Item2, hashInfo.Item1);
             }
-
+            var verificationStrategy = _verificationStrategies
+                .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
             return new VerificationCodeResponse
             {
-                Extra = _algorithmStrategy.ExtraHandler(hashInfo.Item2)
+                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)
             };
         }
         catch (Exception e)

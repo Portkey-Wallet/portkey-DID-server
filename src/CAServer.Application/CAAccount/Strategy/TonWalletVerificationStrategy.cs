@@ -17,7 +17,7 @@ public class TonWalletVerificationStrategy : CAServerAppService, IVerificationAl
     {
         _logger = logger;
     }
-    public VerificationType VerificationType => VerificationType.TonWallet;
+    public VerifierType VerifierType => VerifierType.TonWallet;
 
     public VerificationExt Converter(VerificationDo verificationDo)
     {

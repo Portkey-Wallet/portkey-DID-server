@@ -5,7 +5,7 @@ namespace CAServer.Account;
 
 public class VerificationDo
 {
-    public VerificationType VerificationType { get; set; }
+    public VerifierType VerifierType { get; set; }
     
     public VerificationDetails VerificationDetails { get; set; }
 }

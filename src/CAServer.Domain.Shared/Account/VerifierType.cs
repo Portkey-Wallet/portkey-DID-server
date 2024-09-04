@@ -1,6 +1,6 @@
 namespace CAServer.CAAccount.Enums;
 
-public enum VerificationType
+public enum VerifierType
 {
     Unknown = 0,
     TonWallet = 1,
