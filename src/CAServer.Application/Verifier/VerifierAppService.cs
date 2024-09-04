@@ -10,6 +10,7 @@ using AElf;
 using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.AppleVerify;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.Cache;
 using CAServer.Common;
@@ -56,7 +57,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
     private readonly IHttpClientService _httpClientService;
-    private readonly IDistributedCache<AppleKeys> _distributedCache;
+    private readonly IVerificationAlgorithmStrategy _algorithmStrategy;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -73,7 +74,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
         ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
-        IDistributedCache<AppleKeys> distributedCache)
+        IVerificationAlgorithmStrategy algorithmStrategy)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -86,6 +87,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
+        _algorithmStrategy = algorithmStrategy;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -462,6 +464,29 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             _logger.LogError("Verify Facebook Failed, {Message}", e.Message);
             throw new UserFriendlyException("Verify Facebook Failed.");
+        }
+    }
+
+    public async Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyTokenRequestDto requestDto)
+    {
+        try
+        {
+            var hashInfo = await GetSaltAndHashAsync(requestDto.GuardianIdentifier);
+            
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(requestDto.VerificationDetails.Address, hashInfo.Item2, hashInfo.Item1);
+            }
+
+            return new VerificationCodeResponse
+            {
+                Extra = _algorithmStrategy.ExtraHandler(hashInfo.Item2)
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{Message}", e.Message);
+            throw new UserFriendlyException(e.Message);
         }
     }
 

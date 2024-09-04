@@ -27,6 +27,8 @@ public class RegisterRequestDto : IValidatableObject
     
     public string AccessToken { get; set; }
     public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
+    
+    public VerificationRequestInfo VerificationRequestInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
