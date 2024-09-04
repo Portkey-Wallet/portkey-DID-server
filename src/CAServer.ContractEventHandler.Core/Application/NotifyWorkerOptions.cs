@@ -7,4 +7,6 @@ public class NotifyWorkerOptions
     public int ExpirationSeconds { get; set; } = 3600;
     
     public int MaxResultCount { get; set; } = 100;
+
+    public int CacheMinutes { get; set; } = 5;
 }

@@ -110,7 +110,10 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             }
             try
             {
-                await CommonOperationTypeHandler(chainInfo.Key, lastHeight, currentHeight);
+                if (chainInfo.Value.IsMainChain)
+                {
+                    await CommonOperationTypeHandler(chainInfo.Key, lastHeight, currentHeight);
+                }
             }
             catch (Exception e)
             {
@@ -171,14 +174,14 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         var lastHeightCache = await _distributedCache.GetAsync(cacheKey);
         if (lastHeightCache.IsNullOrEmpty())
         {
-            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker chainId:{0} last height is:{1}", chainId, lastHeight);
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker chainId:{0} last height is:{1}", chainId, lastHeightCache);
 
             try
             {
                 currentHeight = await _contractProvider.GetBlockHeightAsync(chainId);
                 await _distributedCache.SetAsync(cacheKey, currentHeight.ToString(), new DistributedCacheEntryOptions()
                 {
-                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
+                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_notifyWorkerOptions.CacheMinutes)
                 });
             }
             catch (Exception e)
@@ -216,7 +219,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
 
         await _distributedCache.SetAsync(cacheKey, currentHeight.ToString(), new DistributedCacheEntryOptions()
         {
-            AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
+            AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_notifyWorkerOptions.CacheMinutes)
         });
         return (lastHeight, currentHeight, true);
     }
