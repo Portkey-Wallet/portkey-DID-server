@@ -18,5 +18,5 @@ public interface IVerifierAppService
     public Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto);
     Task<VerificationCodeResponse> VerifyTwitterTokenAsync(VerifyTokenRequestDto requestDto);
 
-    public Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyTokenRequestDto requestDto);
+    public Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyEdaAlgorithmRequestDto requestDto);
 }
