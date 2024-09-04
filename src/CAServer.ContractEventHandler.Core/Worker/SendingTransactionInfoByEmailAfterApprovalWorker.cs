@@ -89,6 +89,12 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         _logger.LogInformation("SendingTransactionInfoByEmailAfterApprovalWorker is starting");
         foreach (var chainInfo in _chainOptions.ChainInfos)
         {
+            _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker chainInfo:{0}", JsonConvert.SerializeObject(chainInfo));
+            if (!chainInfo.Value.IsMainChain)
+            {
+                continue;
+            }
+
             var (lastHeight, currentHeight, isValid) = await BlockHeightHandler(chainInfo.Key);
             _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker lastHeight:{0} currentHeight:{1} isValid:{2}",
                 lastHeight, currentHeight, isValid);
@@ -110,10 +116,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             }
             try
             {
-                if (chainInfo.Value.IsMainChain)
-                {
-                    await CommonOperationTypeHandler(chainInfo.Key, lastHeight, currentHeight);
-                }
+                await CommonOperationTypeHandler(chainInfo.Key, lastHeight, currentHeight);
             }
             catch (Exception e)
             {
@@ -171,6 +174,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
         long lastHeight = -1;
         long currentHeight = -1;
         var cacheKey = GetCacheKey(chainId);
+        _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker chainId:{0} cacheKey:{1}", chainId, cacheKey);
         var lastHeightCache = await _distributedCache.GetAsync(cacheKey);
         if (lastHeightCache.IsNullOrEmpty())
         {
@@ -179,6 +183,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             try
             {
                 currentHeight = await _contractProvider.GetBlockHeightAsync(chainId);
+                _logger.LogDebug("SendingTransactionInfoByEmailAfterApprovalWorker chainId:{0} GetBlockHeight:{1}", chainId, currentHeight);
                 await _distributedCache.SetAsync(cacheKey, currentHeight.ToString(), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_notifyWorkerOptions.CacheMinutes)
