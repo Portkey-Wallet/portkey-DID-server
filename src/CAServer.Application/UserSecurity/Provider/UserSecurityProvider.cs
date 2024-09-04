@@ -73,6 +73,33 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
             }
         });
     }
+    
+    public async Task<IndexerManagerApprovedList> ListManagerApprovedInfoByCaHashAsync(string caHash, string spender,
+        string symbol, long skip, long maxResultCount, long startHeight, long endHeight)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerManagerApprovedList>(new GraphQLRequest
+        {
+            Query = @"
+        		query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!,$startHeight:Long!,$endHeight:Long!) {
+                    caHolderManagerApproved(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount,startHeight:$startHeight,endHeight:$endHeight}){
+                            data{
+                                chainId,
+                                cAHash,
+                                spender,
+                                symbol,
+                                amount,
+                                blockHeight
+                                },
+                            totalRecordCount
+                            }
+                }",
+            Variables = new
+            {
+                caHash = caHash, spender = spender, symbol = symbol, skipCount = skip,
+                maxResultCount = maxResultCount, startHeight = startHeight, endHeight = endHeight
+            }
+        });
+    }
 
     public async Task<UserTransferLimitHistoryIndex> GetUserTransferLimitHistoryAsync(string caHash, string chainId,
         string symbol)

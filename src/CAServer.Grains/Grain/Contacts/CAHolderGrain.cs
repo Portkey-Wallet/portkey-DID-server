@@ -191,4 +191,21 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
         return result;
     }
+    
+    public async Task<GrainResultDto<CAHolderGrainDto>> AppendOrUpdateSecondaryEmailAsync(string secondaryEmail)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return result;
+        }
+
+        State.SecondaryEmail = secondaryEmail;
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return result;
+    }
 }

@@ -12,6 +12,7 @@ using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
@@ -35,7 +36,7 @@ public class CAVerifierController : CAServerController
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
-
+    
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
@@ -184,7 +185,7 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
-        
+
         //check guardian isExists;
         var guardianExists =
             await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
@@ -210,10 +211,11 @@ public class CAVerifierController : CAServerController
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyCodeAsync(requestDto);
     }
-    
+
     [HttpPost("verifiedzk")]
     public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
+        _logger.LogDebug("VerifiedZkLogin requestDto:{0}",JsonConvert.SerializeObject(requestDto));
         ValidateOperationType(requestDto.OperationType);
         return await _zkLoginProvider.VerifiedZkLoginAsync(requestDto);
     }
@@ -231,21 +233,21 @@ public class CAVerifierController : CAServerController
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
-    
+
     [HttpPost("verifyFacebookToken")]
     public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
     {
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyFacebookTokenAsync(requestDto);
     }
-    
+
     [HttpPost("verifyTelegramToken")]
     public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
     {
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyTelegramTokenAsync(requestDto);
     }
-    
+
     [HttpPost("verifyTwitterToken")]
     public async Task<VerificationCodeResponse> VerifyTwitterAsync(VerifyTokenRequestDto requestDto)
     {
@@ -282,8 +284,12 @@ public class CAVerifierController : CAServerController
     {
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
     }
-    
 
+    [HttpGet("getCaHolder")]
+    public async Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash)
+    {
+        return await _verifierAppService.GetHolderInfoByCaHashAsync(caHash);
+    }
 
     private string UserIpAddress(HttpContext context)
     {

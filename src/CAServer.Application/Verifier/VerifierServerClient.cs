@@ -12,12 +12,15 @@ using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.IpInfo;
 using CAServer.Options;
+using CAServer.Security.Dtos;
 using CAServer.Settings;
 using CAServer.Verifier.Dtos;
+using CAVerifierServer.Account;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
@@ -32,13 +35,14 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IAccelerateManagerProvider _accelerateManagerProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IIpInfoAppService _ipInfoAppService;
-
+    private readonly IContractProvider _contractProvider;
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
         IHttpClientFactory httpClientFactory, IAccelerateManagerProvider accelerateManagerProvider,
-        IOptions<ChainOptions> chainOptions, IIpInfoAppService ipInfoAppService)
+        IOptions<ChainOptions> chainOptions, IIpInfoAppService ipInfoAppService,
+        IContractProvider contractProvider)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
@@ -47,6 +51,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         _accelerateManagerProvider = accelerateManagerProvider;
         _ipInfoAppService = ipInfoAppService;
         _chainOptions = chainOptions.Value;
+        _contractProvider = contractProvider;
     }
 
     private bool _disposed;
@@ -91,8 +96,11 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             Chain = GetChainDetailDesc(dto.TargetChainId ?? dto.ChainId),
             GuardianType = dto.Type,
             GuardianAccount = dto.GuardianIdentifier,
-            Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
-            IP = await GetIpDetailDesc()
+            Time = DateTime.UtcNow + " UTC",
+            IP = await GetIpDetailDesc(),
+            ToAddress = GetDetailDesc(dto.OperationDetails, "toAddress"),
+            SingleLimit = GetDetailDesc(dto.OperationDetails, "singleLimit"),
+            DailyLimit = GetDetailDesc(dto.OperationDetails, "dailyLimit")
         };
 
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
@@ -109,6 +117,92 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
 
+    public async Task<ResponseResultDto<VerifierServerResponse>> SendSecondaryEmailVerificationRequestAsync(string secondaryEmail, string verifierSessionId)
+    {
+        var chainInfo = GetMainChain();
+        var endPoint = await _getVerifierServerProvider.GetRandomVerifierServerEndPointAsync(chainInfo.ChainId);
+        _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
+        if (null == endPoint)
+        {
+            _logger.LogInformation("No Available Service Tips.{0}", chainInfo.ChainId);
+            return new ResponseResultDto<VerifierServerResponse>
+            {
+                Success = false,
+                Message = "No Available Service Tips."
+            };
+        }
+        
+        var url = endPoint + "/api/app/account/send/secondary/email/verify";
+        var parameters = new Dictionary<string, string>
+        {
+            { "secondaryEmail", secondaryEmail },
+            { "verifierSessionId", verifierSessionId }
+        };
+        ResponseResultDto<VerifierServerResponse> response = null;
+        try
+        {
+            _logger.LogInformation("_httpService.PostResponseAsync url:{0} parameters:{1}", url, JsonConvert.SerializeObject(parameters));
+            response = await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "_httpService.PostResponseAsync error");
+        }
+        if (response == null || !response.Success || response.Data == null)
+        {
+            return response;
+        }
+        response.Data.VerifierServerEndpoint = endPoint;
+        return response;
+    }
+
+    public async Task<bool> SendNotificationAfterApprovalAsync(string email, string chainId, OperationType operationType,
+        DateTime dateTime, ManagerApprovedDto managerApprovedDto = null)
+    {
+        var endPoint = await _getVerifierServerProvider.GetRandomVerifierServerEndPointAsync(chainId);
+        _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
+        if (null == endPoint)
+        {
+            _logger.LogInformation("No Available Service Tips.{0}", chainId);
+            return false;
+        }
+        var showOperationDetails = managerApprovedDto == null ? new ShowOperationDetailsDto()
+            {
+                OperationType = GetOperationDecs(operationType),
+                Chain = GetChainDetailDesc(chainId),
+                Time = dateTime + " UTC",
+            }
+            : new ShowOperationDetailsDto
+            {
+                OperationType = GetOperationDecs(operationType),
+                Token = managerApprovedDto.Symbol,
+                Amount = managerApprovedDto.Amount.ToString(),
+                Chain = managerApprovedDto.ChainId,
+                Time = dateTime + " UTC"
+            };
+        var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
+
+        var url = endPoint + "/api/app/account/sendNotification";
+        var parameters = new Dictionary<string, string>
+        {
+            { "template", EmailTemplate.AfterApproval.ToString() },
+            { "email", email },
+            { "showOperationDetails", showOperationDetailsJson }
+        };
+        var response = await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        return response is { Success: true };
+    }
+
+    private ChainInfo GetMainChain()
+    {
+        foreach (var chainOptionsChainInfo in 
+                 _chainOptions.ChainInfos.Where(chainOptionsChainInfo => chainOptionsChainInfo.Value.IsMainChain))
+        {
+            return chainOptionsChainInfo.Value;
+        }
+
+        throw new UserFriendlyException("There's no main chain");
+    }
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input)
     {
@@ -146,6 +240,29 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
 
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
+    }
+    
+    public async Task<ResponseResultDto<bool>> VerifySecondaryEmailCodeAsync(string verifierSessionId, string verificationCode,
+        string secondaryEmail, string verifierEndpoint)
+    {
+        if (null == verifierEndpoint)
+        {
+            return new ResponseResultDto<bool>
+            {
+                Success = false,
+                Message = "No Available Service Tips."
+            };
+        }
+
+        var url = verifierEndpoint + "/api/app/account/secondaryEmail/verifyCode";
+        var parameters = new Dictionary<string, string>
+        {
+            { "secondaryEmail", secondaryEmail },
+            { "verifierSessionId", verifierSessionId },
+            { "code", verificationCode }
+        };
+        _logger.LogInformation("VerifySecondaryEmailCodeAsync url:{0} parameters:{1}", url, parameters.ToString());
+        return await _httpService.PostResponseAsync<ResponseResultDto<bool>>(url, parameters);
     }
 
     public async Task<ResponseResultDto<VerifyGoogleTokenDto>> VerifyGoogleTokenAsync(VerifyTokenRequestDto input,
@@ -247,31 +364,59 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var url = endPoint + requestUri;
-
         var operationDetails =
             _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
-
-        return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
+        var showOperationDetails = new ShowOperationDetailsDto
+        {
+            OperationType = GetOperationDecs(input.OperationType),
+            Token = GetDetailDesc(input.OperationDetails, "symbol"),
+            Amount = GetDetailDesc(input.OperationDetails, "amount"),
+            Chain = GetChainDetailDesc(input.TargetChainId ?? input.ChainId),
+            GuardianType = input.Type.ToString(),
+            GuardianAccount = input.GuardianIdentifier,
+            Time = DateTime.UtcNow + " UTC",
+            IP = await GetIpDetailDesc(),
+            ToAddress = GetDetailDesc(input.OperationDetails, "toAddress"),
+            SingleLimit = GetDetailDesc(input.OperationDetails, "singleLimit"),
+            DailyLimit = GetDetailDesc(input.OperationDetails, "dailyLimit")
+        };
+        var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
+        //todo for test, remove bofore online
+        _logger.LogDebug("GetResultFromVerifier before request url:{0} accessToken:{1} identifierHash:{2} salt:{3}" +
+                         "operationType:{4} chainId:{5} secondaryEmail:{6} showOperationDetailsJson:{7}", 
+            url, input.AccessToken, identifierHash, salt, input.OperationType, input.ChainId, input.SecondaryEmail, showOperationDetailsJson);
+        var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
             string.IsNullOrWhiteSpace(input.TargetChainId)
                 ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
-                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString(), operationDetails);
+                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString(), operationDetails, input.SecondaryEmail, showOperationDetailsJson);
+        _logger.LogDebug("GetResultFromVerifierAsync url:{0} secondaryEmail:{1} result:{2}", url, input.SecondaryEmail, JsonConvert.SerializeObject(result));
+        return result;
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
         string accessToken, string identifierHash, string salt,
-        OperationType verifierCodeOperationType, string chainId, string operationDetails)
+        OperationType verifierCodeOperationType, string chainId, string operationDetails, string secondaryEmail, string showOperationDetails)
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
         var tokenParam = JsonConvert.SerializeObject(new
-            { accessToken, identifierHash, salt, operationType, chainId, operationDetails });
+            { accessToken, identifierHash, salt, operationType, chainId, operationDetails, secondaryEmail, showOperationDetails });
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
             MediaTypeNames.Application.Json);
 
-        var response = await client.PostAsync(url, param);
-        var result = await response.Content.ReadAsStringAsync();
+        string result = null;
+        HttpResponseMessage response = null;
+        try
+        {
+            response = await client.PostAsync(url, param);
+            result = await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,"GetResultFromVerifierAsync post error url:{0} params:{1}", url, tokenParam);
+        }
 
         if (string.IsNullOrWhiteSpace(result))
         {
@@ -328,6 +473,14 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 }
 
                 var response = property.Value.ToString();
+                if ("singleLimit".Equals(keyword) && "-1".Equals(response.Trim()))
+                {
+                    return "No Limit";
+                }
+                if ("dailyLimit".Equals(keyword) && "-1".Equals(response.Trim()))
+                {
+                    return "No Limit";
+                }
                 return response;
             }
         }

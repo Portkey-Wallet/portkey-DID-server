@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUglify.Helpers;
 using Portkey.Contracts.CA;
+using Volo.Abp;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
@@ -19,6 +20,8 @@ namespace CAServer.Common;
 public interface IGetVerifierServerProvider
 {
     public Task<string> GetVerifierServerEndPointsAsync(string verifierId, string chainId);
+    
+    public Task<string> GetRandomVerifierServerEndPointAsync(string chainId);
 }
 
 public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonDependency
@@ -63,6 +66,20 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
         _logger.LogInformation(
             $"Http request sender is not in verifier server list,Invalid VerifierId is : {verifierId}");
         return null;
+    }
+
+    public async Task<string> GetRandomVerifierServerEndPointAsync(string chainId)
+    {
+        var verifierServerDto = await GetVerifierServerAsync(chainId);
+        if (verifierServerDto == null || verifierServerDto.GuardianVerifierServers.Count == 0)
+        {
+            _logger.LogInformation($"No Available Service Tips,Invalid chainId is : {chainId}");
+            return null;
+        }
+
+        var servers = verifierServerDto.GuardianVerifierServers;
+        // return RandomHelper.GetRandomOfList(servers).EndPoints[0];
+        return servers[0].EndPoints[0];
     }
 
     private int GetRandomNum(int t)

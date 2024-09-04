@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.AppleVerify;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
+using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -26,18 +28,25 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IDistributedCache<AppleKeys, string> _distributedCache;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IVerifierServerClient _verifierServerClient;
+    private readonly IGetVerifierServerProvider _verifierServerProvider;
+    
     public AppleZkProvider(
         IGuardianUserProvider guardianUserProvider,
         ILogger<AppleZkProvider> logger,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IDistributedCache<AppleKeys, string> distributedCache,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IVerifierServerClient verifierServerClient,
+        IGetVerifierServerProvider verifierServerProvider)
     {
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _distributedCache = distributedCache;
         _httpClientFactory = httpClientFactory;
+        _verifierServerClient = verifierServerClient;
+        _verifierServerProvider = verifierServerProvider;
     }
     
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
@@ -48,10 +57,30 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
             var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userId, requestDto.Salt, requestDto.PoseidonIdentifierHash);
             var securityToken = await ValidateTokenAsync(requestDto.AccessToken);
             var userInfo = GetUserInfoFromToken(securityToken);
-
             userInfo.GuardianType = GuardianIdentifierType.Apple.ToString();
             userInfo.AuthTime = DateTime.UtcNow;
-
+            if (requestDto.VerifierId.IsNullOrEmpty())
+            {
+                requestDto.VerifierId = await _verifierServerProvider.GetRandomVerifierServerEndPointAsync(requestDto.ChainId);
+            }
+            var verifyTokenRequestDto = new VerifyTokenRequestDto()
+            {
+                AccessToken = requestDto.AccessToken,
+                VerifierId = requestDto.VerifierId,
+                ChainId = requestDto.ChainId,
+                OperationType = requestDto.OperationType,
+                OperationDetails = requestDto.OperationDetails,
+                CaHash = requestDto.CaHash,
+                TargetChainId = requestDto.TargetChainId
+            };
+            var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? userInfo.Id : userInfo.Email;
+            await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
+            var response =
+                await _verifierServerClient.VerifyAppleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
+            if (!response.Success)
+            {
+                _logger.LogError($"Validate VerifierApple Failed :{response.Message}");
+            }
             if (!hashInfo.Item3)
             {
                 await _guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
