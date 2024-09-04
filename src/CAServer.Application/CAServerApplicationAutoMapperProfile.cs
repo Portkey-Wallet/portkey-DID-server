@@ -542,7 +542,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature))
-            .ForPath(t => t.GuardianInfo.VerificationDo.VerificationType, m => m.MapFrom(f => f.VerificationRequestInfo.VerificationType))
+            .ForPath(t => t.GuardianInfo.VerificationDo.VerifierType, m => m.MapFrom(f => f.VerificationRequestInfo.VerifierType))
             .ForPath(t => t.GuardianInfo.VerificationDo.VerificationDetails, m => m.MapFrom(f => f.VerificationRequestInfo.VerificationDetails));
             
         CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
@@ -566,7 +566,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     },
                     VerificationDo = new VerificationDo()
                     {
-                        VerificationType = t.VerificationRequestInfo.VerificationType,
+                        VerifierType = t.VerificationRequestInfo.VerifierType,
                         VerificationDetails = t.VerificationRequestInfo.VerificationDetails
                     }
                 }).ToList()));

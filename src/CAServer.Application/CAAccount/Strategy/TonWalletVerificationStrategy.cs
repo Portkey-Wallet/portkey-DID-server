@@ -3,13 +3,9 @@ using CAServer.CAAccount.Enums;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Portkey.Contracts.CA;
-using Volo.Abp;
-using Volo.Abp.Auditing;
 
 namespace CAServer.CAAccount.Strategy;
 
-[RemoteService(false)]
-[DisableAuditing]
 public class TonWalletVerificationStrategy : CAServerAppService, IVerificationAlgorithmStrategy
 {
     private readonly ILogger<TonWalletVerificationStrategy> _logger;
@@ -17,7 +13,7 @@ public class TonWalletVerificationStrategy : CAServerAppService, IVerificationAl
     {
         _logger = logger;
     }
-    public VerificationType VerificationType => VerificationType.TonWallet;
+    public VerifierType VerifierType => VerifierType.TonWallet;
 
     public VerificationExt Converter(VerificationDo verificationDo)
     {

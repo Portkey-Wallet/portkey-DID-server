@@ -4,7 +4,7 @@ namespace CAServer.CAAccount.Dtos;
 
 public class VerificationRequestInfo
 {
-    public VerificationType VerificationType { get; set; }
+    public VerifierType VerifierType { get; set; }
     
     public VerificationDetails VerificationDetails { get; set; }
 }

@@ -13,6 +13,7 @@ using CAServer.AppleVerify;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
+using CAServer.CAAccount.Enums;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
@@ -62,7 +63,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IHttpClientService _httpClientService;
     private readonly IDistributedCache<AppleKeys> _distributedCache;
     private readonly ICAAccountProvider _accountProvider;
-    private readonly IVerificationAlgorithmStrategy _algorithmStrategy;
+    private readonly IEnumerable<IVerificationAlgorithmStrategy> _verificationStrategies;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
     private readonly IdentityUserManager _userManager;
@@ -83,7 +84,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IDistributedCache<AppleKeys> distributedCache,
         ICAAccountProvider accountProvider,
         IdentityUserManager userManager,
-        IVerificationAlgorithmStrategy algorithmStrategy)
+        IEnumerable<IVerificationAlgorithmStrategy> verificationStrategies)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -96,7 +97,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
-        _algorithmStrategy = algorithmStrategy;
+        _verificationStrategies = verificationStrategies;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
         _distributedCache = distributedCache;
         _accountProvider = accountProvider;
@@ -547,10 +548,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(requestDto.VerificationDetails.Address, hashInfo.Item2, hashInfo.Item1);
             }
-
+            var verificationStrategy = _verificationStrategies
+                .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
             return new VerificationCodeResponse
             {
-                Extra = _algorithmStrategy.ExtraHandler(hashInfo.Item2)
+                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)
             };
         }
         catch (Exception e)
