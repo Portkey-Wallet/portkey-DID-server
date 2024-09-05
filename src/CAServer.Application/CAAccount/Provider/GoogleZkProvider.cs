@@ -51,7 +51,7 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
             var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userInfo.Id, requestDto.Salt, requestDto.PoseidonIdentifierHash);
             if (requestDto.VerifierId.IsNullOrEmpty())
             {
-                requestDto.VerifierId = await _verifierServerProvider.GetRandomVerifierServerEndPointAsync(requestDto.ChainId);
+                requestDto.VerifierId = await _verifierServerProvider.GetFirstVerifierServerEndPointAsync(requestDto.ChainId);
             }
             var verifyTokenRequestDto = new VerifyTokenRequestDto()
             {

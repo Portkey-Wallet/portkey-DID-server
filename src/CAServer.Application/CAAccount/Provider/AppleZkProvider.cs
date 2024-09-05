@@ -61,7 +61,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
             userInfo.AuthTime = DateTime.UtcNow;
             if (requestDto.VerifierId.IsNullOrEmpty())
             {
-                requestDto.VerifierId = await _verifierServerProvider.GetRandomVerifierServerEndPointAsync(requestDto.ChainId);
+                requestDto.VerifierId = await _verifierServerProvider.GetFirstVerifierServerEndPointAsync(requestDto.ChainId);
             }
             var verifyTokenRequestDto = new VerifyTokenRequestDto()
             {

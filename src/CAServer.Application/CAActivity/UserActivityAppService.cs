@@ -195,8 +195,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var hasNextPage = true;
         var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
             request.Symbol, null, request.SkipCount, request.MaxResultCount);
-        _logger.LogDebug("----------------------GetActivities caAddress:{0}, chainId:{1}, symbol:{2}, transactions:{3}",
-            JsonConvert.SerializeObject(request.CaAddressInfos), request.ChainId, request.Symbol, JsonConvert.SerializeObject(transactions));
         if (transactions.CaHolderTransaction.Data.Count < request.MaxResultCount)
         {
             hasNextPage = false;

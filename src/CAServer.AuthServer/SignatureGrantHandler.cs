@@ -312,7 +312,6 @@ public class SignatureGrantHandler : ITokenExtensionGrant
 
     private async Task<CAHolderManagerInfo> GetManagerList(string url, string caHash)
     {
-        _logger.LogDebug("GraphQLHttpClient url:{0} caHash:{1}", url, caHash);
         try
         {
             using var graphQLClient = new GraphQLHttpClient(url, new NewtonsoftJsonSerializer());

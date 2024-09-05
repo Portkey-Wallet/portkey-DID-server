@@ -188,13 +188,6 @@ public class CAAccountController : CAServerController
         return await _secondaryEmailAppService.VerifySecondaryEmailCodeAsync(cmd);
     }
 
-    [HttpPost("set/secondary/email")]
-    [Authorize]
-    public async Task<SetSecondaryEmailResponse> SetSecondaryEmailAsync(SetSecondaryEmailCmd cmd)
-    {
-        return await _secondaryEmailAppService.SetSecondaryEmailAsync(cmd);
-    }
-
     [HttpGet("secondary/email")]
     [Authorize]
     public async Task<GetSecondaryEmailResponse> GetSecondaryEmailAsync()
