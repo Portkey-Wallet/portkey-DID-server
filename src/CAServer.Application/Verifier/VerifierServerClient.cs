@@ -120,7 +120,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public async Task<ResponseResultDto<VerifierServerResponse>> SendSecondaryEmailVerificationRequestAsync(string secondaryEmail, string verifierSessionId)
     {
         var chainInfo = GetMainChain();
-        var endPoint = await _getVerifierServerProvider.GetRandomVerifierServerEndPointAsync(chainInfo.ChainId);
+        var endPoint = await _getVerifierServerProvider.GetFirstVerifierServerEndPointAsync(chainInfo.ChainId);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
         {
@@ -159,7 +159,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public async Task<bool> SendNotificationAfterApprovalAsync(string email, string chainId, OperationType operationType,
         DateTime dateTime, ManagerApprovedDto managerApprovedDto = null)
     {
-        var endPoint = await _getVerifierServerProvider.GetRandomVerifierServerEndPointAsync(chainId);
+        var endPoint = await _getVerifierServerProvider.GetFirstVerifierServerEndPointAsync(chainId);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
         {
@@ -261,7 +261,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "verifierSessionId", verifierSessionId },
             { "code", verificationCode }
         };
-        _logger.LogInformation("VerifySecondaryEmailCodeAsync url:{0} parameters:{1}", url, parameters.ToString());
         return await _httpService.PostResponseAsync<ResponseResultDto<bool>>(url, parameters);
     }
 
@@ -381,16 +380,11 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             DailyLimit = GetDetailDesc(input.OperationDetails, "dailyLimit")
         };
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
-        //todo for test, remove bofore online
-        _logger.LogDebug("GetResultFromVerifier before request url:{0} accessToken:{1} identifierHash:{2} salt:{3}" +
-                         "operationType:{4} chainId:{5} secondaryEmail:{6} showOperationDetailsJson:{7}", 
-            url, input.AccessToken, identifierHash, salt, input.OperationType, input.ChainId, input.SecondaryEmail, showOperationDetailsJson);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
             string.IsNullOrWhiteSpace(input.TargetChainId)
                 ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
                 : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString(), operationDetails, input.SecondaryEmail, showOperationDetailsJson);
-        _logger.LogDebug("GetResultFromVerifierAsync url:{0} secondaryEmail:{1} result:{2}", url, input.SecondaryEmail, JsonConvert.SerializeObject(result));
         return result;
     }
 

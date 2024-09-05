@@ -215,7 +215,6 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifiedzk")]
     public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
     {
-        _logger.LogDebug("VerifiedZkLogin requestDto:{0}",JsonConvert.SerializeObject(requestDto));
         ValidateOperationType(requestDto.OperationType);
         return await _zkLoginProvider.VerifiedZkLoginAsync(requestDto);
     }

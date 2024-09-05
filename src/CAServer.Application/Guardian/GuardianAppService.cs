@@ -134,22 +134,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
-        _logger.LogDebug("GetRegisterInfoAsync Step1");
         if (_appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
         {
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
-        _logger.LogDebug("GetRegisterInfoAsync Step2");
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
-        _logger.LogDebug("GetRegisterInfoAsync Step3");
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
-        _logger.LogDebug("GetRegisterInfoAsync Step4");
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
-        _logger.LogDebug("GetRegisterInfoAsync Step5");
         var originChainId = guardian == null
             ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
             : guardian.OriginChainId;
-        _logger.LogDebug("GetRegisterInfoAsync Step6");
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 

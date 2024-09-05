@@ -21,7 +21,7 @@ public interface IGetVerifierServerProvider
 {
     public Task<string> GetVerifierServerEndPointsAsync(string verifierId, string chainId);
     
-    public Task<string> GetRandomVerifierServerEndPointAsync(string chainId);
+    public Task<string> GetFirstVerifierServerEndPointAsync(string chainId);
 }
 
 public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonDependency
@@ -68,7 +68,7 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
         return null;
     }
 
-    public async Task<string> GetRandomVerifierServerEndPointAsync(string chainId)
+    public async Task<string> GetFirstVerifierServerEndPointAsync(string chainId)
     {
         var verifierServerDto = await GetVerifierServerAsync(chainId);
         if (verifierServerDto == null || verifierServerDto.GuardianVerifierServers.Count == 0)
@@ -78,7 +78,6 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
         }
 
         var servers = verifierServerDto.GuardianVerifierServers;
-        // return RandomHelper.GetRandomOfList(servers).EndPoints[0];
         return servers[0].EndPoints[0];
     }
 

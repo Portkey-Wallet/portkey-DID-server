@@ -40,25 +40,21 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
     
     public async Task HandleEventAsync(AccountEmailEto eventData)
     {
-        _logger.LogDebug("SecondaryEmailHandler receive AccountEmailEto:{0}", JsonConvert.SerializeObject(eventData));
         if (string.IsNullOrEmpty(eventData.SecondaryEmail) || string.IsNullOrEmpty(eventData.CaHash))
         {
             _logger.LogError("SecondaryEmailHandler Params Error received AccountEmailEto:{0}", JsonConvert.SerializeObject(eventData));
             return;
         }
-        //1、消息接收者通过扫链GraphQlHelper通过cahash查询GuardianList
+        //1. consumer get guardianList by caHash through GraphQl
         var guardiansDto = await GetCaHolderInfoAsync(eventData.CaHash);
-        //2、GuardianList通过Guardian的IdentifierHash查询es
         if (guardiansDto == null || guardiansDto.CaHolderInfo.IsNullOrEmpty())
         {
             _logger.LogError("SecondaryEmailHandler query guardians from graphql failed guardiansDto:{0}", JsonConvert.SerializeObject(eventData));
             return;
         }
-        _logger.LogDebug("SecondaryEmailHandler guardians from contract guardiansDto:{0}", JsonConvert.SerializeObject(guardiansDto));
         var guardians = guardiansDto.CaHolderInfo
             .Where(dto => dto.GuardianList != null)
             .Select(dto => dto.GuardianList).ToList();
-        //3、es的Guardian数据新增或者更新cahash和secondaryEmail字段
         foreach (var guardian in guardians.SelectMany(guardianBaseList => guardianBaseList.Guardians))
         {
             if (guardian == null)
@@ -68,9 +64,8 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
             GuardianIndex guardianIndex = null;
             try
             {
+                //2. extract guardian's IdentifierHash, query 
                 guardianIndex = await _accountProvider.GetIdentifiersAsync(guardian.IdentifierHash);
-                _logger.LogDebug("SecondaryEmailHandler GetIdentifiersAsync from es identifierHash:{0} guardianIndex:{1}",
-                    guardian.IdentifierHash, JsonConvert.SerializeObject(guardianIndex));
             }
             catch (Exception e)
             {
@@ -80,7 +75,7 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
             {
                 continue;
             }
-
+            //3、append Guardian's(from es) caHash and secondaryEmail fields 
             guardianIndex.CaHash = eventData.CaHash;
             guardianIndex.SecondaryEmail = eventData.SecondaryEmail;
             try

@@ -222,6 +222,7 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
             return (lastHeight, currentHeight, false);
         }
 
+        await _distributedCache.RemoveAsync(cacheKey);
         await _distributedCache.SetAsync(cacheKey, currentHeight.ToString(), new DistributedCacheEntryOptions()
         {
             AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_notifyWorkerOptions.CacheMinutes)
