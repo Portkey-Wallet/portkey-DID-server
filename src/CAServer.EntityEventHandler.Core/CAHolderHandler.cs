@@ -410,13 +410,13 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private string GetAddressFormat(string nickname, string thirdPartyAddress, string address)
     {
         address = thirdPartyAddress.IsNullOrEmpty() ? address : thirdPartyAddress;
-        if (address.IsNullOrEmpty())
+        if (address.IsNullOrEmpty() || address.Length <= 4)
         {
             return nickname;
         }
 
         var length = address.Length;
-        return length <= 8 ? string.Concat(address.AsSpan(0, 3), "***") : string.Concat(address.AsSpan(0, 3), "***", address.AsSpan(length - 3));
+        return length <= 8 ? string.Concat(address.AsSpan(0, 4), "***") : string.Concat(address.AsSpan(0, 4), "***", address.AsSpan(length - 4));
     }
 
     public async Task HandleEventAsync(UpdateCAHolderEto eventData)
