@@ -1,15 +1,13 @@
-using System;
 using System.Collections.Generic;
-using CAServer.CAAccount;
-using CAServer.Dtos;
-using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
-using CAServer.CAAccount.Cmd;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
+using CAServer.Dtos;
 using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Users;
 
@@ -28,12 +26,10 @@ public class CAAccountController : CAServerController
     private readonly IGrowthAppService _growthAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly IGoogleZkProvider _googleZkProvider;
-    private readonly ISecondaryEmailAppService _secondaryEmailAppService;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider,
-        ISecondaryEmailAppService secondaryEmailAppService)
+        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
@@ -42,7 +38,6 @@ public class CAAccountController : CAServerController
         _growthAppService = growthAppService;
         _zkLoginProvider = zkLoginProvider;
         _googleZkProvider = googleZkProvider;
-        _secondaryEmailAppService = secondaryEmailAppService;
     }
 
     [HttpPost("register/request")]
@@ -172,32 +167,6 @@ public class CAAccountController : CAServerController
     {
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         await _zkLoginProvider.AppendSinglePoseidonAsync(request);
-    }
-    
-    [HttpPost("secondary/email/verify")]
-    [Authorize]
-    public async Task<VerifySecondaryEmailResponse> VerifySecondaryEmailAsync(VerifySecondaryEmailCmd cmd)
-    {
-        return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
-    }
-    
-    [HttpPost("verifyCode/secondary/email")]
-    [Authorize]
-    public async Task<VerifySecondaryEmailCodeResponse> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
-    {
-        return await _secondaryEmailAppService.VerifySecondaryEmailCodeAsync(cmd);
-    }
-
-    [HttpGet("secondary/email")]
-    [Authorize]
-    public async Task<GetSecondaryEmailResponse> GetSecondaryEmailAsync()
-    {
-        var userId = _currentUser.Id ?? Guid.Empty;
-        if (userId == Guid.Empty)
-        {
-            throw new UserFriendlyException("user not exist");
-        }
-        return await _secondaryEmailAppService.GetSecondaryEmailAsync(userId);
     }
 
     [HttpGet("query/guardians")]
