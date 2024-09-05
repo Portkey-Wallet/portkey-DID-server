@@ -370,7 +370,12 @@ public class CAVerifierController : CAServerController
         {
             throw new UserFriendlyException("user ip address not exist");
         }
+        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
 
+        if (isInWhiteList)
+        {
+            return await GoogleRecaptchaAndSendSecondaryEmailVerifyCodeAsync(recaptchaToken, cmd, acToken);
+        }
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
         {
@@ -391,5 +396,48 @@ public class CAVerifierController : CAServerController
         }
         HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
         return new VerifySecondaryEmailResponse();
+    }
+    
+    private async Task<VerifySecondaryEmailResponse> GoogleRecaptchaAndSendSecondaryEmailVerifyCodeAsync(string recaptchaToken,
+        VerifySecondaryEmailCmd cmd, string acToken)
+    {
+        var userIpAddress = UserIpAddress(HttpContext);
+        if (string.IsNullOrWhiteSpace(userIpAddress))
+        {
+            _logger.LogDebug("No userIp in header when operation is {operationType}", OperationType.SetSecondaryEmail);
+            return null;
+        }
+
+        _logger.LogDebug("userIp is {userIp}", userIpAddress);
+        var googleRecaptchaOpen =
+            await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.SetSecondaryEmail);
+        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
+        if (!googleRecaptchaOpen)
+        {
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+        }
+
+        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
+        {
+            _logger.LogDebug("No token is provided when operation is {operationType}", OperationType.SetSecondaryEmail);
+            return null;
+        }
+
+        var response = await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken, cmd.PlatformType);
+
+        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
+        {
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifySecondaryEmailResponse();
+        }
+
+        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
+            !string.IsNullOrWhiteSpace(recaptchaToken) &&
+            response.RcValidResult)
+        {
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+        }
+
+        return null;
     }
 }
