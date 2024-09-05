@@ -335,6 +335,10 @@ public class CAVerifierController : CAServerController
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             return new VerifySecondaryEmailResponse();
         }
+        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        {
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+        }
         return await VerifyUserIpAndGoogleRecaptchaAsync(recaptchatoken, cmd, acToken);
     }
     
@@ -392,7 +396,7 @@ public class CAVerifierController : CAServerController
         if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
             !string.IsNullOrWhiteSpace(recaptchaToken) && response.RcValidResult)
         {
-            await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
         }
         HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
         return new VerifySecondaryEmailResponse();
@@ -409,10 +413,11 @@ public class CAVerifierController : CAServerController
         }
 
         _logger.LogDebug("userIp is {userIp}", userIpAddress);
+        var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
         var googleRecaptchaOpen =
             await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.SetSecondaryEmail);
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
-        if (!googleRecaptchaOpen)
+        if (!switchStatus.IsOpen || !googleRecaptchaOpen)
         {
             return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
         }
