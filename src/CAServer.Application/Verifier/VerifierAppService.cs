@@ -557,7 +557,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             }
             return new VerificationCodeResponse
             {
-                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2)
+                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2),
+                GuardianIdentifierHash = hashInfo.Item1
             };
         }
         catch (Exception e)
