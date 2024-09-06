@@ -63,13 +63,8 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockGuardianProvider());
         services.AddSingleton(GetMockCaAccountProvider());
         services.AddSingleton(MockAwsS3Client());
-        services.AddSingleton(GetMockCacheProvider());
     }
-    private ICacheProvider GetMockCacheProvider()
-    {
-        return new MockCacheProvider();
-    }
-    
+
     protected IAwsS3Client MockAwsS3Client()
     {
         var mockImageClient = new Mock<IAwsS3Client>();
