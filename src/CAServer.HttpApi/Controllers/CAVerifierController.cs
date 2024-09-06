@@ -339,6 +339,8 @@ public class CAVerifierController : CAServerController
     {
         if (!_currentUser.IsAuthenticated)
         {
+            _logger.LogDebug("=================1request:{0},recaptchatoken:{1},acToken:{2}",
+                JsonConvert.SerializeObject(cmd), recaptchatoken, acToken);
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             return new VerifySecondaryEmailResponse();
         }
@@ -405,6 +407,8 @@ public class CAVerifierController : CAServerController
         {
             return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
         }
+        _logger.LogDebug("=================2request:{0},recaptchaToken:{1},acToken:{2}",
+            JsonConvert.SerializeObject(cmd), recaptchaToken, acToken);
         HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
         return new VerifySecondaryEmailResponse();
     }
@@ -439,6 +443,8 @@ public class CAVerifierController : CAServerController
 
         if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
         {
+            _logger.LogDebug("=================3request:{0},recaptchaToken:{1},acToken:{2}",
+                JsonConvert.SerializeObject(cmd), recaptchaToken, acToken);
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             return new VerifySecondaryEmailResponse();
         }
