@@ -12,10 +12,12 @@ using CAServer.Account;
 using CAServer.amazon;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
+using CAServer.Cache;
 using CAServer.Commons;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Hub;
 using CAServer.Options;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,8 +63,12 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockGuardianProvider());
         services.AddSingleton(GetMockCaAccountProvider());
         services.AddSingleton(MockAwsS3Client());
+        services.AddSingleton(GetMockCacheProvider());
     }
-
+    private ICacheProvider GetMockCacheProvider()
+    {
+        return new MockCacheProvider();
+    }
     
     protected IAwsS3Client MockAwsS3Client()
     {
