@@ -1,8 +1,10 @@
+using System;
 using CAServer.Account;
 using CAServer.CAAccount.Enums;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Portkey.Contracts.CA;
+using Volo.Abp;
 
 namespace CAServer.CAAccount.Strategy;
 
@@ -40,12 +42,12 @@ public class TonWalletVerificationStrategy : CAServerAppService, IVerificationAl
         };
     }
 
-    public string ExtraHandler(string salt, string address = null)
+    public string ExtraHandler(string salt, string message)
     {
-        if (address == null)
+        if (salt.IsNullOrEmpty() || message.IsNullOrEmpty())
         {
-            return string.Join(",", salt);
+            throw new UserFriendlyException("ton wallet salt and message is invalid");
         }
-        return string.Join(",", salt, address);
+        return string.Join(",", salt, message);
     }
 }
