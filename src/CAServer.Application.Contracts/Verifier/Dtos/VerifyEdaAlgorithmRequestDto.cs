@@ -17,5 +17,5 @@ public class VerifyEdaAlgorithmRequestDto
     
     public string CaHash { get; set; }
     
-    [Required] public VerificationDetails VerificationDetails { get; set; }
+    [Required] public TonWalletRequestDetail TonWalletRequest { get; set; }
 }

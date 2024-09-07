@@ -13,6 +13,7 @@ using CAServer.AppleVerify;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Enums;
+using CAServer.CAAccount.TonWallet;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
@@ -59,6 +60,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IContractProvider _contractProvider;
     private readonly IHttpClientService _httpClientService;
     private readonly IEnumerable<IVerificationAlgorithmStrategy> _verificationStrategies;
+    private readonly ITonWalletProvider _tonWalletProvider;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -75,7 +77,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
         ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
-        IEnumerable<IVerificationAlgorithmStrategy> verificationStrategies)
+        IEnumerable<IVerificationAlgorithmStrategy> verificationStrategies,
+        ITonWalletProvider tonWalletProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -89,6 +92,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
         _verificationStrategies = verificationStrategies;
+        _tonWalletProvider = tonWalletProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -472,11 +476,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            var hashInfo = await GetSaltAndHashAsync(requestDto.VerificationDetails.Address);
+            var guardianIdentifier = requestDto.TonWalletRequest.UserFriendlyAddress;
+            var hashInfo = await GetSaltAndHashAsync(guardianIdentifier);
             
             if (!hashInfo.Item3)
             {
-                await AddGuardianAsync(requestDto.VerificationDetails.Address, hashInfo.Item2, hashInfo.Item1);
+                await AddGuardianAsync(guardianIdentifier, hashInfo.Item2, hashInfo.Item1);
             }
             
             var verificationStrategy = _verificationStrategies
@@ -485,9 +490,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 throw new UserFriendlyException("verification Strategy not exist");
             }
+
+            var message = _tonWalletProvider.GetTonWalletMessage(requestDto.TonWalletRequest.Request);
             return new VerificationCodeResponse
             {
-                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2),
+                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2, message),
                 GuardianIdentifierHash = hashInfo.Item1
             };
         }
