@@ -332,8 +332,6 @@ public class CAVerifierController : CAServerController
     {
         if (!_currentUser.IsAuthenticated)
         {
-            _logger.LogDebug("=================1request:{0},recaptchatoken:{1},acToken:{2}",
-                JsonConvert.SerializeObject(cmd), recaptchatoken, acToken);
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             return new VerifySecondaryEmailResponse();
         }
@@ -377,7 +375,6 @@ public class CAVerifierController : CAServerController
             throw new UserFriendlyException("user ip address not exist");
         }
         var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
-        _logger.LogDebug("============VerifyUserIpAndGoogleRecaptchaAsync userIP:{0} isInWhiteList:{1}", userIpAddress, isInWhiteList);
         if (isInWhiteList)
         {
             return await GoogleRecaptchaAndSendSecondaryEmailVerifyCodeAsync(recaptchaToken, cmd, acToken);
@@ -389,8 +386,6 @@ public class CAVerifierController : CAServerController
         }
 
         var response = await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken, cmd.PlatformType);
-        _logger.LogDebug("============ValidateTokenAsync recaptchaToken:{0} acToken:{1} platformType:{2} response:{3}",
-            recaptchaToken, acToken, cmd.PlatformType, JsonConvert.SerializeObject(response));
         if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
         {
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -402,8 +397,6 @@ public class CAVerifierController : CAServerController
         {
             return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
         }
-        _logger.LogDebug("=================2request:{0},recaptchaToken:{1},acToken:{2}",
-            JsonConvert.SerializeObject(cmd), recaptchaToken, acToken);
         HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
         return new VerifySecondaryEmailResponse();
     }
@@ -418,7 +411,6 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
-        _logger.LogDebug("================userIp is {userIp}", userIpAddress);
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
         var googleRecaptchaOpen =
             await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.SetSecondaryEmail);
@@ -438,8 +430,6 @@ public class CAVerifierController : CAServerController
 
         if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
         {
-            _logger.LogDebug("=================3request:{0},recaptchaToken:{1},acToken:{2}",
-                JsonConvert.SerializeObject(cmd), recaptchaToken, acToken);
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             return new VerifySecondaryEmailResponse();
         }
