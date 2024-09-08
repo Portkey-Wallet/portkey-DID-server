@@ -77,8 +77,10 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
 
     public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken, PlatformType platformType)
     {
+        _logger.LogDebug("===================_signatureOptions.CurrentValue:{0}", JsonConvert.SerializeObject(_signatureOptions.CurrentValue));
         var key = _signatureOptions.CurrentValue.KeyIds.GoogleRecaptcha + platformType;
-        var secret = await _secretProvider.GetSecretWithCacheAsync(key); 
+        var secret = await _secretProvider.GetSecretWithCacheAsync(key);
+        _logger.LogDebug("===================key:{0},secret:{1},platformType:{2}", key, secret, platformType.ToString());
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
