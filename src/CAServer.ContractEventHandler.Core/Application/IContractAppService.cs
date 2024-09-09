@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -82,7 +81,6 @@ public class ContractAppService : IContractAppService
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
     private const int AcceleratedThreadCount = 3;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
-    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -94,8 +92,7 @@ public class ContractAppService : IContractAppService
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount,
         IRedPackageCreateResultService redPackageCreateResultService,
-        INESTRepository<RedPackageIndex, Guid> redPackageRepository,
-        JwtSecurityTokenHandler jwtSecurityTokenHandler)
+        INESTRepository<RedPackageIndex, Guid> redPackageRepository)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -115,7 +112,6 @@ public class ContractAppService : IContractAppService
         _packageAccount = packageAccount.Value;
         _redPackageCreateResultService = redPackageCreateResultService;
         _redPackageRepository = redPackageRepository;
-        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -730,11 +726,37 @@ public class ContractAppService : IContractAppService
         {
             return false;
         }
+        return guardianInfos.All(guardianInfo => CanExecuteBySignature(guardianInfo) || CanExecuteZk(guardianInfo));
+    }
 
-        return guardianInfos.All(guardianInfo => guardianInfo?.VerificationInfo != null &&
-                                                 !guardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() &&
-                                                 GetVerificationDocLength(guardianInfo.VerificationInfo
-                                                     .VerificationDoc) >= 8);
+    private bool CanExecuteBySignature(GuardianInfo guardianInfo)
+    {
+        return guardianInfo?.VerificationInfo != null &&
+               !guardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() &&
+               GetVerificationDocLength(guardianInfo.VerificationInfo.VerificationDoc) >= 8;
+    }
+
+    private bool CanExecuteZk(GuardianInfo guardian)
+    {
+        if (guardian?.ZkLoginInfo == null)
+        {
+            return false;
+        }
+        if (!GuardianType.OfApple.Equals(guardian.Type) && !GuardianType.OfGoogle.Equals(guardian.Type))
+        {
+            return false;
+        }
+
+        var zkLoginInfo = guardian.ZkLoginInfo;
+        return zkLoginInfo?.IdentifierHash != null
+               && zkLoginInfo.Salt is not (null or "")
+               && zkLoginInfo.Nonce is not (null or "")
+               && zkLoginInfo.ZkProof is not (null or "")
+               && zkLoginInfo.CircuitId is not (null or "")
+               && zkLoginInfo.Issuer is not (null or "")
+               && zkLoginInfo.Kid is not (null or "")
+               && zkLoginInfo.NoncePayload is not null;
+
     }
 
     private int GetVerificationDocLength(string verificationDoc)
