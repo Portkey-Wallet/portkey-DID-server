@@ -10,5 +10,5 @@ public interface IVerificationAlgorithmStrategy
     
     public VerificationExt Converter(VerificationDo verificationDo);
 
-    public string ExtraHandler(string salt, string address = null);
+    public string ExtraHandler(string salt, string message);
 }
