@@ -1,13 +1,13 @@
 using System.Collections.Generic;
-using CAServer.CAAccount;
-using CAServer.Dtos;
-using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
+using CAServer.Dtos;
 using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Users;
 
@@ -167,5 +167,11 @@ public class CAAccountController : CAServerController
     {
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         await _zkLoginProvider.AppendSinglePoseidonAsync(request);
+    }
+
+    [HttpGet("query/guardians")]
+    public async Task<List<GuardianIndexDto>> GetGuardians(string identifierHash)
+    {
+        return await _guardianAppService.GetGuardianListAsync(new List<string>(){identifierHash});
     }
 }

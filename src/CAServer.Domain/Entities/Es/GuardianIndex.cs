@@ -14,4 +14,7 @@ public class GuardianIndex : CAServerEsEntity<string>, IIndexBuild
     public DateTime CreateTime { get; set; } = DateTime.UtcNow;
     
     [Keyword] public string IdentifierPoseidonHash { get; set; }
+    
+    [Keyword] public string CaHash { get; set; }
+    [Keyword] public string SecondaryEmail { get; set; }
 }
