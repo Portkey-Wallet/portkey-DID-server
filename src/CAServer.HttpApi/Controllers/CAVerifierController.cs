@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
@@ -286,12 +285,6 @@ public class CAVerifierController : CAServerController
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)
     {
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
-    }
-
-    [HttpGet("getCaHolder")]
-    public async Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash)
-    {
-        return await _verifierAppService.GetHolderInfoByCaHashAsync(caHash);
     }
 
     private string UserIpAddress(HttpContext context)
