@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
@@ -123,13 +124,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
+            var sw = new Stopwatch();
+            sw.Start();
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
             var transactionInfos = await GetTransactionInfosAsync(request);
+            sw.Stop();
+            _logger.LogInformation("======GetActivities Stats Step1 GetTransactionInfosAsync cost:{0}ms", sw.ElapsedMilliseconds);
+            sw.Restart();
             var activitiesDto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
                 request.ChainId,
                 request.Width,
                 request.Height, needMap: true);
-
+            sw.Stop();
+            _logger.LogInformation("======GetActivities Stats Step2 IndexerTransaction2Dto cost:{0}ms", sw.ElapsedMilliseconds);
             SetSeedStatusAndTypeForActivityDtoList(activitiesDto.Data);
 
             OptimizeSeedAliasDisplay(activitiesDto.Data);
