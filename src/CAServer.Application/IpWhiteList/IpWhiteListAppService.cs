@@ -49,7 +49,6 @@ public class IpWhiteListAppService : IIpWhiteListAppService, ISingletonDependenc
                     .DeserializeObject<ResponseResultDto<CheckUserIpInWhiteListResponseDto>>(
                         await httpResult.Content.ReadAsStringAsync()).Data.IsInWhiteList;
             }
-            _logger.LogDebug("=============IsInWhiteListAsync userIpAddress:{0}", userIpAddress);
             return response;
         }
         catch (Exception e)

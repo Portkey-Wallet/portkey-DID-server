@@ -141,8 +141,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
         context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
         context.AddBackgroundWorkerAsync<ChainHeightWorker>();
-        context.AddBackgroundWorkerAsync<SendingTransactionInfoByEmailAfterApprovalWorker>();
-        context.AddBackgroundWorkerAsync<SyncronizeZkloginPoseidonHashWorker>();
+        // context.AddBackgroundWorkerAsync<SendingTransactionInfoByEmailAfterApprovalWorker>();
+        // context.AddBackgroundWorkerAsync<SyncronizeZkloginPoseidonHashWorker>();
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 
