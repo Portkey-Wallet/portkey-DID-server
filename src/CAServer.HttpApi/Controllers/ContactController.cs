@@ -79,7 +79,6 @@ public class ContactController : CAServerController
         var platform = headers["platform"];
         var version = headers["version"];
         _logger.LogDebug("platform is {platform},version is {version}", platform, version);
-        _logger.LogDebug("===============GetListAsync input:{0} result:{1}", JsonConvert.SerializeObject(input), JsonConvert.SerializeObject(result));
         if (!string.IsNullOrEmpty(platform) && !string.IsNullOrEmpty(version))
         {
             var curVersion = new Version(version.ToString().Replace("v", ""));
@@ -93,7 +92,7 @@ public class ContactController : CAServerController
             }
         }
 
-        var contactListDtos = result.Items.Where(t => t.ImInfo.RelationId != _botOptions.RelationId).ToList();
+        var contactListDtos = result.Items.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
         result.Items = contactListDtos;
         result.TotalCount = contactListDtos.Count;
         return result;
