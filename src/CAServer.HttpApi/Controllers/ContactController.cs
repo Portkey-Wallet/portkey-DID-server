@@ -79,13 +79,14 @@ public class ContactController : CAServerController
         var platform = headers["platform"];
         var version = headers["version"];
         _logger.LogDebug("platform is {platform},version is {version}", platform, version);
+        _logger.LogDebug("===============GetListAsync input:{0} result:{1}", JsonConvert.SerializeObject(input), JsonConvert.SerializeObject(result));
         if (!string.IsNullOrEmpty(platform) && !string.IsNullOrEmpty(version))
         {
             var curVersion = new Version(version.ToString().Replace("v", ""));
             var preVersion = new Version(_botOptions.Version.Replace("v", ""));
             if (platform != "extension" && curVersion >= preVersion)
             {
-                var contacts = result.Items.Where(t => t.ImInfo.RelationId != _botOptions.RelationId).ToList();
+                var contacts = result.Items.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
                 result.Items = contacts;
                 result.TotalCount = contacts.Count;
                 return result;
@@ -119,13 +120,19 @@ public class ContactController : CAServerController
     [HttpPost("getContactList")]
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
-        return await _contactAppService.GetContactListAsync(input);
+        var result = await _contactAppService.GetContactListAsync(input);
+        _logger.LogDebug("===============GetContactListAsync input:{0} result:{1}", JsonConvert.SerializeObject(input), JsonConvert.SerializeObject(result));
+        result = result.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
+        return result;
     }
 
     [HttpGet("getContactsByUserId")]
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
-        return await _contactAppService.GetContactsByUserIdAsync(userId);
+        var result = await _contactAppService.GetContactsByUserIdAsync(userId);
+        _logger.LogDebug("===============GetContactListAsync input:{0} result:{1}", JsonConvert.SerializeObject(userId), JsonConvert.SerializeObject(result));
+        result = result.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
+        return result;
     }
 
     [HttpPost("getContactsByRelationId")]
