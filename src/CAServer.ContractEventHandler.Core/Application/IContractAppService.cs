@@ -397,6 +397,9 @@ public class ContractAppService : IContractAppService
             socialRecoveryDto = _objectMapper.Map<AccountRecoverCreateEto, SocialRecoveryDto>(message);
             if (!VerificationStrategyWrapperSocialRecoveryErrorMessage(message, recoveryResult, socialRecoveryDto))
             {
+                await _distributedEventBus.PublishAsync(recoveryResult);
+                _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+                    JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
                 return;
             }
         }
