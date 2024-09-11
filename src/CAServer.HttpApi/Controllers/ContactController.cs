@@ -85,6 +85,9 @@ public class ContactController : CAServerController
             var preVersion = new Version(_botOptions.Version.Replace("v", ""));
             if (platform != "extension" && curVersion >= preVersion)
             {
+                var contacts = result.Items.Where(t => t.ImInfo.RelationId != _botOptions.RelationId).ToList();
+                result.Items = contacts;
+                result.TotalCount = contacts.Count;
                 return result;
             }
         }
