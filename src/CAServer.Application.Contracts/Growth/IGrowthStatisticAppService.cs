@@ -19,4 +19,5 @@ public interface IGrowthStatisticAppService
     Task RepairHamsterDataAsync();
     Task CollectHamsterUserIdsAsync(string userId);
     Task TonGiftsValidateAsync();
+    Task<GetGrowthInfosDto> GetGrowthInfosAsync(GetGrowthInfosRequestDto input);
 }
