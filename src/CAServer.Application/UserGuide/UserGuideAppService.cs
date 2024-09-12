@@ -53,7 +53,7 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
             if (GuideType.AiChat.Equals(guideInfosUserGuideInfo.GuideType)
                 || GuideType.FinishAiChat.Equals(guideInfosUserGuideInfo.GuideType))
             {
-                guideInfosUserGuideInfo.Status = 0;
+                guideInfosUserGuideInfo.Status = 1;
             }
         }
         return guideInfos;
