@@ -120,7 +120,6 @@ public class ContactController : CAServerController
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
         var result = await _contactAppService.GetContactListAsync(input);
-        _logger.LogDebug("===============GetContactListAsync input:{0} result:{1}", JsonConvert.SerializeObject(input), JsonConvert.SerializeObject(result));
         result = result.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
         return result;
     }
@@ -129,7 +128,6 @@ public class ContactController : CAServerController
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
         var result = await _contactAppService.GetContactsByUserIdAsync(userId);
-        _logger.LogDebug("===============GetContactListAsync input:{0} result:{1}", JsonConvert.SerializeObject(userId), JsonConvert.SerializeObject(result));
         result = result.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
         return result;
     }
