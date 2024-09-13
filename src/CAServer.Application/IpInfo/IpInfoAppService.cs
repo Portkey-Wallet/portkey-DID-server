@@ -115,4 +115,9 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
             ? remoteIpAddress.MapToIPv4().ToString()
             : remoteIpAddress.MapToIPv6().ToString();
     }
+
+    public string GetRemoteIp(string random)
+    {
+        return !random.IsNullOrEmpty() ? random : GetRemoteIp();
+    }
 }

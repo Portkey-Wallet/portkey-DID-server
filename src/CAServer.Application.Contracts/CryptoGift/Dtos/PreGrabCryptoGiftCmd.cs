@@ -7,4 +7,6 @@ public class PreGrabCryptoGiftCmd
 {
     [Required]
     public Guid Id { get; set; }
+    
+    public string Random { get; set; }
 }

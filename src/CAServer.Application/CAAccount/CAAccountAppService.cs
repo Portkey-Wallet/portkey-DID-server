@@ -136,7 +136,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             registerCreateEto.GuardianInfo.ZkLoginInfo = result.Data.GuardianInfo.ZkLoginInfo;
         }
-        registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp();
+        registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await _distributedEventBus.PublishAsync(registerCreateEto);
         return new AccountResultDto(registerDto.Id.ToString());
     }
@@ -269,7 +269,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var recoverCreateEto = ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data);
-        recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp();
+        recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await _distributedEventBus.PublishAsync(recoverCreateEto);
 
         return new AccountResultDto(recoveryDto.Id.ToString());
