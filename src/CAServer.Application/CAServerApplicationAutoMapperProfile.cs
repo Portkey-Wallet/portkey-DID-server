@@ -974,5 +974,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         
         CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
         CreateMap<FreeMintIndex, GetItemInfoDto>();
+        CreateMap<GrowthIndex, GrowthUserInfoDto>();
     }
 }

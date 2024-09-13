@@ -95,11 +95,10 @@ public class GrowthController : CAServerController
         return await _statisticAppService.ValidateHamsterScoreAsync(userId);
     }
     
-    
-
-
-
-
-
+    [HttpGet("growthInfos")]
+    public async Task<GetGrowthInfosDto> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
+    {
+        return await _statisticAppService.GetGrowthInfosAsync(input);
+    }
 
 }
