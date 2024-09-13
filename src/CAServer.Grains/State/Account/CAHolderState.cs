@@ -15,4 +15,6 @@ public class CAHolderState
     public bool ModifiedNickname { get; set; }
 
     public string IdentifierHash { get; set; }
+    
+    public string SecondaryEmail { get; set; }
 }

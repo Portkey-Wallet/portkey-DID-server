@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.CAAccount.Dtos;
 using CAServer.Guardian;
+using CAServer.Verifier.Dtos;
 
 namespace CAServer.CAAccount;
 
@@ -16,4 +18,7 @@ public interface IGuardianUserProvider
     public Task<bool> AppendGuardianPoseidonHashAsync(string guardianIdentifier, string identifierPoseidonHash);
 
     public Task<List<GuardianIndexDto>> GetGuardianListAsync(List<string> identifierHashList);
+
+    public Task AppendSecondaryEmailInfo(VerifyTokenRequestDto requestDto, string guardianIdentifierHash,
+        string guardianIdentifier, GuardianIdentifierType type);
 }

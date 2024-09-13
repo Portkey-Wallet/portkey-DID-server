@@ -11,7 +11,10 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
     [Required] public string AccessToken { get; set; }
     public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
+    public string TargetChainId { get; set; }
     [Required] public OperationType OperationType { get; set; }
+    public string OperationDetails { get; set; }
+    public string CaHash { get; set; }
     public string Jwt { get; set; }
 
     [Required] public string Salt { get; set; }
@@ -21,21 +24,12 @@ public class VerifiedZkLoginRequestDto : IValidatableObject
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         var usedZk = GuardianIdentifierType.Google.Equals(Type) 
-                     || GuardianIdentifierType.Apple.Equals(Type)
-                     || GuardianIdentifierType.Facebook.Equals(Type);
+                     || GuardianIdentifierType.Apple.Equals(Type);
         if (!usedZk)
         {
             yield return new ValidationResult(
                 "Invalid input type.",
                 new[] { "GuardianIdentifierType" }
-            );
-        }
-
-        if (Type == GuardianIdentifierType.Facebook && Jwt.IsNullOrEmpty())
-        {
-            yield return new ValidationResult(
-                "Invalid input jwt.",
-                new[] { "Jwt" }
             );
         }
 

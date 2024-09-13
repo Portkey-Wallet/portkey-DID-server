@@ -312,19 +312,29 @@ public class SignatureGrantHandler : ITokenExtensionGrant
 
     private async Task<CAHolderManagerInfo> GetManagerList(string url, string caHash)
     {
-        using var graphQLClient = new GraphQLHttpClient(url, new NewtonsoftJsonSerializer());
-
-        // It should just one item
-        var testBlockRequest = new GraphQLRequest
+        try
         {
-            Query =
-                "query{caHolderManagerInfo(dto: {skipCount:0,maxResultCount:10,caHash:\"" + caHash +
-                "\"}){chainId,caHash,caAddress,managerInfos{address,extraData}}}"
-        };
+            using var graphQLClient = new GraphQLHttpClient(url, new NewtonsoftJsonSerializer());
 
-        var graphQLResponse = await graphQLClient.SendQueryAsync<CAHolderManagerInfo>(testBlockRequest);
+            // It should just one item
+            var testBlockRequest = new GraphQLRequest
+            {
+                Query =
+                    "query{caHolderManagerInfo(dto: {skipCount:0,maxResultCount:10,caHash:\"" + caHash +
+                    "\"}){chainId,caHash,caAddress,managerInfos{address,extraData}}}"
+            };
 
-        return graphQLResponse.Data;
+            var graphQLResponse = await graphQLClient.SendQueryAsync<CAHolderManagerInfo>(testBlockRequest);
+            return graphQLResponse.Data;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetManagerList graphQLClient error");
+            return new CAHolderManagerInfo()
+            {
+                CaHolderManagerInfo = new List<CAHolderManager>()
+            };
+        }
     }
 
     private ForbidResult GetForbidResult(string errorType, string errorDescription)

@@ -14,4 +14,6 @@ public interface ICAHolderGrain : IGrainWithGuidKey
     Task<string> GetCAHashAsync();
     Task<GrainResultDto<CAHolderGrainDto>> GetCaHolder();
     Task<GrainResultDto<CAHolderGrainDto>> UpdateHolderInfo(HolderInfoDto holderInfo);
+
+    Task<GrainResultDto<CAHolderGrainDto>> AppendOrUpdateSecondaryEmailAsync(string secondaryEmail);
 }

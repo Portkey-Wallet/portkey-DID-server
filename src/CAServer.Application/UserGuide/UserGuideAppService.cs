@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains.Grain.UserGuide;
 using CAServer.Options;
+using CAServer.UserExtraInfo;
 using CAServer.UserGuide.Dtos;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -38,6 +40,22 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
     public async Task<UserGuideDto> QueryUserGuideAsync(UserGuideRequestDto input, Guid? currentUserId)
     {
         var guideInfos = await GetUserGuideInfoAsync(input, currentUserId);
+        if (guideInfos == null || guideInfos.UserGuideInfos.IsNullOrEmpty())
+        {
+            return guideInfos;
+        }
+        foreach (var guideInfosUserGuideInfo in guideInfos.UserGuideInfos)
+        {
+            if (guideInfosUserGuideInfo == null)
+            {
+                continue;
+            }
+            if (GuideType.AiChat.Equals(guideInfosUserGuideInfo.GuideType)
+                || GuideType.FinishAiChat.Equals(guideInfosUserGuideInfo.GuideType))
+            {
+                guideInfosUserGuideInfo.Status = 1;
+            }
+        }
         return guideInfos;
     }
 
