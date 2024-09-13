@@ -30,6 +30,12 @@ public class ReportHandler : IDistributedEventHandler<AccountReportEto>, ITransi
         try
         {
             var index = _objectMapper.Map<AccountReportEto, AccountReportIndex>(eventData);
+            var reportIndex = await _repository.GetAsync(index.Id);
+            if (reportIndex == null)
+            {
+                index.CreateTime = DateTime.UtcNow;
+            }
+
             await _repository.AddOrUpdateAsync(index);
             _logger.LogInformation("[AccountReport] account report info handle success, caHash:{caHash}",
                 eventData.CaHash);
