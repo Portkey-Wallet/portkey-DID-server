@@ -970,10 +970,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<BeInvitedConfig, BeInvitedConfigDto>();
         CreateMap<TaskConfigInfo, TaskConfig>();
         CreateMap<NoticeInfo, Notice>();
-        
-        
+
         CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
         CreateMap<FreeMintIndex, GetItemInfoDto>();
+        CreateMap<AccountReportDto, AccountReportEto>();
         CreateMap<GrowthIndex, GrowthUserInfoDto>();
     }
 }
