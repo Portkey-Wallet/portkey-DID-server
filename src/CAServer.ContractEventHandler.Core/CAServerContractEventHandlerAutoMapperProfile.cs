@@ -178,10 +178,5 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
         CreateMap<TransactionReportEto, TransactionReportContext>();
         CreateMap<FreeMintCollectionInfo, CollectionInfo>();
         CreateMap<ItemMintInfo, FreeMintIndex>();
-        CreateMap<AccountReportEto, AccountReportIndex>()
-            .ForMember(t => t.Id, m => m.MapFrom(f => f.CaHash))
-            .ForMember(t => t.ClientType, m => m.MapFrom(f => f.ClientType.ToString()))
-            .ForMember(t => t.OperationType, m => m.MapFrom(f => f.OperationType.ToString()))
-            .ForMember(t => t.CreateTime, f => f.MapFrom(f => DateTime.UtcNow));
     }
 }
