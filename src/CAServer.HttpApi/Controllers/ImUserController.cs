@@ -47,9 +47,7 @@ public class ImUserController : CAServerController
     [HttpGet("holder/list")]
     public async Task<List<Guid>> ListHolderInfoAsync(string keyword)
     {
-        var result = await _imUserAppService.ListHolderInfoAsync(keyword);
-        _logger.LogInformation("======ListHolderInfoAsync keyword:{0} result:{1}", keyword, JsonConvert.SerializeObject(result));
-        return result;
+        return await _imUserAppService.ListHolderInfoAsync(keyword);
     }
     
     [HttpGet("holders")]
