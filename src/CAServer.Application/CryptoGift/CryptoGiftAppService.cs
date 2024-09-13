@@ -198,14 +198,14 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
 
-    public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId)
+    public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId, string random)
     {
         await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(1));
         if (handle == null)
         {
             throw new UserFriendlyException("please take a break for a while~");
         }
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         if (ipAddress.IsNullOrEmpty())
         {
             throw new UserFriendlyException("portkey can't get your ip, grab failed~");
@@ -404,7 +404,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         return getNftItemInfosDto;
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId, string random)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -420,7 +420,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         //get the sender info
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
@@ -659,7 +659,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId, string random)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -669,7 +669,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         Guid receiverId = await GetUserId(caHash, 0);
         var redPackageDetailDto = redPackageDetail.Data;
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         
         // get nft info
@@ -1056,9 +1056,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         return preGrabBucketItemDto;
     }
 
-    public (string, string) GetIpAddressAndIdentity(Guid redPackageId)
+    public (string, string) GetIpAddressAndIdentity(Guid redPackageId, string random)
     {
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         return new ValueTuple<string, string>(ipAddress, identityCode);
     }
