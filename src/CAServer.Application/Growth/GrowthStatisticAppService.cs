@@ -30,6 +30,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
+using Volo.Abp.Validation;
 using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
@@ -859,6 +860,20 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var response = await client.PostAsync(url, requestParam);
         var result = await response.Content.ReadAsStringAsync();
+    }
+
+    public async Task<GetGrowthInfosDto> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
+    {
+        if (input.ReferralCodes.IsNullOrEmpty() && input.ProjectCode.IsNullOrEmpty())
+        {
+            throw new AbpValidationException("referralCodes and projectCode is empty.");
+        }
+        var result = await _growthProvider.GetGrowthInfosAsync(input);
+        return new GetGrowthInfosDto()
+        {
+            TotalRecordCount = result.Item1,
+            Data = ObjectMapper.Map<List<GrowthIndex>, List<GrowthUserInfoDto>>(result.Item2)
+        };
     }
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
