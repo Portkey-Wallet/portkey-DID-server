@@ -1341,7 +1341,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         return new TokenInfoDto
         {
-            Balance = totalBalance.ToString(),
+            Balance = totalBalance > 0 ? totalBalance.ToString() : "0",
             Decimals = resCaHolderTokenBalanceInfo.First().TokenInfo.Decimals.ToString(),
             BalanceInUsd = totalBalanceInUsd.ToString()
         };

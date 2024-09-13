@@ -10,7 +10,7 @@ public class ShowOperationDetailsDto
     [JsonProperty(Order = 5,PropertyName = "Guardian Type")]
     public string GuardianType { get; set; }
 
-    [JsonProperty(Order = 7)]
+    [JsonProperty(Order = 10)]
     public string Time { get; set; }
 
     [JsonProperty(Order = 4)]
@@ -22,10 +22,18 @@ public class ShowOperationDetailsDto
     [JsonProperty(Order = 3)]
     public string Amount { get; set; }
 
-    [JsonProperty(Order = 8)]
+    [JsonProperty(Order = 11)]
     public string IP { get; set; }
 
     [JsonProperty(Order = 1,PropertyName = "Operation Type")]
     public string OperationType { get; set; }
     
+    [JsonProperty(Order = 7, PropertyName = "Transferring To Address")]
+    public string ToAddress { get; set; }
+    
+    [JsonProperty(Order = 8, PropertyName = "Single Limit")]
+    public string SingleLimit { get; set; }
+    
+    [JsonProperty(Order = 9, PropertyName = "Daily Limit")]
+    public string DailyLimit { get; set; }
 }

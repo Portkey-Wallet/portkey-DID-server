@@ -6,12 +6,15 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
+using CAServer.CAAccount.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
+using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -21,6 +24,7 @@ using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.CAAccount.Provider;
@@ -36,6 +40,8 @@ public class GuardianUserProvider
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     private readonly IPoseidonIdentifierHashProvider _poseidonProvider;
+    private readonly ICAAccountProvider _accountProvider;
+    private readonly IdentityUserManager _userManager;
 
     public GuardianUserProvider(
         ILogger<GuardianUserProvider> logger,
@@ -43,7 +49,9 @@ public class GuardianUserProvider
         IObjectMapper objectMapper,
         IDistributedEventBus distributedEventBus,
         INESTRepository<GuardianIndex, string> guardianRepository,
-        IPoseidonIdentifierHashProvider poseidonProvider)
+        IPoseidonIdentifierHashProvider poseidonProvider,
+        ICAAccountProvider accountProvider,
+        IdentityUserManager userManager)
     {
         _logger = logger;
         _clusterClient = clusterClient;
@@ -51,6 +59,8 @@ public class GuardianUserProvider
         _distributedEventBus = distributedEventBus;
         _guardianRepository = guardianRepository;
         _poseidonProvider = poseidonProvider;
+        _accountProvider = accountProvider;
+        _userManager = userManager;
     }
 
     public Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier, string guardianSalt, string poseidonHash)
@@ -205,5 +215,54 @@ public class GuardianUserProvider
         var result = guardians.Item2.Where(t => t.IsDeleted == false).ToList();
 
         return ObjectMapper.Map<List<GuardianIndex>, List<GuardianIndexDto>>(result);
+    }
+    
+    public async Task AppendSecondaryEmailInfo(VerifyTokenRequestDto requestDto, string guardianIdentifierHash,
+        string guardianIdentifier, GuardianIdentifierType type)
+    {
+        if (requestDto.CaHash.IsNullOrEmpty())
+        {
+            //existed guardian, get secondary email by guardian's identifierHash
+            requestDto.SecondaryEmail = await GetSecondaryEmailAsync(guardianIdentifierHash);
+        }
+        else
+        {
+            //add guardian operation, get secondary email by caHash
+            requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
+        }
+        requestDto.GuardianIdentifier = guardianIdentifier;
+        requestDto.Type = type;
+    }
+
+    private async Task<string> GetSecondaryEmailByCaHash(string caHash)
+    {
+        var userId = await GetUserId(caHash);
+        var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        var caHolder = await caHolderGrain.GetCaHolder();
+        if (!caHolder.Success || caHolder.Data == null)
+        {
+            throw new UserFriendlyException(caHolder.Message);
+        }
+        return caHolder.Data.SecondaryEmail;
+    }
+    
+    private async Task<Guid> GetUserId(string caHash)
+    {
+        var user = await _userManager.FindByNameAsync(caHash);
+        if (user != null)
+        {
+            return user.Id;
+        }
+        throw new UserFriendlyException("the user doesn't exist, caHash:" + caHash);
+    }
+
+    private async Task<string> GetSecondaryEmailAsync(string guardianIdentifierHash)
+    {
+        if (guardianIdentifierHash.IsNullOrEmpty())
+        {
+            return string.Empty;
+        }
+        var guardianIndex = await _accountProvider.GetIdentifiersAsync(guardianIdentifierHash);
+        return guardianIndex != null ? guardianIndex.SecondaryEmail : string.Empty;
     }
 }

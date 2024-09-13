@@ -1149,4 +1149,25 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return new List<decimal>();
         }
     }
+
+    public async Task<IndexerTransactions> GetTransactionByTransactionType(string transactionType)
+    {
+        var filterTypes = new List<string> { transactionType };
+        var transactions = await _activityProvider.GetActivitiesAsync(new List<CAAddressInfo>(), null,
+            null, filterTypes, 0, MaxResultCount);
+        return transactions;
+    }
+
+    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, string chainId, long startHeight, long endHeight)
+    {
+        return await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), chainId,
+            null, inputTransactionTypes, 0, 100, startHeight, endHeight);
+    }
+
+    public async Task<IndexerTransactions> GetActivitiesV3(List<CAAddressInfo> caAddressInfos, string chainId)
+    {
+        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, chainId,
+            null, null, 0, 20);
+        return transactions;
+    }
 }
