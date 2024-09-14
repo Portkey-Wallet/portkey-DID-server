@@ -352,6 +352,12 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
     public Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(Guid packageId)
     {
         var result = new GrainResultDto<RedPackageDetailDto>();
+        if (State?.Id == null || !packageId.Equals(State.Id))
+        {
+            result.Success = false;
+            result.Message = "there is no record";
+            return Task.FromResult(result);
+        }
         result.Success = true;
         var dto = _objectMapper.Map<RedPackageState, RedPackageDetailDto>(State);
         dto.TotalCount = State.Items.Count;
