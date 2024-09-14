@@ -373,6 +373,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (!cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
                                          && GrabbedStatus.Created.Equals(c.GrabbedStatus)))
         {
+            _logger.LogWarning("CheckClaimConditionWhenAutoTransfer redPackageId:{0} userId:{1} identityCode:{2} cryptoGiftDto:{3}", 
+                cryptoGiftDto.Id, userId, identityCode, JsonConvert.SerializeObject(cryptoGiftDto));
             throw new UserFriendlyException("You didn't pre grab a crypto gift");
         }
     }
