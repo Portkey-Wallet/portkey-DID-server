@@ -59,7 +59,7 @@ public class CryptoGiftController : CAServerController
     [HttpPost("grab")]
     public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift([FromBody] PreGrabCryptoGiftCmd preGrabCryptoGiftCmd)
     {
-        Stopwatch sw = new Stopwatch();
+        var sw = new Stopwatch();
         sw.Start();
         var result = await _cryptoGiftAppService.PreGrabCryptoGift(preGrabCryptoGiftCmd.Id, preGrabCryptoGiftCmd.Random);
         sw.Stop();

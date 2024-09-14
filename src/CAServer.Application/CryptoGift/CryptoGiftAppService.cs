@@ -236,7 +236,40 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException(grabbedResult.Message);
         }
+
+        await PutIdentityCodeInCache(identityCode, ipAddress);
         return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
+    }
+
+    private async Task PutIdentityCodeInCache(string identityCode, string ipAddress)
+    {
+        if (identityCode.IsNullOrEmpty() || ipAddress.IsNullOrEmpty())
+        {
+            return;
+        }
+        var key = GetIpAddressIdentityCodeCacheKey(ipAddress);
+        try
+        {
+            await _distributedCache.RemoveAsync(key);
+            await _distributedCache.SetAsync(key, identityCode, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddHours(1)
+            });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "PutIdentityCodeInCache error identityCode:{0} ipAddress:{1}", identityCode, ipAddress);
+        }
+    }
+
+    public async Task<string> GetIdentityCodeFromCache(string ipAddress)
+    {
+        return await _distributedCache.GetAsync(GetIpAddressIdentityCodeCacheKey(ipAddress));
+    }
+
+    private string GetIpAddressIdentityCodeCacheKey(string ipAddress)
+    {
+        return "CryptoGiftIdentity:" + ipAddress;
     }
 
     private static void CheckClaimCondition(RedPackageDetailDto redPackageDetailDto, CryptoGiftDto cryptoGiftDto,
@@ -373,6 +406,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (!cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
                                          && GrabbedStatus.Created.Equals(c.GrabbedStatus)))
         {
+            _logger.LogWarning("CheckClaimConditionWhenAutoTransfer redPackageId:{0} userId:{1} identityCode:{2} cryptoGiftDto:{3}", 
+                cryptoGiftDto.Id, userId, identityCode, JsonConvert.SerializeObject(cryptoGiftDto));
             throw new UserFriendlyException("You didn't pre grab a crypto gift");
         }
     }
