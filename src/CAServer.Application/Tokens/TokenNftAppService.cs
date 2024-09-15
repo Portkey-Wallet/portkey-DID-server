@@ -196,6 +196,13 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
+            dto.Data.ForEach(t =>
+            {
+                if (decimal.TryParse(t.Balance, out var balance))
+                {
+                    t.Balance = balance < 0 ? "0" : t.Balance;
+                }
+            });
             return dto;
         }
         catch (Exception e)

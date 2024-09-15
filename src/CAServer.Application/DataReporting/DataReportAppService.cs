@@ -34,4 +34,13 @@ public class DataReportAppService : CAServerAppService, IDataReportAppService
             input.ChainId, input.CaAddress, input.TransactionId);
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionReportDto, TransactionReportEto>(input));
     }
+
+    public async Task ReportAccountAsync(AccountReportDto input)
+    {
+        Logger.LogDebug(
+            "[AccountReport] report account, caHash:{caHash}, clientType:{clientType}, projectCode:{projectCode}, operationType:{operationType}",
+            input.CaHash, input.ClientType.ToString(), input.ProjectCode, input.OperationType.ToString());
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<AccountReportDto, AccountReportEto>(input), false,
+            false);
+    }
 }

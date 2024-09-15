@@ -41,4 +41,12 @@ public static class LogEvent
     public const string ManagerInfoSocialRecovered = "ManagerInfoSocialRecovered";
     public const string CryptoBoxCreated = "CryptoBoxCreated";
     public const string CAHolderErrorOccured = "CAHolderErrorOccured";
+    public const string GuardianAdded = "GuardianAdded";
+    public const string GuardianRemoved = "GuardianRemoved";
+    public const string GuardianUpdated = "GuardianUpdated";
+    public const string LoginGuardianAdded = "LoginGuardianAdded";
+    public const string LoginGuardianRemoved = "LoginGuardianRemoved";
+    public const string TransferLimitChanged = "TransferLimitChanged";
+    public const string ManagerInfoRemoved = "ManagerInfoRemoved";
+    public const string ManagerApproved = "ManagerApproved";
 }

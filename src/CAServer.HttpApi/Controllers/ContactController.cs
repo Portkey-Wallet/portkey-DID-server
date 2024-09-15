@@ -85,11 +85,14 @@ public class ContactController : CAServerController
             var preVersion = new Version(_botOptions.Version.Replace("v", ""));
             if (platform != "extension" && curVersion >= preVersion)
             {
+                var contacts = result.Items.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
+                result.Items = contacts;
+                result.TotalCount = contacts.Count;
                 return result;
             }
         }
 
-        var contactListDtos = result.Items.Where(t => t.ImInfo.RelationId != _botOptions.RelationId).ToList();
+        var contactListDtos = result.Items.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
         result.Items = contactListDtos;
         result.TotalCount = contactListDtos.Count;
         return result;
@@ -116,13 +119,17 @@ public class ContactController : CAServerController
     [HttpPost("getContactList")]
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
-        return await _contactAppService.GetContactListAsync(input);
+        var result = await _contactAppService.GetContactListAsync(input);
+        result = result.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
+        return result;
     }
 
     [HttpGet("getContactsByUserId")]
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
-        return await _contactAppService.GetContactsByUserIdAsync(userId);
+        var result = await _contactAppService.GetContactsByUserIdAsync(userId);
+        result = result.Where(t => !_botOptions.RelationId.Equals(t?.ImInfo?.RelationId)).ToList();
+        return result;
     }
 
     [HttpPost("getContactsByRelationId")]
