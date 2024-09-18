@@ -127,7 +127,6 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
     public async Task GetTokenTest()
     {
         Login(Guid.NewGuid());
-        Login(Guid.NewGuid());
         var param = new GetTokenRequestDto
         {
             SkipCount = 0,
