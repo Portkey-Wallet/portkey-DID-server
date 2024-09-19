@@ -20,7 +20,7 @@ public static class TokenHelper
 
         GetTokenV2Dto result = new GetTokenV2Dto
         {
-            TotalBalanceInUsd =  tokenDto.TotalBalanceInUsd,
+            TotalBalanceInUsd = tokenDto.TotalBalanceInUsd,
             Data = new List<TokenWithoutChain>()
         };
 
@@ -29,8 +29,8 @@ public static class TokenHelper
             .Select(g => new
             {
                 Symbol = g.Key,
-                Balance = g.Sum(t => decimal.Parse(t.Balance)),
-                BalanceInUsd = g.Sum(t => decimal.Parse(t.BalanceInUsd))
+                Balance = g.Sum(t => parseDecimal(t.Balance)),
+                BalanceInUsd = g.Sum(t => parseDecimal(t.BalanceInUsd))
             });
         TokenWithoutChain tokenWithoutChain = new TokenWithoutChain();
         foreach (var token in tokenDto.Data)
@@ -59,5 +59,18 @@ public static class TokenHelper
         
         result.TotalRecordCount = result.Data.Count();
         return result;
+    }
+
+    private static decimal parseDecimal(string number)
+    {
+        decimal result;
+        if (decimal.TryParse(number, out result))
+        {
+            return result;
+        }
+        else
+        {
+            return 0;
+        }
     }
 }
