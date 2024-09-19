@@ -8,5 +8,6 @@ public class GetTokenListV2Dto
     public string ImageUrl { get; set; }
     public TokenDisplayStatus DisplayStatus { get; set; }
     public string Label { get; set; }
+    public bool IsDefault { get; set; }
     public List<GetTokenListDto> Tokens { get; set; } = new();
 }
