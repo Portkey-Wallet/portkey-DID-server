@@ -143,8 +143,9 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             };
 
             var displayList = userToken.Tokens.Select(t => t.IsDisplay);
-            userToken.DisplayStatus = displayList.All(t => t == true) ? TokenDisplayStatus.All :
-                displayList.All(t => t == false) ? TokenDisplayStatus.None : TokenDisplayStatus.Partial;
+            userToken.DisplayStatus = displayList.All(t => t == true) ? TokenDisplayStatus.All.ToString() :
+                displayList.All(t => t == false) ? TokenDisplayStatus.None.ToString() :
+                TokenDisplayStatus.Partial.ToString();
             result.Add(userToken);
         }
 
@@ -169,8 +170,9 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             };
 
             var displayList = userToken.Tokens.Select(t => t.IsDisplay);
-            userToken.DisplayStatus = displayList.All(t => t == true) ? TokenDisplayStatus.All :
-                displayList.All(t => t == false) ? TokenDisplayStatus.None : TokenDisplayStatus.Partial;
+            userToken.DisplayStatus = displayList.All(t => t == true) ? TokenDisplayStatus.All.ToString() :
+                displayList.All(t => t == false) ? TokenDisplayStatus.None.ToString() :
+                TokenDisplayStatus.Partial.ToString();
             result.Add(userToken);
         }
 
