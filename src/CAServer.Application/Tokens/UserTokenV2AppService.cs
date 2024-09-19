@@ -78,6 +78,9 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             tokens = tokens.Where(t => t.Symbol.Trim().ToUpper().Contains(requestDto.Keyword.ToUpper())).ToList();
         }
 
+        var chainIds = _chainOptions.ChainInfos.Keys.ToList();
+        tokens = tokens.Where(t => chainIds.Contains(t.ChainId)).ToList();
+
         foreach (var token in tokens)
         {
             var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(token.Symbol);
@@ -135,12 +138,14 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
                 Symbol = group.Key,
                 ImageUrl = tokenItem.ImageUrl,
                 Label = tokenItem.Label,
+                IsDefault = tokenItem.IsDefault,
                 Tokens = group.ToList()
             };
 
             var displayList = userToken.Tokens.Select(t => t.IsDisplay);
             userToken.DisplayStatus = displayList.All(t => t == true) ? TokenDisplayStatus.All :
                 displayList.All(t => t == false) ? TokenDisplayStatus.None : TokenDisplayStatus.Partial;
+            result.Add(userToken);
         }
 
         return result;
@@ -159,12 +164,14 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
                 Symbol = group.Key,
                 ImageUrl = tokenItem.ImageUrl,
                 Label = tokenItem.Label,
+                IsDefault = tokenItem.IsDefault,
                 Tokens = group.ToList()
             };
 
             var displayList = userToken.Tokens.Select(t => t.IsDisplay);
             userToken.DisplayStatus = displayList.All(t => t == true) ? TokenDisplayStatus.All :
                 displayList.All(t => t == false) ? TokenDisplayStatus.None : TokenDisplayStatus.Partial;
+            result.Add(userToken);
         }
 
         return result;
