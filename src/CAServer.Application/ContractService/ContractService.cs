@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
+using AElf.Cryptography;
 using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.CAAccount;
@@ -20,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Portkey.Contracts.CA;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using ChainOptions = CAServer.Options.ChainOptions;
@@ -463,5 +465,33 @@ public class ContractService : IContractService, ISingletonDependency
                 return null;
         }
         return result.TransactionResultDto;
+    }
+
+    public async Task<string> SignedRawTransaction(string chainId, string publicKey, string rawTransaction)
+    {
+        if (publicKey.IsNullOrEmpty() || rawTransaction.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("public key and raw Transaction are invalid");
+        }
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+        {
+            return null;
+        }
+
+        var client = new AElfClient(chainInfo.BaseUrl);
+        await client.IsConnectedAsync();
+        //交易由谁发起，与签signature的aelf账号必须一致，否则会校验失败
+        //由签名恢复出的公钥，能否生成与from相同的地址
+        //参考资料：aelf Transaction的生命周期：https://aelfblockchain.sg.larksuite.com/wiki/HIvfw9DVNiboyqkXTtElxQM3gkg?from=from_copylink
+        var ownAddress = client.GetAddressFromPubKey(publicKey); //select public key
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, rawTransaction);
+        return txWithSign;
+    }
+    
+    //用用户的私钥签名，具体看Dapp是每个tx调一次，还是批量发送过来轮训调
+    public ByteString GetSignatureWith(byte[] txData)
+    {
+        var signature = CryptoHelper.SignWithPrivateKey(_privateKey, txData);
+        return ByteString.CopyFrom(signature);
     }
 }
