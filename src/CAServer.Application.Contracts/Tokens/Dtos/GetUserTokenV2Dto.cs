@@ -6,7 +6,7 @@ public class GetUserTokenV2Dto
 {
     public string Symbol { get; set; }
     public string ImageUrl { get; set; }
-    public TokenDisplayStatus DisplayStatus { get; set; }
+    public string DisplayStatus { get; set; }
     public string Label { get; set; }
     public bool IsDefault { get; set; }
     public List<GetUserTokenDto> Tokens { get; set; } = new();
