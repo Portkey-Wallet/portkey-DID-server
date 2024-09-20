@@ -52,8 +52,12 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
 
     public async Task ChangeTokenDisplayAsync(ChangeTokenDisplayDto requestDto)
     {
-        var tasks = requestDto.Ids.Select(id => _tokenAppService.ChangeTokenDisplayAsync(requestDto.IsDisplay, id))
-            .Cast<Task>().ToList();
+        var tasks = new List<Task>();
+        foreach (var id in requestDto.Ids)
+        {
+            tasks.Add(_tokenAppService.ChangeTokenDisplayAsync(requestDto.IsDisplay, id));
+        }
+
         await Task.WhenAll(tasks);
     }
 
