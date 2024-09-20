@@ -8,10 +8,13 @@ using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
 using CAServer.UserAssets;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.Users;
 
 namespace CAServer.Tokens;
@@ -26,19 +29,25 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
     private readonly TokenListOptions _tokenListOptions;
     private readonly ITokenNftAppService _tokenNftAppService;
     private readonly ChainOptions _chainOptions;
+    private readonly IDistributedCache<IndexerToken> _tokenInfoCache;
+    private readonly AddTokenOptions _addTokenOptions;
 
     public UserTokenV2AppService(IOptionsSnapshot<TokenListOptions> tokenListOptions,
         IUserTokenAppService tokenAppService, ITokenProvider tokenProvider,
         IOptionsSnapshot<NftToFtOptions> nftToFtOptions, IAssetsLibraryProvider assetsLibraryProvider,
-        ITokenNftAppService tokenNftAppService, IOptions<ChainOptions> chainOptions)
+        ITokenNftAppService tokenNftAppService, IOptions<ChainOptions> chainOptions,
+        IDistributedCache<IndexerToken> tokenInfoCache,
+        IOptionsSnapshot<AddTokenOptions> addTokenOptions)
     {
         _tokenAppService = tokenAppService;
         _tokenProvider = tokenProvider;
         _assetsLibraryProvider = assetsLibraryProvider;
         _tokenNftAppService = tokenNftAppService;
+        _tokenInfoCache = tokenInfoCache;
         _nftToFtOptions = nftToFtOptions.Value;
         _tokenListOptions = tokenListOptions.Value;
         _chainOptions = chainOptions.Value;
+        _addTokenOptions = addTokenOptions.Value;
     }
 
     public async Task ChangeTokenDisplayAsync(ChangeTokenDisplayDto requestDto)
@@ -81,19 +90,6 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         var chainIds = _chainOptions.ChainInfos.Keys.ToList();
         tokens = tokens.Where(t => chainIds.Contains(t.ChainId)).ToList();
 
-        foreach (var token in tokens)
-        {
-            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(token.Symbol);
-            if (nftToFtInfo != null)
-            {
-                token.Label = nftToFtInfo.Label;
-                token.ImageUrl = nftToFtInfo.ImageUrl;
-                continue;
-            }
-
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
-        }
-
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
             .ThenBy(t => !t.IsDisplay)
@@ -104,7 +100,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             .ThenBy(t => t.ChainId)
             .ToList();
 
-        var data = GetTokens(tokens);
+        var data = await GetTokensAsync(tokens);
 
         return new CaPageResultDto<GetUserTokenV2Dto>(data.Count,
             data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList());
@@ -125,7 +121,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList());
     }
 
-    private List<GetUserTokenV2Dto> GetTokens(List<GetUserTokenDto> tokens)
+    private async Task<List<GetUserTokenV2Dto>> GetTokensAsync(List<GetUserTokenDto> tokens)
     {
         var result = new List<GetUserTokenV2Dto>();
         if (tokens.IsNullOrEmpty()) return result;
@@ -133,13 +129,15 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         foreach (var group in tokens.GroupBy(t => t.Symbol))
         {
             var tokenItem = group.First();
+            var tokenList = await CheckTokenAsync(group.ToList());
+            SetTokenInfo(tokenList);
             var userToken = new GetUserTokenV2Dto
             {
                 Symbol = group.Key,
                 ImageUrl = tokenItem.ImageUrl,
                 Label = tokenItem.Label,
                 IsDefault = tokenItem.IsDefault,
-                Tokens = group.ToList()
+                Tokens = tokenList
             };
 
             var displayList = userToken.Tokens.Select(t => t.IsDisplay);
@@ -177,5 +175,66 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         }
 
         return result;
+    }
+
+    private void SetTokenInfo(List<GetUserTokenDto> tokens)
+    {
+        foreach (var token in tokens)
+        {
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(token.Symbol);
+            if (nftToFtInfo != null)
+            {
+                token.Label = nftToFtInfo.Label;
+                token.ImageUrl = nftToFtInfo.ImageUrl;
+                return;
+            }
+
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+        }
+    }
+
+    private async Task<List<GetUserTokenDto>> CheckTokenAsync(List<GetUserTokenDto> userTokens)
+    {
+        if (userTokens.Count == _chainOptions.ChainInfos.Keys.Count)
+        {
+            return userTokens;
+        }
+
+        var userToken = userTokens.First();
+        var chainId = _chainOptions.ChainInfos.Keys.First(t => t != userToken.ChainId);
+
+        var tokenInfoCache = await _tokenInfoCache.GetAsync(GetTokenCacheKey(chainId, userToken.Symbol));
+        if (tokenInfoCache != null && !tokenInfoCache.Symbol.IsNullOrEmpty())
+        {
+            Logger.LogInformation("get from cache, chainId:{chainId}, symbol:{symbol}", chainId, userToken.Symbol);
+            userTokens.Add(ObjectMapper.Map<IndexerToken, GetUserTokenDto>(tokenInfoCache));
+            return userTokens.OrderBy(t => t.ChainId).ToList();
+        }
+
+        var tokenInfos = await _tokenProvider.GetTokenInfosAsync(chainId, userToken.Symbol, string.Empty);
+        var tokenInfo = tokenInfos?.TokenInfo?.FirstOrDefault();
+        if (tokenInfo == null)
+        {
+            await _tokenInfoCache.SetAsync(GetTokenCacheKey(chainId, userToken.Symbol), new IndexerToken(),
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpiration = DateTime.UtcNow.AddMinutes(_addTokenOptions.CacheExpirationTime)
+                });
+        }
+
+        Logger.LogInformation("get from indexer, chainId:{chainId}, symbol:{symbol}", chainId, userToken.Symbol);
+        await _tokenInfoCache.SetAsync(GetTokenCacheKey(chainId, userToken.Symbol), tokenInfo,
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+            });
+
+        userTokens.Add(ObjectMapper.Map<IndexerToken, GetUserTokenDto>(tokenInfo));
+        return userTokens.OrderBy(t => t.ChainId).ToList();
+    }
+
+    private string GetTokenCacheKey(string chainId, string symbol)
+    {
+        return string.Join(':', CommonConstant.TokenInfoCachePrefix, chainId, symbol);
     }
 }

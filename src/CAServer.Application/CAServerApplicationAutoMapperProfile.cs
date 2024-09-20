@@ -975,5 +975,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<FreeMintIndex, GetItemInfoDto>();
         CreateMap<AccountReportDto, AccountReportEto>();
         CreateMap<GrowthIndex, GrowthUserInfoDto>();
+        CreateMap<IndexerToken, GetUserTokenDto>();
     }
 }

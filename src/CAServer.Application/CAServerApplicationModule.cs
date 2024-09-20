@@ -94,9 +94,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
         Configure<BeInvitedConfigOptions>(configuration.GetSection("BeInvitedConfig"));
         Configure<HamsterOptions>(configuration.GetSection("Hamster"));
-        
-        
-        
+        Configure<AddTokenOptions>(configuration.GetSection("AddToken"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
