@@ -52,13 +52,14 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
 
     public async Task ChangeTokenDisplayAsync(ChangeTokenDisplayDto requestDto)
     {
-        var tasks = new List<Task>();
+        //var tasks = new List<Task>();
         foreach (var id in requestDto.Ids)
         {
-            tasks.Add(_tokenAppService.ChangeTokenDisplayAsync(requestDto.IsDisplay, id));
+            await _tokenAppService.ChangeTokenDisplayAsync(requestDto.IsDisplay, id);
+            //tasks.Add(_tokenAppService.ChangeTokenDisplayAsync(requestDto.IsDisplay, id));
         }
 
-        await Task.WhenAll(tasks);
+        //await Task.WhenAll(tasks);
     }
 
     public async Task<CaPageResultDto<GetUserTokenV2Dto>> GetTokensAsync(GetTokenInfosV2RequestDto requestDto)
