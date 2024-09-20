@@ -32,12 +32,16 @@ public static class TokenHelper
                 Balance = g.Sum(t => parseDecimal(t.Balance)),
                 BalanceInUsd = g.Sum(t => parseDecimal(t.BalanceInUsd))
             });
-        TokenWithoutChain tokenWithoutChain = new TokenWithoutChain();
+        Dictionary<string,TokenWithoutChain> generatedTokens = new Dictionary<string, TokenWithoutChain>();
         foreach (var token in tokenDto.Data)
         {
-            if (!token.Symbol.Equals(tokenWithoutChain.Symbol))
+            if (generatedTokens.ContainsKey(token.Symbol))
             {
-                tokenWithoutChain = new TokenWithoutChain
+                generatedTokens[token.Symbol].tokens.Add(token);
+            }
+            else
+            {
+                TokenWithoutChain tokenWithoutChain = new TokenWithoutChain
                 {
                     Symbol = token.Symbol,
                     Price = token.Price,
@@ -50,10 +54,7 @@ public static class TokenHelper
                     tokens = new List<Token> { token }
                 };
                 result.Data.Add(tokenWithoutChain);
-            }
-            else
-            {
-                tokenWithoutChain.tokens.Add(token);
+                generatedTokens.Add(token.Symbol, tokenWithoutChain);
             }
         }
         
