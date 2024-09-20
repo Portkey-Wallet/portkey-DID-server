@@ -990,6 +990,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<FreeMintIndex, GetItemInfoDto>();
         CreateMap<AccountReportDto, AccountReportEto>();
         CreateMap<GrowthIndex, GrowthUserInfoDto>();
-        CreateMap<IndexerToken, GetUserTokenDto>();
+        CreateMap<IndexerToken, GetUserTokenDto>()
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.TokenContractAddress));
     }
 }
