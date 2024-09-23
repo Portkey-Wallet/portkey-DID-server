@@ -548,7 +548,21 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var guardianIdentifier = requestDto.TonWalletRequest.UserFriendlyAddress;
             var hashInfo = await GetSaltAndHashAsync(guardianIdentifier);
-            
+            var verifyTokenRequestDto = new VerifyTokenRequestDto
+            {
+                AccessToken = string.Empty,
+                ChainId = requestDto.ChainId,
+                TargetChainId = requestDto.TargetChainId, 
+                OperationType = requestDto.OperationType,
+                OperationDetails = requestDto.OperationDetails,
+            };
+            await AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.TonWallet);
+            var response =
+                await _verifierServerClient.VerifyTonWalletTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
+            if (response is not { Success: true } || response.Data is not { Result: true })
+            {
+                _logger.LogWarning("send notification email error verifyTokenRequestDto:{0}", JsonConvert.SerializeObject(verifyTokenRequestDto));
+            }
             if (!hashInfo.Item3)
             {
                 await AddGuardianAsync(guardianIdentifier, hashInfo.Item2, hashInfo.Item1);
