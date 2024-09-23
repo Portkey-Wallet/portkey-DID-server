@@ -30,7 +30,7 @@ public class IndexOptions
     public long IndexTimes { get; set; }
     public int MaxRetryTimes { get; set; }
     public int MaxBucket { get; set; }
-    public int BatchNumber { get; set; } = 100;
+    public int BatchNumber { get; set; } = 2;
     public Dictionary<string, long> AutoSyncStartHeight { get; set; }
 }
 
