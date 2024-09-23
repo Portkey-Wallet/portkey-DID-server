@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -140,11 +141,19 @@ public class RecordsBucketContainer : IRecordsBucketContainer
 
     public async Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
+        var lists = records
+            .Select((item, index) => new { item, index })
+            .GroupBy(x => x.index / _indexOptions.BatchNumber)
+            .Select(group => group.Select(x => x.item).ToList())
+            .ToList();
         for (var i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.SetToBeValidatedRecords(records);
+            foreach (var list in lists)
+            {
+                await grain.SetToBeValidatedRecords(list);
+            }
         }
     }
     
