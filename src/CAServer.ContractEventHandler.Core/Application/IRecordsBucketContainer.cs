@@ -144,7 +144,10 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.SetToBeValidatedRecords(records);
+            foreach (var syncRecord in records)
+            {
+                await grain.SetToBeValidatedRecords(new List<SyncRecord>(){syncRecord});
+            }
         }
     }
     
