@@ -464,7 +464,7 @@ public class ContractProvider : IContractProvider
 
             if (indexSideChainBlock < txHeight)
             {
-                _logger.LogInformation(LoggerMsg.IndexBlockRecordInformation);
+                _logger.LogInformation($"{LoggerMsg.IndexBlockRecordInformation} {indexSideChainBlock} {txHeight} MainChainCheckSideChainBlockIndexAsync");
                 await Task.Delay(_indexOptions.IndexDelay);
                 time++;
                 continue;
@@ -492,7 +492,7 @@ public class ContractProvider : IContractProvider
 
             if (indexMainChainBlock < txHeight)
             {
-                _logger.LogInformation(LoggerMsg.IndexBlockRecordInformation);
+                _logger.LogInformation($"{LoggerMsg.IndexBlockRecordInformation} {indexMainChainBlock} {txHeight} SideChainCheckMainChainBlockIndexAsync");
                 await Task.Delay(_indexOptions.IndexDelay);
                 time++;
                 continue;
@@ -521,7 +521,7 @@ public class ContractProvider : IContractProvider
 
             _logger.LogInformation(
                 "SyncTransaction to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
 
             return result;
