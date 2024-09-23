@@ -85,7 +85,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             tokens.Add(ObjectMapper.Map<UserTokenItem, GetUserTokenDto>(item));
         }
 
-        tokens = tokens.Where(t => !_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)).ToList();
+        //tokens = tokens.Where(t => !_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)).ToList();
 
         if (!requestDto.Keyword.IsNullOrEmpty())
         {
