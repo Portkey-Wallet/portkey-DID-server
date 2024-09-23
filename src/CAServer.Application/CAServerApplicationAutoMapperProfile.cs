@@ -4,9 +4,11 @@ using System.Linq;
 using AElf;
 using AElf.Types;
 using AutoMapper;
+using CAServer.Account;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Enums;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -101,6 +103,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.IdentityModel.Tokens;
 using Enum = System.Enum;
 using GuardianDto = CAServer.Guardian.GuardianDto;
+using ManagerInfo = Portkey.Contracts.CA.ManagerInfo;
 using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
 
 namespace CAServer;
@@ -389,7 +392,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
                         ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
-                }
+                },
+                VerificationExt = e.GuardianInfo.VerificationExt
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -441,7 +445,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
                         ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
-                }
+                },
+                VerificationExt = e.GuardianInfo.VerificationExt
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -495,7 +500,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                             ZkProofPiB3 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
                             ZkProofPiC = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                         }
-                    }
+                    },
+                    VerificationExt = g.VerificationExt
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -536,7 +542,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.GuardianInfo.VerificationInfo.Id, m => m.MapFrom(f => f.VerifierId))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
-            .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature));
+            .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature))
+            .ForPath(t => t.GuardianInfo.VerificationDo.VerifierType, m => m.MapFrom(f =>
+                f.VerificationRequestInfo == null ? VerifierType.Unknown : f.VerificationRequestInfo.VerifierType))
+            .ForPath(t => t.GuardianInfo.VerificationDo.VerificationDetails, m => m.MapFrom(f =>
+                f.VerificationRequestInfo == null ? null : f.VerificationRequestInfo.VerificationDetails));
             
         CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
             {
@@ -556,6 +566,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         Id = t.VerifierId,
                         VerificationDoc = t.VerificationDoc,
                         Signature = t.Signature
+                    },
+                    VerificationDo = t.VerificationRequestInfo == null ? new VerificationDo() : new VerificationDo()
+                    {
+                        VerifierType = t.VerificationRequestInfo.VerifierType,
+                        VerificationDetails = t.VerificationRequestInfo.VerificationDetails
                     }
                 }).ToList()));
 
@@ -975,5 +990,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<FreeMintIndex, GetItemInfoDto>();
         CreateMap<AccountReportDto, AccountReportEto>();
         CreateMap<GrowthIndex, GrowthUserInfoDto>();
+        CreateMap<IndexerToken, GetUserTokenDto>()
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.TokenContractAddress));
     }
 }

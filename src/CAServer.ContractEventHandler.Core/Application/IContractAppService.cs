@@ -8,6 +8,7 @@ using AElf;
 using AElf.Client.Dto;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
+using CAServer.CAAccount;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -81,6 +82,7 @@ public class ContractAppService : IContractAppService
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
     private const int AcceleratedThreadCount = 3;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
+    private readonly IEnumerable<IVerificationAlgorithmStrategy> _verificationStrategies;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -92,7 +94,8 @@ public class ContractAppService : IContractAppService
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount,
         IRedPackageCreateResultService redPackageCreateResultService,
-        INESTRepository<RedPackageIndex, Guid> redPackageRepository)
+        INESTRepository<RedPackageIndex, Guid> redPackageRepository,
+        IEnumerable<IVerificationAlgorithmStrategy> verificationStrategies)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -112,6 +115,7 @@ public class ContractAppService : IContractAppService
         _packageAccount = packageAccount.Value;
         _redPackageCreateResultService = redPackageCreateResultService;
         _redPackageRepository = redPackageRepository;
+        _verificationStrategies = verificationStrategies;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -191,6 +195,13 @@ public class ContractAppService : IContractAppService
                 message.ReferralInfo = null;
             }
             createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(message);
+            if (!VerificationStrategyWrapperRegistrationErrorMessage(message, registerResult, createHolderDto))
+            {
+                await _distributedEventBus.PublishAsync(registerResult);
+                _logger.LogInformation("Register state pushed: " + "\n{result}",
+                    JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+                return;
+            }
         }
         catch (Exception e)
         {
@@ -297,6 +308,70 @@ public class ContractAppService : IContractAppService
         _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "", MonitorTag.Register);
     }
 
+    private bool VerificationStrategyWrapperRegistrationErrorMessage(AccountRegisterCreateEto message,
+        CreateHolderEto registerResult, CreateHolderDto createHolderDto)
+    {
+        if (message.GuardianInfo.VerificationDo?.VerificationDetails == null)
+        {
+            return true;
+        }
+        var (existed, strategy) = CheckAndGetVerificationStrategy(message.GuardianInfo);
+        if (existed)
+        {
+            createHolderDto.GuardianInfo.VerificationExt = strategy.Converter(message.GuardianInfo.VerificationDo);
+            return true;
+        }
+        registerResult.RegisterMessage = "verification algorithm strategy didn't exist";
+        registerResult.RegisterSuccess = false;
+        return false;
+    }
+
+    private (bool, IVerificationAlgorithmStrategy) CheckAndGetVerificationStrategy(CAServer.Account.GuardianInfo guardianInfo)
+    {
+        var verificationStrategy = _verificationStrategies
+            .FirstOrDefault(v => v.VerifierType.Equals(guardianInfo.VerificationDo.VerifierType));
+        return verificationStrategy == null ? new ValueTuple<bool, IVerificationAlgorithmStrategy>(false, null)
+            : new ValueTuple<bool, IVerificationAlgorithmStrategy>(true, verificationStrategy);
+    }
+
+    private bool VerificationStrategyWrapperSocialRecoveryErrorMessage(AccountRecoverCreateEto message,
+        SocialRecoveryEto recoveryResult, SocialRecoveryDto socialRecoveryDto)
+    {
+        if (message.GuardianApproved.IsNullOrEmpty())
+        {
+            return true;
+        }
+
+        foreach (var guardianInfo in message.GuardianApproved)
+        {
+            if (guardianInfo?.VerificationDo?.VerificationDetails == null
+                || guardianInfo?.VerificationDo?.VerifierType == null)
+            {
+                continue;
+            }
+
+            var guardianOfDto = socialRecoveryDto.GuardianApproved
+                .FirstOrDefault(g => g.Type.Equals(guardianInfo.Type) && g.IdentifierHash.Equals(Hash.LoadFromHex(guardianInfo.IdentifierHash)));
+            if (guardianOfDto == null)
+            {
+                continue;
+            }
+            var (existed, strategy) = CheckAndGetVerificationStrategy(guardianInfo);
+            if (existed)
+            {
+                guardianOfDto.VerificationExt = strategy.Converter(guardianInfo.VerificationDo);
+            }
+            else
+            {
+                recoveryResult.RecoveryMessage = "social recovery verification algorithm strategy didn't exist";
+                recoveryResult.RecoverySuccess = false;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)
     {
         _logger.LogInformation("SocialRecovery message: " + "\n{message}",
@@ -320,6 +395,13 @@ public class ContractAppService : IContractAppService
                 message.ReferralInfo = null;
             }
             socialRecoveryDto = _objectMapper.Map<AccountRecoverCreateEto, SocialRecoveryDto>(message);
+            if (!VerificationStrategyWrapperSocialRecoveryErrorMessage(message, recoveryResult, socialRecoveryDto))
+            {
+                await _distributedEventBus.PublishAsync(recoveryResult);
+                _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+                    JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+                return;
+            }
         }
         catch (Exception e)
         {
@@ -393,6 +475,7 @@ public class ContractAppService : IContractAppService
         }
 
         var originalChainId = socialRecoveryDto.ChainId;
+        //speed up socail recovery
         _ = SocialRecoveryOnNonCreateChainAsync(socialRecoveryDto);
 
         recoveryResult.RecoverySuccess = true;
@@ -726,17 +809,19 @@ public class ContractAppService : IContractAppService
         {
             return false;
         }
-        return guardianInfos.All(guardianInfo => CanExecuteBySignature(guardianInfo) || CanExecuteZk(guardianInfo));
+        return guardianInfos.All(guardianInfo => CanVerifiedBySignature(guardianInfo)
+                                                 || CanVerifiedByZk(guardianInfo) 
+                                                 || CanVerifiedByExtendedAlgorithm(guardianInfo));
     }
 
-    private bool CanExecuteBySignature(GuardianInfo guardianInfo)
+    private bool CanVerifiedBySignature(GuardianInfo guardianInfo)
     {
         return guardianInfo?.VerificationInfo != null &&
                !guardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() &&
                GetVerificationDocLength(guardianInfo.VerificationInfo.VerificationDoc) >= 8;
     }
 
-    private bool CanExecuteZk(GuardianInfo guardian)
+    private bool CanVerifiedByZk(GuardianInfo guardian)
     {
         if (guardian?.ZkLoginInfo == null)
         {
@@ -757,6 +842,19 @@ public class ContractAppService : IContractAppService
                && zkLoginInfo.Kid is not (null or "")
                && zkLoginInfo.NoncePayload is not null;
 
+    }
+
+    private bool CanVerifiedByExtendedAlgorithm(GuardianInfo guardian)
+    {
+        if (guardian?.VerificationExt?.TonVerification == null)
+        {
+            return false;
+        }
+
+        return !guardian.VerificationExt.TonVerification.Address.IsNullOrEmpty()
+               && !guardian.VerificationExt.TonVerification.PublicKey.IsNullOrEmpty()
+               && !guardian.VerificationExt.TonVerification.Signature.IsNullOrEmpty()
+               && guardian.VerificationExt.TonVerification.Timestamp != null;
     }
 
     private int GetVerificationDocLength(string verificationDoc)

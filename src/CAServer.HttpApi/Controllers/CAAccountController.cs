@@ -58,6 +58,12 @@ public class CAAccountController : CAServerController
     {
         return await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
     }
+
+    [HttpGet("guardian/index")]
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(string identifierHash)
+    {
+        return await _guardianAppService.GetGuardianListAsync(new List<string>() {identifierHash});
+    }
     
     [HttpPost("guardianIdentifiers/unset")]
     [Authorize]
