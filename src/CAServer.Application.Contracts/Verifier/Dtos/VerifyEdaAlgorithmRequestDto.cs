@@ -5,6 +5,8 @@ namespace CAServer.Verifier.Dtos;
 
 public class VerifyEdaAlgorithmRequestDto
 {
+    [Required]
+    public string AccessToken { get; set; }
     [Required] public string ChainId { get; set; }
 
     public string TargetChainId { get; set; }

@@ -550,7 +550,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var hashInfo = await GetSaltAndHashAsync(guardianIdentifier);
             var verifyTokenRequestDto = new VerifyTokenRequestDto
             {
-                AccessToken = string.Empty,
+                AccessToken = requestDto.AccessToken,
                 ChainId = requestDto.ChainId,
                 TargetChainId = requestDto.TargetChainId, 
                 OperationType = requestDto.OperationType,
