@@ -1066,15 +1066,16 @@ public class ContractAppService : IContractAppService
         var tasks = new List<Task>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            tasks.Add(QueryEventsAndSyncAsync(chainId));
+            await QueryEventsAndSyncAsync(chainId);
+            // tasks.Add(QueryEventsAndSyncAsync(chainId));
         }
 
-        await tasks.WhenAll();
+        // await tasks.WhenAll();
     }
 
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
-        _logger.LogInformation("ContractSyncWorker QueryEventsAsync begin" + chainId);
+        _logger.LogInformation("ContractSyncWorker 1 QueryEventsAsync begin" + chainId);
         await QueryEventsAsync(chainId);
         _logger.LogInformation("ContractSyncWorker QueryEventsAsync end" + chainId);
 
