@@ -33,6 +33,7 @@ using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
@@ -68,6 +69,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IVerifierAppService _verifierAppService;
     private readonly IContractService _contractService;
     private readonly IZkLoginProvider _zkLoginProvider;
+    private readonly IDistributedCache<string> _distributedCache;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -86,7 +88,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IVerifierAppService verifierAppService,
         IContractService contractService,
-        IZkLoginProvider zkLoginProvider)
+        IZkLoginProvider zkLoginProvider,
+        IDistributedCache<string> distributedCache)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -106,6 +109,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _verifierAppService = verifierAppService;
         _contractService = contractService;
         _zkLoginProvider = zkLoginProvider;
+        _distributedCache = distributedCache;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -137,6 +141,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             registerCreateEto.GuardianInfo.ZkLoginInfo = result.Data.GuardianInfo.ZkLoginInfo;
         }
         registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
+        await CheckAndResetReferralInfo(input.ReferralInfo, registerCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(registerCreateEto);
         return new AccountResultDto(registerDto.Id.ToString());
     }
@@ -270,9 +275,54 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var recoverCreateEto = ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data);
         recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
+        await CheckAndResetReferralInfo(input.ReferralInfo, recoverCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(recoverCreateEto);
 
         return new AccountResultDto(recoveryDto.Id.ToString());
+    }
+
+    private async Task CheckAndResetReferralInfo(ReferralInfo referralInfo, string ipAddress)
+    {
+        try
+        {
+            if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
+            {
+                return;
+            }
+            var infos = referralInfo.ReferralCode.Split("#");
+            if (infos.Length == 2 && !infos[1].IsNullOrEmpty())
+            {
+                return;
+            }
+
+            var identityCodeFromCache = await GetIdentityCodeFromCache(ipAddress);
+            if (!identityCodeFromCache.IsNullOrEmpty())
+            {
+                referralInfo.ReferralCode = infos[0] + "#" + identityCodeFromCache;
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "CheckAndResetReferralInfo error message:{0}", e.Message);
+        }
+    }
+    
+    private async Task<string> GetIdentityCodeFromCache(string ipAddress)
+    {
+        try
+        {
+            return await _distributedCache.GetAsync(GetIpAddressIdentityCodeCacheKey(ipAddress));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetIdentityCodeFromCache error ipAddress:{0}", ipAddress);
+        }
+        return string.Empty;
+    }
+
+    private string GetIpAddressIdentityCodeCacheKey(string ipAddress)
+    {
+        return "CryptoGiftIdentity:" + ipAddress;
     }
 
     private void SetRecoveryZkLoginParams(RecoveryRequestDto input, RecoveryDto recoveryDto)
