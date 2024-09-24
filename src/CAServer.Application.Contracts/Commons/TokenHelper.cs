@@ -48,7 +48,7 @@ public static class TokenHelper
                     Price = token.Price,
                     Balance = tokenMap.FirstOrDefault(g => g.Symbol == token.Symbol).Balance.ToString(),
                     Decimals = token.Decimals,
-                    BalanceInUsd = "" == token.BalanceInUsd ? "" : balanceInUsd,
+                    BalanceInUsd = "".Equals(token.BalanceInUsd) ? "" : balanceInUsd,
                     TokenContractAddress = token.TokenContractAddress,
                     ImageUrl = token.ImageUrl,
                     Label = token.Label,
