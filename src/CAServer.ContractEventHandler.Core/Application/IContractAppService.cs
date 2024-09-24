@@ -976,11 +976,17 @@ public class ContractAppService : IContractAppService
 
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
+        _logger.LogInformation("ContractSyncWorker QueryEventsAsync begin" + chainId);
         await QueryEventsAsync(chainId);
+        _logger.LogInformation("ContractSyncWorker QueryEventsAsync end" + chainId);
 
+        _logger.LogInformation("ContractSyncWorker ValidateQueryEventsAsync end" + chainId);
         await ValidateQueryEventsAsync(chainId);
+        _logger.LogInformation("ContractSyncWorker ValidateQueryEventsAsync end" + chainId);
 
+        _logger.LogInformation("ContractSyncWorker SyncQueryEventsAsync end" + chainId);
         await SyncQueryEventsAsync(chainId);
+        _logger.LogInformation("ContractSyncWorker SyncQueryEventsAsync end" + chainId);
     }
 
     private async Task SyncQueryEventsAsync(string chainId)
