@@ -59,6 +59,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         {
             _logger.LogDebug("ContractSyncWorker started");
             await _contractAppService.QueryAndSyncAsync();
+            _logger.LogDebug("ContractSyncWorker end");
         }
         catch (Exception e)
         {
@@ -66,6 +67,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         }
         finally
         {
+            _logger.LogDebug("ContractSyncWorker end2");
             stopwatch.Stop();
             await _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
             await _n9EClientFactory.TrackTransactionSync(N9EClientConstant.Biz, WorkerName,
