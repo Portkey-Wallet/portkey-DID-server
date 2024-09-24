@@ -120,7 +120,7 @@ public class ContractAppService : IContractAppService
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
     {
-        _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
+        _logger.LogInformation("CreateRedPackage message: " + "{message}",
             JsonConvert.SerializeObject(eventData, Formatting.Indented));
 
         var eto = new RedPackageCreateResultEto();
@@ -1079,11 +1079,11 @@ public class ContractAppService : IContractAppService
         await QueryEventsAsync(chainId);
         _logger.LogInformation("ContractSyncWorker QueryEventsAsync end" + chainId);
 
-        _logger.LogInformation("ContractSyncWorker ValidateQueryEventsAsync end" + chainId);
+        _logger.LogInformation("ContractSyncWorker ValidateQueryEventsAsync begin" + chainId);
         await ValidateQueryEventsAsync(chainId);
         _logger.LogInformation("ContractSyncWorker ValidateQueryEventsAsync end" + chainId);
 
-        _logger.LogInformation("ContractSyncWorker SyncQueryEventsAsync end" + chainId);
+        _logger.LogInformation("ContractSyncWorker SyncQueryEventsAsync begin" + chainId);
         await SyncQueryEventsAsync(chainId);
         _logger.LogInformation("ContractSyncWorker SyncQueryEventsAsync end" + chainId);
     }
@@ -1260,7 +1260,7 @@ public class ContractAppService : IContractAppService
             if (lastEndHeight == 0)
             {
                 _logger.LogError(
-                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. \nLastEndHeight: {last}",
+                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. LastEndHeight: {last}",
                     chainId, lastEndHeight);
                 return;
             }
@@ -1272,7 +1272,7 @@ public class ContractAppService : IContractAppService
             if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
             {
                 _logger.LogWarning(
-                    "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
+                    "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. LastEndHeight: {last}, CurrentIndexHeight: {index}",
                     chainId, lastEndHeight, currentIndexHeight);
                 return;
             }
