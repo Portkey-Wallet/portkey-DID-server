@@ -52,14 +52,10 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
 
     public async Task ChangeTokenDisplayAsync(ChangeTokenDisplayDto requestDto)
     {
-        //var tasks = new List<Task>();
         foreach (var id in requestDto.Ids)
         {
             await _tokenAppService.ChangeTokenDisplayAsync(requestDto.IsDisplay, id);
-            //tasks.Add(_tokenAppService.ChangeTokenDisplayAsync(requestDto.IsDisplay, id));
         }
-
-        //await Task.WhenAll(tasks);
     }
 
     public async Task<CaPageResultDto<GetUserTokenV2Dto>> GetTokensAsync(GetTokenInfosV2RequestDto requestDto)
@@ -84,8 +80,6 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
 
             tokens.Add(ObjectMapper.Map<UserTokenItem, GetUserTokenDto>(item));
         }
-
-        //tokens = tokens.Where(t => !_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)).ToList();
 
         if (!requestDto.Keyword.IsNullOrEmpty())
         {
