@@ -63,11 +63,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         var userId = CurrentUser.GetId();
         var userTokens =
             await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
-
-        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
-        // hide source tokens.
-        userTokens.RemoveAll(t => sourceSymbols.Contains(t.Token.Symbol) && !t.IsDisplay);
-
+        
         var tokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetUserTokenDto>>(userTokens);
         foreach (var item in _tokenListOptions.UserToken)
         {
@@ -90,6 +86,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         tokens = tokens.Where(t => chainIds.Contains(t.ChainId)).ToList();
 
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
         tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
             .ThenBy(t => !t.IsDisplay)
             .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
@@ -100,7 +97,6 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             .ToList();
 
         var data = await GetTokensAsync(tokens);
-
         return new CaPageResultDto<GetUserTokenV2Dto>(data.Count,
             data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList());
     }
@@ -124,9 +120,16 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
     {
         var result = new List<GetUserTokenV2Dto>();
         if (tokens.IsNullOrEmpty()) return result;
+        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
 
         foreach (var group in tokens.GroupBy(t => t.Symbol))
         {
+            var tokenItems = group.ToList();
+            if (sourceSymbols.Contains(group.Key) && tokenItems.All(t => !t.IsDisplay))
+            {
+                continue;
+            }
+            
             var tokenItem = group.First();
             var tokenList = await CheckTokenAsync(group.ToList());
             SetTokenInfo(tokenList);
