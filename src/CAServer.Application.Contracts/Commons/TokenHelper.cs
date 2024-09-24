@@ -41,13 +41,18 @@ public static class TokenHelper
             }
             else
             {
+                var balanceInUsd = tokenMap.FirstOrDefault(g => g.Symbol == token.Symbol).BalanceInUsd.ToString();
+                if ("0" == balanceInUsd)
+                {
+                    balanceInUsd = "";
+                }
                 TokenWithoutChain tokenWithoutChain = new TokenWithoutChain
                 {
                     Symbol = token.Symbol,
                     Price = token.Price,
                     Balance = tokenMap.FirstOrDefault(g => g.Symbol == token.Symbol).Balance.ToString(),
                     Decimals = token.Decimals,
-                    BalanceInUsd = tokenMap.FirstOrDefault(g => g.Symbol == token.Symbol).BalanceInUsd.ToString(),
+                    BalanceInUsd = balanceInUsd,
                     TokenContractAddress = token.TokenContractAddress,
                     ImageUrl = token.ImageUrl,
                     Label = token.Label,
