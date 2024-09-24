@@ -32,7 +32,7 @@ public static class TokenHelper
                 Balance = g.Sum(t => parseDecimal(t.Balance)),
                 BalanceInUsd = g.Sum(t => parseDecimal(t.BalanceInUsd))
             });
-        Dictionary<string,TokenWithoutChain> generatedTokens = new Dictionary<string, TokenWithoutChain>();
+        Dictionary<string, TokenWithoutChain> generatedTokens = new Dictionary<string, TokenWithoutChain>();
         foreach (var token in tokenDto.Data)
         {
             if (generatedTokens.ContainsKey(token.Symbol))
@@ -42,17 +42,13 @@ public static class TokenHelper
             else
             {
                 var balanceInUsd = tokenMap.FirstOrDefault(g => g.Symbol == token.Symbol).BalanceInUsd.ToString();
-                if ("0" == balanceInUsd)
-                {
-                    balanceInUsd = "";
-                }
                 TokenWithoutChain tokenWithoutChain = new TokenWithoutChain
                 {
                     Symbol = token.Symbol,
                     Price = token.Price,
                     Balance = tokenMap.FirstOrDefault(g => g.Symbol == token.Symbol).Balance.ToString(),
                     Decimals = token.Decimals,
-                    BalanceInUsd = balanceInUsd,
+                    BalanceInUsd = "" == token.BalanceInUsd ? "" : balanceInUsd,
                     TokenContractAddress = token.TokenContractAddress,
                     ImageUrl = token.ImageUrl,
                     Label = token.Label,
@@ -62,7 +58,7 @@ public static class TokenHelper
                 generatedTokens.Add(token.Symbol, tokenWithoutChain);
             }
         }
-        
+
         result.TotalRecordCount = result.Data.Count();
         return result;
     }
