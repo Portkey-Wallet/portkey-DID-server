@@ -2,6 +2,7 @@ namespace CAServer.Dtos;
 
 public class AccountResultDto
 {
+    public AccountResultDto() {}
     public AccountResultDto(string sessionId)
     {
         this.SessionId = sessionId;
