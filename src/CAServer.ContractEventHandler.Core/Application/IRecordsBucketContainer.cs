@@ -44,6 +44,10 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             return;
         }
 
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord.BlockHash}");
+        }
         try
         {
             var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
@@ -69,7 +73,10 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         {
             return;
         }
-
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer AddToBeValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord.BlockHash}");
+        }
         try
         {
             var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
@@ -129,6 +136,15 @@ public class RecordsBucketContainer : IRecordsBucketContainer
 
     public async Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
+        if (records.IsNullOrEmpty())
+        {
+            return;
+        }
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer SetValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord.BlockHash}");
+        }
+        
         var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
         foreach (var bucket in dict)
         {
@@ -148,6 +164,14 @@ public class RecordsBucketContainer : IRecordsBucketContainer
 
     public async Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
+        if (records.IsNullOrEmpty())
+        {
+            return;
+        }
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer SetToBeValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord.BlockHash}");
+        }
         var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
         foreach (var bucket in dict)
         {

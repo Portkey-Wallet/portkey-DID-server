@@ -968,6 +968,9 @@ public class ContractAppService : IContractAppService
         var tasks = new List<Task>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
+            // todo del
+            await _recordsBucketContainer.SetToBeValidatedRecordsAsync(chainId, new List<SyncRecord>());
+            await _recordsBucketContainer.SetValidatedRecordsAsync(chainId, new List<SyncRecord>());
             tasks.Add(QueryEventsAndSyncAsync(chainId));
         }
 
@@ -1007,7 +1010,11 @@ public class ContractAppService : IContractAppService
 
             var recordsAmount = records.Count;
 
-            _logger.LogInformation("SyncQueryEventsAsync Found {count} records to sync on chain: {id}", records.Count, chainId);
+            _logger.LogInformation("SyncQueryEventsAsync Found count = {count} records to sync on chain: {id}", records.Count, chainId);
+            foreach (var syncRecord in records)
+            {
+                _logger.LogInformation($"SyncQueryEventsAsync Found record = {syncRecord.CaHash} {syncRecord.BlockHash}");
+            }
 
             if (chainId == ContractAppServiceConstant.MainChainId)
             {
@@ -1171,11 +1178,12 @@ public class ContractAppService : IContractAppService
 
             var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
 
+            _logger.LogInformation(
+                "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. LastEndHeight: {last}, CurrentIndexHeight: {index}",
+                chainId, lastEndHeight, currentIndexHeight);
             if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
             {
-                _logger.LogWarning(
-                    "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. LastEndHeight: {last}, CurrentIndexHeight: {index}",
-                    chainId, lastEndHeight, currentIndexHeight);
+                
                 return;
             }
 
@@ -1219,6 +1227,10 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation(
                     "QueryEventsAsync Found {num} events on chain: {id}. Next index block height: {height}", queryEvents.Count, chainId,
                     currentIndexHeight);
+                foreach (var queryEventDto in queryEvents)
+                {
+                    _logger.LogInformation($"QueryEventsAsync Found queryEvent {queryEventDto.CaHash} {queryEventDto.BlockHeight}");
+                }
 
                 queryEvents = queryEvents.Where(e => e.ChangeType != QueryLoginGuardianType.LoginGuardianRemoved)
                     .ToList();
