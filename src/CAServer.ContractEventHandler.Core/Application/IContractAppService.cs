@@ -970,7 +970,7 @@ public class ContractAppService : IContractAppService
         {
             // todo del
             await _recordsBucketContainer.SetToBeValidatedRecordsAsyncEmpty(chainId);
-            await _recordsBucketContainer.SetToBeValidatedRecordsAsyncEmpty(chainId);
+            await _recordsBucketContainer.SetValidatedRecordsAsyncEmpty(chainId);
             tasks.Add(QueryEventsAndSyncAsync(chainId));
         }
 
@@ -1013,7 +1013,7 @@ public class ContractAppService : IContractAppService
             _logger.LogInformation("SyncQueryEventsAsync Found count = {count} records to sync on chain: {id}", records.Count, chainId);
             foreach (var syncRecord in records)
             {
-                _logger.LogInformation($"SyncQueryEventsAsync Found record = {syncRecord.CaHash} {syncRecord.BlockHash}");
+                _logger.LogInformation($"SyncQueryEventsAsync Found record = {syncRecord.CaHash} {syncRecord.BlockHeight}");
             }
 
             if (chainId == ContractAppServiceConstant.MainChainId)
