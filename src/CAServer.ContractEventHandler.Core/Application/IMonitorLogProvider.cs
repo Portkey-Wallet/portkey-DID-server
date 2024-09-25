@@ -72,7 +72,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
             _logger.LogWarning(
                 "sync data duration too large, {blockHeight}, caHash: {caHash}, changeType: {changeType}, blockTime: {blockTime}, getRecordTime: {getRecordTime}",
                 syncRecord.BlockHeight, syncRecord.CaHash, syncRecord.ChangeType, block.Header.Time, getRecordTime);
-            return;
+            // return;
         }
 
         syncRecord.DataSyncMonitor = new DataSyncMonitor()
