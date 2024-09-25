@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
@@ -70,6 +71,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IContractService _contractService;
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly IDistributedCache<string> _distributedCache;
+    private readonly IPreValidationProvider _preValidationProvider;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -89,7 +91,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IVerifierAppService verifierAppService,
         IContractService contractService,
         IZkLoginProvider zkLoginProvider,
-        IDistributedCache<string> distributedCache)
+        IDistributedCache<string> distributedCache,
+        IPreValidationProvider preValidationProvider)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -110,6 +113,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _contractService = contractService;
         _zkLoginProvider = zkLoginProvider;
         _distributedCache = distributedCache;
+        _preValidationProvider = preValidationProvider;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -265,19 +269,33 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             throw new UserFriendlyException(result.Message);
         }
 
-        var caHash = await GetCAHashAsync(input.ChainId, guardianGrainDto.IdentifierHash);
-
+        var holderInfo = await GetCAHashAsync(input.ChainId, guardianGrainDto.IdentifierHash);
+        var caHash = holderInfo?.CaHash?.ToHex();
         if (caHash != null)
         {
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
 
+        try
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved);
+            sw.Stop();
+            _logger.LogInformation("ValidateSocialRecovery cost:{0}ms", sw.ElapsedMilliseconds);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "ValidateSocialRecovery failed");
+        }
+        
         var recoverCreateEto = ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data);
         recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, recoverCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(recoverCreateEto);
 
+        await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58());
         return new AccountResultDto(recoveryDto.Id.ToString());
     }
 
@@ -784,13 +802,13 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return guardianGrainDto.Data;
     }
 
-    private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
+    private async Task<GetHolderInfoOutput> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
         var output =
             await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
                 chainId);
         _logger.LogInformation("GetHolderInfoAsync loginGuardianIdentifierHash:{0},chainId:{1},output:{2}",
             loginGuardianIdentifierHash, chainId, JsonConvert.SerializeObject(output));
-        return output?.CaHash?.ToHex();
+        return output;
     }
 }

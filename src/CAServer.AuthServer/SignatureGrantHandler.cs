@@ -8,6 +8,7 @@ using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
+using CAServer.CAAccount;
 using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
@@ -46,6 +47,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
     private readonly string _lockKeyPrefix = "CAServer:Auth:SignatureGrantHandler:";
     private ISignatureProvider _signatureProvider;
     private IDistributedCache<string> _distributedCache;
+    private IPreValidationProvider _preValidationProvider;
 
     public async Task<IActionResult> HandleAsync(ExtensionGrantContext context)
     {
@@ -88,6 +90,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         var graphqlConfig = context.HttpContext.RequestServices.GetRequiredService<IOptions<GraphQLOption>>().Value;
         var chainOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<ChainOptions>>().Value;
         _signatureProvider = context.HttpContext.RequestServices.GetRequiredService<ISignatureProvider>();
+        _preValidationProvider = context.HttpContext.RequestServices.GetRequiredService<IPreValidationProvider>();
 
         var managerCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
         if (!managerCheck.HasValue || !managerCheck.Value)
@@ -237,7 +240,12 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         if (!graphQlResult.HasValue || !graphQlResult.Value)
         {
             _logger.LogDebug("graphql is invalid.");
-            return await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
+            var contractResult = await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
+            if (!contractResult.HasValue || !contractResult.Value)
+            {
+                var managerCacheDto = await _preValidationProvider.GetManagerFromCache(manager);
+                return caHash.Equals(managerCacheDto?.CaHash);
+            }
         }
 
         return true;
