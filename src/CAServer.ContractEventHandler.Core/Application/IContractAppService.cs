@@ -1088,13 +1088,13 @@ public class ContractAppService : IContractAppService
                     var mainHeight =
                         await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
                     var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
-
-                    while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
-                    {
-                        await Task.Delay(_indexOptions.IndexDelay);
-                        indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
-                        retryTimes++;
-                    }
+                    _logger.LogInformation($"SyncQueryEventsAsync SyncToMain indexMainChainBlock {indexMainChainBlock} {mainHeight} {record.BlockHeight}");
+                    // while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
+                    // {
+                    //     await Task.Delay(_indexOptions.IndexDelay);
+                    //     indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
+                    //     retryTimes++;
+                    // }
 
                     var syncHolderInfoInput =
                         await _contractProvider.GetSyncHolderInfoInputAsync(chainId, record.ValidateTransactionInfoDto);
