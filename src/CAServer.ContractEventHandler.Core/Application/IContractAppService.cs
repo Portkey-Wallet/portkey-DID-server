@@ -1257,17 +1257,21 @@ public class ContractAppService : IContractAppService
                 return;
             }
 
+            _logger.LogInformation($"ValidateQueryEventsAsync storedToBeValidatedRecords size = {storedToBeValidatedRecords.Count}");
             storedToBeValidatedRecords = storedToBeValidatedRecords
                 .Where(r => r.BlockHeight >= _indexOptions.AutoSyncStartHeight[chainId]).ToList();
+            _logger.LogInformation($"ValidateQueryEventsAsync storedToBeValidatedRecords filter blockHeight size = {storedToBeValidatedRecords.Count}");
 
             storedToBeValidatedRecords = OptimizeSyncRecords(storedToBeValidatedRecords
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
+            _logger.LogInformation($"ValidateQueryEventsAsync storedToBeValidatedRecords filter retryTimes size = {storedToBeValidatedRecords.Count}");
 
-            foreach (var record in storedToBeValidatedRecords)
+            for (var i = 0; i < storedToBeValidatedRecords.Count; i++)
             {
+                var record = storedToBeValidatedRecords[i];
                 _logger.LogInformation(
-                    "ValidateQueryEventsAsync Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height}",
-                    record.ChangeType, chainId, record.CaHash, record.BlockHeight);
+                    "ValidateQueryEventsAsync Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height} index: {index}",
+                    record.ChangeType, chainId, record.CaHash, record.BlockHeight, i);
 
                 var currentBlockHeight = await _contractProvider.GetBlockHeightAsync(chainId);
                 if (currentBlockHeight <= record.BlockHeight)
@@ -1298,20 +1302,16 @@ public class ContractAppService : IContractAppService
                     await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
                         unsetLoginGuardians);
 
-                if (transactionDto.TransactionResultDto?.Status != TransactionState.Mined)
-                {
-                    _logger.LogError("ValidateQueryEventsAsync on chain: {id} of account: {hash} failed",
-                        chainId, record.CaHash);
-                    // todo del
-                    if (record.CaHash.Equals("e0185d8dcd5d13bfe0683070f3f1342e1aa9b5dde076c20f659a7d64516b0128"))
-                    {
-                        continue;
-                    }
-                    record.RetryTimes++;
-
-                    failedRecords.Add(record);
-                }
-                else
+                // todo del
+                // if (transactionDto.TransactionResultDto?.Status != TransactionState.Mined)
+                // {
+                //     _logger.LogError("ValidateQueryEventsAsync on chain: {id} of account: {hash} failed",
+                //         chainId, record.CaHash);
+                //     record.RetryTimes++;
+                //
+                //     failedRecords.Add(record);
+                // }
+                // else
                 {
                     record.ValidateHeight = transactionDto.TransactionResultDto.BlockNumber;
                     record.ValidateTransactionInfoDto = new TransactionInfo
