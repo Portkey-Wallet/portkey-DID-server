@@ -969,12 +969,11 @@ public class ContractAppService : IContractAppService
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
             // todo del
-            await _recordsBucketContainer.SetToBeValidatedRecordsAsyncEmpty(chainId);
-            await _recordsBucketContainer.SetValidatedRecordsAsyncEmpty(chainId);
-            tasks.Add(QueryEventsAndSyncAsync(chainId));
+            await QueryEventsAndSyncAsync(chainId);
+            //tasks.Add(QueryEventsAndSyncAsync(chainId));
         }
 
-        await tasks.WhenAll();
+        //await tasks.WhenAll();
     }
 
     private async Task QueryEventsAndSyncAsync(string chainId)
@@ -1042,21 +1041,20 @@ public class ContractAppService : IContractAppService
                         var result = await _contractProvider.SyncTransactionAsync(info.ChainId, syncHolderInfoInput);
 
                         records.Remove(record);
-                        //todo del
-                        // if (result.Status != TransactionState.Mined)
-                        // {
-                        //     _logger.LogError(
-                        //         "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
-                        //         record.ChangeType, chainId, record.CaHash, result.Error,
-                        //         JsonConvert.SerializeObject(syncHolderInfoInput));
-                        //
-                        //     record.RetryTimes++;
-                        //     record.ValidateHeight = long.MaxValue;
-                        //     record.ValidateTransactionInfoDto = new TransactionInfo();
-                        //
-                        //     failedRecords.Add(record);
-                        // }
-                        // else
+                        if (result.Status != TransactionState.Mined)
+                        {
+                            _logger.LogError(
+                                "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
+                                record.ChangeType, chainId, record.CaHash, result.Error,
+                                JsonConvert.SerializeObject(syncHolderInfoInput));
+                        
+                            record.RetryTimes++;
+                            record.ValidateHeight = long.MaxValue;
+                            record.ValidateTransactionInfoDto = new TransactionInfo();
+                        
+                            failedRecords.Add(record);
+                        }
+                        else
                         {
                             await _monitorLogProvider.FinishAsync(record, info.ChainId, result.BlockNumber);
                             await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId,
@@ -1112,24 +1110,23 @@ public class ContractAppService : IContractAppService
 
                     records.Remove(record);
 
-                    // todo del
-                    // if (result.Status != TransactionState.Mined)
-                    // {
-                    //     _logger.LogError(
-                    //         "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
-                    //         record.ChangeType, chainId, record.CaHash, result.Error,
-                    //         JsonConvert.SerializeObject(syncHolderInfoInput));
-                    //
-                    //     record.RetryTimes++;
-                    //     record.ValidateHeight = long.MaxValue;
-                    //     record.ValidateTransactionInfoDto = new TransactionInfo();
-                    //     if (!result.Error.Contains("Already synced"))
-                    //     {
-                    //         failedRecords.Add(record);
-                    //
-                    //     }
-                    // }
-                    // else
+                    if (result.Status != TransactionState.Mined)
+                    {
+                        _logger.LogError(
+                            "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
+                            record.ChangeType, chainId, record.CaHash, result.Error,
+                            JsonConvert.SerializeObject(syncHolderInfoInput));
+                    
+                        record.RetryTimes++;
+                        record.ValidateHeight = long.MaxValue;
+                        record.ValidateTransactionInfoDto = new TransactionInfo();
+                        if (!result.Error.Contains("Already synced"))
+                        {
+                            failedRecords.Add(record);
+                    
+                        }
+                    }
+                    else
                     {
                         await _monitorLogProvider.FinishAsync(record, ContractAppServiceConstant.MainChainId,
                             result.BlockNumber);
@@ -1316,16 +1313,15 @@ public class ContractAppService : IContractAppService
                     await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
                         unsetLoginGuardians);
 
-                // todo del
-                // if (transactionDto.TransactionResultDto?.Status != TransactionState.Mined)
-                // {
-                //     _logger.LogError("ValidateQueryEventsAsync on chain: {id} of account: {hash} failed",
-                //         chainId, record.CaHash);
-                //     record.RetryTimes++;
-                //
-                //     failedRecords.Add(record);
-                // }
-                // else
+                if (transactionDto.TransactionResultDto?.Status != TransactionState.Mined)
+                {
+                    _logger.LogError("ValidateQueryEventsAsync on chain: {id} of account: {hash} failed",
+                        chainId, record.CaHash);
+                    record.RetryTimes++;
+                
+                    failedRecords.Add(record);
+                }
+                else
                 {
                     record.ValidateHeight = transactionDto.TransactionResultDto.BlockNumber;
                     record.ValidateTransactionInfoDto = new TransactionInfo
