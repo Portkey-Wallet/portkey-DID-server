@@ -12,7 +12,7 @@ using Volo.Abp;
 
 namespace CAServer.CAAccount.Provider;
 
-public class ZkLoginPreValidationProvider : IPreValidationStrategy
+public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationStrategy
 {
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly IHttpClientFactory _httpClientFactory;

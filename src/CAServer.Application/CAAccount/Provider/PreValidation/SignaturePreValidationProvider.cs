@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CAServer.CAAccount.Provider;
 
-public class SignaturePreValidationProvider : IPreValidationStrategy
+public class SignaturePreValidationProvider : CAServerAppService, IPreValidationStrategy
 {
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<SignaturePreValidationProvider> _logger;
