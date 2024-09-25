@@ -16,10 +16,10 @@ namespace CAServer.CAAccount.Provider;
 public class PreValidationProvider : CAServerAppService, IPreValidationProvider
 {
     private readonly IEnumerable<IPreValidationStrategy> _preValidationStrategies;
-    private readonly DistributedCache<string> _distributedCache;
+    private readonly IDistributedCache<string> _distributedCache;
     
     public PreValidationProvider(IEnumerable<IPreValidationStrategy> preValidationStrategies,
-        DistributedCache<string> distributedCache)
+        IDistributedCache<string> distributedCache)
     {
         _preValidationStrategies = preValidationStrategies;
         _distributedCache = distributedCache;
