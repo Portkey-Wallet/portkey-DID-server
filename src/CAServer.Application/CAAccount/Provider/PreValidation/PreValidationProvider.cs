@@ -5,11 +5,15 @@ using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
+using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 
 namespace CAServer.CAAccount.Provider;
 
-public class PreValidationProvider : IPreValidationProvider
+[RemoteService(false)]
+[DisableAuditing]
+public class PreValidationProvider : CAServerAppService, IPreValidationProvider
 {
     private readonly IEnumerable<IPreValidationStrategy> _preValidationStrategies;
     private readonly DistributedCache<string> _distributedCache;
