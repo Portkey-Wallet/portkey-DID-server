@@ -1302,6 +1302,11 @@ public class ContractAppService : IContractAppService
                 {
                     _logger.LogError("ValidateQueryEventsAsync on chain: {id} of account: {hash} failed",
                         chainId, record.CaHash);
+                    // todo del
+                    if (record.CaHash.Equals("e0185d8dcd5d13bfe0683070f3f1342e1aa9b5dde076c20f659a7d64516b0128"))
+                    {
+                        continue;
+                    }
                     record.RetryTimes++;
 
                     failedRecords.Add(record);
