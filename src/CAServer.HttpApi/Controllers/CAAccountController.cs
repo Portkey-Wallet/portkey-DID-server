@@ -26,12 +26,10 @@ public class CAAccountController : CAServerController
     private readonly IGrowthAppService _growthAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly IGoogleZkProvider _googleZkProvider;
-    private readonly IPreValidationProvider _preValidationProvider;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider,
-        IPreValidationProvider preValidationProvider)
+        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
@@ -40,7 +38,6 @@ public class CAAccountController : CAServerController
         _growthAppService = growthAppService;
         _zkLoginProvider = zkLoginProvider;
         _googleZkProvider = googleZkProvider;
-        _preValidationProvider = preValidationProvider;
     }
 
     [HttpPost("register/request")]
@@ -141,7 +138,7 @@ public class CAAccountController : CAServerController
     [HttpGet("manager/check")]
     public async Task<ManagerCacheDto> GetManagerCacheInfo(string manager)
     {
-        return await _preValidationProvider.GetManagerFromCache(manager);
+        return await _caAccountService.GetManagerFromCache(manager);
     }
     
     [HttpGet("verify/caHolderExist")]
