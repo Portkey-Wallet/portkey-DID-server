@@ -8,4 +8,8 @@ public class AccountResultDto
     }
 
     public string SessionId { get; set; }
+    
+    public string CaHash { get; set; }
+    
+    public string CaAddress { get; set; }
 }

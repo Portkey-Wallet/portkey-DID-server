@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Commons;
@@ -17,6 +18,8 @@ public class RecoveryRequestDto : IValidatableObject
     [Required] public string ChainId { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
+    
+    public RequestSource Source { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
