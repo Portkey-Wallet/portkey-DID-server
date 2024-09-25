@@ -63,6 +63,10 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
     public async Task<ManagerCacheDto> GetManagerFromCache(string manager)
     {
         var result = await _distributedCache.GetAsync(GetCacheKey(manager));
+        if (result.IsNullOrEmpty())
+        {
+            return null;
+        }
         return JsonConvert.DeserializeObject<ManagerCacheDto>(result);
     }
 
