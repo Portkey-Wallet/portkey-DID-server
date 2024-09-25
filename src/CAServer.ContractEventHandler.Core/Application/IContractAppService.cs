@@ -1035,21 +1035,21 @@ public class ContractAppService : IContractAppService
                         var result = await _contractProvider.SyncTransactionAsync(info.ChainId, syncHolderInfoInput);
 
                         records.Remove(record);
-
-                        if (result.Status != TransactionState.Mined)
-                        {
-                            _logger.LogError(
-                                "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
-                                record.ChangeType, chainId, record.CaHash, result.Error,
-                                JsonConvert.SerializeObject(syncHolderInfoInput));
-
-                            record.RetryTimes++;
-                            record.ValidateHeight = long.MaxValue;
-                            record.ValidateTransactionInfoDto = new TransactionInfo();
-
-                            failedRecords.Add(record);
-                        }
-                        else
+                        //todo del
+                        // if (result.Status != TransactionState.Mined)
+                        // {
+                        //     _logger.LogError(
+                        //         "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
+                        //         record.ChangeType, chainId, record.CaHash, result.Error,
+                        //         JsonConvert.SerializeObject(syncHolderInfoInput));
+                        //
+                        //     record.RetryTimes++;
+                        //     record.ValidateHeight = long.MaxValue;
+                        //     record.ValidateTransactionInfoDto = new TransactionInfo();
+                        //
+                        //     failedRecords.Add(record);
+                        // }
+                        // else
                         {
                             await _monitorLogProvider.FinishAsync(record, info.ChainId, result.BlockNumber);
                             await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId,
@@ -1104,23 +1104,24 @@ public class ContractAppService : IContractAppService
 
                     records.Remove(record);
 
-                    if (result.Status != TransactionState.Mined)
-                    {
-                        _logger.LogError(
-                            "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
-                            record.ChangeType, chainId, record.CaHash, result.Error,
-                            JsonConvert.SerializeObject(syncHolderInfoInput));
-
-                        record.RetryTimes++;
-                        record.ValidateHeight = long.MaxValue;
-                        record.ValidateTransactionInfoDto = new TransactionInfo();
-                        if (!result.Error.Contains("Already synced"))
-                        {
-                            failedRecords.Add(record);
-
-                        }
-                    }
-                    else
+                    // todo del
+                    // if (result.Status != TransactionState.Mined)
+                    // {
+                    //     _logger.LogError(
+                    //         "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
+                    //         record.ChangeType, chainId, record.CaHash, result.Error,
+                    //         JsonConvert.SerializeObject(syncHolderInfoInput));
+                    //
+                    //     record.RetryTimes++;
+                    //     record.ValidateHeight = long.MaxValue;
+                    //     record.ValidateTransactionInfoDto = new TransactionInfo();
+                    //     if (!result.Error.Contains("Already synced"))
+                    //     {
+                    //         failedRecords.Add(record);
+                    //
+                    //     }
+                    // }
+                    // else
                     {
                         await _monitorLogProvider.FinishAsync(record, ContractAppServiceConstant.MainChainId,
                             result.BlockNumber);
