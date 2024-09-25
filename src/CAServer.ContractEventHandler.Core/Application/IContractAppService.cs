@@ -969,8 +969,8 @@ public class ContractAppService : IContractAppService
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
             // todo del
-            await _recordsBucketContainer.SetToBeValidatedRecordsAsync(chainId, new List<SyncRecord>());
-            await _recordsBucketContainer.SetValidatedRecordsAsync(chainId, new List<SyncRecord>());
+            await _recordsBucketContainer.SetToBeValidatedRecordsAsyncEmpty(chainId);
+            await _recordsBucketContainer.SetToBeValidatedRecordsAsyncEmpty(chainId);
             tasks.Add(QueryEventsAndSyncAsync(chainId));
         }
 
