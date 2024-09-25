@@ -9,6 +9,7 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.CAAccount;
+using CAServer.CAAccount.Dtos;
 using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
@@ -25,6 +26,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Portkey.Contracts.CA;
@@ -47,7 +49,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
     private readonly string _lockKeyPrefix = "CAServer:Auth:SignatureGrantHandler:";
     private ISignatureProvider _signatureProvider;
     private IDistributedCache<string> _distributedCache;
-    private IPreValidationProvider _preValidationProvider;
+    // private IPreValidationProvider _preValidationProvider;
 
     public async Task<IActionResult> HandleAsync(ExtensionGrantContext context)
     {
@@ -90,7 +92,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         var graphqlConfig = context.HttpContext.RequestServices.GetRequiredService<IOptions<GraphQLOption>>().Value;
         var chainOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<ChainOptions>>().Value;
         _signatureProvider = context.HttpContext.RequestServices.GetRequiredService<ISignatureProvider>();
-        _preValidationProvider = context.HttpContext.RequestServices.GetRequiredService<IPreValidationProvider>();
+        // _preValidationProvider = context.HttpContext.RequestServices.GetRequiredService<IPreValidationProvider>();
 
         var managerCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
         if (!managerCheck.HasValue || !managerCheck.Value)
@@ -243,12 +245,18 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             var contractResult = await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
             if (!contractResult.HasValue || !contractResult.Value)
             {
-                var managerCacheDto = await _preValidationProvider.GetManagerFromCache(manager);
-                return caHash.Equals(managerCacheDto?.CaHash);
+                // var managerCacheDto = await _preValidationProvider.GetManagerFromCache(manager);
+                var result = await _distributedCache.GetAsync(GetCacheKey(manager));
+                return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
             }
         }
 
         return true;
+    }
+
+    private string GetCacheKey(string manager)
+    {
+        return "Portkey:SocialRecover:" + manager;
     }
 
     private async Task<bool?> CheckAddressFromGraphQlAsync(string url, string caHash,
