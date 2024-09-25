@@ -296,7 +296,12 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         await _distributedEventBus.PublishAsync(recoverCreateEto);
 
         await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58());
-        return new AccountResultDto(recoveryDto.Id.ToString());
+        return new AccountResultDto()
+        {
+            SessionId = recoveryDto.Id.ToString(),
+            CaHash = caHash,
+            CaAddress = holderInfo?.CaAddress?.ToBase58()
+        };
     }
 
     private async Task CheckAndResetReferralInfo(ReferralInfo referralInfo, string ipAddress)
