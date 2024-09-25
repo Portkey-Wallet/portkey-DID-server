@@ -816,4 +816,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             loginGuardianIdentifierHash, chainId, JsonConvert.SerializeObject(output));
         return output;
     }
+
+    public async Task<ManagerCacheDto> GetManagerFromCache(string manager)
+    {
+        return await _preValidationProvider.GetManagerFromCache(manager);
+    }
 }

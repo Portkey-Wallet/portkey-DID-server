@@ -18,5 +18,6 @@ public interface ICAAccountAppService
     Task<CancelCheckResultDto> RevokeValidateAsync(Guid userId, string type);
     
     Task<CAHolderExistsResponseDto> VerifyCaHolderExistByAddressAsync(string address);
-
+    
+    Task<ManagerCacheDto> GetManagerFromCache(string manager);
 }
