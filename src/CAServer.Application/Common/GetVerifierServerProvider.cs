@@ -127,7 +127,8 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
             verifierServerList.Add(new VerifierServerInfo
             {
                 Id = t.Id.ToHex(),
-                EndPoints = t.EndPoints.ToList()
+                EndPoints = t.EndPoints.ToList(),
+                VerifierAddresses = t.VerifierAddresses.Select(ad => ad.ToBase58()).ToList()
             });
         });
         return verifierServerList;

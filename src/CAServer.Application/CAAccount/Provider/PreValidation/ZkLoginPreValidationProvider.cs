@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
@@ -39,11 +40,15 @@ public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationSt
     public async Task<bool> PreValidateGuardian(string chainId, string caHash, string manager, GuardianInfo guardian)
     {
         var client = _httpClientFactory.CreateClient();
-        var parameters = JsonConvert.SerializeObject(new
+        var parameters = JsonConvert.SerializeObject(new Dictionary<string, string>
         {
-            guardian.ZkLoginInfo.IdentifierHash, guardian.ZkLoginInfo.Salt,
-            guardian.ZkLoginInfo.Nonce, guardian.ZkLoginInfo.Kid, guardian.ZkLoginInfo.ZkProof
+            { "identifierHash", guardian.ZkLoginInfo.IdentifierHash },
+            { "salt", guardian.ZkLoginInfo.Salt },
+            { "nonce", guardian.ZkLoginInfo.Nonce },
+            { "kid", guardian.ZkLoginInfo.Kid },
+            { "proof", guardian.ZkLoginInfo.ZkProof }
         });
+        
         var param = new StringContent(parameters, Encoding.UTF8, MediaTypeNames.Application.Json);
 
         string result = null;
