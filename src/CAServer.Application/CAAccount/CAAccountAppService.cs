@@ -15,6 +15,7 @@ using CAServer.Commons;
 using CAServer.ContractService;
 using CAServer.Device;
 using CAServer.Dtos;
+using CAServer.EnumType;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
@@ -147,6 +148,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, registerCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(registerCreateEto);
+        await PublishExtraInfoAsync(registerCreateEto.ChainId, input.ExtraInfo);
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
@@ -815,5 +817,17 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public async Task<ManagerCacheDto> GetManagerFromCache(string manager)
     {
         return await _preValidationProvider.GetManagerFromCache(manager);
+    }
+
+    private async Task PublishExtraInfoAsync(string grainId, Dictionary<string, object> extraInfo)
+    {
+        if (extraInfo.IsNullOrEmpty()) return;
+
+        await _distributedEventBus.PublishAsync(new HolderExtraInfoEto
+        {
+            GrainId = grainId,
+            OperationType = AccountOperationType.Register,
+            ExtraInfo = extraInfo
+        });
     }
 }
