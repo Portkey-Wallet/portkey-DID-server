@@ -42,7 +42,7 @@ public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationSt
         var client = _httpClientFactory.CreateClient();
         var parameters = JsonConvert.SerializeObject(new Dictionary<string, string>
         {
-            { "identifierHash", guardian.ZkLoginInfo.IdentifierHash },
+            { "identifierHash", guardian.ZkLoginInfo.PoseidonIdentifierHash },
             { "salt", guardian.ZkLoginInfo.Salt },
             { "nonce", guardian.ZkLoginInfo.Nonce },
             { "kid", guardian.ZkLoginInfo.Kid },

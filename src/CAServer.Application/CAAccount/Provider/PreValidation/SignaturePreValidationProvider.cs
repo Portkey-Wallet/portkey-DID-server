@@ -153,6 +153,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         //After verifying the contents of the operation,it is not necessary to verify the 'ChainId'
         if (verifierDoc.Length >= 8 && operationTypeName == nameof(OperationTypeInContract.SocialRecovery).ToLower())
         {
+            _logger.LogInformation("========verifierDoc.Length >= 8 && operationTypeName succeed");
             return true;
         }
 
@@ -161,6 +162,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         {
             throw new UserFriendlyException("chain id error");
         }
+        _logger.LogInformation("========int.Parse(verifierDoc[6]) == ChainHelper:{0}", chainIdResult);
         return chainIdResult;
     }
     
