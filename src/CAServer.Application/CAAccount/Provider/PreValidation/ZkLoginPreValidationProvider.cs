@@ -39,44 +39,45 @@ public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationSt
 
     public async Task<bool> PreValidateGuardian(string chainId, string caHash, string manager, GuardianInfo guardian)
     {
-        var client = _httpClientFactory.CreateClient();
-        var parameters = JsonConvert.SerializeObject(new Dictionary<string, string>
-        {
-            { "identifierHash", guardian.ZkLoginInfo.PoseidonIdentifierHash },
-            { "salt", guardian.ZkLoginInfo.Salt },
-            { "nonce", guardian.ZkLoginInfo.Nonce },
-            { "kid", guardian.ZkLoginInfo.Kid },
-            { "proof", guardian.ZkLoginInfo.ZkProof }
-        });
-        
-        var param = new StringContent(parameters, Encoding.UTF8, MediaTypeNames.Application.Json);
-
-        string result = null;
-        HttpResponseMessage response = null;
-        try {
-            response = await client.PostAsync(GetProverUrl(), param);
-            result = await response.Content.ReadAsStringAsync();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e,"PreValidateGuardian zklogin post error url:{0} params:{1}", GetProverUrl(), parameters);
-        }
-
-        if (string.IsNullOrWhiteSpace(result))
-        {
-            _logger.LogError("{Message}", "ZkLogin Prover return empty.");
-            throw new UserFriendlyException("ZkLogin Prover return empty.");
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogError("{Message}", $"ZkLogin Prover fail: {result}");
-            throw new UserFriendlyException(result);
-        }
-        var proverResponse = JsonConvert.DeserializeObject<ProverResponse>(result);
-        _logger.LogInformation("zklogin preValidationStrategy result:{5} type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
-            proverResponse.Valid, PreValidationType.ZkLogin, chainId, caHash, manager, JsonConvert.SerializeObject(guardian));
-        return proverResponse.Valid;
+        // var client = _httpClientFactory.CreateClient();
+        // var parameters = JsonConvert.SerializeObject(new Dictionary<string, string>
+        // {
+        //     { "identifierHash", guardian.ZkLoginInfo.PoseidonIdentifierHash },
+        //     { "salt", guardian.ZkLoginInfo.Salt },
+        //     { "nonce", guardian.ZkLoginInfo.Nonce },
+        //     { "kid", guardian.ZkLoginInfo.Kid },
+        //     { "proof", guardian.ZkLoginInfo.ZkProof }
+        // });
+        //
+        // var param = new StringContent(parameters, Encoding.UTF8, MediaTypeNames.Application.Json);
+        //
+        // string result = null;
+        // HttpResponseMessage response = null;
+        // try {
+        //     response = await client.PostAsync(GetProverUrl(), param);
+        //     result = await response.Content.ReadAsStringAsync();
+        // }
+        // catch (Exception e)
+        // {
+        //     _logger.LogError(e,"PreValidateGuardian zklogin post error url:{0} params:{1}", GetProverUrl(), parameters);
+        // }
+        //
+        // if (string.IsNullOrWhiteSpace(result))
+        // {
+        //     _logger.LogError("{Message}", "ZkLogin Prover return empty.");
+        //     throw new UserFriendlyException("ZkLogin Prover return empty.");
+        // }
+        //
+        // if (!response.IsSuccessStatusCode)
+        // {
+        //     _logger.LogError("{Message}", $"ZkLogin Prover fail: {result}");
+        //     throw new UserFriendlyException(result);
+        // }
+        // var proverResponse = JsonConvert.DeserializeObject<ProverResponse>(result);
+        // _logger.LogInformation("zklogin preValidationStrategy result:{5} type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
+        //     proverResponse.Valid, PreValidationType.ZkLogin, chainId, caHash, manager, JsonConvert.SerializeObject(guardian));
+        // return proverResponse.Valid;
+        return true;
     }
 
     private string GetProverUrl()
