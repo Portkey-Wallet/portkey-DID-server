@@ -9,6 +9,7 @@ using CAServer.CAAccount.Enums;
 using CAServer.Common;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 
 namespace CAServer.CAAccount.Provider;
@@ -88,7 +89,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         var verifierDoc = verificationDoc.Split(",");
 
         var docInfo = GetVerificationDoc(verificationDoc);
-
+        _logger.LogInformation("CheckVerifierSignatureAndDataWithCreateChainId docInfo:{0}", JsonConvert.SerializeObject(docInfo));
         if (docInfo.OperationType == "0")
         {
             throw new UserFriendlyException("OperationType error");
@@ -123,6 +124,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         //Check verifier address and data.
         var verifierAddress = docInfo.VerifierAddress;
         var verifierServerInfo = await _getVerifierServerProvider.GetVerifierServerAsync(guardianInfo.VerificationInfo.Id, chainId);
+        _logger.LogInformation("getVerifierServerProvider.GetVerifierServerAsync verifierServerInfo:{0}", JsonConvert.SerializeObject(verifierServerInfo));
         if (verifierServerInfo == null || !verifierServerInfo.VerifierAddresses.Contains(verifierAddress.ToBase58()))
         {
             throw new UserFriendlyException("verifierServerInfo VerifierAddresses error");
