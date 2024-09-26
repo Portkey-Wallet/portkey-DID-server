@@ -17,6 +17,5 @@ public interface IGrowthStatisticAppService
     
     Task<ValidateHamsterScoreResponseDto> ValidateHamsterScoreAsync(string userId);
     Task RepairHamsterDataAsync();
-    Task CollectHamsterUserIdsAsync(string userId);
     Task TonGiftsValidateAsync();
 }
