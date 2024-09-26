@@ -276,25 +276,19 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
-
-        try
-        {
-            var sw = new Stopwatch();
-            sw.Start();
-            await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved);
-            sw.Stop();
-            _logger.LogInformation("ValidateSocialRecovery cost:{0}ms", sw.ElapsedMilliseconds);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "ValidateSocialRecovery failed");
-        }
         
         var recoverCreateEto = ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data);
         recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, recoverCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(recoverCreateEto);
-
+        try
+        {
+            var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "ValidateSocialRecovery failed");
+        }
         await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58());
         return new AccountResultDto()
         {

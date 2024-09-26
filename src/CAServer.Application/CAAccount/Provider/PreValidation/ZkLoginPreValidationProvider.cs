@@ -18,6 +18,7 @@ public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationSt
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ZkLoginProverOptions _zkLoginProverOptions;
     private readonly ILogger<ZkLoginPreValidationProvider> _logger;
+    public PreValidationType Type => PreValidationType.ZkLogin;
     
     public ZkLoginPreValidationProvider(IZkLoginProvider zkLoginProvider,
         IHttpClientFactory httpClientFactory,

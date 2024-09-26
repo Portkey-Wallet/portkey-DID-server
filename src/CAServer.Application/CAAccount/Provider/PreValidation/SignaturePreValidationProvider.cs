@@ -17,6 +17,8 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<SignaturePreValidationProvider> _logger;
     
+    public PreValidationType Type => PreValidationType.Signature;
+    
     public SignaturePreValidationProvider(
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<SignaturePreValidationProvider> logger)

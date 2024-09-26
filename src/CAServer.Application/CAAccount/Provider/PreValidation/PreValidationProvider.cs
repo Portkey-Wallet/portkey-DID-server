@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -17,12 +19,15 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
 {
     private readonly IEnumerable<IPreValidationStrategy> _preValidationStrategies;
     private readonly IDistributedCache<string> _distributedCache;
+    private readonly ILogger<PreValidationProvider> _logger;
     
     public PreValidationProvider(IEnumerable<IPreValidationStrategy> preValidationStrategies,
-        IDistributedCache<string> distributedCache)
+        IDistributedCache<string> distributedCache,
+        ILogger<PreValidationProvider> logger)
     {
         _preValidationStrategies = preValidationStrategies;
         _distributedCache = distributedCache;
+        _logger = logger;
     }
     
     public async Task<bool> ValidateSocialRecovery(RequestSource source, string caHash,
@@ -32,7 +37,8 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
         {
             return true;
         }
-
+        var sw = new Stopwatch();
+        sw.Start();
         foreach (var guardianInfo in guardiansApproved)
         {
             foreach (var preValidationStrategy in _preValidationStrategies)
@@ -42,11 +48,15 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
                     var result = await preValidationStrategy.PreValidateGuardian(chainId, caHash, manager, guardianInfo);
                     if (!result)
                     {
+                        _logger.LogInformation("preValidationStrategy failed type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
+                            preValidationStrategy.Type, chainId, caHash, manager, JsonConvert.SerializeObject(guardianInfo));
                         return false;
                     }
                 }
             }
         }
+        sw.Stop();
+        _logger.LogInformation("ValidateSocialRecovery cost:{0}ms", sw.ElapsedMilliseconds);
         return true;
     }
 
