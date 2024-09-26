@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
@@ -31,7 +32,7 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
     }
     
     public async Task<bool> ValidateSocialRecovery(RequestSource source, string caHash,
-        string chainId, string manager, List<GuardianInfo> guardiansApproved)
+        string chainId, string manager, List<GuardianInfo> guardiansApproved, List<ManagerDto> existedManagers)
     {
         if (!RequestSource.Sdk.Equals(source))
         {
@@ -39,6 +40,12 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
         }
         var sw = new Stopwatch();
         sw.Start();
+        //1 manager check
+        if (existedManagers.Any(mg => mg.Address.Equals(manager)))
+        {
+            throw new UserFriendlyException("manager exists error.");
+        }
+        //2 guardian check
         foreach (var guardianInfo in guardiansApproved)
         {
             foreach (var preValidationStrategy in _preValidationStrategies)

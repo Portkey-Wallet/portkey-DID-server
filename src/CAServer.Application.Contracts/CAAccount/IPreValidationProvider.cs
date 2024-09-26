@@ -2,14 +2,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
-using CAServer.Dtos;
 
 namespace CAServer.CAAccount;
 
 public interface IPreValidationProvider
 {
     public Task<bool> ValidateSocialRecovery(RequestSource source, string caHash,
-        string chainId, string manager, List<GuardianInfo> guardiansApproved);
+        string chainId, string manager, List<GuardianInfo> guardiansApproved, List<ManagerDto> existedManagers);
 
     public Task SaveManagerInCache(string manager, string caHash, string caAddress);
     

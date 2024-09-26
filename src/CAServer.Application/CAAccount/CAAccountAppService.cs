@@ -283,7 +283,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         await _distributedEventBus.PublishAsync(recoverCreateEto);
         try
         {
-            var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved);
+            var existedManagers = ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
+            var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved, existedManagers);
         }
         catch (Exception e)
         {

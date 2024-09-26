@@ -69,6 +69,8 @@ public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationSt
             throw new UserFriendlyException(result);
         }
         var proverResponse = JsonConvert.DeserializeObject<ProverResponse>(result);
+        _logger.LogInformation("zklogin preValidationStrategy result:{5} type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
+            proverResponse.Valid, PreValidationType.ZkLogin, chainId, caHash, manager, JsonConvert.SerializeObject(guardian));
         return proverResponse.Valid;
     }
 
