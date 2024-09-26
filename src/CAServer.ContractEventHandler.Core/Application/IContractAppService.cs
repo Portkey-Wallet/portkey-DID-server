@@ -968,12 +968,10 @@ public class ContractAppService : IContractAppService
         var tasks = new List<Task>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            // todo del
-            await QueryEventsAndSyncAsync(chainId);
-            //tasks.Add(QueryEventsAndSyncAsync(chainId));
+            tasks.Add(QueryEventsAndSyncAsync(chainId));
         }
 
-        //await tasks.WhenAll();
+        await tasks.WhenAll();
     }
 
     private async Task QueryEventsAndSyncAsync(string chainId)
