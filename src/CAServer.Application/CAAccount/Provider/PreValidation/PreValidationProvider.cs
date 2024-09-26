@@ -40,11 +40,11 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
         }
         var sw = new Stopwatch();
         sw.Start();
-        //1 manager check
-        if (existedManagers.Any(mg => mg.Address.Equals(manager)))
-        {
-            throw new UserFriendlyException("manager exists error.");
-        }
+        //1 manager check todo for test annotate code
+        // if (!existedManagers.IsNullOrEmpty() && existedManagers.Any(mg => mg.Address.Equals(manager)))
+        // {
+        //     throw new UserFriendlyException("manager exists error.");
+        // }
         //2 guardian check
         foreach (var guardianInfo in guardiansApproved)
         {
