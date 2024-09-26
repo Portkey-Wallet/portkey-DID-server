@@ -146,6 +146,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RegisterGrainDto, AccountRegisterCreateEto>();
         CreateMap<RegisterDto, CAAccountEto>();
         CreateMap<RecoveryDto, RecoveryGrainDto>();
+        CreateMap<ManagerInfo, ManagerDto>()
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(source => source.Address.ToBase58()))
+            .ForMember(dest => dest.ExtraData, opt => opt.MapFrom(source => source.ExtraData));
         CreateMap<RecoveryGrainDto, AccountRecoverCreateEto>();
         CreateMap<AccountRegisterCreateEto, CreateHolderDto>()
             .ForMember(d => d.GuardianInfo, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo

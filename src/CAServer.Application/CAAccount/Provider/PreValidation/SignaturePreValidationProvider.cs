@@ -9,6 +9,7 @@ using CAServer.CAAccount.Enums;
 using CAServer.Common;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
+using Volo.Abp;
 
 namespace CAServer.CAAccount.Provider;
 
@@ -47,6 +48,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
 
         if (verifierDocLength != 7 && verifierDocLength != 8)
         {
+            throw new UserFriendlyException("verifierDocLength error");
             return false;
         }
 
@@ -79,6 +81,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         var verificationDoc = guardianInfo.VerificationInfo.VerificationDoc;
         if (verificationDoc == null || string.IsNullOrWhiteSpace(verificationDoc))
         {
+            throw new UserFriendlyException("verificationDoc error");
             return false;
         }
 
@@ -88,6 +91,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
 
         if (docInfo.OperationType == "0")
         {
+            throw new UserFriendlyException("OperationType error");
             return false;
         }
 
@@ -104,6 +108,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
             (int)guardianInfo.Type != type ||
             guardianInfo.IdentifierHash != docInfo.IdentifierHash.ToHex())
         {
+            throw new UserFriendlyException("verificationTime overdue error");
             return false;
         }
 
@@ -111,6 +116,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         var operationTypeName = typeof(OperationTypeInContract).GetEnumName(Convert.ToInt32(operationTypeStr))?.ToLower();
         if (operationTypeName != nameof(OperationTypeInContract.SocialRecovery).ToLower())
         {
+            throw new UserFriendlyException("operationTypeName isn't SocialRecovery error");
             return false;
         }
 
@@ -119,6 +125,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         var verifierServerInfo = await _getVerifierServerProvider.GetVerifierServerAsync(guardianInfo.VerificationInfo.Id, chainId);
         if (verifierServerInfo == null || !verifierServerInfo.VerifierAddresses.Contains(verifierAddress.ToBase58()))
         {
+            throw new UserFriendlyException("verifierServerInfo VerifierAddresses error");
             return false;
         }
 
@@ -136,19 +143,23 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
 
         if (!CheckVerifierSignatureOperationDetail(operationTypeName, verifierDoc, operationDetails))
         {
+            throw new UserFriendlyException("CheckVerifierSignatureOperationDetail error");
             return false;
         }
         // State.VerifierDocMap[key] = true;
 
         //After verifying the contents of the operation,it is not necessary to verify the 'ChainId'
-        if (verifierDoc.Length >= 8 &&
-            ((operationTypeName == nameof(OperationTypeInContract.CreateCAHolder).ToLower() && caHash != null) ||
-             operationTypeName == nameof(OperationTypeInContract.SocialRecovery).ToLower()))
+        if (verifierDoc.Length >= 8 && operationTypeName == nameof(OperationTypeInContract.SocialRecovery).ToLower())
         {
             return true;
         }
 
-        return int.Parse(verifierDoc[6]) == ChainHelper.ConvertBase58ToChainId(chainId);
+        var chainIdResult = int.Parse(verifierDoc[6]) == ChainHelper.ConvertBase58ToChainId(chainId);
+        if (!chainIdResult)
+        {
+            throw new UserFriendlyException("chain id error");
+        }
+        return chainIdResult;
     }
     
     // private Address RecoverVerifierAddress(string verificationDoc, ByteString signature)
