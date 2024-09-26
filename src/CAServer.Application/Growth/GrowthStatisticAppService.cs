@@ -809,7 +809,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var userIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsUserIdsKey);
         if (userIds.Length == 0)
         {
-            _logger.LogDebug("No users need to be validate.");
+            _logger.LogInformation("TonGift TonGiftsValidateAsync No users need to be validate.");
             return;
         }
 
@@ -821,7 +821,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             var guardian = guardianGrain.GetGuardianAsync(id).Result;
             if (!guardian.Message.IsNullOrEmpty())
             {
-                _logger.LogDebug("TonGift validate error : query user from grain error:{error}", guardian.Message);
+                _logger.LogInformation("TonGift TonGiftsValidateAsync validate error : query user from grain error:{error}", guardian.Message);
                 continue;
             }
 
@@ -830,11 +830,17 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 await _activityProvider.GetCaHolderInfoAsync(identifierHash);
             if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
             {
-                _logger.LogDebug("TonGift validate error : query user from graphQl error: user not exists");
+                _logger.LogInformation("TonGift TonGiftsValidateAsync validate error : query user from graphQl error: user not exists");
                 continue;
             }
 
             ids.Add(id);
+        }
+
+        if (ids.Count == 0)
+        {
+            _logger.LogInformation("TonGift TonGiftsValidateAsync ids count is zero.");
+            return;
         }
 
         var param = new TonGiftsRequestDto()
@@ -857,6 +863,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var response = await client.PostAsync(url, requestParam);
         var result = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation($"TonGift TonGiftsValidateAsync client response: {result}");
     }
 
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
