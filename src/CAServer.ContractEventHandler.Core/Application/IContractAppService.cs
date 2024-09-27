@@ -316,11 +316,11 @@ public class ContractAppService : IContractAppService
             return true;
         }
         var (existed, strategy) = CheckAndGetVerificationStrategy(message.GuardianInfo);
-        if (existed)
-        {
-            createHolderDto.GuardianInfo.VerificationExt = strategy.Converter(message.GuardianInfo.VerificationDo);
-            return true;
-        }
+        // if (existed)
+        // {
+        //     createHolderDto.GuardianInfo.VerificationExt = strategy.Converter(message.GuardianInfo.VerificationDo);
+        //     return true;
+        // }
         registerResult.RegisterMessage = "verification algorithm strategy didn't exist";
         registerResult.RegisterSuccess = false;
         return false;
@@ -342,32 +342,32 @@ public class ContractAppService : IContractAppService
             return true;
         }
 
-        foreach (var guardianInfo in message.GuardianApproved)
-        {
-            if (guardianInfo?.VerificationDo?.VerificationDetails == null
-                || guardianInfo?.VerificationDo?.VerifierType == null)
-            {
-                continue;
-            }
-
-            var guardianOfDto = socialRecoveryDto.GuardianApproved
-                .FirstOrDefault(g => g.Type.Equals(guardianInfo.Type) && g.IdentifierHash.Equals(Hash.LoadFromHex(guardianInfo.IdentifierHash)));
-            if (guardianOfDto == null)
-            {
-                continue;
-            }
-            var (existed, strategy) = CheckAndGetVerificationStrategy(guardianInfo);
-            if (existed)
-            {
-                guardianOfDto.VerificationExt = strategy.Converter(guardianInfo.VerificationDo);
-            }
-            else
-            {
-                recoveryResult.RecoveryMessage = "social recovery verification algorithm strategy didn't exist";
-                recoveryResult.RecoverySuccess = false;
-                return false;
-            }
-        }
+        // foreach (var guardianInfo in message.GuardianApproved)
+        // {
+        //     if (guardianInfo?.VerificationDo?.VerificationDetails == null
+        //         || guardianInfo?.VerificationDo?.VerifierType == null)
+        //     {
+        //         continue;
+        //     }
+        //
+        //     var guardianOfDto = socialRecoveryDto.GuardianApproved
+        //         .FirstOrDefault(g => g.Type.Equals(guardianInfo.Type) && g.IdentifierHash.Equals(Hash.LoadFromHex(guardianInfo.IdentifierHash)));
+        //     if (guardianOfDto == null)
+        //     {
+        //         continue;
+        //     }
+        //     var (existed, strategy) = CheckAndGetVerificationStrategy(guardianInfo);
+        //     if (existed)
+        //     {
+        //         guardianOfDto.VerificationExt = strategy.Converter(guardianInfo.VerificationDo);
+        //     }
+        //     else
+        //     {
+        //         recoveryResult.RecoveryMessage = "social recovery verification algorithm strategy didn't exist";
+        //         recoveryResult.RecoverySuccess = false;
+        //         return false;
+        //     }
+        // }
 
         return true;
     }
@@ -846,15 +846,16 @@ public class ContractAppService : IContractAppService
 
     private bool CanVerifiedByExtendedAlgorithm(GuardianInfo guardian)
     {
-        if (guardian?.VerificationExt?.TonVerification == null)
-        {
-            return false;
-        }
-
-        return !guardian.VerificationExt.TonVerification.Address.IsNullOrEmpty()
-               && !guardian.VerificationExt.TonVerification.PublicKey.IsNullOrEmpty()
-               && !guardian.VerificationExt.TonVerification.Signature.IsNullOrEmpty()
-               && guardian.VerificationExt.TonVerification.Timestamp != null;
+        // if (guardian?.VerificationExt?.TonVerification == null)
+        // {
+        //     return false;
+        // }
+        //
+        // return !guardian.VerificationExt.TonVerification.Address.IsNullOrEmpty()
+        //        && !guardian.VerificationExt.TonVerification.PublicKey.IsNullOrEmpty()
+        //        && !guardian.VerificationExt.TonVerification.Signature.IsNullOrEmpty()
+        //        && guardian.VerificationExt.TonVerification.Timestamp != null;
+        return false;
     }
 
     private int GetVerificationDocLength(string verificationDoc)

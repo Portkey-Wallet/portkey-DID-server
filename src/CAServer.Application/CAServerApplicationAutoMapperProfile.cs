@@ -445,7 +445,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
                 },
-                VerificationExt = e.GuardianInfo.VerificationExt
+                // VerificationExt = e.GuardianInfo.VerificationExt
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -498,7 +498,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
                 },
-                VerificationExt = e.GuardianInfo.VerificationExt
+                // VerificationExt = e.GuardianInfo.VerificationExt
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -553,7 +553,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                             ZkProofPiC = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                         }
                     },
-                    VerificationExt = g.VerificationExt
+                    // VerificationExt = g.VerificationExt
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
