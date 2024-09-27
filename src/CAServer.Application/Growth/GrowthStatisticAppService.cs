@@ -27,6 +27,7 @@ using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
@@ -424,7 +425,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
 
         var referralRecordList =
-            await _growthProvider.GetReferralRecordListAsync(null, null, 0, Int16.MaxValue, startTime, endTime,
+            await _growthProvider.GetReferralRecordListAsync(null, null, 0, PagedResultRequestDto.MaxMaxResultCount, startTime, endTime,
                 new List<int> { 0 });
         var list = referralRecordList.Where(t => t.ReferralType == 0).ToList();
         if (list.IsNullOrEmpty() || list.Count == 0)
@@ -565,7 +566,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             {
                 HamsterRewardProgressDto hamsterProgress;
                 var referralList =
-                    await _growthProvider.GetReferralRecordListAsync(caHolder.CaHash, null, 0, Int16.MaxValue,
+                    await _growthProvider.GetReferralRecordListAsync(caHolder.CaHash, null, 0, PagedResultRequestDto.MaxMaxResultCount,
                         Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                         new List<int> { 1 });
                 var reward = "";
@@ -589,7 +590,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
                 else
                 {
                     var referralRecordList =
-                        await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0, Int16.MaxValue,
+                        await _growthProvider.GetReferralRecordListAsync(null, caHolder.CaHash, 0, PagedResultRequestDto.MaxMaxResultCount,
                             Convert.ToDateTime(details.StartDate), Convert.ToDateTime(details.EndDate),
                             new List<int> { 1 });
                     hamsterProgress = new HamsterRewardProgressDto
@@ -741,7 +742,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private async Task<List<ReferralRecordIndex>> GetHamsterSignUpCount(string caHash, string startDate, string endDate)
     {
         var growthInfo = await _growthProvider.GetReferralRecordListAsync(null, caHash, 0,
-            Int16.MaxValue, Convert.ToDateTime(startDate), Convert.ToDateTime(endDate), new List<int> { 0 });
+            PagedResultRequestDto.MaxMaxResultCount, Convert.ToDateTime(startDate), Convert.ToDateTime(endDate), new List<int> { 0 });
         return growthInfo;
     }
 
