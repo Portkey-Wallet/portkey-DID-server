@@ -821,7 +821,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogInformation("TonGiftsValidateAsync fromAddressSet = 0");
             return;
         }
-        _logger.LogInformation($"TonGiftsValidateAsync fromAddressSet = {JsonSerializer.Serialize(fromAddressSet)} nextBlockHeight = {nextBlockHeight}");
+        _logger.LogInformation("TonGiftsValidateAsync fromAddressSet = {0} nextBlockHeight = {1}", JsonSerializer.Serialize(fromAddressSet), JsonSerializer.Serialize(fromAddressSet));
 
         // get identifierHash list
         HashSet<string> identifierHashSet = await getIdentifierHashSet(fromAddressSet);
@@ -830,7 +830,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogInformation("TonGiftsValidateAsync getIdentifierHashSet = 0");
             return;
         }
-        _logger.LogInformation($"TonGiftsValidateAsync getIdentifierHashSet = {JsonSerializer.Serialize(identifierHashSet)}");
+        _logger.LogInformation("TonGiftsValidateAsync getIdentifierHashSet = {0}", JsonSerializer.Serialize(identifierHashSet));
 
         // get identifier list
         HashSet<string> telegramIdSet = await getTelegramIdSet(identifierHashSet);
@@ -839,7 +839,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             _logger.LogInformation("TonGiftsValidateAsync telegramIdSet = 0");
             return;
         }
-        _logger.LogInformation($"TonGiftsValidateAsync telegramIdSet = {JsonSerializer.Serialize(telegramIdSet)}");
+        _logger.LogInformation("TonGiftsValidateAsync telegramIdSet = {0}",JsonSerializer.Serialize(telegramIdSet));
         
         // to send, it should not be block process, so add try-catch
         try
@@ -848,7 +848,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"TonGiftsValidateAsync TonGiftsToCall has error {e.Message}");
+            _logger.LogError(e, "TonGiftsValidateAsync TonGiftsToCall has error {0}",e.Message);
         }
 
         // update blockHeight userId 
@@ -949,7 +949,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var requestParam = new StringContent(tokenParam, Encoding.UTF8, MediaTypeNames.Application.Json);
         var response = await client.PostAsync(_tonGiftsOptions.HostUrl, requestParam);
         var result = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation($"TonGiftsValidateAsync TonGiftsToCall client response: {result}");
+        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client response: {0}",result);
         
         // handle reusult
         await handleTonGiftsResult(result, ids);
@@ -959,7 +959,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         TonGiftsResponseDto responseDto = JsonConvert.DeserializeObject<TonGiftsResponseDto>(result);
         List<string> successfulUpdates = responseDto.Message.Contains("successfully") ? allIDs : responseDto.SuccessfulUpdates.Select(p => p.UserId).ToList();
-        _logger.LogInformation($"TonGiftsValidateAsync handleTonGiftsResult successfulUpdates = {JsonSerializer.Serialize(successfulUpdates)}");
+        _logger.LogInformation("TonGiftsValidateAsync handleTonGiftsResult successfulUpdates = {0}", JsonSerializer.Serialize(successfulUpdates));
 
         await _cacheProvider.SetAddAsync(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId, successfulUpdates,
             HamsterTonGiftsConstant.KeyExpire);

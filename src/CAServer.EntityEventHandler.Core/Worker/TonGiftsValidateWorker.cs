@@ -31,7 +31,7 @@ public class TonGiftsValidateWorker : AsyncPeriodicBackgroundWorkerBase
         }
         catch (Exception e)
         {
-            _logger.LogDebug(e, $"TonGiftsValidateAsync DoWorkAsync error, {e.Message}");
+            _logger.LogDebug(e, "TonGiftsValidateAsync DoWorkAsync error, {0}", e.Message);
         }
     }
 }
