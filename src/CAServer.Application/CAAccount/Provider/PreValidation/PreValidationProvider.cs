@@ -53,6 +53,7 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
                 if (preValidationStrategy.ValidateParameters(guardianInfo))
                 {
                     var result = await preValidationStrategy.PreValidateGuardian(chainId, caHash, manager, guardianInfo);
+                    _logger.LogInformation("============preValidationStrategy succeed");
                     if (!result)
                     {
                         _logger.LogInformation("preValidationStrategy failed type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
