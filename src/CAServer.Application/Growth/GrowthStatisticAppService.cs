@@ -942,9 +942,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             K = _tonGiftsOptions.Id,
             T = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()
         };
-        var paramMap = param.GetType().GetProperties()
-            .ToDictionary(prop => prop.Name, prop => prop.GetValue(param, null));
-        param.S = HMACSHA256Helper.GenerateSignature(paramMap, _tonGiftsOptions.ApiKey);
+        param.S = HMACSHA256Helper.GenerateSignature(param, _tonGiftsOptions.ApiKey);
 
         var client = _httpClientFactory.CreateClient();
         var tokenParam = JsonConvert.SerializeObject(param);
@@ -960,7 +958,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private async Task handleTonGiftsResult(string result, List<string> allIDs)
     {
         TonGiftsResponseDto responseDto = JsonConvert.DeserializeObject<TonGiftsResponseDto>(result);
-        List<string> successfulUpdates = responseDto.SuccessfulUpdates?.Count == 0 ? allIDs : responseDto.SuccessfulUpdates.Select(p => p.UserId).ToList();
+        List<string> successfulUpdates = responseDto.Message.Contains("successfully") ? allIDs : responseDto.SuccessfulUpdates.Select(p => p.UserId).ToList();
         _logger.LogInformation($"TonGiftsValidateAsync handleTonGiftsResult successfulUpdates = {JsonSerializer.Serialize(successfulUpdates)}");
 
         await _cacheProvider.SetAddAsync(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId, successfulUpdates,
