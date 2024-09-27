@@ -31,6 +31,7 @@ public interface IContractProvider
 {
     public Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash, string chainId);
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
+    public Task<BoolValue> VerifyZkLogin(string chainId, Portkey.Contracts.CA.GuardianInfo guardianInfo, Hash caHash);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
 
@@ -235,6 +236,17 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         return await CallTransactionAsync<GetVerifierServersOutput>(AElfContractMethodName.GetVerifierServers,
             new Empty(), _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
+    }
+
+    public async Task<BoolValue> VerifyZkLogin(string chainId, Portkey.Contracts.CA.GuardianInfo guardianInfo, Hash caHash)
+    {
+        var param = new VerifyZkLoginRequest()
+        {
+            GuardianApproved = guardianInfo,
+            CaHash = caHash
+        };
+        return await CallTransactionAsync<BoolValue>(
+            AElfContractMethodName.VerifyZkLogin, param, _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
     }
 
     public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)

@@ -287,6 +287,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             var existedManagers = ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
             var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved, existedManagers);
+            _logger.LogInformation("RecoverRequestAsync preValidateResult:{0}", preValidateResult);
         }
         catch (Exception e)
         {
