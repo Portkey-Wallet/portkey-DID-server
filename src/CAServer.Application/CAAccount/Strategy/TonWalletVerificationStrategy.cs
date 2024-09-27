@@ -18,29 +18,29 @@ public class TonWalletVerificationStrategy : CAServerAppService, IVerificationAl
         _logger = logger;
     }
 
-    public VerificationExt Converter(VerificationDo verificationDo)
-    {
-        if (verificationDo?.VerificationDetails == null)
-        {
-            return new VerificationExt();
-        }
-
-        return new VerificationExt()
-        {
-            TonVerification = new TonWalletVerification()
-            {
-                Address = verificationDo.VerificationDetails.Address,
-                PublicKey = verificationDo.VerificationDetails.PublicKey,
-                Signature = verificationDo.VerificationDetails.Signature,
-                Timestamp = new Timestamp()
-                {
-                    Seconds = verificationDo.VerificationDetails.Timestamp,
-                    Nanos = 0
-                },
-                Extra = verificationDo.VerificationDetails.Extra,
-            }
-        };
-    }
+    // public VerificationExt Converter(VerificationDo verificationDo)
+    // {
+    //     if (verificationDo?.VerificationDetails == null)
+    //     {
+    //         return new VerificationExt();
+    //     }
+    //
+    //     return new VerificationExt()
+    //     {
+    //         TonVerification = new TonWalletVerification()
+    //         {
+    //             Address = verificationDo.VerificationDetails.Address,
+    //             PublicKey = verificationDo.VerificationDetails.PublicKey,
+    //             Signature = verificationDo.VerificationDetails.Signature,
+    //             Timestamp = new Timestamp()
+    //             {
+    //                 Seconds = verificationDo.VerificationDetails.Timestamp,
+    //                 Nanos = 0
+    //             },
+    //             Extra = verificationDo.VerificationDetails.Extra,
+    //         }
+    //     };
+    // }
 
     public string ExtraHandler(string salt, string message)
     {

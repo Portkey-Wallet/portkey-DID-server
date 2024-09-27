@@ -8,7 +8,7 @@ public interface IVerificationAlgorithmStrategy
 {
     VerifierType VerifierType { get; }
     
-    public VerificationExt Converter(VerificationDo verificationDo);
+    // public VerificationExt Converter(VerificationDo verificationDo);
 
     public string ExtraHandler(string salt, string message);
 }
