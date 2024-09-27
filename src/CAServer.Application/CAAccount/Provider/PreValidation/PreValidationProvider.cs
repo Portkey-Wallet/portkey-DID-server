@@ -41,10 +41,11 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
         var sw = new Stopwatch();
         sw.Start();
         //1 manager check todo for test annotate code
-        // if (!existedManagers.IsNullOrEmpty() && existedManagers.Any(mg => mg.Address.Equals(manager)))
-        // {
-        //     throw new UserFriendlyException("manager exists error.");
-        // }
+        if (!existedManagers.IsNullOrEmpty() && existedManagers.Any(mg => mg.Address.Equals(manager)))
+        {
+            throw new UserFriendlyException("manager exists error.");
+            return false;
+        }
         //2 guardian check
         foreach (var guardianInfo in guardiansApproved)
         {
@@ -58,6 +59,7 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
                     {
                         _logger.LogInformation("preValidationStrategy failed type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
                             preValidationStrategy.Type, chainId, caHash, manager, JsonConvert.SerializeObject(guardianInfo));
+                        throw new UserFriendlyException("guardian:" + preValidationStrategy.Type + "pre validation failed");
                         return false;
                     }
                 }
