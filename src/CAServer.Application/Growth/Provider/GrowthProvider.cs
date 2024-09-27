@@ -14,6 +14,7 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Options;
 using Nest;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Growth.Provider;
@@ -185,14 +186,15 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<InviteRepairIndex>, QueryContainer>>();
         QueryContainer Filter(QueryContainerDescriptor<InviteRepairIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var (total, data) = await _inviteRepairRepository.GetListAsync(Filter, skip: 0, limit: Int16.MaxValue);
+        var (total, data) =
+            await _inviteRepairRepository.GetListAsync(Filter, skip: 0, limit: PagedResultRequestDto.MaxMaxResultCount);
         return data;
     }
 
     public async Task<Tuple<long, List<GrowthIndex>>> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GrowthIndex>, QueryContainer>>();
-        
+
         mustQuery.Add(q => q.Term(i => i.Field(f => f.ProjectCode).Value(input.ProjectCode)));
 
         if (!input.ReferralCodes.IsNullOrEmpty())
@@ -205,7 +207,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
             mustQuery.Add(q => q.DateRange(i =>
                 i.Field(f => f.CreateTime).LessThanOrEquals(input.StartTime)));
         }
-        
+
         if (input.EndTime.HasValue)
         {
             mustQuery.Add(q => q.DateRange(i =>
@@ -215,9 +217,9 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         QueryContainer Filter(QueryContainerDescriptor<GrowthIndex> f) => f.Bool(b => b.Must(mustQuery));
         var result = await _growthRepository.GetListAsync(Filter, sortExp: k => k.CreateTime,
             sortType: SortOrder.Ascending, skip: input.SkipCount, limit: input.MaxResultCount);
-        return result ;
+        return result;
     }
-   
+
 
     public async Task<ScoreInfos> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,
         DateTime endTime)
