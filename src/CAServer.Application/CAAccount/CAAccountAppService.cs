@@ -281,16 +281,14 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, recoverCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(recoverCreateEto);
-        try
+        
+        var existedManagers = ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
+        var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved, existedManagers);
+        if (!preValidateResult)
         {
-            var existedManagers = ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
-            var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved, existedManagers);
-            _logger.LogInformation("RecoverRequestAsync preValidateResult:{0}", preValidateResult);
+            throw new UserFriendlyException("social recovery validation failed, please try again later");
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "ValidateSocialRecovery failed");
-        }
+        
         await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58());
         return new AccountResultDto()
         {
