@@ -144,7 +144,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, registerCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(registerCreateEto);
-        await PublishExtraInfoAsync(registerCreateEto.ChainId, input.ExtraInfo);
+        await PublishExtraInfoAsync(registerCreateEto.GrainId, input.ExtraInfo);
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
