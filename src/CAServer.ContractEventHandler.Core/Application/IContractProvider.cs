@@ -409,7 +409,7 @@ public class ContractProvider : IContractProvider
 
             _logger.LogInformation(
                 "ValidateTransaction to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 chainId,
                 transactionDto.TransactionResultDto.TransactionId, transactionDto.TransactionResultDto.BlockNumber,
                 transactionDto.TransactionResultDto.Status,
@@ -521,7 +521,7 @@ public class ContractProvider : IContractProvider
 
             _logger.LogInformation(
                 "SyncTransaction to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
 
             return result;
