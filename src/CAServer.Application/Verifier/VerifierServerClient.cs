@@ -408,7 +408,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         };
         await AmountHandler(showOperationDetails, input.ChainId, symbol:showOperationDetails.Token,
             amount:showOperationDetails.Amount, singleLimit:showOperationDetails.SingleLimit, dailyLimit:showOperationDetails.DailyLimit);
-        
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
@@ -436,12 +435,10 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         {
             showOperationDetailsDto.Amount = CalculationHelper.GetAmountInUsd(amount, tokenInfoDto.Decimals);
         }
-
         if (!singleLimit.IsNullOrEmpty())
         {
             showOperationDetailsDto.SingleLimit = CalculationHelper.GetAmountInUsd(singleLimit, tokenInfoDto.Decimals);
         }
-
         if (!dailyLimit.IsNullOrEmpty())
         {
             showOperationDetailsDto.DailyLimit = CalculationHelper.GetAmountInUsd(dailyLimit, tokenInfoDto.Decimals);
