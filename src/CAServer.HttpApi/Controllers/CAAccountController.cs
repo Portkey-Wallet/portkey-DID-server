@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
@@ -133,6 +134,12 @@ public class CAAccountController : CAServerController
     public async Task<ManagerCacheDto> GetManagerCacheInfo(string manager)
     {
         return await _caAccountService.GetManagerFromCache(manager);
+    }
+    
+    [HttpGet("recovery/check")]
+    public async Task<bool> CheckSocialRecoveryStatus([Required]string chainId, [Required]string manager, [Required]string caHash)
+    {
+        return await _caAccountService.CheckSocialRecoveryStatus(chainId, manager, caHash);
     }
     
     [HttpGet("verify/caHolderExist")]

@@ -815,4 +815,16 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     {
         return await _preValidationProvider.GetManagerFromCache(manager);
     }
+
+    public async Task<bool> CheckSocialRecoveryStatus(string chainId, string manager, string caHash)
+    {
+        var output =
+            await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
+        if (output == null || output.ManagerInfos.IsNullOrEmpty())
+        {
+            return false;
+        }
+
+        return output.ManagerInfos.Any(mg => mg.Address.ToBase58().Equals(manager));
+    }
 }
