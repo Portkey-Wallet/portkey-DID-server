@@ -7,6 +7,7 @@ using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Enums;
 using CAServer.Common;
+using CAServer.Grains.Grain.ApplicationHandler;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -18,15 +19,18 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
 {
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<SignaturePreValidationProvider> _logger;
+    private readonly IContractProvider _contractProvider;
     
     public PreValidationType Type => PreValidationType.Signature;
     
     public SignaturePreValidationProvider(
         IGetVerifierServerProvider getVerifierServerProvider,
-        ILogger<SignaturePreValidationProvider> logger)
+        ILogger<SignaturePreValidationProvider> logger,
+        IContractProvider contractProvider)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
+        _contractProvider = contractProvider;
     }
     
     public bool ValidateParameters(GuardianInfo guardian)
@@ -39,7 +43,19 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
 
     public async Task<bool> PreValidateGuardian(string chainId, string caHash, string manager, GuardianInfo guardian)
     {
-        return await CheckVerifierSignatureAndData(chainId, guardian, Hash.LoadFromHex(caHash), manager);
+        var guardianInfo = ObjectMapper.Map<GuardianInfo, Portkey.Contracts.CA.GuardianInfo>(guardian);
+        BoolValue result;
+        try
+        {
+            result = await _contractProvider.VerifySignature(chainId, guardianInfo, methodName:nameof(OperationTypeInContract.SocialRecovery).ToLower(), Hash.LoadFromHex(caHash), operationDetails:manager);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "_contractProvider.VerifySignature failed");
+            throw new UserFriendlyException(e.Message);
+        }
+        return result.Value;
+        // return await CheckVerifierSignatureAndData(chainId, guardian, Hash.LoadFromHex(caHash), manager);
     }
     
     private async Task<bool> CheckVerifierSignatureAndData(string chainId, GuardianInfo guardianInfo, Hash caHash = null,

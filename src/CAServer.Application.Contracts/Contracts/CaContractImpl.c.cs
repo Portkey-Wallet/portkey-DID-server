@@ -358,6 +358,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.KidPublicKeyInput> __Marshaller_ca_KidPublicKeyInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.KidPublicKeyInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.StartOracleDataFeedsTaskRequest> __Marshaller_ca_StartOracleDataFeedsTaskRequest = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.StartOracleDataFeedsTaskRequest.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.VerifyZkLoginRequest> __Marshaller_ca_VerifyZkLoginRequest = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.VerifyZkLoginRequest.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.VerifySignatureRequest> __Marshaller_ca_VerifySignatureRequest = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.VerifySignatureRequest.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Consumer.StartOracleRequestInput> __Marshaller_oracle_StartOracleRequestInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Consumer.StartOracleRequestInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput> __Marshaller_oracle_HandleOracleFulfillmentInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Consumer.HandleOracleFulfillmentInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ManagerApproveInput> __Marshaller_caimpl_ManagerApproveInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ManagerApproveInput.Parser.ParseFrom);
@@ -631,6 +632,13 @@ namespace Portkey.Contracts.CA {
         __ServiceName,
         "VerifyZkLogin",
         __Marshaller_ca_VerifyZkLoginRequest,
+        __Marshaller_google_protobuf_BoolValue);
+
+    static readonly aelf::Method<global::Portkey.Contracts.CA.VerifySignatureRequest, global::Google.Protobuf.WellKnownTypes.BoolValue> __Method_VerifySignature = new aelf::Method<global::Portkey.Contracts.CA.VerifySignatureRequest, global::Google.Protobuf.WellKnownTypes.BoolValue>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "VerifySignature",
+        __Marshaller_ca_VerifySignatureRequest,
         __Marshaller_google_protobuf_BoolValue);
 
     static readonly aelf::Method<global::AetherLink.Contracts.Consumer.StartOracleRequestInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_StartOracleRequest = new aelf::Method<global::AetherLink.Contracts.Consumer.StartOracleRequestInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -1205,6 +1213,11 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Google.Protobuf.WellKnownTypes.BoolValue VerifySignature(global::Portkey.Contracts.CA.VerifySignatureRequest input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty StartOracleRequest(global::AetherLink.Contracts.Consumer.StartOracleRequestInput input)
       {
         throw new global::System.NotImplementedException();
@@ -1518,6 +1531,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_AddKidPublicKey, serviceImpl.AddKidPublicKey)
           .AddMethod(__Method_StartOracleDataFeedsTask, serviceImpl.StartOracleDataFeedsTask)
           .AddMethod(__Method_VerifyZkLogin, serviceImpl.VerifyZkLogin)
+          .AddMethod(__Method_VerifySignature, serviceImpl.VerifySignature)
           .AddMethod(__Method_StartOracleRequest, serviceImpl.StartOracleRequest)
           .AddMethod(__Method_HandleOracleFulfillment, serviceImpl.HandleOracleFulfillment)
           .AddMethod(__Method_ManagerApprove, serviceImpl.ManagerApprove)
