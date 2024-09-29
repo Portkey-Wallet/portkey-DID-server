@@ -406,8 +406,9 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             SingleLimit = GetDetailDesc(input.OperationDetails, "singleLimit"),
             DailyLimit = GetDetailDesc(input.OperationDetails, "dailyLimit")
         };
-        await AmountHandler(showOperationDetails, input.ChainId, symbol:showOperationDetails.Token,
+        await AmountHandler(showOperationDetails, input.OperationType, chainId:input.ChainId, symbol:showOperationDetails.Token,
             amount:showOperationDetails.Amount, singleLimit:showOperationDetails.SingleLimit, dailyLimit:showOperationDetails.DailyLimit);
+        showOperationDetails.ToAddress = ToAddressHandler(showOperationDetails.ToAddress);
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
@@ -417,10 +418,21 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return result;
     }
 
-    private async Task AmountHandler(ShowOperationDetailsDto showOperationDetailsDto,
+    private string ToAddressHandler(string toAddress)
+    {
+        if (toAddress.IsNullOrEmpty())
+        {
+            return string.Empty;
+        }
+
+        var length = toAddress.Length / 2;
+        return toAddress.Substring(0, length) + "\n" + toAddress.Substring(length);
+    }
+
+    private async Task AmountHandler(ShowOperationDetailsDto showOperationDetailsDto, OperationType operationType,
         string chainId, string symbol, string amount, string singleLimit, string dailyLimit)
     {
-        if (chainId.IsNullOrEmpty() || symbol.IsNullOrEmpty())
+        if (chainId.IsNullOrEmpty() || symbol.IsNullOrEmpty() || OperationType.GuardianApproveTransfer.Equals(operationType))
         {
             return ;
         }
