@@ -8,6 +8,7 @@ using AElf.Types;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -46,8 +47,16 @@ public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationSt
     public async Task<bool> PreValidateGuardian(string chainId, string caHash, string manager, GuardianInfo guardian)
     {
         var guardianInfo = ObjectMapper.Map<GuardianInfo, Portkey.Contracts.CA.GuardianInfo>(guardian);
-        _logger.LogInformation("PreValidateGuardian guardianInfo:{0}", JsonConvert.SerializeObject(guardianInfo));
-        var result = await _contractProvider.VerifyZkLogin(chainId, guardianInfo, Hash.LoadFromHex(caHash));
+        BoolValue result;
+        try
+        {
+            result = await _contractProvider.VerifyZkLogin(chainId, guardianInfo, Hash.LoadFromHex(caHash));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "_contractProvider.VerifyZkLogin failed");
+            throw new UserFriendlyException(e.Message);
+        }
         return result.Value;
     }
     

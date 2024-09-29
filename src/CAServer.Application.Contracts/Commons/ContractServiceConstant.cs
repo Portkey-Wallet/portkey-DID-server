@@ -27,6 +27,7 @@ public static class AElfContractMethodName
     public const string RemoveManagerInfo = "RemoveManagerInfo";
     public const string GuardianApproveTransfer = "GuardianApproveTransfer";
     public const string VerifyZkLogin = "VerifyZkLogin";
+    public const string VerifySignature = "VerifySignature";
     public static List<string> MethodNames = new List<string>()
     {
         CreateCAHolder,
