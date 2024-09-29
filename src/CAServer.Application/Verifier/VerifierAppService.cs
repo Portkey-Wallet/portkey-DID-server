@@ -277,7 +277,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var userExtraInfo = await _appleZkProvider.GetAppleUserExtraInfo(requestDto.AccessToken);
-            var guardianIdentifier = userExtraInfo == null || userExtraInfo.IsPrivateEmail ? string.Empty : userExtraInfo?.Email;
+            var guardianIdentifier = userExtraInfo == null || userExtraInfo.Email.IsNullOrEmpty() ? string.Empty : userExtraInfo?.Email;
             await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
