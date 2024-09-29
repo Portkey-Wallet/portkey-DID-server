@@ -34,10 +34,10 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
     public async Task<bool> ValidateSocialRecovery(RequestSource source, string caHash,
         string chainId, string manager, List<GuardianInfo> guardiansApproved, List<ManagerDto> existedManagers)
     {
-        if (!RequestSource.Sdk.Equals(source))
-        {
-            return true;
-        }
+        // if (!RequestSource.Sdk.Equals(source))
+        // {
+        //     return true;
+        // }
         var sw = new Stopwatch();
         sw.Start();
         //1 manager check todo for test annotate code
