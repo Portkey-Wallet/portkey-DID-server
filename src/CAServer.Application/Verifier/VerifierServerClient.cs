@@ -391,12 +391,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             SingleLimit = GetDetailDesc(input.OperationDetails, "singleLimit"),
             DailyLimit = GetDetailDesc(input.OperationDetails, "dailyLimit")
         };
-        var handledByDecimal = await AmountHandler(input.ChainId, showOperationDetails.Amount, showOperationDetails.Token);
-        _logger.LogInformation("AmountHandler outer chainId:{0} symbol:{1} result:{2}", input.ChainId, showOperationDetails.Token, handledByDecimal);
-        if (!handledByDecimal.IsNullOrEmpty())
-        {
-            showOperationDetails.Amount = handledByDecimal;
-        }
+        await AmountHandler(showOperationDetails, input.ChainId, symbol:showOperationDetails.Token,
+            amount:showOperationDetails.Amount, singleLimit:showOperationDetails.SingleLimit, dailyLimit:showOperationDetails.DailyLimit);
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
@@ -406,16 +402,32 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return result;
     }
 
-    private async Task<string> AmountHandler(string chainId, string amount, string symbol)
+    private async Task AmountHandler(ShowOperationDetailsDto showOperationDetailsDto,
+        string chainId, string symbol, string amount, string singleLimit, string dailyLimit)
     {
-        if (amount.IsNullOrEmpty())
+        if (chainId.IsNullOrEmpty() || symbol.IsNullOrEmpty())
         {
-            return string.Empty;
+            return ;
         }
 
+        if (amount.IsNullOrEmpty() && singleLimit.IsNullOrEmpty() && dailyLimit.IsNullOrEmpty())
+        {
+            return;
+        }
         var tokenInfoDto = await GetTokenInfoAsync(chainId, symbol);
         _logger.LogInformation("AmountHandler chainId:{0} symbol:{1} result:{2}", chainId, symbol, JsonConvert.SerializeObject(tokenInfoDto));
-        return CalculationHelper.GetAmountInUsd(amount, tokenInfoDto.Decimals);
+        if (!amount.IsNullOrEmpty())
+        {
+            showOperationDetailsDto.Amount = CalculationHelper.GetAmountInUsd(amount, tokenInfoDto.Decimals);
+        }
+        if (!singleLimit.IsNullOrEmpty())
+        {
+            showOperationDetailsDto.SingleLimit = CalculationHelper.GetAmountInUsd(singleLimit, tokenInfoDto.Decimals);
+        }
+        if (!dailyLimit.IsNullOrEmpty())
+        {
+            showOperationDetailsDto.DailyLimit = CalculationHelper.GetAmountInUsd(dailyLimit, tokenInfoDto.Decimals);
+        }
     }
     private async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
     {
