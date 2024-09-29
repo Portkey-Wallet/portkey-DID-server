@@ -20,4 +20,6 @@ public interface ICAAccountAppService
     Task<CAHolderExistsResponseDto> VerifyCaHolderExistByAddressAsync(string address);
     
     Task<ManagerCacheDto> GetManagerFromCache(string manager);
+
+    Task<bool> CheckSocialRecoveryStatus(string chainId, string manager, string caHash);
 }
