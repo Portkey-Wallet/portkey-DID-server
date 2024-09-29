@@ -202,4 +202,19 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
 
         return userInfo;
     }
+
+    public async Task<AppleUserExtraInfo> GetAppleUserExtraInfo(string accessToken)
+    {
+        SecurityToken securityToken;
+        try
+        {
+            securityToken = await ValidateTokenAsync(accessToken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetAppleUserExtraInfo ValidateTokenAsync failed");
+            return null;
+        }
+        return GetUserInfoFromToken(securityToken);
+    }
 }

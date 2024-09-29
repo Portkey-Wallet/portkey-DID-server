@@ -69,6 +69,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
     private readonly IdentityUserManager _userManager;
+    private readonly IAppleZkProvider _appleZkProvider;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
@@ -87,7 +88,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         ICAAccountProvider accountProvider,
         IdentityUserManager userManager,
         IEnumerable<IVerificationAlgorithmStrategy> verificationStrategies,
-        ITonWalletProvider tonWalletProvider)
+        ITonWalletProvider tonWalletProvider,
+        IAppleZkProvider appleZkProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -106,6 +108,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _distributedCache = distributedCache;
         _accountProvider = accountProvider;
         _userManager = userManager;
+        _appleZkProvider = appleZkProvider;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -282,7 +285,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Apple);
+            var userExtraInfo = await _appleZkProvider.GetAppleUserExtraInfo(requestDto.AccessToken);
+            var guardianIdentifier = userExtraInfo == null || userExtraInfo.IsPrivateEmail ? string.Empty : userExtraInfo?.Email;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
