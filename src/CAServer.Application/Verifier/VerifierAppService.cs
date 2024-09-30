@@ -10,6 +10,7 @@ using AElf;
 using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.AppleVerify;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
 using CAServer.Cache;
@@ -63,6 +64,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly ICAAccountProvider _accountProvider;
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
     private readonly IdentityUserManager _userManager;
+    private readonly IAppleZkProvider _appleZkProvider;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
@@ -79,7 +81,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
         IDistributedCache<AppleKeys> distributedCache,
         ICAAccountProvider accountProvider,
-        IdentityUserManager userManager)
+        IdentityUserManager userManager,
+        IAppleZkProvider appleZkProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -96,6 +99,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _distributedCache = distributedCache;
         _accountProvider = accountProvider;
         _userManager = userManager;
+        _appleZkProvider = appleZkProvider;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -272,7 +276,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Apple);
+            var userExtraInfo = await _appleZkProvider.GetAppleUserExtraInfo(requestDto.AccessToken);
+            var guardianIdentifier = userExtraInfo == null || userExtraInfo.Email.IsNullOrEmpty() ? string.Empty : userExtraInfo?.Email;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -320,7 +326,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             await StatisticTwitterAsync(userId);
             
             var hashInfo = await GetSaltAndHashAsync(userId);
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Twitter);
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, string.Empty, GuardianIdentifierType.Twitter);
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -456,7 +462,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userId = GetTelegramUserId(requestDto.AccessToken);
             _logger.LogDebug("TeleGram userid is {uid}",userId);
             var hashInfo = await GetSaltAndHashAsync(userId);
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Telegram);
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, string.Empty, GuardianIdentifierType.Telegram);
             var response =
                 await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -502,7 +508,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
-            var guardianIdentifier = facebookUser.Email.IsNullOrEmpty() ? facebookUser.Id : facebookUser.Email;
+            var guardianIdentifier = facebookUser.Email.IsNullOrEmpty() ? string.Empty : facebookUser.Email;
             await AppendSecondaryEmailInfo(requestDto, userSaltAndHash.Item1, guardianIdentifier, GuardianIdentifierType.Facebook);
             requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? requestDto.SecondaryEmail : facebookUser.Email;
             var response =

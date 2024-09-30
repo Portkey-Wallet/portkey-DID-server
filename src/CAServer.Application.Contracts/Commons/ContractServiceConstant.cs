@@ -160,4 +160,6 @@ public static class CommonConstant
     public const string HamsterKingSymbol = "KINGHAMSTER-1";
 
     public const string VersionName = "Version";
+    
+    public const string TokenInfoCachePrefix = "TokenInfo";
 }

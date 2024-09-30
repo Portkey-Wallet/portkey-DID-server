@@ -116,7 +116,7 @@ public class ContractAppService : IContractAppService
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
     {
-        _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
+        _logger.LogInformation("CreateRedPackage message: " + "{message}",
             JsonConvert.SerializeObject(eventData, Formatting.Indented));
 
         var eto = new RedPackageCreateResultEto();
@@ -124,7 +124,7 @@ public class ContractAppService : IContractAppService
         try
         {
             var result = await _contractProvider.ForwardTransactionAsync(eventData.ChainId, eventData.RawTransaction);
-            _logger.LogInformation("RedPackageCreate result: " + "\n{result}",
+            _logger.LogInformation("RedPackageCreate result: " + "{result}",
                 JsonConvert.SerializeObject(result, Formatting.Indented));
             eto.TransactionResult = result.Status;
             eto.TransactionId = result.TransactionId;
@@ -134,7 +134,7 @@ public class ContractAppService : IContractAppService
                               result.Error;
                 eto.Success = false;
 
-                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+                _logger.LogInformation("RedPackageCreate pushed: " + "{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
                 _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
@@ -146,7 +146,7 @@ public class ContractAppService : IContractAppService
                 eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
                 eto.Success = false;
 
-                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+                _logger.LogInformation("RedPackageCreate pushed: " + "{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
                 _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
@@ -170,7 +170,7 @@ public class ContractAppService : IContractAppService
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
     {
-        _logger.LogInformation("CreateHolder message: " + "\n{message}",
+        _logger.LogInformation("CreateHolder message: " + "{message}",
             JsonConvert.SerializeObject(message, Formatting.Indented));
 
         var registerResult = new CreateHolderEto
@@ -201,7 +201,7 @@ public class ContractAppService : IContractAppService
             registerResult.RegisterSuccess = false;
 
             await _distributedEventBus.PublishAsync(registerResult);
-            _logger.LogInformation("Register state pushed: " + "\n{result}",
+            _logger.LogInformation("Register state pushed: " + "{result}",
                 JsonConvert.SerializeObject(registerResult, Formatting.Indented));
 
             return;
@@ -217,7 +217,7 @@ public class ContractAppService : IContractAppService
 
             await _distributedEventBus.PublishAsync(registerResult);
 
-            _logger.LogInformation("Register state pushed: " + "\n{result}",
+            _logger.LogInformation("Register state pushed: " + "{result}",
                 JsonConvert.SerializeObject(registerResult, Formatting.Indented));
 
             return;
@@ -231,7 +231,7 @@ public class ContractAppService : IContractAppService
                                              resultCreateCaHolder.Error;
             registerResult.RegisterSuccess = false;
 
-            _logger.LogInformation("Register state pushed: " + "\n{result}",
+            _logger.LogInformation("Register state pushed: " + "{result}",
                 JsonConvert.SerializeObject(registerResult, Formatting.Indented));
 
             await _distributedEventBus.PublishAsync(registerResult);
@@ -274,7 +274,7 @@ public class ContractAppService : IContractAppService
             registerResult.RegisterMessage = "No account found";
             registerResult.RegisterSuccess = false;
 
-            _logger.LogInformation("Register state pushed: " + "\n{result}",
+            _logger.LogInformation("Register state pushed: " + "{result}",
                 JsonConvert.SerializeObject(registerResult, Formatting.Indented));
             await _distributedEventBus.PublishAsync(registerResult);
 
@@ -290,7 +290,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(registerResult);
 
-        _logger.LogInformation("Register state pushed: " + "\n{result}",
+        _logger.LogInformation("Register state pushed: " + "{result}",
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
@@ -299,7 +299,7 @@ public class ContractAppService : IContractAppService
 
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)
     {
-        _logger.LogInformation("SocialRecovery message: " + "\n{message}",
+        _logger.LogInformation("SocialRecovery message: " + "{message}",
             JsonConvert.SerializeObject(message, Formatting.Indented));
 
         var recoveryResult = new SocialRecoveryEto
@@ -329,7 +329,7 @@ public class ContractAppService : IContractAppService
             recoveryResult.RecoverySuccess = false;
 
             await _distributedEventBus.PublishAsync(recoveryResult);
-            _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+            _logger.LogInformation("Recovery state pushed: " + "{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
             return;
@@ -341,7 +341,7 @@ public class ContractAppService : IContractAppService
             recoveryResult.RecoveryMessage = "Transaction result: null";
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+            _logger.LogInformation("Recovery state pushed: " + "{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
             await _distributedEventBus.PublishAsync(recoveryResult);
@@ -356,7 +356,7 @@ public class ContractAppService : IContractAppService
                                              resultSocialRecovery.Error;
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+            _logger.LogInformation("Recovery state pushed: " + "{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
             await _distributedEventBus.PublishAsync(recoveryResult);
@@ -386,7 +386,7 @@ public class ContractAppService : IContractAppService
             recoveryResult.RecoveryMessage = "No account found";
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+            _logger.LogInformation("Recovery state pushed: " + "{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
             await _distributedEventBus.PublishAsync(recoveryResult);
             return;
@@ -401,7 +401,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(recoveryResult);
 
-        _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+        _logger.LogInformation("Recovery state pushed: " + "{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
         // _logger.LogInformation("ValidateTransactionAndSyncAsync, holderInfo: {holderInfo}",
@@ -850,7 +850,7 @@ public class ContractAppService : IContractAppService
                                              transactionResultDto.Error;
             registerResult.RegisterSuccess = false;
 
-            _logger.LogInformation("accelerated registration state: " + "\n{result}",
+            _logger.LogInformation("accelerated registration state: " + "{result}",
                 JsonConvert.SerializeObject(registerResult, Formatting.Indented));
         }
         else if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.NonCreateChainCAHolderCreated))
@@ -864,7 +864,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(registerResult);
 
-        _logger.LogInformation("accelerated registration state: " + "\n{result}",
+        _logger.LogInformation("accelerated registration state: " + "{result}",
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
     }
 
@@ -945,7 +945,7 @@ public class ContractAppService : IContractAppService
                                              transactionResultDto.Error;
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("accelerated social recover state: " + "\n{result}",
+            _logger.LogInformation("accelerated social recover state: " + "{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
         }
         else if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
@@ -959,7 +959,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(recoveryResult);
 
-        _logger.LogInformation("accelerated social recover state: " + "\n{result}",
+        _logger.LogInformation("accelerated social recover state: " + "{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
     }
 
@@ -976,16 +976,22 @@ public class ContractAppService : IContractAppService
 
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
+        _logger.LogInformation($"ContractSyncWorker QueryEventsAndSyncAsync QueryEventsAsync start {chainId}");
         await QueryEventsAsync(chainId);
+        _logger.LogInformation($"ContractSyncWorker QueryEventsAndSyncAsync QueryEventsAsync end {chainId}");
 
+        _logger.LogInformation($"ContractSyncWorker QueryEventsAndSyncAsync ValidateQueryEventsAsync start {chainId}");
         await ValidateQueryEventsAsync(chainId);
+        _logger.LogInformation($"ContractSyncWorker QueryEventsAndSyncAsync ValidateQueryEventsAsync end {chainId}");
 
+        _logger.LogInformation($"ContractSyncWorker QueryEventsAndSyncAsync SyncQueryEventsAsync start {chainId}");
         await SyncQueryEventsAsync(chainId);
+        _logger.LogInformation($"ContractSyncWorker QueryEventsAndSyncAsync SyncQueryEventsAsync end {chainId}");
     }
 
     private async Task SyncQueryEventsAsync(string chainId)
     {
-        _logger.LogInformation("SyncQueryEvents on chain: {id} starts", chainId);
+        _logger.LogInformation("SyncQueryEventsAsync on chain: {id} starts", chainId);
 
         try
         {
@@ -995,13 +1001,17 @@ public class ContractAppService : IContractAppService
 
             if (records.IsNullOrEmpty())
             {
-                _logger.LogInformation("Found no record to sync on chain: {id}", chainId);
+                _logger.LogInformation("SyncQueryEventsAsync Found no record to sync on chain: {id}", chainId);
                 return;
             }
 
             var recordsAmount = records.Count;
 
-            _logger.LogInformation("Found {count} records to sync on chain: {id}", records.Count, chainId);
+            _logger.LogInformation("SyncQueryEventsAsync Found count = {count} records to sync on chain: {id}", records.Count, chainId);
+            foreach (var syncRecord in records)
+            {
+                _logger.LogInformation($"SyncQueryEventsAsync Found record = {syncRecord.CaHash} {syncRecord.BlockHeight}");
+            }
 
             if (chainId == ContractAppServiceConstant.MainChainId)
             {
@@ -1029,18 +1039,17 @@ public class ContractAppService : IContractAppService
                         var result = await _contractProvider.SyncTransactionAsync(info.ChainId, syncHolderInfoInput);
 
                         records.Remove(record);
-
                         if (result.Status != TransactionState.Mined)
                         {
                             _logger.LogError(
-                                "{type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
+                                "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
                                 record.ChangeType, chainId, record.CaHash, result.Error,
                                 JsonConvert.SerializeObject(syncHolderInfoInput));
-
+                        
                             record.RetryTimes++;
                             record.ValidateHeight = long.MaxValue;
                             record.ValidateTransactionInfoDto = new TransactionInfo();
-
+                        
                             failedRecords.Add(record);
                         }
                         else
@@ -1049,7 +1058,7 @@ public class ContractAppService : IContractAppService
                             await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId,
                                 result.BlockNumber,
                                 record.ChangeType);
-                            _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
+                            _logger.LogInformation("SyncQueryEventsAsync {type} SyncToSide succeed on chain: {id} of account: {hash}",
                                 record.ChangeType, chainId, record.CaHash);
                             await UpdateSyncHolderVersionAsync(info.ChainId, record.CaHash, record.ValidateHeight);
                         }
@@ -1082,9 +1091,10 @@ public class ContractAppService : IContractAppService
                     var mainHeight =
                         await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
                     var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
-
+                    _logger.LogInformation($"SyncQueryEventsAsync SyncToMain indexMainChainBlock {indexMainChainBlock} {mainHeight} {record.BlockHeight}");
                     while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
                     {
+                        _logger.LogInformation($"SyncQueryEventsAsync SyncToMain Delay");
                         await Task.Delay(_indexOptions.IndexDelay);
                         indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
                         retryTimes++;
@@ -1101,17 +1111,17 @@ public class ContractAppService : IContractAppService
                     if (result.Status != TransactionState.Mined)
                     {
                         _logger.LogError(
-                            "{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
+                            "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
                             record.ChangeType, chainId, record.CaHash, result.Error,
                             JsonConvert.SerializeObject(syncHolderInfoInput));
-
+                    
                         record.RetryTimes++;
                         record.ValidateHeight = long.MaxValue;
                         record.ValidateTransactionInfoDto = new TransactionInfo();
                         if (!result.Error.Contains("Already synced"))
                         {
                             failedRecords.Add(record);
-
+                    
                         }
                     }
                     else
@@ -1124,7 +1134,7 @@ public class ContractAppService : IContractAppService
                             record.ChangeType);
                         await UpdateSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash,
                             record.ValidateHeight);
-                        _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
+                        _logger.LogInformation("SyncQueryEventsAsync {type} SyncToMain succeed on chain: {id} of account: {hash}",
                             record.ChangeType, chainId, record.CaHash);
                     }
 
@@ -1136,7 +1146,7 @@ public class ContractAppService : IContractAppService
             await _recordsBucketContainer.SetValidatedRecordsAsync(chainId, records);
 
             _logger.LogInformation(
-                "SyncQueryEvents on chain: {id} Ends, synced {num} events and failed {failedNum} events", chainId,
+                "SyncQueryEventsAsync on chain: {id} Ends, synced {num} events and failed {failedNum} events", chainId,
                 recordsAmount - records.Count, failedRecords.Count);
         }
         catch (Exception e)
@@ -1155,7 +1165,7 @@ public class ContractAppService : IContractAppService
             if (lastEndHeight == 0)
             {
                 _logger.LogError(
-                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. \nLastEndHeight: {last}",
+                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. LastEndHeight: {last}",
                     chainId, lastEndHeight);
                 return;
             }
@@ -1164,11 +1174,12 @@ public class ContractAppService : IContractAppService
 
             var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
 
+            _logger.LogInformation(
+                "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. LastEndHeight: {last}, CurrentIndexHeight: {index}",
+                chainId, lastEndHeight, currentIndexHeight);
             if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
             {
-                _logger.LogWarning(
-                    "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
-                    chainId, lastEndHeight, currentIndexHeight);
+                
                 return;
             }
 
@@ -1180,7 +1191,7 @@ public class ContractAppService : IContractAppService
 
             while (endIndexHeight <= targetIndexHeight)
             {
-                _logger.LogInformation("Query on chain: {id}, from {start} to {end}", chainId, startIndexHeight,
+                _logger.LogInformation("QueryEventsAsync Query on chain: {id}, from {start} to {end}", chainId, startIndexHeight,
                     endIndexHeight);
 
                 queryEvents.AddRange(await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
@@ -1204,14 +1215,18 @@ public class ContractAppService : IContractAppService
             if (queryEvents.IsNullOrEmpty())
             {
                 _logger.LogInformation(
-                    "Found no events on chain: {id}. Next index block height: {height}", chainId,
+                    "QueryEventsAsync Found no events on chain: {id}. Next index block height: {height}", chainId,
                     currentIndexHeight);
             }
             else
             {
                 _logger.LogInformation(
-                    "Found {num} events on chain: {id}. Next index block height: {height}", queryEvents.Count, chainId,
+                    "QueryEventsAsync Found {num} events on chain: {id}. Next index block height: {height}", queryEvents.Count, chainId,
                     currentIndexHeight);
+                foreach (var queryEventDto in queryEvents)
+                {
+                    _logger.LogInformation($"QueryEventsAsync Found queryEvent {queryEventDto.CaHash} {queryEventDto.BlockHeight}");
+                }
 
                 queryEvents = queryEvents.Where(e => e.ChangeType != QueryLoginGuardianType.LoginGuardianRemoved)
                     .ToList();
@@ -1236,7 +1251,7 @@ public class ContractAppService : IContractAppService
 
     private async Task ValidateQueryEventsAsync(string chainId)
     {
-        _logger.LogInformation("ValidateQueryEvents on chain: {id} starts", chainId);
+        _logger.LogInformation("ValidateQueryEventsAsync on chain: {id} starts", chainId);
 
         try
         {
@@ -1247,21 +1262,25 @@ public class ContractAppService : IContractAppService
 
             if (storedToBeValidatedRecords.IsNullOrEmpty())
             {
-                _logger.LogInformation("Found no events on chain: {id} to validate", chainId);
+                _logger.LogInformation("ValidateQueryEventsAsync Found no events on chain: {id} to validate", chainId);
                 return;
             }
 
+            _logger.LogInformation($"ValidateQueryEventsAsync storedToBeValidatedRecords size = {storedToBeValidatedRecords.Count}");
             storedToBeValidatedRecords = storedToBeValidatedRecords
                 .Where(r => r.BlockHeight >= _indexOptions.AutoSyncStartHeight[chainId]).ToList();
+            _logger.LogInformation($"ValidateQueryEventsAsync storedToBeValidatedRecords filter blockHeight size = {storedToBeValidatedRecords.Count}");
 
             storedToBeValidatedRecords = OptimizeSyncRecords(storedToBeValidatedRecords
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
+            _logger.LogInformation($"ValidateQueryEventsAsync storedToBeValidatedRecords filter retryTimes size = {storedToBeValidatedRecords.Count}");
 
-            foreach (var record in storedToBeValidatedRecords)
+            for (var i = 0; i < storedToBeValidatedRecords.Count; i++)
             {
+                var record = storedToBeValidatedRecords[i];
                 _logger.LogInformation(
-                    "Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height}",
-                    record.ChangeType, chainId, record.CaHash, record.BlockHeight);
+                    "ValidateQueryEventsAsync Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height} index: {index}",
+                    record.ChangeType, chainId, record.CaHash, record.BlockHeight, i);
 
                 var currentBlockHeight = await _contractProvider.GetBlockHeightAsync(chainId);
                 if (currentBlockHeight <= record.BlockHeight)
@@ -1294,10 +1313,10 @@ public class ContractAppService : IContractAppService
 
                 if (transactionDto.TransactionResultDto?.Status != TransactionState.Mined)
                 {
-                    _logger.LogError("ValidateQueryEvents on chain: {id} of account: {hash} failed",
+                    _logger.LogError("ValidateQueryEventsAsync on chain: {id} of account: {hash} failed",
                         chainId, record.CaHash);
                     record.RetryTimes++;
-
+                
                     failedRecords.Add(record);
                 }
                 else
@@ -1319,12 +1338,12 @@ public class ContractAppService : IContractAppService
             await _recordsBucketContainer.SetToBeValidatedRecordsAsync(chainId, failedRecords);
 
             _logger.LogInformation(
-                "ValidateQueryEvents on chain: {id} ends, validated {num} events and failed {failedNum} events",
+                "ValidateQueryEventsAsync on chain: {id} ends, validated {num} events and failed {failedNum} events",
                 chainId, validatedRecords.Count, failedRecords.Count);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "ValidateQueryEvents on chain {id} error", chainId);
+            _logger.LogError(e, "ValidateQueryEventsAsync on chain {id} error", chainId);
         }
     }
 
