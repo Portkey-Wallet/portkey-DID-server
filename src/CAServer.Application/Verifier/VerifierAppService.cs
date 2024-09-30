@@ -335,7 +335,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             await StatisticTwitterAsync(userId);
             
             var hashInfo = await GetSaltAndHashAsync(userId);
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Twitter);
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, string.Empty, GuardianIdentifierType.Twitter);
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -471,7 +471,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userId = GetTelegramUserId(requestDto.AccessToken);
             _logger.LogDebug("TeleGram userid is {uid}",userId);
             var hashInfo = await GetSaltAndHashAsync(userId);
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, userId, GuardianIdentifierType.Telegram);
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, string.Empty, GuardianIdentifierType.Telegram);
             var response =
                 await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -517,7 +517,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
-            var guardianIdentifier = facebookUser.Email.IsNullOrEmpty() ? facebookUser.Id : facebookUser.Email;
+            var guardianIdentifier = facebookUser.Email.IsNullOrEmpty() ? string.Empty : facebookUser.Email;
             await AppendSecondaryEmailInfo(requestDto, userSaltAndHash.Item1, guardianIdentifier, GuardianIdentifierType.Facebook);
             requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? requestDto.SecondaryEmail : facebookUser.Email;
             var response =
