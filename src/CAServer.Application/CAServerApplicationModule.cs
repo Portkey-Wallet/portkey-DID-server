@@ -113,7 +113,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
-
+        context.Services.AddSingleton<IPreValidationStrategy, ZkLoginPreValidationProvider>();
+        context.Services.AddSingleton<IPreValidationStrategy, SignaturePreValidationProvider>();
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
 

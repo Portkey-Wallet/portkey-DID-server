@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
@@ -127,6 +128,12 @@ public class CAAccountController : CAServerController
     {
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         return await _caAccountService.RevokeValidateAsync(userId, type);
+    }
+
+    [HttpGet("manager/check")]
+    public async Task<ManagerCacheDto> GetManagerCacheInfo(string manager)
+    {
+        return await _caAccountService.GetManagerFromCache(manager);
     }
     
     [HttpGet("verify/caHolderExist")]
