@@ -77,7 +77,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<MarketCacheOptions>(configuration.GetSection("MarketCache"));
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
         Configure<SecondaryEmailOptions>(configuration.GetSection("SecondaryEmail"));
-        Configure<ZkLoginProverOptions>(configuration.GetSection("ZkLoginProver"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
