@@ -41,7 +41,8 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     // services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
                     services.AddMemoryCache();
                     services.AddDistributedMemoryCache();
-                    services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
+                    // todo modify
+                    //services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
 
                     services.AddSingleton(typeof(IDistributedCache), typeof(MemoryDistributedCache));
                     // services.AddSingleton(typeof(IDistributedCache<>), typeof(MemoryDistributedCache<>));
@@ -75,12 +76,13 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     services.OnExposing(onServiceExposingContext =>
                     {
                         //Register types for IObjectMapper<TSource, TDestination> if implements
-                        onServiceExposingContext.ExposedTypes.AddRange(
-                            ReflectionHelper.GetImplementedGenericTypes(
-                                onServiceExposingContext.ImplementationType,
-                                typeof(IObjectMapper<,>)
-                            )
-                        );
+                        // todo modify
+                        // onServiceExposingContext.ExposedTypes.AddRange(
+                        //     ReflectionHelper.GetImplementedGenericTypes(
+                        //         onServiceExposingContext.ImplementationType,
+                        //         typeof(IObjectMapper<,>)
+                        //     )
+                        // );
                     });
                     services.AddTransient(
                         typeof(IObjectMapper<>),
