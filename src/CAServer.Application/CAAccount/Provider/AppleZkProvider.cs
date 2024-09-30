@@ -73,7 +73,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
                 CaHash = requestDto.CaHash,
                 TargetChainId = requestDto.TargetChainId
             };
-            var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? userInfo.Id : userInfo.Email;
+            var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? string.Empty : userInfo.Email;
             await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
@@ -201,5 +201,20 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         }
 
         return userInfo;
+    }
+
+    public async Task<AppleUserExtraInfo> GetAppleUserExtraInfo(string accessToken)
+    {
+        SecurityToken securityToken;
+        try
+        {
+            securityToken = await ValidateTokenAsync(accessToken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetAppleUserExtraInfo ValidateTokenAsync failed");
+            return null;
+        }
+        return GetUserInfoFromToken(securityToken);
     }
 }

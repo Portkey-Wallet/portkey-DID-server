@@ -14,6 +14,10 @@ using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Security.Dtos;
 using CAServer.Settings;
+using CAServer.Tokens;
+using CAServer.Tokens.Cache;
+using CAServer.Tokens.Dtos;
+using CAServer.Tokens.Provider;
 using CAServer.Verifier.Dtos;
 using CAVerifierServer.Account;
 using Microsoft.Extensions.Logging;
@@ -23,6 +27,7 @@ using Newtonsoft.Json.Linq;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Verifier;
 
@@ -36,13 +41,17 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly ChainOptions _chainOptions;
     private readonly IIpInfoAppService _ipInfoAppService;
     private readonly IContractProvider _contractProvider;
+    private readonly ITokenProvider _tokenProvider;
+    private readonly ITokenCacheProvider _tokenCacheProvider;
+    private readonly IObjectMapper _objectMapper;
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
         IHttpClientFactory httpClientFactory, IAccelerateManagerProvider accelerateManagerProvider,
         IOptions<ChainOptions> chainOptions, IIpInfoAppService ipInfoAppService,
-        IContractProvider contractProvider)
+        IContractProvider contractProvider, ITokenProvider tokenProvider,
+        ITokenCacheProvider tokenCacheProvider, IObjectMapper objectMapper)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
@@ -52,6 +61,9 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         _ipInfoAppService = ipInfoAppService;
         _chainOptions = chainOptions.Value;
         _contractProvider = contractProvider;
+        _tokenProvider = tokenProvider;
+        _tokenCacheProvider = tokenCacheProvider;
+        _objectMapper = objectMapper;
     }
 
     private bool _disposed;
@@ -379,6 +391,9 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             SingleLimit = GetDetailDesc(input.OperationDetails, "singleLimit"),
             DailyLimit = GetDetailDesc(input.OperationDetails, "dailyLimit")
         };
+        await AmountHandler(showOperationDetails, input.OperationType, chainId:input.ChainId, symbol:showOperationDetails.Token,
+            amount:showOperationDetails.Amount, singleLimit:showOperationDetails.SingleLimit, dailyLimit:showOperationDetails.DailyLimit);
+        ToAddressHandler(showOperationDetails, showOperationDetails.ToAddress);
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
@@ -386,6 +401,54 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
                 : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString(), operationDetails, input.SecondaryEmail, showOperationDetailsJson);
         return result;
+    }
+
+    private static void ToAddressHandler(ShowOperationDetailsDto showOperationDetails, string toAddress)
+    {
+        if (toAddress.IsNullOrEmpty())
+        {
+            return ;
+        }
+
+        var length = toAddress.Length / 2;
+        showOperationDetails.ToAddress = string.Concat(toAddress.AsSpan(0, length), "\n", toAddress.AsSpan(length));
+    }
+
+    private async Task AmountHandler(ShowOperationDetailsDto showOperationDetailsDto, OperationType operationType,
+        string chainId, string symbol, string amount, string singleLimit, string dailyLimit)
+    {
+        if (chainId.IsNullOrEmpty() || symbol.IsNullOrEmpty() || OperationType.GuardianApproveTransfer.Equals(operationType))
+        {
+            return ;
+        }
+
+        if (amount.IsNullOrEmpty() && singleLimit.IsNullOrEmpty() && dailyLimit.IsNullOrEmpty())
+        {
+            return;
+        }
+        var tokenInfoDto = await GetTokenInfoAsync(chainId, symbol);
+        showOperationDetailsDto.Amount = CalculationHelper.GetAmountInUsd(amount, tokenInfoDto.Decimals);
+        showOperationDetailsDto.SingleLimit = CalculationHelper.GetAmountInUsd(singleLimit, tokenInfoDto.Decimals);
+        showOperationDetailsDto.DailyLimit = CalculationHelper.GetAmountInUsd(dailyLimit, tokenInfoDto.Decimals);
+    }
+    private async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
+    {
+        IndexerTokens dto = null;
+        try
+        {
+            dto = await _tokenProvider.GetTokenInfosAsync(chainId, symbol.Trim().ToUpper(), string.Empty, 0, 1);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "_tokenProvider GetTokenInfosAsync failed");
+        }
+        var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
+        if (tokenInfo == null)
+        {
+            return await _tokenCacheProvider.GetTokenInfoAsync(chainId, symbol, TokenType.Token);
+        }
+
+        return _objectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
