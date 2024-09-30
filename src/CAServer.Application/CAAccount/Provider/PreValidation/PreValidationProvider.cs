@@ -34,16 +34,16 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
     public async Task<bool> ValidateSocialRecovery(RequestSource source, string caHash,
         string chainId, string manager, List<GuardianInfo> guardiansApproved, List<ManagerDto> existedManagers)
     {
-        // if (!RequestSource.Sdk.Equals(source))
-        // {
-        //     return true;
-        // }
+        if (!RequestSource.Sdk.Equals(source))
+        {
+            return true;
+        }
         var sw = new Stopwatch();
         sw.Start();
-        //1 manager check todo for test annotate code
+        //1 manager check 
         if (!existedManagers.IsNullOrEmpty() && existedManagers.Any(mg => mg.Address.Equals(manager)))
         {
-            throw new UserFriendlyException("manager exists error.");
+            _logger.LogWarning("manager exists error. chainId:{0} caHash:{1} manager:{2}", chainId, caHash, manager);
             return false;
         }
         //2 guardian check
@@ -51,18 +51,20 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
         {
             foreach (var preValidationStrategy in _preValidationStrategies)
             {
-                if (preValidationStrategy.ValidateParameters(guardianInfo))
+                if (!preValidationStrategy.ValidateParameters(guardianInfo))
                 {
-                    var result = await preValidationStrategy.PreValidateGuardian(chainId, caHash, manager, guardianInfo);
-                    _logger.LogInformation("============preValidationStrategy succeed");
-                    if (!result)
-                    {
-                        _logger.LogInformation("preValidationStrategy failed type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
-                            preValidationStrategy.Type, chainId, caHash, manager, JsonConvert.SerializeObject(guardianInfo));
-                        throw new UserFriendlyException("guardian:" + preValidationStrategy.Type + "pre validation failed");
-                        return false;
-                    }
+                    continue;
                 }
+
+                var result = await preValidationStrategy.PreValidateGuardian(chainId, caHash, manager, guardianInfo);
+                if (result)
+                {
+                    continue;
+                }
+
+                _logger.LogInformation("preValidationStrategy failed type:{0} chainId:{1} caHash:{2} manager:{3} guardianInfo:{4}",
+                    preValidationStrategy.Type, chainId, caHash, manager, JsonConvert.SerializeObject(guardianInfo));
+                return false;
             }
         }
         sw.Stop();

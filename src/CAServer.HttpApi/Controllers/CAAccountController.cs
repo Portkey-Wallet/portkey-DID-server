@@ -136,12 +136,6 @@ public class CAAccountController : CAServerController
         return await _caAccountService.GetManagerFromCache(manager);
     }
     
-    [HttpGet("recovery/check")]
-    public async Task<bool> CheckSocialRecoveryStatus([Required]string chainId, [Required]string manager, [Required]string caHash)
-    {
-        return await _caAccountService.CheckSocialRecoveryStatus(chainId, manager, caHash);
-    }
-    
     [HttpGet("verify/caHolderExist")]
     public async Task<CAHolderExistsResponseDto> CaHolderExistByAddress(string address)
     {
