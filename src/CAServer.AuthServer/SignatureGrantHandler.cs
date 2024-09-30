@@ -49,7 +49,6 @@ public class SignatureGrantHandler : ITokenExtensionGrant
     private readonly string _lockKeyPrefix = "CAServer:Auth:SignatureGrantHandler:";
     private ISignatureProvider _signatureProvider;
     private IDistributedCache<string> _distributedCache;
-    // private IPreValidationProvider _preValidationProvider;
 
     public async Task<IActionResult> HandleAsync(ExtensionGrantContext context)
     {
@@ -92,7 +91,6 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         var graphqlConfig = context.HttpContext.RequestServices.GetRequiredService<IOptions<GraphQLOption>>().Value;
         var chainOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<ChainOptions>>().Value;
         _signatureProvider = context.HttpContext.RequestServices.GetRequiredService<ISignatureProvider>();
-        // _preValidationProvider = context.HttpContext.RequestServices.GetRequiredService<IPreValidationProvider>();
 
         var managerCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
         if (!managerCheck.HasValue || !managerCheck.Value)
@@ -139,7 +137,6 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             CreateTime = DateTime.UtcNow,
             FromCaServer = true
         });
-        _logger.LogInformation("userId:{0} time:{1} sent login message", user.Id, DateTimeOffset.Now.ToUnixTimeMilliseconds());
         return new SignInResult(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme, claimsPrincipal);
     }
 
@@ -239,19 +236,21 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         ChainOptions chainOptions)
     {
         var graphQlResult = await CheckAddressFromGraphQlAsync(graphQlUrl, caHash, manager);
-        if (!graphQlResult.HasValue || !graphQlResult.Value)
+        if (graphQlResult.HasValue && graphQlResult.Value)
         {
-            _logger.LogDebug("graphql is invalid.");
-            var contractResult = await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
-            if (!contractResult.HasValue || !contractResult.Value)
-            {
-                // var managerCacheDto = await _preValidationProvider.GetManagerFromCache(manager);
-                var result = await _distributedCache.GetAsync(GetCacheKey(manager));
-                return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
-            }
+            return true;
         }
 
-        return true;
+        _logger.LogDebug("graphql is invalid.");
+        var contractResult = await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
+        if (contractResult.HasValue && contractResult.Value)
+        {
+            return true;
+        }
+
+        var result = await _distributedCache.GetAsync(GetCacheKey(manager));
+        return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
+
     }
 
     private string GetCacheKey(string manager)

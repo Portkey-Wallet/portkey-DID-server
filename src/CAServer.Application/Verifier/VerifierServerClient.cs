@@ -408,7 +408,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         };
         await AmountHandler(showOperationDetails, input.OperationType, chainId:input.ChainId, symbol:showOperationDetails.Token,
             amount:showOperationDetails.Amount, singleLimit:showOperationDetails.SingleLimit, dailyLimit:showOperationDetails.DailyLimit);
-        showOperationDetails.ToAddress = ToAddressHandler(showOperationDetails.ToAddress);
+        ToAddressHandler(showOperationDetails, showOperationDetails.ToAddress);
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
         var result = await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
@@ -418,15 +418,15 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return result;
     }
 
-    private string ToAddressHandler(string toAddress)
+    private static void ToAddressHandler(ShowOperationDetailsDto showOperationDetails, string toAddress)
     {
         if (toAddress.IsNullOrEmpty())
         {
-            return string.Empty;
+            return ;
         }
 
         var length = toAddress.Length / 2;
-        return toAddress.Substring(0, length) + "\n" + toAddress.Substring(length);
+        showOperationDetails.ToAddress = string.Concat(toAddress.AsSpan(0, length), "\n", toAddress.AsSpan(length));
     }
 
     private async Task AmountHandler(ShowOperationDetailsDto showOperationDetailsDto, OperationType operationType,
@@ -442,19 +442,9 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             return;
         }
         var tokenInfoDto = await GetTokenInfoAsync(chainId, symbol);
-        _logger.LogInformation("AmountHandler chainId:{0} symbol:{1} result:{2}", chainId, symbol, JsonConvert.SerializeObject(tokenInfoDto));
-        if (!amount.IsNullOrEmpty())
-        {
-            showOperationDetailsDto.Amount = CalculationHelper.GetAmountInUsd(amount, tokenInfoDto.Decimals);
-        }
-        if (!singleLimit.IsNullOrEmpty())
-        {
-            showOperationDetailsDto.SingleLimit = CalculationHelper.GetAmountInUsd(singleLimit, tokenInfoDto.Decimals);
-        }
-        if (!dailyLimit.IsNullOrEmpty())
-        {
-            showOperationDetailsDto.DailyLimit = CalculationHelper.GetAmountInUsd(dailyLimit, tokenInfoDto.Decimals);
-        }
+        showOperationDetailsDto.Amount = CalculationHelper.GetAmountInUsd(amount, tokenInfoDto.Decimals);
+        showOperationDetailsDto.SingleLimit = CalculationHelper.GetAmountInUsd(singleLimit, tokenInfoDto.Decimals);
+        showOperationDetailsDto.DailyLimit = CalculationHelper.GetAmountInUsd(dailyLimit, tokenInfoDto.Decimals);
     }
     private async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
     {

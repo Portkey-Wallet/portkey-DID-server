@@ -210,49 +210,72 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
                 {
                     Id = e.GuardianInfo.VerificationInfo.Id.IsNullOrWhiteSpace()
-                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
-                    Signature = e.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace() 
-                        ? ByteString.Empty : ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
-                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
-                        ? string.Empty : e.GuardianInfo.VerificationInfo.VerificationDoc
+                        ? Hash.Empty
+                        : Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
+                    Signature = e.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace()
+                        ? ByteString.Empty
+                        : ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace()
+                        ? string.Empty
+                        : e.GuardianInfo.VerificationInfo.VerificationDoc
                 },
-                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
-                {
-                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
-                        ? Hash.Empty : Hash.LoadFromHex(e.GuardianInfo.ZkLoginInfo.IdentifierHash),
-                    Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Salt,
-                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Nonce,
-                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.ZkProof,
-                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Issuer,
-                    Kid = e.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.Kid,
-                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.CircuitId,
-                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() ? string.Empty : e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
-                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
-                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
-                    NoncePayload = new NoncePayload
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null
+                    ? new ZkLoginInfo()
+                    : new ZkLoginInfo
                     {
-                        AddManagerAddress = new AddManager
+                        IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
+                            ? Hash.Empty
+                            : Hash.LoadFromHex(e.GuardianInfo.ZkLoginInfo.IdentifierHash),
+                        Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Salt,
+                        Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Nonce,
+                        ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.ZkProof,
+                        Issuer = e.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Issuer,
+                        Kid = e.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Kid,
+                        CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.CircuitId,
+                        PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                        IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                            ? IdentifierHashType.Sha256Hash
+                            : IdentifierHashType.PoseidonHash,
+                        NoncePayload = new NoncePayload
                         {
-                            CaHash = e.CaHash.IsNullOrWhiteSpace()
-                                ? Hash.Empty : Hash.LoadFromHex(e.CaHash),
-                            ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
-                                ? new Address() : Address.FromBase58(e.ManagerInfo.Address),
-                            Timestamp = new Timestamp
+                            AddManagerAddress = new AddManager
                             {
-                                Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
-                                Nanos = 0
+                                CaHash = e.CaHash.IsNullOrWhiteSpace()
+                                    ? Hash.Empty
+                                    : Hash.LoadFromHex(e.CaHash),
+                                ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
+                                    ? new Address()
+                                    : Address.FromBase58(e.ManagerInfo.Address),
+                                Timestamp = new Timestamp
+                                {
+                                    Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
+                                    Nanos = 0
+                                }
                             }
+                        },
+                        ZkProofInfo = new ZkProofInfo
+                        {
+                            ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofPiA },
+                            ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
+                            ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB2 },
+                            ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB3 },
+                            ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofPiC }
                         }
-                    },
-                    ZkProofInfo = new ZkProofInfo
-                    {
-                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofPiA },
-                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
-                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB2 },
-                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB3 },
-                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofPiC }
                     }
-                }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -425,8 +448,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Salt = e.GuardianInfo.ZkLoginInfo.Salt,
                     CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
                     PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
-                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
-                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash
+                        : IdentifierHashType.PoseidonHash,
                     NoncePayload = new NoncePayload()
                     {
                         AddManagerAddress = new AddManager()
@@ -478,8 +502,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Salt = e.GuardianInfo.ZkLoginInfo.Salt,
                     CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
                     PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
-                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
-                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash
+                        : IdentifierHashType.PoseidonHash,
                     NoncePayload = new NoncePayload()
                     {
                         AddManagerAddress = new AddManager()
@@ -529,19 +554,26 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         Salt = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Salt,
                         CircuitId = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.CircuitId,
                         PoseidonIdentifierHash = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.PoseidonIdentifierHash,
-                        IdentifierHashType = g.ZkLoginInfo == null ? IdentifierHashType.Sha256Hash : (g.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() 
-                            ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash),
+                        IdentifierHashType = g.ZkLoginInfo == null
+                            ? IdentifierHashType.Sha256Hash
+                            : (g.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                                ? IdentifierHashType.Sha256Hash
+                                : IdentifierHashType.PoseidonHash),
                         NoncePayload = new NoncePayload()
                         {
                             AddManagerAddress = new AddManager()
                             {
                                 CaHash = e.CaHash.IsNullOrEmpty() ? Hash.Empty : e.CaHash,
-                                ManagerAddress = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
-                                                                       || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null 
-                                    ? new Address() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
-                                Timestamp = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null 
-                                                                  || g.ZkLoginInfo.NoncePayload.AddManagerAddress == null
-                                    ? new Timestamp() : g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                                ManagerAddress = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null
+                                                                       || g.ZkLoginInfo.NoncePayload
+                                                                           .AddManagerAddress == null
+                                    ? new Address()
+                                    : g.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                                Timestamp = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null
+                                                                  || g.ZkLoginInfo.NoncePayload.AddManagerAddress ==
+                                                                  null
+                                    ? new Timestamp()
+                                    : g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
                             }
                         },
                         ZkProofInfo = g.ZkLoginInfo == null ? new ZkProofInfo() : new ZkProofInfo
