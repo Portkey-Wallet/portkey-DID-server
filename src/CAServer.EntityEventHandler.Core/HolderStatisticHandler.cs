@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace CAServer.EntityEventHandler.Core;
 
@@ -40,48 +41,64 @@ public class HolderStatisticHandler : IDistributedEventHandler<HolderExtraInfoEt
 
     public async Task HandleEventAsync(HolderExtraInfoEto eventData)
     {
-        if (eventData.ExtraInfo.IsNullOrEmpty()) return;
-
-        var statisticIndex = new HolderStatisticIndex
+        try
         {
-            Id = eventData.GrainId,
-            OperationType = eventData.OperationType.ToString(),
-            CreateTime = DateTime.UtcNow,
-            Status = AccountOperationStatus.Pending.ToString()
-        };
+            if (eventData.ExtraInfo.IsNullOrEmpty()) return;
 
-        if (eventData.ExtraInfo.TryGetValue(ActivityIdKey, out var activityId))
-        {
-            statisticIndex.ActivityId = activityId.ToString();
+            var statisticIndex = new HolderStatisticIndex
+            {
+                Id = eventData.GrainId,
+                OperationType = eventData.OperationType.ToString(),
+                CreateTime = DateTime.UtcNow,
+                Status = AccountOperationStatus.Pending.ToString()
+            };
+
+            if (eventData.ExtraInfo.TryGetValue(ActivityIdKey, out var activityId))
+            {
+                statisticIndex.ActivityId = activityId.ToString();
+            }
+
+            if (eventData.ExtraInfo.TryGetValue(IpKey, out var ip))
+            {
+                statisticIndex.IpAddress = ip.ToString();
+                statisticIndex.CountryInfo = await GetCountryInfoAsync(ip.ToString());
+            }
+
+            await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
+            _logger.LogInformation(
+                "save HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
+                statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
+                statisticIndex.ActivityId ?? "-");
         }
-
-        if (eventData.ExtraInfo.TryGetValue(IpKey, out var ip))
+        catch (Exception e)
         {
-            statisticIndex.IpAddress = ip.ToString();
-            statisticIndex.CountryInfo = await GetCountryInfoAsync(ip.ToString());
+            _logger.LogError(
+                e, "save HolderExtraInfo data = {0} error {1}", JsonSerializer.Serialize(eventData), e.ToString());
         }
-
-        await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
-        _logger.LogInformation(
-            "save HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
-            statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
-            statisticIndex.ActivityId ?? "-");
     }
 
     public async Task HandleEventAsync(HolderExtraInfoCompletedEto eventData)
     {
-        var statisticIndex = await _holderStatisticRepository.GetAsync(eventData.GrainId);
-        if (statisticIndex == null) return;
+        try
+        {
+            var statisticIndex = await _holderStatisticRepository.GetAsync(eventData.GrainId);
+            if (statisticIndex == null) return;
 
-        statisticIndex.CaAddress = eventData.CaAddress;
-        statisticIndex.CaHash = eventData.CaHash;
-        statisticIndex.Status = eventData.Status;
+            statisticIndex.CaAddress = eventData.CaAddress;
+            statisticIndex.CaHash = eventData.CaHash;
+            statisticIndex.Status = eventData.Status;
 
-        await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
-        _logger.LogInformation(
-            "save completed HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
-            statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
-            statisticIndex.ActivityId ?? "-");
+            await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
+            _logger.LogInformation(
+                "save completed HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
+                statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
+                statisticIndex.ActivityId ?? "-");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                e, "save completed HolderExtraInfo data = {0} error {1}", JsonSerializer.Serialize(eventData), e.ToString());
+        }
     }
 
     private async Task<CountryInfo> GetCountryInfoAsync(string ip)
