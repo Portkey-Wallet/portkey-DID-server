@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
@@ -9,6 +10,7 @@ using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.Users;
 
@@ -27,10 +29,12 @@ public class CAAccountController : CAServerController
     private readonly IGrowthAppService _growthAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly IGoogleZkProvider _googleZkProvider;
+    private readonly ILogger<CAAccountController> _logger;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider)
+        IGrowthAppService growthAppService, IZkLoginProvider zkLoginProvider, IGoogleZkProvider googleZkProvider,
+        ILogger<CAAccountController> logger)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
@@ -39,6 +43,7 @@ public class CAAccountController : CAServerController
         _growthAppService = growthAppService;
         _zkLoginProvider = zkLoginProvider;
         _googleZkProvider = googleZkProvider;
+        _logger = logger;
     }
 
     [HttpPost("register/request")]
@@ -50,14 +55,24 @@ public class CAAccountController : CAServerController
     [HttpPost("recovery/request")]
     public async Task<AccountResultDto> RecoverRequestAsync(RecoveryRequestDto input)
     {
-        return await _caAccountService.RecoverRequestAsync(input);
+        var sw = new Stopwatch();
+        sw.Start();
+        var result = await _caAccountService.RecoverRequestAsync(input);
+        sw.Stop();
+        _logger.LogInformation("controller RecoverRequest cost:{0}", sw.ElapsedMilliseconds);
+        return result;
     }
 
     [HttpGet("guardianIdentifiers")]
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(
         [FromQuery] GuardianIdentifierDto guardianIdentifierDto)
     {
-        return await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+        var sw = new Stopwatch();
+        sw.Start();
+        var result = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+        sw.Stop();
+        _logger.LogInformation("controller GetGuardianIdentifiers cost:{0}", sw.ElapsedMilliseconds);
+        return result;
     }
     
     [HttpPost("guardianIdentifiers/unset")]
@@ -73,7 +88,12 @@ public class CAAccountController : CAServerController
     [HttpGet("registerInfo")]
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
-        return await _guardianAppService.GetRegisterInfoAsync(requestDto);
+        var sw = new Stopwatch();
+        sw.Start();
+        var result = await _guardianAppService.GetRegisterInfoAsync(requestDto);
+        sw.Stop();
+        _logger.LogInformation("controller GetRegisterInfo cost:{0}", sw.ElapsedMilliseconds);
+        return result;
     }
 
     [HttpGet("transactionFee")]
