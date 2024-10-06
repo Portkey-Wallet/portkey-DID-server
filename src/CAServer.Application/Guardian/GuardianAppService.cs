@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
@@ -67,20 +68,27 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
     {
+        var sw = new Stopwatch();
         var hash = "";
         if (!guardianIdentifierDto.GuardianIdentifier.IsNullOrWhiteSpace())
         {
+            //get GuardianIdentifierHash from es
+            sw.Start();
             hash = await GetHashFromIdentifierAsync(guardianIdentifierDto.GuardianIdentifier);
-
+            sw.Stop();
+            _logger.LogInformation("GetGuardianIdentifiersAsync:GetHashFromIdentifierAsync=>cost:{}ms", sw.ElapsedMilliseconds);
             if (string.IsNullOrWhiteSpace(hash))
             {
                 throw new UserFriendlyException($"{guardianIdentifierDto.GuardianIdentifier} not exist.",
                     GuardianMessageCode.NotExist);
             }
         }
+        //get holderInfo from contract
+        sw.Restart();
         var holderInfo = await GetHolderInfosAsync(hash, guardianIdentifierDto.ChainId, guardianIdentifierDto.CaHash,
             guardianIdentifierDto.GuardianIdentifier);
-
+        sw.Stop();
+        _logger.LogInformation("GetGuardianIdentifiersAsync:GetHolderInfosAsync=>cost:{}ms", sw.ElapsedMilliseconds);
         var guardianResult =
             ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
 
@@ -92,12 +100,17 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
 
         var identifierHashList = holderInfo.GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex()).ToList();
-
+        //batch get guardianIdentifierHash's relevant Identifier from es
+        sw.Restart();
         var hashDic = await GetIdentifiersAsync(identifierHashList);
+        sw.Stop();
+        _logger.LogInformation("GetGuardianIdentifiersAsync:GetIdentifiersAsync=>cost:{}ms", sw.ElapsedMilliseconds);
         var identifiers = hashDic?.Values.ToList();
-
+        //get UserExtraInfo from es
+        sw.Restart();
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
-        _logger.LogInformation(".....GetUserExtraInfoAsync userExtraInfos:{0}", JsonConvert.SerializeObject(userExtraInfos));
+        sw.Stop();
+        _logger.LogInformation("GetGuardianIdentifiersAsync:GetUserExtraInfoAsync=>cost:{}ms", sw.ElapsedMilliseconds);
         await AddGuardianInfoAsync(guardianResult.GuardianList?.Guardians, hashDic, userExtraInfos);
         SetGuardianVerifiedZkField(guardianResult, holderInfo);
         return guardianResult;
@@ -132,18 +145,33 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
     }
 
+    //It is necessary to determine whether the originalChainId corresponding to the Identifier will change.
+    //If it does not change, it can be cached periodically or requested to be cached by the interface
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
         if (_appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
         {
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
+        //get guardianIdentifierHash from mongodb，confirm if caching is possible Identifier=>guardianIdentifierHash
+        var sw = new Stopwatch();
+        sw.Start();
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
+        sw.Stop();
+        _logger.LogInformation("GetRegisterInfoAsync:GetHash=>cost:{}ms", sw.ElapsedMilliseconds);
+        //get Guardians from ae-finder，parameter is guardian Identifier Hash and CaHash(not required)
+        sw.Restart();
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
+        sw.Stop();
+        _logger.LogInformation("GetRegisterInfoAsync:GetGuardiansAsync=>cost:{}ms", sw.ElapsedMilliseconds);
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
+        sw.Restart();
         var originChainId = guardian == null
+        //get original chain id from contract if ae-finder doesn't exist
             ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
             : guardian.OriginChainId;
+        sw.Stop();
+        _logger.LogInformation("GetRegisterInfoAsync:GetOriginChainIdAsync=>cost:{}ms", sw.ElapsedMilliseconds);
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
