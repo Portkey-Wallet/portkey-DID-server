@@ -69,6 +69,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
         Configure<HamsterOptions>(configuration.GetSection("Hamster"));
+        Configure<TonGiftsOptions>(configuration.GetSection("TonGifts"));
 
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);

@@ -23,7 +23,14 @@ public class TonGiftsValidateWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogDebug("Init referral data starting....");
-        await _growthStatisticAppService.TonGiftsValidateAsync();
+        _logger.LogDebug("TonGiftsValidateAsync DoWorkAsync starting....");
+        try
+        {
+            await _growthStatisticAppService.TonGiftsValidateAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogDebug(e, "TonGiftsValidateAsync DoWorkAsync error, {0}", e.Message);
+        }
     }
 }
