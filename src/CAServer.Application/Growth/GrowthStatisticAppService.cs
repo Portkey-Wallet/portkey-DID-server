@@ -17,14 +17,18 @@ using CAServer.EnumType;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Growth.constant;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
+using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
+using NUglify.Helpers;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -32,6 +36,7 @@ using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
 using Volo.Abp.Validation;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
@@ -810,61 +815,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     {
         var expire = TimeSpan.FromDays(30);
         await _cacheProvider.SetAddAsync(HamsterTonGiftsUserIdsKey, userId, expire);
-    }
-
-    public async Task TonGiftsValidateAsync()
-    {
-        var userIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsUserIdsKey);
-        if (userIds.Length == 0)
-        {
-            _logger.LogDebug("No users need to be validate.");
-            return;
-        }
-
-        var ids = new List<string>();
-        foreach (var id in userIds)
-        {
-            var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", id);
-            var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
-            var guardian = guardianGrain.GetGuardianAsync(id).Result;
-            if (!guardian.Message.IsNullOrEmpty())
-            {
-                _logger.LogDebug("TonGift validate error : query user from grain error:{error}", guardian.Message);
-                continue;
-            }
-
-            var identifierHash = guardian.Data.IdentifierHash;
-            var caHolderInfo =
-                await _activityProvider.GetCaHolderInfoAsync(identifierHash);
-            if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
-            {
-                _logger.LogDebug("TonGift validate error : query user from graphQl error: user not exists");
-                continue;
-            }
-
-            ids.Add(id);
-        }
-
-        var param = new TonGiftsRequestDto()
-        {
-            TaskId = _tonGiftsOptions.TaskId,
-            Status = "completed",
-            UserIds = ids
-        };
-        var rawStr = JsonConvert.SerializeObject(param);
-        var t = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString();
-        var Hash = HMACSHA256Helper.ComputeHash("rawStr=" + param + "&t=" + t, _tonGiftsOptions.ApiKey);
-        var apiKey = _tonGiftsOptions.ApiKey;
-        const string url = "https://devmini.tongifts.app/";
-        var client = _httpClientFactory.CreateClient();
-        var tokenParam = JsonConvert.SerializeObject(new
-            { rawStr, apiKey, Hash, t });
-        var requestParam = new StringContent(tokenParam,
-            Encoding.UTF8,
-            MediaTypeNames.Application.Json);
-
-        var response = await client.PostAsync(url, requestParam);
-        var result = await response.Content.ReadAsStringAsync();
     }
 
     public async Task<GetGrowthInfosDto> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
