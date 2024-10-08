@@ -996,13 +996,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             key1 = "value1",
             key2 = "value2"
         };
+
+        var aa=  JsonConvert.SerializeObject(data);
         
         using (var client = new HttpClient())
         {
-            var content = new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
+            var content = new StringContent("{\"key1\":\"value1\",\"key2\":\"value2\"}", Encoding.UTF8, "application/json");
             HttpResponseMessage response = await client.PostAsync(url, content);
             string responseData = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client response2: {0}", responseData);
+            _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client response3: {0} {1}", responseData,aa);
         }
     }
 
