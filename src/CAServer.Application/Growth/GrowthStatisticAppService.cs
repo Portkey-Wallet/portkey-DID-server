@@ -971,7 +971,10 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         var client = _httpClientFactory.CreateClient();
         var tokenParam = JsonConvert.SerializeObject(param);
+        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client requestParam: {0}",JsonSerializer.Serialize(tokenParam));
         var requestParam = new StringContent(tokenParam, Encoding.UTF8, MediaTypeNames.Application.Json);
+        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client requestParam: {0}",JsonSerializer.Serialize(requestParam));
+
         var response = await client.PostAsync(_tonGiftsOptions.HostUrl, requestParam);
         var result = await response.Content.ReadAsStringAsync();
         _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client response: {0}",result);
