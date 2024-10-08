@@ -68,7 +68,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
-        IActivityProvider activityProvider, IGraphQLProvider _graphQlProvider, ILogger<GrowthStatisticAppService> logger,
+        IActivityProvider activityProvider, IGraphQLProvider graphQlProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
         IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IClusterClient clusterClient,
@@ -78,7 +78,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _caHolderRepository = caHolderRepository;
         _cacheProvider = cacheProvider;
         _activityProvider = activityProvider;
-        _graphQlProvider = _graphQlProvider;
+        _graphQlProvider = graphQlProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
         _clusterClient = clusterClient;
