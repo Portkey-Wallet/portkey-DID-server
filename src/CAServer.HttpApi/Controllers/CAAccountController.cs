@@ -59,7 +59,7 @@ public class CAAccountController : CAServerController
         sw.Start();
         var result = await _caAccountService.RecoverRequestAsync(input);
         sw.Stop();
-        _logger.LogInformation("controller RecoverRequest cost:{0}", sw.ElapsedMilliseconds);
+        _logger.LogInformation("controller RecoverRequest cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
     }
 
@@ -71,7 +71,7 @@ public class CAAccountController : CAServerController
         sw.Start();
         var result = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
         sw.Stop();
-        _logger.LogInformation("controller GetGuardianIdentifiers cost:{0}", sw.ElapsedMilliseconds);
+        _logger.LogInformation("controller GetGuardianIdentifiers cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
     }
     
@@ -92,7 +92,7 @@ public class CAAccountController : CAServerController
         sw.Start();
         var result = await _guardianAppService.GetRegisterInfoAsync(requestDto);
         sw.Stop();
-        _logger.LogInformation("controller GetRegisterInfo cost:{0}", sw.ElapsedMilliseconds);
+        _logger.LogInformation("controller GetRegisterInfo cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
     }
 
