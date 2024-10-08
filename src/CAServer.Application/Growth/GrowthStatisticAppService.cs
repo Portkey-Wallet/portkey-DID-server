@@ -976,6 +976,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         // var client = _httpClientFactory.CreateClient();
         var client = new HttpClient();
         var tokenParam = JsonConvert.SerializeObject(param);
+        send(_tonGiftsOptions.HostUrl, tokenParam);
         _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client requestParam: {0} {1}", tokenParam, _tonGiftsOptions.HostUrl);
         var requestParam = new StringContent(tokenParam, Encoding.UTF8, MediaTypeNames.Application.Json);
         _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client requestParam: {0}", JsonSerializer.Serialize(requestParam));
@@ -986,6 +987,16 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         // handle reusult
         await handleTonGiftsResult(result, ids);
+    }
+    public async void send(string url, string data)
+    {
+        using (var client = new HttpClient())
+        {
+            var content = new StringContent(data, Encoding.UTF8, "application/json");
+            HttpResponseMessage response = await client.PostAsync(url, content);
+            string responseData = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client response2: {0}", responseData);
+        }
     }
 
     private async Task handleTonGiftsResult(string result, List<string> allIDs)
