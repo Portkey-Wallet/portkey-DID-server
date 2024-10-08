@@ -949,6 +949,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task TonGiftsToCall(HashSet<string> telegramIdSet)
     {
+        // todo del
+        await _cacheProvider.Delete(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId);
+        await _cacheProvider.Delete(HamsterTonGiftsConstant.UserIdsKey);
         // insert
         var doneList = await _cacheProvider.SetMembersAsync(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId);
         var toAddList = telegramIdSet.Where(t => !doneList.Contains(t)).ToList();
