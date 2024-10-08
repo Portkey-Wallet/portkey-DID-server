@@ -1001,6 +1001,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         
         using (var client = new HttpClient())
         {
+            client.DefaultRequestHeaders.Add("User-Agent", "curl/7.68.0");
             var content = new StringContent("{\"key1\":\"value1\",\"key2\":\"value2\"}", Encoding.UTF8, "application/json");
             HttpResponseMessage response = await client.PostAsync(url, content);
             string responseData = await response.Content.ReadAsStringAsync();
