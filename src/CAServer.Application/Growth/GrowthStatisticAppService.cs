@@ -973,7 +973,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         };
         param.S = HMACSHA256Helper.GenerateSignature(param, _tonGiftsOptions.ApiKey);
 
-        var client = _httpClientFactory.CreateClient();
+        // var client = _httpClientFactory.CreateClient();
+        var client = new HttpClient();
         var tokenParam = JsonConvert.SerializeObject(param);
         _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client requestParam: {0} {1}", tokenParam, _tonGiftsOptions.HostUrl);
         var requestParam = new StringContent(tokenParam, Encoding.UTF8, MediaTypeNames.Application.Json);
