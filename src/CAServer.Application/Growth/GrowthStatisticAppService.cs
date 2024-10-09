@@ -916,6 +916,7 @@ public async Task TonGiftsValidateAsync()
 
         string startBlockHeight = await _cacheProvider.Get(HamsterTonGiftsConstant.HeightKey);
         long endBlockHeight = await _graphQlProvider.GetIndexBlockHeightAsync(_tonGiftsOptions.ChainId);
+        endBlockHeight += 1000;
         if (null == startBlockHeight)
         {
             await _cacheProvider.Set(HamsterTonGiftsConstant.HeightKey, endBlockHeight.ToString(), HamsterTonGiftsConstant.KeyExpire);
