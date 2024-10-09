@@ -7,4 +7,6 @@ public interface IIpInfoAppService
     Task<IpInfoResultDto> GetIpInfoAsync();
 
     string GetRemoteIp();
+    
+    string GetRemoteIp(string random);
 }

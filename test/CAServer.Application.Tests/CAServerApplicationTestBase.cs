@@ -8,7 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using CAServer.amazon;
 using CAServer.CAActivity.Provider;
+using CAServer.Cache;
 using CAServer.Entities.Es;
+using CAServer.Hub;
 using CAServer.Options;
 using CAServer.Signature.Provider;
 using MassTransit;
@@ -43,8 +45,12 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
         services.AddSingleton(GetMockInMemoryHarness());
         services.AddSingleton(MockGraphQlOptions());
         services.AddSingleton(MockAwsS3Client());
+        services.AddSingleton(GetMockCacheProvider());
     }
-    
+    private ICacheProvider GetMockCacheProvider()
+    {
+        return new MockCacheProvider();
+    }
     
     protected static ISecretProvider MockSecretProvider()
     {

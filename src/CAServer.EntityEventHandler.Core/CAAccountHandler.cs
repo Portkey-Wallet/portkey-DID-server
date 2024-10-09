@@ -81,7 +81,10 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             _logger.LogInformation("received account register message:{0}", JsonConvert.SerializeObject(eventData));
             _logger.LogDebug("the first event: create register");
             var register = _objectMapper.Map<AccountRegisterCreateEto, AccountRegisterIndex>(eventData);
-
+            if (eventData.GuardianInfo.ZkLoginInfo != null)
+            {
+                register.GuardianInfo.ZkLoginInfo = eventData.GuardianInfo.ZkLoginInfo;
+            }
             register.RegisterStatus = AccountOperationStatus.Pending;
             await _registerRepository.AddAsync(register);
             _logger.LogDebug($"register add success: {JsonConvert.SerializeObject(register)}");
@@ -181,6 +184,14 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
                 RegisterMessage = register.RegisterMessage
             },
             Context = Context
+        });
+
+        await _distributedEventBus.PublishAsync(new HolderExtraInfoCompletedEto
+        {
+            Status = GetAccountStatus(register.RegisterSuccess),
+            CaAddress = register.CaAddress,
+            CaHash = register.CaHash,
+            GrainId = register.GrainId
         });
     }
 

@@ -511,7 +511,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                         };
         }
         await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(redPackageResultDto.Data, input.CaHash);
-        var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id);
+        var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id, input.Random);
         var result = await grain.GrabRedPackageWithIdentityInfo(userId, input.UserCaAddress, ipAddress, identity);
         if (result.Success)
         {

@@ -5,6 +5,7 @@ using CAServer.Commons;
 using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
+using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Monitor;
@@ -140,7 +141,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
         context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
         context.AddBackgroundWorkerAsync<ChainHeightWorker>();
-        
+        // context.AddBackgroundWorkerAsync<SendingTransactionInfoByEmailAfterApprovalWorker>();
+        // context.AddBackgroundWorkerAsync<SyncronizeZkloginPoseidonHashWorker>();
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 

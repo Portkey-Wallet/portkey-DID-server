@@ -50,6 +50,91 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
         return result;
     }
+    
+    public async Task<GrainResultDto<GuardianGrainDto>> AddGuardianWithPoseidonHashAsync(string identifier, string salt,
+        string identifierHash, string poseidonHash, string originalIdentifier = "")
+    {
+        var result = new GrainResultDto<GuardianGrainDto>();
+
+        if (!string.IsNullOrEmpty(State.IdentifierHash) && !State.IsDeleted)
+        {
+            result.Message = "Guardian hash info has already exist.";
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            return result;
+        }
+
+        State.Id = this.GetPrimaryKeyString();
+        State.Identifier = identifier;
+        State.OriginalIdentifier = originalIdentifier;
+        State.Salt = salt;
+        State.IdentifierHash = identifierHash;
+        State.IsDeleted = false;
+        State.IdentifierPoseidonHash = poseidonHash;
+        
+        await WriteStateAsync();
+        result.Success = true;
+
+        result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        return result;
+    }
+    
+    public async Task<GrainResultDto<GuardianGrainDto>> UpdateGuardianAsync(string identifier, string salt,
+        string identifierHash)
+    {
+        var result = new GrainResultDto<GuardianGrainDto>();
+
+        if (!State.Identifier.Equals(identifier))
+        {
+            result.Message = "Guardian does not exist.";
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            return result;
+        }
+        
+        if (State.IsDeleted)
+        {
+            result.Message = "Guardian has been removed.";
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            return result;
+        }
+
+        State.Salt = salt;
+        State.IdentifierHash = identifierHash;
+        
+        await WriteStateAsync();
+        result.Success = true;
+
+        result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        return result;
+    }
+    
+    public async Task<GrainResultDto<GuardianGrainDto>> AppendGuardianPoseidonHashAsync(string identifier, string identifierPoseidonHash)
+    {
+        var result = new GrainResultDto<GuardianGrainDto>();
+
+        if (!State.Identifier.Equals(identifier))
+        {
+            result.Success = false;
+            result.Message = "Guardian does not exist.";
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            return result;
+        }
+        
+        if (State.IsDeleted)
+        {
+            result.Success = false;
+            result.Message = "Guardian has been removed.";
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            return result;
+        }
+
+        State.IdentifierPoseidonHash = identifierPoseidonHash;
+        
+        await WriteStateAsync();
+        result.Success = true;
+
+        result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        return result;
+    }
 
     public Task<GrainResultDto<GuardianGrainDto>> GetGuardianAsync(string identifier)
     {

@@ -8,4 +8,5 @@ public class VerifierServerResponse
     //VerifierSessionId
     public Guid VerifierSessionId { get; set;}
 
+    public string VerifierServerEndpoint { get; set; }
 }

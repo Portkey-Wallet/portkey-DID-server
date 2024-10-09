@@ -10,4 +10,6 @@ public class GrabRedPackageInputDto
     [Required] public string UserCaAddress { get; set; }
     public string CaHash { get; set; }
     public RedPackageDisplayType RedPackageDisplayType { get; set; }
+    
+    public string Random { get; set; }
 }

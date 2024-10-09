@@ -14,6 +14,9 @@ using CAServer.Tokens.Provider;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using CAServer.ZeroHoldings;
+using CAServer.ZeroHoldings.constant;
+using CAServer.ZeroHoldings.Dtos;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -52,6 +55,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     private readonly TokenListOptions _tokenListOptions;
     private readonly IContractProvider _contractProvider;
     private readonly NftToFtOptions _nftToFtOptions;
+    private readonly IZeroHoldingsConfigAppService _zeroHoldingsConfigAppService;
 
     public TokenNftAppService(
         ILogger<TokenDisplayAppService> logger, IUserAssetsProvider userAssetsProvider,
@@ -63,7 +67,9 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         IDistributedCache<string> userTokenBalanceCache,
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
-        IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
+        IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
+        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
+        )
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -82,6 +88,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         _ipfsOptions = ipfsOption.Value;
         _tokenListOptions = tokenListOptions.Value;
         _nftToFtOptions = nftToFtOptions.Value;
+        _zeroHoldingsConfigAppService = zeroHoldingsConfigAppService;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -196,12 +203,40 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
+            dto.Data.ForEach(t =>
+            {
+                if (decimal.TryParse(t.Balance, out var balance))
+                {
+                    t.Balance = balance < 0 ? "0" : t.Balance;
+                }
+            });
+
+            // await filterZeroByConfig(dto);
+            
             return dto;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "GetTokenAsync Error. {dto}", requestDto);
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
+        }
+    }
+    
+    private async Task filterZeroByConfig(GetTokenDto dto)
+    {
+        try
+        {
+            ZeroHoldingsConfigDto config = await _zeroHoldingsConfigAppService.GetStatus();
+            if (ZeroHoldingsConfigConstant.CloseStatus == config.Status)
+            {
+                List<Token> filterData = dto.Data.Where(d => decimal.Parse(d.Balance) == 0).ToList();
+                dto.Data = filterData;
+                dto.TotalRecordCount = filterData.Count;
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "filterZeroByConfig Error. {dto}", dto);
         }
     }
 

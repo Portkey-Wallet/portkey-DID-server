@@ -31,4 +31,10 @@ public class DataReportController : CAServerController
     {
         await _dataReportAppService.ReportTransactionAsync(input);
     }
+    
+    [HttpPost("account"), Authorize]
+    public async Task ReportAccountAsync(AccountReportDto input)
+    {
+        await _dataReportAppService.ReportAccountAsync(input);
+    }
 }

@@ -1,6 +1,7 @@
 using AElf.Client.Dto;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Dtos;
 using CAServer.Hubs;
 using Portkey.Contracts.CA;
@@ -30,7 +31,6 @@ public class CreateHolderDto : ContractDtoBase
     public GuardianInfo GuardianInfo { get; set; }
     
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
-
 }
 
 public class SocialRecoveryDto : ContractDtoBase

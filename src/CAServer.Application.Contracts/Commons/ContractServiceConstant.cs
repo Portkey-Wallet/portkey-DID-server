@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CAServer.Commons;
 
@@ -16,6 +17,30 @@ public static class AElfContractMethodName
     public const string SocialRecovery = "SocialRecovery";
     public const string ManagerForwardCall = "ManagerForwardCall";
     public const string Issue = "Issue";
+    public const string CreateCAHolder = "CreateCAHolder";
+    public const string RemoveGuardian = "RemoveGuardian";
+    public const string UpdateGuardian = "UpdateGuardian";
+    public const string RemoveOtherManagerInfo = "RemoveOtherManagerInfo";
+    public const string SetGuardianForLogin = "SetGuardianForLogin";
+    public const string UnsetGuardianForLogin = "UnsetGuardianForLogin";
+    public const string SetTransferLimit = "SetTransferLimit";
+    public const string RemoveManagerInfo = "RemoveManagerInfo";
+    public const string GuardianApproveTransfer = "GuardianApproveTransfer";
+    public const string VerifyZkLogin = "VerifyZkLogin";
+    public const string VerifySignature = "VerifySignature";
+    public static List<string> MethodNames = new List<string>()
+    {
+        CreateCAHolder,
+        SocialRecovery,
+        AddGuardian,
+        RemoveGuardian,
+        UpdateGuardian,
+        RemoveOtherManagerInfo,
+        SetGuardianForLogin,
+        SetTransferLimit,
+        UnsetGuardianForLogin,
+        RemoveManagerInfo,
+    };
 }
 
 public static class CommonConstant
@@ -135,4 +160,6 @@ public static class CommonConstant
     public const string HamsterKingSymbol = "KINGHAMSTER-1";
 
     public const string VersionName = "Version";
+    
+    public const string TokenInfoCachePrefix = "TokenInfo";
 }

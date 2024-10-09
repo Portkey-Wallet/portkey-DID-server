@@ -112,7 +112,7 @@ public class CAServerHttpApiHostModule : AbpModule
             options => { options.Configuration.ChannelPrefix = "CAServer"; });
         ConfigAuditing();
     }
-
+    
     private void ConfigureCache(IConfiguration configuration)
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });

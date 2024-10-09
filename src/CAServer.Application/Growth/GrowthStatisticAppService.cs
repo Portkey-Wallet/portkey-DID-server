@@ -18,6 +18,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Growth.constant;
+using CAServer.Grains.Grain.Guardian;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
 using CAServer.Guardian;
@@ -35,6 +36,7 @@ using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
 using JsonSerializer = System.Text.Json.JsonSerializer;
+using Volo.Abp.Validation;
 using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
@@ -56,7 +58,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly HamsterOptions _hamsterOptions;
     private readonly BeInvitedConfigOptions _beInvitedConfigOptions;
     private const string RepairDataCache = "Hamster:DataRepairKey";
-
+    private const string HamsterTonGiftsUserIdsKey = "Hamster:TonGifts:UserIdsKey";
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly TonGiftsOptions _tonGiftsOptions;
@@ -681,11 +683,11 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         {
             return new ValidateHamsterScoreResponseDto
             {
-                Result = new Result
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg =
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = guardian.Message
                 }
@@ -695,34 +697,36 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var identifierHash = guardian.Data.IdentifierHash;
         var caHolderInfo =
             await _activityProvider.GetCaHolderInfoAsync(identifierHash);
-        if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
+        if (caHolderInfo == null || caHolderInfo.CaHolderInfo?.Count == 0)
         {
             return new ValidateHamsterScoreResponseDto()
             {
-                Result =
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg =
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = "Account not exist."
                 }
             };
         }
 
-        var address = caHolderInfo.CaHolderInfo.FirstOrDefault()?.CaAddress;
+        var address = caHolderInfo.CaHolderInfo?.FirstOrDefault()?.CaAddress;
+        var formatAddress = _hamsterOptions.AddressPrefix + address + _hamsterOptions.AddressSuffix;
         var hamsterScoreList =
-            await _growthProvider.GetHamsterScoreListAsync(new List<string> { address }, DateTime.UtcNow.AddDays(-1),
+            await _growthProvider.GetHamsterScoreListAsync(new List<string> { formatAddress },
+                DateTime.UtcNow.AddDays(-1),
                 DateTime.UtcNow);
         if (hamsterScoreList.GetScoreInfos?.Count == 0)
         {
-            return new ValidateHamsterScoreResponseDto()
+            return new ValidateHamsterScoreResponseDto
             {
-                Result = new Result
+                Result = new Result()
                 {
                     ValidateResult = false
                 },
-                ErrorMsg = new ErrorMsg
+                ErrorMsg = new ErrorMsg()
                 {
                     Message = "Validate failed."
                 }
@@ -731,7 +735,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         return new ValidateHamsterScoreResponseDto
         {
-            Result = new Result
+            Result = new Result()
             {
                 ValidateResult = true
             }
@@ -807,7 +811,21 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
     }
 
-    public async Task TonGiftsValidateAsync()
+    
+    public async Task<GetGrowthInfosDto> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
+    {
+        if (input.ReferralCodes.IsNullOrEmpty() && input.ProjectCode.IsNullOrEmpty())
+        {
+            throw new AbpValidationException("referralCodes and projectCode is empty.");
+        }
+        var result = await _growthProvider.GetGrowthInfosAsync(input);
+        return new GetGrowthInfosDto()
+        {
+            TotalRecordCount = result.Item1,
+            Data = ObjectMapper.Map<List<GrowthIndex>, List<GrowthUserInfoDto>>(result.Item2)
+        };
+    }
+public async Task TonGiftsValidateAsync()
     {
         if (!_tonGiftsOptions.IsStart)
         {
@@ -970,7 +988,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             HamsterTonGiftsConstant.KeyExpire);
         await _cacheProvider.SetRemoveAsync(HamsterTonGiftsConstant.UserIdsKey, successfulUpdates);
     }
-
+    
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
         var caHolderList = await GetCaHolderByCaHashAsync(caHashes);

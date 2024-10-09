@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CAServer.Options;
 using CAServer.Verifier;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -51,7 +52,6 @@ public class AccelerateManagerProvider : IAccelerateManagerProvider, ISingletonD
         {
             return string.Empty;
         }
-
         var detailsDto = JsonConvert.DeserializeObject<OperationDetailsDto>(operationDetailsJson);
         return operationDetailsProvider.GenerateOperationDetails(detailsDto);
     }

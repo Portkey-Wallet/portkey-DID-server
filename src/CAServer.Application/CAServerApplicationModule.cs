@@ -76,6 +76,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<UserProfilePictureOptions>(configuration.GetSection("UserPictures"));
         Configure<MarketCacheOptions>(configuration.GetSection("MarketCache"));
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
+        Configure<SecondaryEmailOptions>(configuration.GetSection("SecondaryEmail"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
@@ -93,9 +94,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
         Configure<BeInvitedConfigOptions>(configuration.GetSection("BeInvitedConfig"));
         Configure<HamsterOptions>(configuration.GetSection("Hamster"));
-        
-        
-        
+        Configure<AddTokenOptions>(configuration.GetSection("AddToken"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -114,7 +113,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
-
+        context.Services.AddSingleton<IPreValidationStrategy, ZkLoginPreValidationProvider>();
+        context.Services.AddSingleton<IPreValidationStrategy, SignaturePreValidationProvider>();
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
 
@@ -156,6 +156,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        Configure<TelegramVerifierOptions>(configuration.GetSection("TelegramVerifier"));
         // Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
         Configure<ManagerCountLimitOptions>(configuration.GetSection("ManagerCountLimit"));
         Configure<UserGuideInfoOptions>(configuration.GetSection("GuideInfo"));

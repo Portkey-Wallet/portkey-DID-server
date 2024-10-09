@@ -36,6 +36,8 @@ public interface IGrowthProvider
     Task<ScoreInfos> GetHamsterScoreListAsync(List<string> addresses, DateTime startTime, DateTime endTime);
 
     Task<List<InviteRepairIndex>> GetInviteRepairIndexAsync();
+
+    Task<Tuple<long, List<GrowthIndex>>> GetGrowthInfosAsync(GetGrowthInfosRequestDto input);
 }
 
 public class GrowthProvider : IGrowthProvider, ISingletonDependency
@@ -169,7 +171,7 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
     {
         var record =
             await GetReferralRecordListAsync(referralRecordIndex.CaHash, referralRecordIndex.ReferralCaHash, 0, 1,
-                null, null, new List<int> { referralRecordIndex.ReferralType});
+                null, null, new List<int> { referralRecordIndex.ReferralType });
         if (!record.IsNullOrEmpty())
         {
             return false;
@@ -186,6 +188,36 @@ public class GrowthProvider : IGrowthProvider, ISingletonDependency
         var (total, data) = await _inviteRepairRepository.GetListAsync(Filter, skip: 0, limit: Int16.MaxValue);
         return data;
     }
+
+    public async Task<Tuple<long, List<GrowthIndex>>> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GrowthIndex>, QueryContainer>>();
+        
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.ProjectCode).Value(input.ProjectCode)));
+
+        if (!input.ReferralCodes.IsNullOrEmpty())
+        {
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.InviteCode).Terms(input.ReferralCodes)));
+        }
+
+        if (input.StartTime.HasValue)
+        {
+            mustQuery.Add(q => q.DateRange(i =>
+                i.Field(f => f.CreateTime).LessThanOrEquals(input.StartTime)));
+        }
+        
+        if (input.EndTime.HasValue)
+        {
+            mustQuery.Add(q => q.DateRange(i =>
+                i.Field(f => f.CreateTime).LessThanOrEquals(input.EndTime)));
+        }
+
+        QueryContainer Filter(QueryContainerDescriptor<GrowthIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var result = await _growthRepository.GetListAsync(Filter, sortExp: k => k.CreateTime,
+            sortType: SortOrder.Ascending, skip: input.SkipCount, limit: input.MaxResultCount);
+        return result ;
+    }
+   
 
     public async Task<ScoreInfos> GetHamsterScoreListAsync(List<string> caAddressList, DateTime beginTime,
         DateTime endTime)

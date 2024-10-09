@@ -66,6 +66,27 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             }
         });
     }
+    
+    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,
+        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount, long startHeight, long endHeight)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
+        {
+            Query = @"
+			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount},isManagerConsumer,
+                            toContractAddress,tokenTransferInfos{tokenInfo{symbol,decimals,tokenName,tokenContractAddress},nftInfo{symbol,decimals,tokenName,collectionName,collectionSymbol,inscriptionName,imageUrl},transferInfo{amount,fromAddress,fromCAAddress,toAddress,fromChainId,toChainId}}},totalRecordCount
+                    }
+                }",
+            Variables = new
+            {
+                caAddressInfos = caAddressInfos, chainId = inputChainId, symbol = symbolOpt,
+                methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                startBlockHeight = startHeight, endBlockHeight = endHeight
+            }
+        });
+    }
 
     public async Task<IndexerTransactions> GetActivitiesAsync(string inputChainId, List<string> inputTransactionTypes, long startBlockHeight, long endBlockHeight, int maxResultCount)
     {

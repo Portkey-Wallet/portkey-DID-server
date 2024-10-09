@@ -83,7 +83,14 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         var url = $"{_growthOptions.BaseUrl}/api/app/account/{grainDto.ShortLinkCode}";
         return new ShortLinkDto()
         {
-            ShortLink = url
+            ShortLink = url,
+            UserGrowthInfo = new UserGrowthInfo()
+            {
+                CaHash = grainDto.CaHash,
+                ProjectCode = grainDto.ProjectCode,
+                InviteCode = grainDto.InviteCode,
+                ShortLinkCode = grainDto.ShortLinkCode
+            }
         };
     }
 

@@ -2,12 +2,15 @@ using System;
 using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Threading.Tasks;
+using CAServer.CAAccount;
+using CAServer.CAAccount.Cmd;
 using CAServer.Dtos;
 using CAServer.Google;
 using CAServer.IpWhiteList;
 using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -33,11 +36,14 @@ public class CAVerifierController : CAServerController
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
-
+    private readonly IZkLoginProvider _zkLoginProvider;
+    private readonly ISecondaryEmailAppService _secondaryEmailAppService;
+    
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
-        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService)
+        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService,
+        IZkLoginProvider zkLoginProvider, ISecondaryEmailAppService secondaryEmailAppService)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
@@ -46,6 +52,8 @@ public class CAVerifierController : CAServerController
         _googleAppService = googleAppService;
         _currentUser = currentUser;
         _ipWhiteListAppService = ipWhiteListAppService;
+        _zkLoginProvider = zkLoginProvider;
+        _secondaryEmailAppService = secondaryEmailAppService;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -180,7 +188,7 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
-        
+
         //check guardian isExists;
         var guardianExists =
             await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
@@ -207,6 +215,13 @@ public class CAVerifierController : CAServerController
         return await _verifierAppService.VerifyCodeAsync(requestDto);
     }
 
+    [HttpPost("verifiedzk")]
+    public async Task<VerifiedZkResponse> VerifiedZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
+    {
+        ValidateOperationType(requestDto.OperationType);
+        return await _zkLoginProvider.VerifiedZkLoginAsync(requestDto);
+    }
+
     [HttpPost("verifyGoogleToken")]
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
@@ -220,21 +235,21 @@ public class CAVerifierController : CAServerController
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
-    
+
     [HttpPost("verifyFacebookToken")]
     public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
     {
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyFacebookTokenAsync(requestDto);
     }
-    
+
     [HttpPost("verifyTelegramToken")]
     public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
     {
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyTelegramTokenAsync(requestDto);
     }
-    
+
     [HttpPost("verifyTwitterToken")]
     public async Task<VerificationCodeResponse> VerifyTwitterAsync(VerifyTokenRequestDto requestDto)
     {
@@ -271,8 +286,6 @@ public class CAVerifierController : CAServerController
     {
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
     }
-    
-
 
     private string UserIpAddress(HttpContext context)
     {
@@ -303,5 +316,124 @@ public class CAVerifierController : CAServerController
         {
             throw new UserFriendlyException("OperationType is invalid");
         }
+    }
+    
+    [HttpPost("secondary/email/verify")]
+    [Authorize]
+    public async Task<VerifySecondaryEmailResponse> VerifySecondaryEmailAsync([FromHeader] string recaptchatoken,
+        [FromHeader] string acToken, VerifySecondaryEmailCmd cmd)
+    {
+        if (!_currentUser.IsAuthenticated)
+        {
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifySecondaryEmailResponse();
+        }
+        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        {
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+        }
+        return await VerifyUserIpAndGoogleRecaptchaAsync(recaptchatoken, cmd, acToken);
+    }
+    
+    [HttpPost("verifyCode/secondary/email")]
+    [Authorize]
+    public async Task<VerifySecondaryEmailCodeResponse> VerifySecondaryEmailCodeAsync(VerifySecondaryEmailCodeCmd cmd)
+    {
+        var userId = _currentUser.Id ?? Guid.Empty;
+        if (userId == Guid.Empty)
+        {
+            throw new UserFriendlyException("user not exist");
+        }
+        return await _secondaryEmailAppService.VerifySecondaryEmailCodeAsync(cmd);
+    }
+
+    [HttpGet("secondary/email")]
+    [Authorize]
+    public async Task<GetSecondaryEmailResponse> GetSecondaryEmailAsync()
+    {
+        var userId = _currentUser.Id ?? Guid.Empty;
+        if (userId == Guid.Empty)
+        {
+            throw new UserFriendlyException("user not exist");
+        }
+        return await _secondaryEmailAppService.GetSecondaryEmailAsync(userId);
+    }
+    
+    private async Task<VerifySecondaryEmailResponse> VerifyUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
+        VerifySecondaryEmailCmd cmd, string acToken)
+    {
+        var userIpAddress = UserIpAddress(HttpContext);
+        if (string.IsNullOrWhiteSpace(userIpAddress))
+        {
+            throw new UserFriendlyException("user ip address not exist");
+        }
+        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
+        if (isInWhiteList)
+        {
+            return await GoogleRecaptchaAndSendSecondaryEmailVerifyCodeAsync(recaptchaToken, cmd, acToken);
+        }
+        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
+        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
+        {
+            throw new UserFriendlyException("invalid recaptchaToken and acToken");
+        }
+
+        var response = await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken, cmd.PlatformType);
+        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
+        {
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifySecondaryEmailResponse();
+        }
+
+        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
+            !string.IsNullOrWhiteSpace(recaptchaToken) && response.RcValidResult)
+        {
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+        }
+        HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+        return new VerifySecondaryEmailResponse();
+    }
+    
+    private async Task<VerifySecondaryEmailResponse> GoogleRecaptchaAndSendSecondaryEmailVerifyCodeAsync(string recaptchaToken,
+        VerifySecondaryEmailCmd cmd, string acToken)
+    {
+        var userIpAddress = UserIpAddress(HttpContext);
+        if (string.IsNullOrWhiteSpace(userIpAddress))
+        {
+            _logger.LogDebug("No userIp in header when operation is {operationType}", OperationType.SetSecondaryEmail);
+            return null;
+        }
+
+        var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
+        var googleRecaptchaOpen =
+            await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.SetSecondaryEmail);
+        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
+        if (!switchStatus.IsOpen || !googleRecaptchaOpen)
+        {
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+        }
+
+        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
+        {
+            _logger.LogDebug("No token is provided when operation is {operationType}", OperationType.SetSecondaryEmail);
+            return null;
+        }
+
+        var response = await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken, cmd.PlatformType);
+
+        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
+        {
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifySecondaryEmailResponse();
+        }
+
+        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
+            !string.IsNullOrWhiteSpace(recaptchaToken) &&
+            response.RcValidResult)
+        {
+            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
+        }
+
+        return null;
     }
 }

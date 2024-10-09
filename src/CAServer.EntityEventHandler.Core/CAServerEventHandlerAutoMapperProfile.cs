@@ -1,13 +1,16 @@
+using System;
 using AutoMapper;
 using CAServer.Chain;
 using CAServer.Guardian;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Growth.Etos;
+using CAServer.IpInfo;
 using CAServer.Notify.Etos;
 using CAServer.RedDot.Etos;
 using CAServer.Security.Etos;
@@ -80,5 +83,12 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<RedDotEto, RedDotIndex>();
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
         CreateMap<TwitterStatisticEto, TwitterStatisticIndex>();
+        CreateMap<AccountReportEto, AccountReportIndex>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.CaHash))
+            .ForMember(t => t.ClientType, m => m.MapFrom(f => f.ClientType.ToString()))
+            .ForMember(t => t.OperationType, m => m.MapFrom(f => f.OperationType.ToString()))
+            .ForMember(t => t.CreateTime, f => f.MapFrom(f => DateTime.UtcNow));
+
+        CreateMap<IpInfoDto, CountryInfo>();
     }
 }

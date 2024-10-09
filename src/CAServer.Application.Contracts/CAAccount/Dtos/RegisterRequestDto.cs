@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using AElf.Types;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Commons;
 
 namespace CAServer.Dtos;
@@ -17,12 +18,17 @@ public class RegisterRequestDto : IValidatableObject
 
     [Required] public string ExtraData { get; set; }
     [Required] public string ChainId { get; set; }
-    [Required] public string VerifierId { get; set; }
-    [Required] public string VerificationDoc { get; set; }
-    [Required] public string Signature { get; set; }
+    public string VerifierId { get; set; }
+    public string VerificationDoc { get; set; }
+    public string Signature { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
+    
+    public string AccessToken { get; set; }
+    public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
+    
+    public Dictionary<string, object> ExtraInfo { get; set; } = new();
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
@@ -54,8 +60,67 @@ public class RegisterRequestDto : IValidatableObject
         {
             yield return new ValidationResult(
                 "Invalid ReferralCode.",
-                new[] { "LoginGuardianIdentifier" }
+                new[] { "ReferralInfo" }
             );
+        }
+
+        if (ZkLoginInfo != null)
+        {
+            if (ZkLoginInfo.ZkProof.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo ZkProof.",
+                    new[] { "ZkProof" }
+                );
+            }
+
+            if (ZkLoginInfo.Jwt.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo Jwt.",
+                    new[] { "Jwt" }
+                );
+            }
+
+            if (ZkLoginInfo.Salt.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo Salt.",
+                    new[] { "Salt" }
+                );
+            }
+            
+            if (ZkLoginInfo.Nonce.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo Nonce.",
+                    new[] { "Nonce" }
+                );
+            }
+            
+            if (ZkLoginInfo.CircuitId.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo CircuitId.",
+                    new[] { "CircuitId" }
+                );
+            }
+            
+            if (ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty())
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo PoseidonIdentifierHash.",
+                    new[] { "PoseidonIdentifierHash" }
+                );
+            }
+                    
+            if (ZkLoginInfo.Timestamp <= 0)
+            {
+                yield return new ValidationResult(
+                    "Invalid ZkLoginInfo Timestamp.",
+                    new[] { "Timestamp" }
+                );
+            }
         }
     }
 }

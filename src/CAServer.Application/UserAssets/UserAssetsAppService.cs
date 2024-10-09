@@ -346,6 +346,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return dto;
             }
 
+            _logger.LogInformation("[GetNFTCollectionsAsync] get from indexer: {0}",
+                JsonConvert.SerializeObject(res.CaHolderNFTCollectionBalanceInfo));
+
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
                 var nftCollection =
@@ -1338,7 +1341,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         return new TokenInfoDto
         {
-            Balance = totalBalance.ToString(),
+            Balance = totalBalance > 0 ? totalBalance.ToString() : "0",
             Decimals = resCaHolderTokenBalanceInfo.First().TokenInfo.Decimals.ToString(),
             BalanceInUsd = totalBalanceInUsd.ToString()
         };
