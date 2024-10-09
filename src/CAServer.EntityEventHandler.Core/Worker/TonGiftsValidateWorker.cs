@@ -19,7 +19,7 @@ public class TonGiftsValidateWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _growthStatisticAppService = growthStatisticAppService;
         _logger = logger;
-        Timer.Period = WorkerConst.InitReferralTimePeriod;
+        Timer.Period = WorkerConst.TenSencodsTimePeriod;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
