@@ -926,6 +926,9 @@ public async Task TonGiftsValidateAsync()
         IndexerTransactions indexerTransactions = await _activityProvider.GetActivitiesAsync(_tonGiftsOptions.ChainId, new List<string> { "Play" }, long.Parse
                 (startBlockHeight), endBlockHeight,
             HamsterTonGiftsConstant.MaxResultCount);
+        _logger.LogInformation("TonGiftsValidateAsync getFromAddressSet startBlockHeight = {0} endBlockHeight = {1} ChainId = {2} indexerTransactions = {3}",
+            startBlockHeight, endBlockHeight, _tonGiftsOptions.ChainId, JsonSerializer.Serialize(indexerTransactions));
+
         if (indexerTransactions?.CaHolderTransaction?.Data?.Count == 0)
         {
             nextBlockHeight = long.Parse(startBlockHeight);
