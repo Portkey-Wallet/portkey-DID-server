@@ -275,6 +275,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var caHash = holderInfo?.CaHash?.ToHex();
         if (caHash != null)
         {
+            _logger.LogInformation("RecoverRequest processing SaveManagerInCache started at:{0}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58());
+            _logger.LogInformation("RecoverRequest processing SaveManagerInCache ended at:{0}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
@@ -290,8 +293,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             throw new UserFriendlyException("social recovery validation failed, please try again later");
         }
-        
-        await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58());
         return new AccountResultDto()
         {
             SessionId = recoveryDto.Id.ToString(),
