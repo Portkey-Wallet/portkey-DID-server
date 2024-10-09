@@ -17,19 +17,25 @@ using CAServer.EnumType;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Growth.constant;
+using CAServer.Grains.Grain.Guardian;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
+using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
+using NUglify.Helpers;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 using Volo.Abp.Validation;
 using Result = CAServer.Growth.Dtos.Result;
 
@@ -42,6 +48,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
     private readonly ICacheProvider _cacheProvider;
     private readonly IActivityProvider _activityProvider;
+    private readonly IGraphQLProvider _graphQlProvider;
     private readonly ILogger<GrowthStatisticAppService> _logger;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private const int RankLimit = 50;
@@ -55,21 +62,23 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly TonGiftsOptions _tonGiftsOptions;
+    private readonly IGuardianAppService _guardianAppService;
 
 
     public GrowthStatisticAppService(IGrowthProvider growthProvider,
         INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         ICacheProvider cacheProvider,
-        IActivityProvider activityProvider, ILogger<GrowthStatisticAppService> logger,
+        IActivityProvider activityProvider, IGraphQLProvider graphQlProvider, ILogger<GrowthStatisticAppService> logger,
         IUserAssetsProvider userAssetsProvider, IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions,
         IOptionsSnapshot<HamsterOptions> hamsterOptions,
         IOptionsSnapshot<BeInvitedConfigOptions> beInvitedConfigOptions, IClusterClient clusterClient,
-        IHttpClientFactory httpClientFactory, IOptionsSnapshot<TonGiftsOptions> tonGiftsOptions)
+        IHttpClientFactory httpClientFactory, IOptionsSnapshot<TonGiftsOptions> tonGiftsOptions, IGuardianAppService guardianAppService)
     {
         _growthProvider = growthProvider;
         _caHolderRepository = caHolderRepository;
         _cacheProvider = cacheProvider;
         _activityProvider = activityProvider;
+        _graphQlProvider = graphQlProvider;
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
         _clusterClient = clusterClient;
@@ -78,6 +87,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _beInvitedConfigOptions = beInvitedConfigOptions.Value;
         _hamsterOptions = hamsterOptions.Value;
         _activityConfigOptions = activityConfigOptions.Value;
+        _guardianAppService = guardianAppService;
     }
 
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
@@ -801,67 +811,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
     }
 
-    public async Task CollectHamsterUserIdsAsync(string userId)
-    {
-        var expire = TimeSpan.FromDays(30);
-        await _cacheProvider.SetAddAsync(HamsterTonGiftsUserIdsKey, userId, expire);
-    }
-
-    public async Task TonGiftsValidateAsync()
-    {
-        var userIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsUserIdsKey);
-        if (userIds.Length == 0)
-        {
-            _logger.LogDebug("No users need to be validate.");
-            return;
-        }
-
-        var ids = new List<string>();
-        foreach (var id in userIds)
-        {
-            var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", id);
-            var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
-            var guardian = guardianGrain.GetGuardianAsync(id).Result;
-            if (!guardian.Message.IsNullOrEmpty())
-            {
-                _logger.LogDebug("TonGift validate error : query user from grain error:{error}", guardian.Message);
-                continue;
-            }
-
-            var identifierHash = guardian.Data.IdentifierHash;
-            var caHolderInfo =
-                await _activityProvider.GetCaHolderInfoAsync(identifierHash);
-            if (caHolderInfo == null || caHolderInfo.CaHolderInfo.Count == 0)
-            {
-                _logger.LogDebug("TonGift validate error : query user from graphQl error: user not exists");
-                continue;
-            }
-
-            ids.Add(id);
-        }
-
-        var param = new TonGiftsRequestDto()
-        {
-            TaskId = _tonGiftsOptions.TaskId,
-            Status = "completed",
-            UserIds = ids
-        };
-        var rawStr = JsonConvert.SerializeObject(param);
-        var t = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString();
-        var Hash = HMACSHA256Helper.ComputeHash("rawStr=" + param + "&t=" + t, _tonGiftsOptions.ApiKey);
-        var apiKey = _tonGiftsOptions.ApiKey;
-        const string url = "https://devmini.tongifts.app/";
-        var client = _httpClientFactory.CreateClient();
-        var tokenParam = JsonConvert.SerializeObject(new
-            { rawStr, apiKey, Hash, t });
-        var requestParam = new StringContent(tokenParam,
-            Encoding.UTF8,
-            MediaTypeNames.Application.Json);
-
-        var response = await client.PostAsync(url, requestParam);
-        var result = await response.Content.ReadAsStringAsync();
-    }
-
+    
     public async Task<GetGrowthInfosDto> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
     {
         if (input.ReferralCodes.IsNullOrEmpty() && input.ProjectCode.IsNullOrEmpty())
@@ -875,7 +825,170 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             Data = ObjectMapper.Map<List<GrowthIndex>, List<GrowthUserInfoDto>>(result.Item2)
         };
     }
+public async Task TonGiftsValidateAsync()
+    {
+        if (!_tonGiftsOptions.IsStart)
+        {
+            _logger.LogInformation("TonGiftsValidateAsync not starting");
+        }
 
+        // get transaction list
+        var (fromAddressSet, nextBlockHeight) = await getFromAddressSet();
+        if (fromAddressSet?.Count == 0)
+        {
+            _logger.LogInformation("TonGiftsValidateAsync fromAddressSet = 0");
+            return;
+        }
+
+        _logger.LogInformation("TonGiftsValidateAsync fromAddressSet = {0} nextBlockHeight = {1}", JsonSerializer.Serialize(fromAddressSet),
+            JsonSerializer.Serialize(fromAddressSet));
+
+        // get identifierHash list
+        HashSet<string> identifierHashSet = await getIdentifierHashSet(fromAddressSet);
+        if (identifierHashSet?.Count == 0)
+        {
+            _logger.LogInformation("TonGiftsValidateAsync getIdentifierHashSet = 0");
+            return;
+        }
+
+        _logger.LogInformation("TonGiftsValidateAsync getIdentifierHashSet = {0}", JsonSerializer.Serialize(identifierHashSet));
+
+        // get identifier list
+        HashSet<string> telegramIdSet = await getTelegramIdSet(identifierHashSet);
+        if (telegramIdSet?.Count == 0)
+        {
+            _logger.LogInformation("TonGiftsValidateAsync telegramIdSet = 0");
+            return;
+        }
+
+        _logger.LogInformation("TonGiftsValidateAsync telegramIdSet = {0}", JsonSerializer.Serialize(telegramIdSet));
+
+        // to send, it should not be block process, so add try-catch
+        try
+        {
+            await TonGiftsToCall(telegramIdSet);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "TonGiftsValidateAsync TonGiftsToCall has error {0}", e.Message);
+        }
+
+        // update blockHeight userId 
+        await _cacheProvider.Set(HamsterTonGiftsConstant.HeightKey, nextBlockHeight.ToString(), HamsterTonGiftsConstant.KeyExpire);
+    }
+
+    private async Task<HashSet<string>> getTelegramIdSet(HashSet<string> identifierHashSet)
+    {
+        HashSet<string> telegramIdSet = new HashSet<string>();
+
+        List<GuardianIndexDto> guardianIndexDtos = await _guardianAppService.GetGuardianListAsync(identifierHashSet.ToList());
+        if (guardianIndexDtos?.Count == 0)
+        {
+            return telegramIdSet;
+        }
+
+        guardianIndexDtos.ForEach(t => telegramIdSet.Add(t.Identifier));
+        return telegramIdSet;
+    }
+
+    private async Task<HashSet<string>> getIdentifierHashSet(HashSet<string> fromAddressSet)
+    {
+        HashSet<string> identifierHashSet = new HashSet<string>();
+        GuardiansDto guardiansDto = await _activityProvider.GetCaHolderInfoAsync(fromAddressSet.ToList(), null, 0, HamsterTonGiftsConstant.MaxResultCount);
+        if (guardiansDto?.CaHolderInfo?.Count == 0)
+        {
+            return identifierHashSet;
+        }
+
+        guardiansDto.CaHolderInfo
+            .Where(info => info.GuardianList?.Guardians?.Any() == true)
+            .SelectMany(info => info.GuardianList.Guardians)
+            .Select(guardian => guardian.IdentifierHash)
+            .ForEach(identifierHash => identifierHashSet.Add(identifierHash));
+
+        return identifierHashSet;
+    }
+
+    private async Task<(HashSet<string>, long)> getFromAddressSet()
+    {
+        HashSet<string> fromAddressSet = new HashSet<string>();
+        long nextBlockHeight = 0;
+
+        string startBlockHeight = await _cacheProvider.Get(HamsterTonGiftsConstant.HeightKey);
+        long endBlockHeight = await _graphQlProvider.GetIndexBlockHeightAsync(_tonGiftsOptions.ChainId);
+        if (null == startBlockHeight)
+        {
+            await _cacheProvider.Set(HamsterTonGiftsConstant.HeightKey, endBlockHeight.ToString(), HamsterTonGiftsConstant.KeyExpire);
+            nextBlockHeight = endBlockHeight;
+            return (fromAddressSet, nextBlockHeight);
+        }
+
+        IndexerTransactions indexerTransactions = await _activityProvider.GetActivitiesAsync(_tonGiftsOptions.ChainId, new List<string> { "Play" }, long.Parse
+                (startBlockHeight), endBlockHeight,
+            HamsterTonGiftsConstant.MaxResultCount);
+        if (indexerTransactions?.CaHolderTransaction?.Data?.Count == 0)
+        {
+            nextBlockHeight = long.Parse(startBlockHeight);
+            return (fromAddressSet, nextBlockHeight);
+        }
+
+        fromAddressSet = indexerTransactions.CaHolderTransaction.Data
+            .Where(t => t.ToContractAddress == _tonGiftsOptions.ToContractAddress)
+            .Select(t => t.FromAddress)
+            .ToHashSet();
+        nextBlockHeight = indexerTransactions.CaHolderTransaction.Data.Max(t => t.BlockHeight);
+        return (fromAddressSet, nextBlockHeight);
+    }
+
+    public async Task TonGiftsToCall(HashSet<string> telegramIdSet)
+    {
+        // insert
+        var doneList = await _cacheProvider.SetMembersAsync(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId);
+        var toAddList = telegramIdSet.Where(t => !doneList.Contains(t)).ToList();
+        await _cacheProvider.SetAddAsync(HamsterTonGiftsConstant.UserIdsKey, toAddList, HamsterTonGiftsConstant.KeyExpire);
+
+        var userIds = await _cacheProvider.SetMembersAsync(HamsterTonGiftsConstant.UserIdsKey);
+        if (userIds?.Length == 0)
+        {
+            _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall No users need to be validate.");
+            return;
+        }
+
+        // call
+        var ids = userIds.Select(t => t.ToString()).ToList();
+        var param = new TonGiftsRequestDto()
+        {
+            Status = HamsterTonGiftsConstant.StatusCompleted,
+            UserIds = ids,
+            TaskId = _tonGiftsOptions.TaskId,
+            K = _tonGiftsOptions.Id,
+            T = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()
+        };
+        param.S = HMACSHA256Helper.GenerateSignature(param, _tonGiftsOptions.ApiKey);
+
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("User-Agent", "curl/7.68.0");
+        var tokenParam = JsonConvert.SerializeObject(param);
+        var requestParam = new StringContent(tokenParam, Encoding.UTF8, MediaTypeNames.Application.Json);
+        var response = await client.PostAsync(_tonGiftsOptions.HostUrl, requestParam);
+        var result = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client param = {0} response = {1} taskId = {2}", tokenParam, result, _tonGiftsOptions.TaskId);
+
+        // handle reusult
+        await handleTonGiftsResult(result, ids);
+    }
+
+    private async Task handleTonGiftsResult(string result, List<string> allIDs)
+    {
+        TonGiftsResponseDto responseDto = JsonConvert.DeserializeObject<TonGiftsResponseDto>(result);
+        List<string> successfulUpdates = responseDto.Message.Contains("successfully") ? allIDs : responseDto.SuccessfulUpdates.Select(p => p.UserId).ToList();
+        _logger.LogInformation("TonGiftsValidateAsync handleTonGiftsResult successfulUpdates = {0}", JsonSerializer.Serialize(successfulUpdates));
+
+        await _cacheProvider.SetAddAsync(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId, successfulUpdates,
+            HamsterTonGiftsConstant.KeyExpire);
+        await _cacheProvider.SetRemoveAsync(HamsterTonGiftsConstant.UserIdsKey, successfulUpdates);
+    }
+    
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
         var caHolderList = await GetCaHolderByCaHashAsync(caHashes);
