@@ -160,4 +160,6 @@ public static class CommonConstant
     public const string VersionName = "Version";
     
     public const string TokenInfoCachePrefix = "TokenInfo";
+    public const string SyncStateUri = "apps/sync-state";
+    public const string ReplaceUri = "app/graphql";
 }

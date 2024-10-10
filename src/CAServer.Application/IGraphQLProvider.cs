@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
+using CAServer.Common;
+using CAServer.Commons;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Http.Dtos;
 using CAServer.Options;
 using GraphQL;
 using GraphQL.Client.Http;
@@ -45,33 +48,38 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
     private readonly GraphQLHttpClient _graphQLClient;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<GraphQLProvider> _logger;
+    private readonly IHttpClientService _httpClientService;
 
     public GraphQLProvider(ILogger<GraphQLProvider> logger, IClusterClient clusterClient,
-        IOptionsSnapshot<GraphQLOptions> graphQLOptions)
+        IOptionsSnapshot<GraphQLOptions> graphQLOptions, IHttpClientService httpClientService)
     {
         _logger = logger;
         _clusterClient = clusterClient;
+        _httpClientService = httpClientService;
         _graphQLOptions = graphQLOptions.Value;
         _graphQLClient = new GraphQLHttpClient(_graphQLOptions.Configuration, new NewtonsoftJsonSerializer());
     }
 
+    // todo: handle exception
     public async Task<long> GetIndexBlockHeightAsync(string chainId)
     {
-        var graphQLResponse = await _graphQLClient.SendQueryAsync<ConfirmedBlockHeightRecord>(new GraphQLRequest
+        try
         {
-            Query = @"
-			    query($chainId:String,$filterType:BlockFilterType!) {
-                    syncState(dto: {chainId:$chainId,filterType:$filterType}){
-                        confirmedBlockHeight}
-                    }",
-            Variables = new
+            var url = _graphQLOptions.Configuration.Replace(CommonConstant.ReplaceUri, CommonConstant.SyncStateUri);
+            var blockHeightInfo = await _httpClientService.GetAsync<SyncStateDto>(url);
+            var blockHeightItem = blockHeightInfo?.CurrentVersion?.Items?.FirstOrDefault(t => t.ChainId == chainId);
+            if (blockHeightItem == null)
             {
-                chainId,
-                filterType = BlockFilterType.TRANSACTION
+                return ContractAppServiceConstant.LongEmpty;
             }
-        });
 
-        return graphQLResponse.Data.SyncState.ConfirmedBlockHeight;
+            return blockHeightItem.LongestChainHeight;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[GetIndexBlockHeightAsync] on chain {id} error", chainId);
+            return ContractAppServiceConstant.LongEmpty;
+        }
     }
 
     public async Task<long> GetLastEndHeightAsync(string chainId, string type)
