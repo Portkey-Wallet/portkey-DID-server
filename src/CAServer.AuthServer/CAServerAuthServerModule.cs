@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using AElf.OpenTelemetry;
 using CAServer.Commons;
 using CAServer.Contract;
 using Localization.Resources.AbpUi;
@@ -54,7 +55,8 @@ namespace CAServer;
     typeof(CAServerApplicationContractsModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
-    typeof(CAServerSignatureModule)
+    typeof(CAServerSignatureModule),
+    typeof(OpenTelemetryModule)
 )]
 public class CAServerAuthServerModule : AbpModule
 {

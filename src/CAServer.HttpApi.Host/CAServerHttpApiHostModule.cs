@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using AElf.OpenTelemetry;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
@@ -68,7 +69,8 @@ namespace CAServer;
     typeof(CAServerRedisModule),
     typeof(AbpSwashbuckleModule),
     typeof(CAServerCoinGeckoApiModule),
-    typeof(AbpAspNetCoreSignalRModule)
+    typeof(AbpAspNetCoreSignalRModule),
+    typeof(OpenTelemetryModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
 {

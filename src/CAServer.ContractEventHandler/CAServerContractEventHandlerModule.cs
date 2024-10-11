@@ -1,5 +1,6 @@
 using System;
 using AElf.Indexing.Elasticsearch;
+using AElf.OpenTelemetry;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.ContractEventHandler.Core;
@@ -62,7 +63,8 @@ namespace CAServer.ContractEventHandler;
     typeof(CAServerMongoDbModule),
     typeof(CAServerMonitorModule),
     typeof(AbpBackgroundJobsHangfireModule),
-    typeof(AElfIndexingElasticsearchModule)
+    typeof(AElfIndexingElasticsearchModule),
+    typeof(OpenTelemetryModule)
 )]
 public class CAServerContractEventHandlerModule : AbpModule
 {

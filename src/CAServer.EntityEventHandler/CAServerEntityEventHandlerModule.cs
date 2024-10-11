@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElf.Indexing.Elasticsearch.Options;
+using AElf.OpenTelemetry;
 using CAServer.Cache;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
@@ -49,6 +50,7 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(CAServerCoinGeckoApiModule),
+    typeof(OpenTelemetryModule),
     typeof(AbpEventBusRabbitMqModule))]
 public class CAServerEntityEventHandlerModule : AbpModule
 {

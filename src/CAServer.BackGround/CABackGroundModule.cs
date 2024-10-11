@@ -1,4 +1,5 @@
-﻿using CAServer.CAActivity.Provider;
+﻿using AElf.OpenTelemetry;
+using CAServer.CAActivity.Provider;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
@@ -58,7 +59,8 @@ namespace CAServer.BackGround;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpBackgroundJobsHangfireModule),
-    typeof(AbpEventBusRabbitMqModule)
+    typeof(AbpEventBusRabbitMqModule),
+    typeof(OpenTelemetryModule)
 )]
 public class CABackGroundModule : AbpModule
 {

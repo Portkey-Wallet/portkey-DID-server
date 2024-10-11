@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AElf.OpenTelemetry" Version="8.2.0" />
         <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.1" />
         <PackageReference Include="JsonNet.PrivateSettersContractResolvers" Version="1.0.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
@@ -28,7 +29,7 @@
         <!--        <ProjectReference Include="..\CAServer.BackGround\CAServer.BackGround.csproj" />-->
         <ProjectReference Include="..\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
         <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
-        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" >
+        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </ProjectReference>
