@@ -36,7 +36,7 @@ public class Program
             .UseApolloForHostBuilder()
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
             .UseNightingaleMonitoring()
-            .UseOrleansSnapshot()
             .UseAutofac()
+            .UseOrleansSnapshot()
             .UseSerilog();
 }

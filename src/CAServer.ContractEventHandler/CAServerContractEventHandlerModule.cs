@@ -82,7 +82,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<TransactionReportOptions>(configuration.GetSection("TransactionReport"));
         Configure<SyncChainHeightOptions>(configuration.GetSection("SyncChainHeight"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
-        ConfigureOrleans(context, configuration);
+        // ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
         context.Services.AddSingleton<IContractAppService, ContractAppService>();
         context.Services.AddSingleton<IContractProvider, ContractProvider>();
@@ -131,7 +131,7 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
-        StartOrleans(context.ServiceProvider);
+        // StartOrleans(context.ServiceProvider);
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
@@ -148,52 +148,52 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        StopOrleans(context.ServiceProvider);
+        // StopOrleans(context.ServiceProvider);
     }
 
-    private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        context.Services.AddSingleton(o =>
-        {
-            return new ClientBuilder()
-                .ConfigureDefaults()
-                .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-                .UseMongoDBClustering(options =>
-                {
-                    options.DatabaseName = configuration["Orleans:DataBase"];
-                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = configuration["Orleans:ClusterId"];
-                    options.ServiceId = configuration["Orleans:ServiceId"];
-                })
-                .Configure<ClientMessagingOptions>(options =>
-                {
-                    options.ResponseTimeout =
-                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
-                })
-                .ConfigureApplicationParts(parts =>
-                    parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
-                .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .AddNightingaleMethodFilter(o)
-                .Build();
-        });
-    }
+    // private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
+    // {
+    //     context.Services.AddSingleton(o =>
+    //     {
+    //         return new ClientBuilder()
+    //             .ConfigureDefaults()
+    //             .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
+    //             .UseMongoDBClustering(options =>
+    //             {
+    //                 options.DatabaseName = configuration["Orleans:DataBase"];
+    //                 options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+    //             })
+    //             .Configure<ClusterOptions>(options =>
+    //             {
+    //                 options.ClusterId = configuration["Orleans:ClusterId"];
+    //                 options.ServiceId = configuration["Orleans:ServiceId"];
+    //             })
+    //             .Configure<ClientMessagingOptions>(options =>
+    //             {
+    //                 options.ResponseTimeout =
+    //                     TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+    //                         MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+    //             })
+    //             .ConfigureApplicationParts(parts =>
+    //                 parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
+    //             .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+    //             .AddNightingaleMethodFilter(o)
+    //             .Build();
+    //     });
+    // }
 
 
-    private static void StartOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async () => await client.Connect());
-    }
-
-    private static void StopOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(client.Close);
-    }
+    // private static void StartOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(async () => await client.Connect());
+    // }
+    //
+    // private static void StopOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(client.Close);
+    // }
 
     // TODO Temporary Needed fixed later.
     private void ConfigureTokenCleanupService()

@@ -45,6 +45,7 @@ namespace CAServer.ContractEventHandler
                 })
                 .UseNightingaleMonitoring()
                 .UseAutofac()
+                .UseOrleansClient()
                 .UseSerilog();
     }
 }

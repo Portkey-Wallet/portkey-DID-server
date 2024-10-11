@@ -47,6 +47,7 @@ namespace CAServer.EntityEventHandler
                 })
                 .UseNightingaleMonitoring()
                 .UseAutofac()
+                .UseOrleansClient()
                 .UseSerilog();
     }
 }

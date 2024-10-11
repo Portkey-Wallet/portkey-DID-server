@@ -1,6 +1,7 @@
 using AutoMapper;
 using CAServer.Grains;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Hosting;
 using Orleans.TestingHost;
@@ -31,9 +32,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     public TestCluster Cluster { get; private set; }
 
 
-    private class TestSiloConfigurations : ISiloBuilderConfigurator
+    private class TestSiloConfigurations : ISiloConfigurator
     {
-        public void Configure(ISiloHostBuilder hostBuilder)
+        public void Configure(ISiloBuilder hostBuilder)
         {
             hostBuilder.ConfigureServices(services =>
                 {
@@ -113,9 +114,10 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         public IMapper Mapper { get; set; }
     }
 
-    // private class TestClientBuilderConfigurator : IClientBuilderConfigurator
-    // {
-    //     public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) => clientBuilder
-    //         .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName);
-    // }
+    private class TestClientBuilderConfigurator : IClientBuilderConfigurator
+    {
+        public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) => clientBuilder
+            .AddMemoryStreams(CAServerApplicationConsts.MessageStreamName);
+            // .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName);
+    }
 }

@@ -103,7 +103,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureGraphQl(context, configuration);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
-        ConfigureOrleans(context, configuration);
+        // ConfigureOrleans(context, configuration);
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
         ConfigureMassTransit(context, configuration);
@@ -202,37 +202,37 @@ public class CAServerHttpApiHostModule : AbpModule
         //     });
     }
 
-    private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        context.Services.AddSingleton<IClusterClient>(o =>
-        {
-            return new ClientBuilder()
-                .ConfigureDefaults()
-                .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-                .UseMongoDBClustering(options =>
-                {
-                    options.DatabaseName = configuration["Orleans:DataBase"];
-                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = configuration["Orleans:ClusterId"];
-                    options.ServiceId = configuration["Orleans:ServiceId"];
-                })
-                .Configure<ClientMessagingOptions>(options =>
-                {
-                    //the default timeout before a request is assumed to have failed.
-                    options.ResponseTimeout =
-                        TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
-                })
-                .ConfigureApplicationParts(parts =>
-                    parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
-                .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .AddNightingaleMethodFilter(o)
-                .Build();
-        });
-    }
+    // private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
+    // {
+    //     context.Services.AddSingleton<IClusterClient>(o =>
+    //     {
+    //         return new ClientBuilder()
+    //             .ConfigureDefaults()
+    //             .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
+    //             .UseMongoDBClustering(options =>
+    //             {
+    //                 options.DatabaseName = configuration["Orleans:DataBase"];
+    //                 options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+    //             })
+    //             .Configure<ClusterOptions>(options =>
+    //             {
+    //                 options.ClusterId = configuration["Orleans:ClusterId"];
+    //                 options.ServiceId = configuration["Orleans:ServiceId"];
+    //             })
+    //             .Configure<ClientMessagingOptions>(options =>
+    //             {
+    //                 //the default timeout before a request is assumed to have failed.
+    //                 options.ResponseTimeout =
+    //                     TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+    //                         MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+    //             })
+    //             .ConfigureApplicationParts(parts =>
+    //                 parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
+    //             .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+    //             .AddNightingaleMethodFilter(o)
+    //             .Build();
+    //     });
+    // }
 
     private void ConfigureLocalization()
     {
@@ -397,7 +397,7 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
 
-        StartOrleans(context.ServiceProvider);
+        // StartOrleans(context.ServiceProvider);
 
         // to start pre heat
         _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
@@ -407,18 +407,18 @@ public class CAServerHttpApiHostModule : AbpModule
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        StopOrleans(context.ServiceProvider);
+        //StopOrleans(context.ServiceProvider);
     }
 
-    private static void StartOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async () => await client.Connect());
-    }
-
-    private static void StopOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(client.Close);
-    }
+    // private static void StartOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(async () => await client.Connect());
+    // }
+    //
+    // private static void StopOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(client.Close);
+    // }
 }

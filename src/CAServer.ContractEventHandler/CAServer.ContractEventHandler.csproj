@@ -8,7 +8,10 @@
     <ItemGroup>
         <ProjectReference Include="..\CAServer.ContractEventHandler.Core\CAServer.ContractEventHandler.Core.csproj" />
         <ProjectReference Include="..\CAServer.MongoDB\CAServer.MongoDB.csproj" />
-        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
+        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" >
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </ProjectReference>
         <PackageReference Include="Groth16.Net" Version="1.1.0" />
         <PackageReference Include="Poseidon.Net" Version="0.1.1" />
     </ItemGroup>
