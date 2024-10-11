@@ -124,7 +124,7 @@ public class ApproveOperationDetailsProvider : IOperationDetailsProvider, ISingl
     public string GenerateOperationDetails(OperationDetailsDto operationDetailsDto)
     {
         if (operationDetailsDto.Spender.IsNullOrWhiteSpace() || operationDetailsDto.Symbol.IsNullOrWhiteSpace() || 
-            operationDetailsDto.Amount == 0)
+            operationDetailsDto.Amount.IsNullOrEmpty())
         {
             return string.Empty;
         }
@@ -139,7 +139,7 @@ public class TransferOperationDetailsProvider : IOperationDetailsProvider, ISing
     public string GenerateOperationDetails(OperationDetailsDto operationDetailsDto)
     {
         if (operationDetailsDto.To.IsNullOrWhiteSpace() || operationDetailsDto.Symbol.IsNullOrWhiteSpace() || 
-            operationDetailsDto.Amount == 0)
+            operationDetailsDto.Amount.IsNullOrEmpty())
         {
             return string.Empty;
         }
