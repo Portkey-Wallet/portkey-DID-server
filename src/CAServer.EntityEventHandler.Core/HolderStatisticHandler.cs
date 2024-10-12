@@ -29,6 +29,7 @@ public class HolderStatisticHandler : IDistributedEventHandler<HolderExtraInfoEt
 
     private const string IpKey = "ip";
     private const string ActivityIdKey = "activityId";
+    private const string IpAddressKey = "ipAddress";
 
     public HolderStatisticHandler(INESTRepository<HolderStatisticIndex, string> holderStatisticRepository,
         ILogger<HolderStatisticHandler> logger, IIpInfoClient infoClient, IObjectMapper objectMapper)
@@ -58,12 +59,21 @@ public class HolderStatisticHandler : IDistributedEventHandler<HolderExtraInfoEt
                 statisticIndex.ActivityId = activityId.ToString();
             }
 
+            if (eventData.ExtraInfo.TryGetValue(IpAddressKey, out var ipAddress))
+            {
+                statisticIndex.IpAddress = ipAddress.ToString();
+            }
+
             if (eventData.ExtraInfo.TryGetValue(IpKey, out var ip))
             {
                 statisticIndex.IpAddress = ip.ToString();
-                statisticIndex.CountryInfo = await GetCountryInfoAsync(ip.ToString());
             }
 
+            if (!statisticIndex.IpAddress.IsNullOrEmpty())
+            {
+                statisticIndex.CountryInfo = await GetCountryInfoAsync(statisticIndex.IpAddress);
+            }
+            
             await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
             _logger.LogInformation(
                 "save HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
@@ -97,7 +107,8 @@ public class HolderStatisticHandler : IDistributedEventHandler<HolderExtraInfoEt
         catch (Exception e)
         {
             _logger.LogError(
-                e, "save completed HolderExtraInfo data = {0} error {1}", JsonSerializer.Serialize(eventData), e.ToString());
+                e, "save completed HolderExtraInfo data = {0} error {1}", JsonSerializer.Serialize(eventData),
+                e.ToString());
         }
     }
 
