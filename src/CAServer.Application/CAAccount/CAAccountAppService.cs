@@ -821,7 +821,16 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private async Task PublishExtraInfoAsync(string grainId, Dictionary<string, object> extraInfo)
     {
-        if (extraInfo.IsNullOrEmpty()) return;
+        extraInfo ??= new Dictionary<string, object>();
+        try
+        {
+            var ipAddress = _ipInfoAppService.GetRemoteIp();
+            extraInfo.Add(nameof(ipAddress), ipAddress);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Get remote ip error");
+        }
 
         await _distributedEventBus.PublishAsync(new HolderExtraInfoEto
         {
