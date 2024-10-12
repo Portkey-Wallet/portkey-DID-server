@@ -11,7 +11,7 @@ public class HolderStatisticIndex : CAServerEsEntity<string>, IIndexBuild
     [Keyword] public string CaHash { get; set; }
     [Keyword] public string CaAddress { get; set; }
     [Keyword] public string IpAddress { get; set; }
-    [Keyword] public CountryInfo CountryInfo { get; set; }
+    public CountryInfo CountryInfo { get; set; }
     [Keyword] public string ActivityId { get; set; }
     [Keyword] public string Status { get; set; }
     [Keyword] public string OperationType { get; set; }
