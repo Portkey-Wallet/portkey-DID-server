@@ -1,6 +1,5 @@
 using System;
 using AElf.Indexing.Elasticsearch;
-using CAServer.Account;
 using Nest;
 
 namespace CAServer.Entities.Es;
@@ -15,7 +14,7 @@ public class HolderStatisticIndex : CAServerEsEntity<string>, IIndexBuild
     [Keyword] public string ActivityId { get; set; }
     [Keyword] public string Status { get; set; }
     [Keyword] public string OperationType { get; set; }
-    [Keyword] public DateTime CreateTime { get; set; }
+    public DateTime CreateTime { get; set; }
 }
 
 public class CountryInfo
