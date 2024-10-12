@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
@@ -20,7 +22,6 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -147,20 +148,18 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         }
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "UpdateTxHashAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task UpdateOffRampTxHashAsync(TransactionHashDto input)
     {
-        try
-        {
-            AssertHelper.NotNull(input, "input null");
-            AssertHelper.NotEmpty(input.MerchantName, "MerchantName empty");
-            AssertHelper.NotEmpty(input.OrderId, "OrderId empty");
-            AssertHelper.NotEmpty(input.TxHash, "TxHash empty");
-            await GetThirdPartOrderProcessor(input.MerchantName).UpdateTxHashAsync(input);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "UpdateTxHashAsync error, input={Json}", JsonConvert.SerializeObject(input));
-        }
+        AssertHelper.NotNull(input, "input null");
+        AssertHelper.NotEmpty(input.MerchantName, "MerchantName empty");
+        AssertHelper.NotEmpty(input.OrderId, "OrderId empty");
+        AssertHelper.NotEmpty(input.TxHash, "TxHash empty");
+        await GetThirdPartOrderProcessor(input.MerchantName).UpdateTxHashAsync(input);
     }
 
 

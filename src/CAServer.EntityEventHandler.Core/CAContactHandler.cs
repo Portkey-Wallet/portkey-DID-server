@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Etos;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -28,33 +30,29 @@ public class CAContactHandler : IDistributedEventHandler<ContactCreateEto>,
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ContactCreateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(ContactCreateEto eventData)
     {
-        try
-        {
-            var contact = _objectMapper.Map<ContactCreateEto, ContactIndex>(eventData);
+        var contact = _objectMapper.Map<ContactCreateEto, ContactIndex>(eventData);
             
-            await _contactRepository.AddAsync(contact);
-            _logger.LogDebug("add success");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
-        }
+        await _contactRepository.AddAsync(contact);
+        _logger.LogDebug("ContactUpdateEto add success");
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ContactUpdateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(ContactUpdateEto eventData)
     {
-        try
-        {
-            var contact = _objectMapper.Map<ContactUpdateEto, ContactIndex>(eventData);
+        var contact = _objectMapper.Map<ContactUpdateEto, ContactIndex>(eventData);
 
-            await _contactRepository.UpdateAsync(contact);
-            _logger.LogDebug("update success");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
-        }
+        await _contactRepository.UpdateAsync(contact);
+        _logger.LogDebug("ContactUpdateEto update success");
     }
 }

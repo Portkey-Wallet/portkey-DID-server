@@ -1,5 +1,7 @@
+using AElf.ExceptionHandler;
 using CAServer.Common;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
@@ -33,6 +35,11 @@ public class NftOrderMerchantCallbackHandler : IDistributedEventHandler<OrderEto
                && ResultStatus.Contains(eventData.Status);
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "NftOrderMerchantCallbackHandler exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(OrderEto eventData)
     {
         // verify event is NFT pay result
@@ -40,19 +47,8 @@ public class NftOrderMerchantCallbackHandler : IDistributedEventHandler<OrderEto
 
         var orderId = eventData.Id;
         var status = eventData.Status;
-        try
-        {
-            // callback merchant and update result
-            await _orderStatusProvider.CallBackNftOrderPayResultAsync(orderId);
-        }
-        catch (UserFriendlyException e)
-        {
-            _logger.LogWarning(e, "HandleAsync nft order pay result fail, Id={Id}, Status={Status}", orderId, status);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "HandleAsync nft order pay result error, Id={Id}, Status={Status}", orderId, status);
-            throw;
-        }
+        _logger.LogInformation("NftOrderMerchantCallbackHandler nft order pay result fail, Id={Id}, Status={Status}", orderId, status);
+
+        await _orderStatusProvider.CallBackNftOrderPayResultAsync(orderId);
     }
 }

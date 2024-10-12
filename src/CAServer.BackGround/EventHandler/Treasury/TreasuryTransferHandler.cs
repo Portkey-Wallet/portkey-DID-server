@@ -1,9 +1,11 @@
 using AElf;
 using AElf.Client.Dto;
+using AElf.ExceptionHandler;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
@@ -52,61 +54,55 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
                eventData.Data.Status == OrderStatusType.StartTransfer.ToString();
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "TreasuryTransferHandler exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(TreasuryOrderEto eventData)
     {
         if (!Match(eventData)) return;
 
         var orderDto = eventData.Data;
-        try
+        _logger.LogInformation("TreasuryTransferHandler, orderId={OrderId}, status={Status}", orderDto.Id, orderDto.Status);
+        
+        AssertHelper.NotEmpty(orderDto.RawTransaction, "RawTransaction empty");
+        AssertHelper.NotEmpty(orderDto.TransactionId, "TransactionId empty");
+
+        await using var locked =
+            await _distributedLock.TryAcquireAsync("TreasuryTransfer:" + orderDto.TransactionId);
+        if (locked == null)
         {
-            AssertHelper.NotEmpty(orderDto.RawTransaction, "RawTransaction empty");
-            AssertHelper.NotEmpty(orderDto.TransactionId, "TransactionId empty");
-
-            await using var locked =
-                await _distributedLock.TryAcquireAsync("TreasuryTransfer:" + orderDto.TransactionId);
-            if (locked == null)
-            {
-                _logger.LogWarning("Duplicated transaction event, orderId={OrderId}", orderDto.Id);
-                return;
-            }
-
-            orderDto.Status = OrderStatusType.Transferring.ToString();
-            orderDto = await _treasuryOrderProvider.DoSaveOrderAsync(orderDto);
-
-
-            // send transaction to node
-            var sendResult =
-                await _contractProvider.SendRawTransactionAsync(CommonConstant.MainChainId, orderDto.RawTransaction);
-            AssertHelper.NotNull(sendResult, "Send transfer result empty");
-
-            // send transaction result
-            var txResult = await WaitTransactionResultAsync(CommonConstant.MainChainId, orderDto.TransactionId);
-            if (txResult == null) return;
-
-            orderDto.Status = txResult.Status == TransactionState.Mined
-                ? OrderStatusType.Transferred.ToString()
-                : OrderStatusType.Transferring.ToString();
-
-            var resExtensionBuilder = OrderStatusExtensionBuilder.Create()
-                .Add(ExtensionKey.TxStatus, txResult.Status)
-                .Add(ExtensionKey.TxBlockHeight, txResult.BlockNumber.ToString());
-
-            if (txResult.Status != TransactionState.Mined)
-                resExtensionBuilder.Add(ExtensionKey.TxResult,
-                    JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
-
-            await _treasuryOrderProvider.DoSaveOrderAsync(orderDto, resExtensionBuilder.Build());
+            _logger.LogWarning("Duplicated transaction event, orderId={OrderId}", orderDto.Id);
+            return;
         }
-        catch (UserFriendlyException e)
-        {
-            _logger.LogWarning("TreasuryTransferHandler failed: {Message}, orderId={OrderId}, status={Status}",
-                e.Message, orderDto.Id, orderDto.Status);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "TreasuryTransferHandler error, orderId={OrderId}, status={Status}", orderDto.Id,
-                orderDto.Status);
-        }
+
+        orderDto.Status = OrderStatusType.Transferring.ToString();
+        orderDto = await _treasuryOrderProvider.DoSaveOrderAsync(orderDto);
+
+
+        // send transaction to node
+        var sendResult =
+            await _contractProvider.SendRawTransactionAsync(CommonConstant.MainChainId, orderDto.RawTransaction);
+        AssertHelper.NotNull(sendResult, "Send transfer result empty");
+
+        // send transaction result
+        var txResult = await WaitTransactionResultAsync(CommonConstant.MainChainId, orderDto.TransactionId);
+        if (txResult == null) return;
+
+        orderDto.Status = txResult.Status == TransactionState.Mined
+            ? OrderStatusType.Transferred.ToString()
+            : OrderStatusType.Transferring.ToString();
+
+        var resExtensionBuilder = OrderStatusExtensionBuilder.Create()
+            .Add(ExtensionKey.TxStatus, txResult.Status)
+            .Add(ExtensionKey.TxBlockHeight, txResult.BlockNumber.ToString());
+
+        if (txResult.Status != TransactionState.Mined)
+            resExtensionBuilder.Add(ExtensionKey.TxResult,
+                JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
+
+        await _treasuryOrderProvider.DoSaveOrderAsync(orderDto, resExtensionBuilder.Build());
     }
 
 

@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.Commons;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Etos;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -22,31 +24,25 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "CAContractEventHandler AccountRegisterCreateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
     {
-        try
-        {
-            // CreateHolderInfo can take a long time
-            _ = _contractAppService.CreateHolderInfoAsync(eventData);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "RegisterMessage Error: {eventData}",
-                JsonConvert.SerializeObject(eventData, Formatting.Indented));
-        }
+        // CreateHolderInfo can take a long time
+        _ = _contractAppService.CreateHolderInfoAsync(eventData);
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "CAContractEventHandler AccountRecoverCreateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(AccountRecoverCreateEto eventData)
     {
-        try
-        {
-            // SocialRecovery can take a long time
-            _ = _contractAppService.SocialRecoveryAsync(eventData);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "RecoveryMessage Error: {eventData}",
-                JsonConvert.SerializeObject(eventData, Formatting.Indented));
-        }
+        // SocialRecovery can take a long time
+        _ = _contractAppService.SocialRecoveryAsync(eventData);
     }
 }

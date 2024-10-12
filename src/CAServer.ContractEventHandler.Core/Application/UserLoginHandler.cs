@@ -1,9 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.Commons;
 using CAServer.CryptoGift;
 using CAServer.Etos;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.Caching;
@@ -30,19 +32,16 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
         _logger = logger;
     }
     
+    [ExceptionHandler(typeof(Exception),
+        Message = "UserLoginHandler UserLoginEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(UserLoginEto eventData)
     {
         
         await CryptoGiftTransferRedPackageHandler(eventData);
-        
-        try
-        {
-            await _contractAppService.SyncOriginChainIdAsync(eventData);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "UserLoginHandler HandleEventAsync error");
-        }
+        await _contractAppService.SyncOriginChainIdAsync(eventData);
     }
 
     private async Task CryptoGiftTransferRedPackageHandler(UserLoginEto eventData)

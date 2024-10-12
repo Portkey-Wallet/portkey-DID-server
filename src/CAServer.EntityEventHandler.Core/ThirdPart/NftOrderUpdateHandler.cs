@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Logging;
@@ -27,26 +29,21 @@ public class NftOrderUpdateHandler : IDistributedEventHandler<NftOrderEto>, ITra
         _logger = logger;
     }
     
+    [ExceptionHandler(typeof(Exception),
+        Message = "NftOrderEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(NftOrderEto eventData)
     {
-        NftOrderGrainDto nftOrderGrainDto = null;
-        try
-        {
-            nftOrderGrainDto = eventData?.Data;
-            AssertHelper.NotNull(nftOrderGrainDto, "Empty message");
+        NftOrderGrainDto nftOrderGrainDto = eventData?.Data;
+        AssertHelper.NotNull(nftOrderGrainDto, "Empty message");
 
-            var nftOrderInfo = _objectMapper.Map<NftOrderGrainDto, NftOrderIndex>(nftOrderGrainDto);
-            await _nftOrderRepository.AddOrUpdateAsync(nftOrderInfo);
+        var nftOrderInfo = _objectMapper.Map<NftOrderGrainDto, NftOrderIndex>(nftOrderGrainDto);
+        await _nftOrderRepository.AddOrUpdateAsync(nftOrderInfo);
 
-            _logger.LogInformation(
-                "nft order index add or update success, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                nftOrderGrainDto?.Id, nftOrderGrainDto?.MerchantName, nftOrderGrainDto?.MerchantOrderId);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e,
-                "An error occurred while processing the event, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                nftOrderGrainDto?.Id, nftOrderGrainDto?.MerchantName, nftOrderGrainDto?.MerchantOrderId);
-        }
+        _logger.LogInformation(
+            "NftOrderEto nft order index add or update success, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
+            nftOrderGrainDto?.Id, nftOrderGrainDto?.MerchantName, nftOrderGrainDto?.MerchantOrderId);
     }
 }

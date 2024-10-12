@@ -1,5 +1,8 @@
+using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Monitor.Interceptor;
 using CAServer.RedPackage.Etos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -19,6 +22,11 @@ public class RefundRedPackageEventHandler : IDistributedEventHandler<RefundRedPa
         _contractAppService = contractAppService;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "RefundRedPackageEventHandler RefundRedPackageEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(RefundRedPackageEto eventData)
     {
         _ = _contractAppService.RefundAsync(eventData.RedPackageId);

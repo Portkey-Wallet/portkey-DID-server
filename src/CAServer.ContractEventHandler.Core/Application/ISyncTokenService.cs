@@ -66,7 +66,7 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     public async Task SyncTokenToOtherChainAsync(string chainId, string symbol)
     {
         _logger.LogInformation(
-            "[SyncToken] Begin to sync token, fromChainId:{chainId}, toChainId:{toChainId}, symbol:{symbol}", chainId,
+            "SyncTokenToOtherChainAsync [SyncToken] Begin to sync token, fromChainId:{chainId}, toChainId:{toChainId}, symbol:{symbol}", chainId,
             CommonConstant.MainChainId, symbol);
         var nftSyncIndex = await SaveSyncRecordAsync(chainId, symbol);
         try
@@ -83,13 +83,13 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
             if (transactionInfo == null || transactionInfo.TransactionResultDto == null)
             {
                 await SaveSyncRecordResultAsync(nftSyncIndex, null);
-                _logger.LogInformation("[SyncToken] sync token fail, toChainId:{chainId}, symbol:{symbol}",
+                _logger.LogInformation("SyncTokenToOtherChainAsync [SyncToken] sync token fail, toChainId:{chainId}, symbol:{symbol}",
                     CommonConstant.MainChainId,
                     symbol);
             }
 
             _logger.LogInformation(
-                "[SyncToken] End to sync token, toChainId:{chainId}, symbol:{symbol}, transactionId:{transactionId}, transactionResult:{transactionResult}, errorMessage:{message}",
+                "SyncTokenToOtherChainAsync [SyncToken] End to sync token, toChainId:{chainId}, symbol:{symbol}, transactionId:{transactionId}, transactionResult:{transactionResult}, errorMessage:{message}",
                 CommonConstant.MainChainId,
                 symbol, transactionInfo.TransactionResultDto.TransactionId, transactionInfo.TransactionResultDto.Status,
                 transactionInfo.TransactionResultDto.Error ?? "-");

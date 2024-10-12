@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Guardian;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -28,34 +30,29 @@ public class GuardianHandler : IDistributedEventHandler<GuardianEto>, IDistribut
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "GrowthHandler GuardianEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(GuardianEto eventData)
     {
-        try
-        {
-            var guardian = _objectMapper.Map<GuardianEto, GuardianIndex>(eventData);
-            await _guardianRepository.AddOrUpdateAsync(guardian);
+        var guardian = _objectMapper.Map<GuardianEto, GuardianIndex>(eventData);
+        await _guardianRepository.AddOrUpdateAsync(guardian);
             
-            _logger.LogDebug("Guardian add or update success, id: {id}", eventData.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Message}: {Data}", "Guardian add fail",
-                JsonConvert.SerializeObject(eventData));
-        }
+        _logger.LogDebug("GuardianEto add or update success, id: {id}", eventData.Id);
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "GrowthHandler GuardianDeleteEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(GuardianDeleteEto eventData)
     {
-        try
-        {
-            var guardian = _objectMapper.Map<GuardianDeleteEto, GuardianIndex>(eventData);
-            await _guardianRepository.UpdateAsync(guardian);
+        var guardian = _objectMapper.Map<GuardianDeleteEto, GuardianIndex>(eventData);
+        await _guardianRepository.UpdateAsync(guardian);
             
-            _logger.LogDebug("Guardian delete success, id: {id}", eventData.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Guardian delete fail, id: {id}", eventData.Id);
-        }
+        _logger.LogDebug("GuardianDeleteEto Guardian delete success, id: {id}", eventData.Id);
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using AElf.ExceptionHandler;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
@@ -68,6 +69,7 @@ namespace CAServer;
     typeof(CAServerRedisModule),
     typeof(AbpSwashbuckleModule),
     typeof(CAServerCoinGeckoApiModule),
+    typeof(AOPExceptionModule),
     typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule

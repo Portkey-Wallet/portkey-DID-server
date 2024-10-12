@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
+using CAServer.Monitor.Interceptor;
 using CAServer.UserBehavior;
 using CAServer.UserBehavior.Etos;
 using Microsoft.Extensions.Logging;
@@ -25,15 +27,13 @@ public class UserBehaviorHandler : IDistributedEventHandler<UserBehaviorEto>, IT
         _userBehaviorAppService = userBehaviorAppService;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "UserBehaviorHandler UserBehaviorEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(UserBehaviorEto eventData)
     {
-        try
-        {
-            await _userBehaviorAppService.AddUserBehaviorAsync(eventData);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Failed to handle user behavior event.");
-        }
+        await _userBehaviorAppService.AddUserBehaviorAsync(eventData);
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
+using CAServer.Monitor.Interceptor;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -27,20 +29,18 @@ public class CAVerifierHandler : IDistributedEventHandler<VerifierCodeEto>, ITra
         _distributedEventBus = distributedEventBus;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "VerifierCodeEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(VerifierCodeEto eventData)
     {
-        try
+        var dto = _objectMapper.Map<VerifierCodeEto, VerifierCodeRequestDto>(eventData);
+        var result = await _verifierServerClient.SendVerificationRequestAsync(dto);
+        if (!result.Success)
         {
-            var dto = _objectMapper.Map<VerifierCodeEto, VerifierCodeRequestDto>(eventData);
-            var result = await _verifierServerClient.SendVerificationRequestAsync(dto);
-            if (!result.Success)
-            {
-                _logger.LogWarning("Send VerifierCode failed {message}:", result.Message);
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogWarning("VerifierCodeEto Send VerifierCode failed {message}:", result.Message);
         }
     }
 }

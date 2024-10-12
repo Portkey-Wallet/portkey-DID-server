@@ -57,7 +57,7 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, "VerifyAppleId has error");
             return false;
         }
     }
@@ -91,22 +91,22 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
         }
         catch (SecurityTokenExpiredException e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, e.Message, "ValidateTokenAsync has expired");
             throw new UserFriendlyException("The token has expired.");
         }
         catch (SecurityTokenException e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, e.Message, "ValidateTokenAsync token fail");
             throw new UserFriendlyException("Valid token fail.");
         }
         catch (ArgumentException e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, e.Message, "ValidateTokenAsync Invalid token");
             throw new UserFriendlyException("Invalid token.");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, e.Message, "ValidateTokenAsync has error");
             throw new UserFriendlyException(e.Message);
         }
     }

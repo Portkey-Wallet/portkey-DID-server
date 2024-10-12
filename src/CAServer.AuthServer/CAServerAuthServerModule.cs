@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using AElf.ExceptionHandler;
 using CAServer.Commons;
 using CAServer.Contract;
 using Localization.Resources.AbpUi;
@@ -54,6 +55,7 @@ namespace CAServer;
     typeof(CAServerApplicationContractsModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
+    typeof(AOPExceptionModule),
     typeof(CAServerSignatureModule)
 )]
 public class CAServerAuthServerModule : AbpModule

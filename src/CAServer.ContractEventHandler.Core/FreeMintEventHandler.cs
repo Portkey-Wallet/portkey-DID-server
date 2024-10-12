@@ -1,6 +1,9 @@
+using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.FreeMint.Etos;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -18,6 +21,11 @@ public class FreeMintEventHandler : IDistributedEventHandler<FreeMintEto>, ITran
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "FreeMintEventHandler FreeMintEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(FreeMintEto eventData)
     {
         _logger.LogInformation("Begin Handle FreeMint: userId:{userId}, itemId:{itemId}", eventData.UserId,

@@ -55,7 +55,7 @@ public class SearchAppService : CAServerAppService, ISearchAppService
         }
         catch (Exception e)
         {
-            Logger.LogError("Search from es error.", e);
+            Logger.LogError(e, "Search from es error {0}", indexName);
             throw;
         }
     }

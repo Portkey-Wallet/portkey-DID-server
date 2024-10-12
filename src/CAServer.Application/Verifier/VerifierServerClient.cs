@@ -543,7 +543,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
         catch (Exception e)
         {
-            _logger.LogDebug("DeserializeObject Json failed : {json}, Error Message is : {message}",
+            _logger.LogError("DeserializeObject Json failed : {json}, Error Message is : {message}",
                 dtoOperationDetails, e.Message);
             return "";
         }

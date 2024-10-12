@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
@@ -10,6 +11,7 @@ using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ImTransfer;
 using CAServer.ImTransfer.Etos;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
@@ -56,38 +58,36 @@ public class ImTransferService : IImTransferService, ISingletonDependency
         _imServerOptions = imServerOptions.Value;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ImTransferService TransferAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task TransferAsync(TransferEto transfer)
     {
-        try
+        _logger.LogInformation($"ImTransferService TransferAsync start, transferId: {transfer.Id}", transfer.Id);
+        var grain = _clusterClient.GetGrain<IImTransferGrain>(transfer.Id);
+        var imTransfer = await grain.GetTransfer();
+        if (!imTransfer.Success)
         {
-            _logger.LogInformation($"Transfer start, transferId: {transfer.Id}", transfer.Id);
-            var grain = _clusterClient.GetGrain<IImTransferGrain>(transfer.Id);
-            var imTransfer = await grain.GetTransfer();
-            if (!imTransfer.Success)
-            {
-                _logger.LogError("Get im transfer fail, message:{message}, transferInfo:{transferInfo}",
-                    imTransfer.Message, JsonConvert.SerializeObject(transfer));
-                return;
-            }
-
-            var transferGrainDto = imTransfer.Data;
-            transferGrainDto.Decimal = await GetDecimalAsync(transfer.Symbol);
-
-            await SendTransactionAsync(transferGrainDto);
-            var updateResult = await grain.UpdateTransfer(transferGrainDto);
-            if (!updateResult.Success)
-            {
-                _logger.LogError("Update im transfer fail, message:{message}, transferInfo:{transferInfo}",
-                    imTransfer.Message, JsonConvert.SerializeObject(transfer));
-                return;
-            }
-
-            await UpdateTransferAndSendMessageAsync(transferGrainDto);
+            _logger.LogError("ImTransferService TransferAsync Get im transfer fail, message:{message}, transferInfo:{transferInfo}",
+                imTransfer.Message, JsonConvert.SerializeObject(transfer));
+            return;
         }
-        catch (Exception e)
+
+        var transferGrainDto = imTransfer.Data;
+        transferGrainDto.Decimal = await GetDecimalAsync(transfer.Symbol);
+
+        await SendTransactionAsync(transferGrainDto);
+        var updateResult = await grain.UpdateTransfer(transferGrainDto);
+        if (!updateResult.Success)
         {
-            _logger.LogError(e, "transfer error, transferEto:{transferEto}", JsonConvert.SerializeObject(transfer));
+            _logger.LogError("ImTransferService TransferAsync Update im transfer fail, message:{message}, transferInfo:{transferInfo}",
+                imTransfer.Message, JsonConvert.SerializeObject(transfer));
+            return;
         }
+
+        await UpdateTransferAndSendMessageAsync(transferGrainDto);
     }
 
     private async Task SendTransactionAsync(TransferGrainDto transferGrainDto)
@@ -122,11 +122,14 @@ public class ImTransferService : IImTransferService, ISingletonDependency
         }
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ImTransferService UpdateTransferAndSendMessageAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task UpdateTransferAndSendMessageAsync(TransferGrainDto transferDto)
     {
-        try
-        {
-            _logger.LogInformation("UpdateTransferAndSendMessageAsync {transferInfo}",
+        _logger.LogInformation("UpdateTransferAndSendMessageAsync {transferInfo}",
                 JsonConvert.SerializeObject(transferDto));
             var transferIndex = await _transferRepository.GetAsync(transferDto.Id);
             if (transferIndex == null)
@@ -175,12 +178,6 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             };
             await _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
                 _imServerOptions.BaseUrl + ImConstant.SendMessageUrl, messageRequestDto, headers);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "UpdateTransfer and send message error, transferInfo:{transferInfo}",
-                JsonConvert.SerializeObject(transferDto));
-        }
     }
 
     private async Task<int> GetDecimalAsync(string symbol)

@@ -1,6 +1,8 @@
+using AElf.ExceptionHandler;
 using CAServer.BackGround.Options;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos.Order;
@@ -37,11 +39,14 @@ public class TreasuryTxConfirmWorker : IJobWorker
     }
 
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "TreasuryTxConfirmWorker exist error",
+        TargetType = typeof(ExceptionHandlingService),
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP0))
+    ]
     public async Task HandleAsync()
     {
-        try
-        {
-            await using var handle =
+        await using var handle =
                 await _distributedLock.TryAcquireAsync(_transactionOptions.CurrentValue.LockKeyPrefix +
                                                              "TreasuryTxConfirmWorker");
             if (handle == null)
@@ -100,10 +105,5 @@ public class TreasuryTxConfirmWorker : IJobWorker
             {
                 _logger.LogDebug("TreasuryTxConfirmWorker finish, total:{Count}/{Total}", count, total);
             }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "TreasuryTxConfirmWorker error");
-        }
     }
 }

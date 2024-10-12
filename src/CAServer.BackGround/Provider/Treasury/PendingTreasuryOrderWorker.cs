@@ -1,5 +1,7 @@
+using AElf.ExceptionHandler;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
@@ -35,85 +37,84 @@ public class PendingTreasuryOrderWorker : IJobWorker
         _thirdPartOrderProvider = thirdPartOrderProvider;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "PendingTreasuryOrderWorker exist error",
+        TargetType = typeof(ExceptionHandlingService),
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP0))
+    ]
     public async Task HandleAsync()
     {
-        try
+        await using var handle =
+            await _distributedLock.TryAcquireAsync("PendingTreasuryOrderWorker");
+        if (handle == null)
         {
-            await using var handle =
-                await _distributedLock.TryAcquireAsync("PendingTreasuryOrderWorker");
-            if (handle == null)
-            {
-                _logger.LogWarning("PendingTreasuryOrderWorker running, skip");
-                return;
-            }
-
-            _logger.LogDebug("PendingTreasuryOrderWorker start");
-
-            var pageSize = _thirdPartOptions.CurrentValue.Timer.TreasuryTxConfirmWorkerPageSize;
-            var lastModifyTimeLt = DateTime.UtcNow.ToUtcMilliSeconds();
-            var expireTimeGtEq = DateTime.UtcNow.ToUtcMilliSeconds();
-            var total = 0;
-            var count = 0;
-            while (true)
-            {
-                var pendingData = await _treasuryOrderProvider.QueryPendingTreasuryOrderAsync(
-                    new PendingTreasuryOrderCondition(0, pageSize)
-                    {
-                        StatusIn = new List<string>() { OrderStatusType.Pending.ToString() },
-                        LastModifyTimeLt = lastModifyTimeLt,
-                        ExpireTimeGtEq = expireTimeGtEq
-                    });
-                if (pendingData.Items.IsNullOrEmpty()) break;
-                total += pendingData.Items.Count();
-                lastModifyTimeLt = pendingData.Items.Min(order => order.LastModifyTime);
-
-
-                var thirdPartIdDict = pendingData.Items.GroupBy(p => p.ThirdPartName)
-                    .ToDictionary(g => g.Key, g => g.Select(dto => dto.ThirdPartOrderId).ToList());
-                var rampOrderTask = new List<Task<PagedResultDto<OrderDto>>>();
-                foreach (var (thirdPartName, thirdPartIds) in thirdPartIdDict)
-                {
-                    rampOrderTask.Add(_thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
-                        new GetThirdPartOrderConditionDto(0, pendingData.Items.Count)
-                        {
-                            ThirdPartName = thirdPartName,
-                            ThirdPartOrderNoIn = thirdPartIds
-                        }));
-                }
-
-                var rampOrders = (await Task.WhenAll(rampOrderTask)).SelectMany(pageResult => pageResult.Items)
-                    .ToDictionary(order =>
-                        string.Join(CommonConstant.Underline, order.MerchantName, order.ThirdPartOrderNo));
-
-                var multiTaskList = new List<Task>();
-                foreach (var pendingTreasuryOrderDto in pendingData.Items)
-                {
-                    var rampOrderKey = string.Join(CommonConstant.Underline, pendingTreasuryOrderDto.ThirdPartName,
-                        pendingTreasuryOrderDto.ThirdPartOrderId);
-                    var rampOrderExits = rampOrders.TryGetValue(rampOrderKey, out var rampOrder);
-                    if (!rampOrderExits || rampOrder == null ||
-                        rampOrder.Status == OrderStatusType.Initialized.ToString())
-                        continue;
-
-                    multiTaskList.Add(_processorFactory.Processor(pendingTreasuryOrderDto.ThirdPartName)
-                        .HandlePendingTreasuryOrderAsync(rampOrder, pendingTreasuryOrderDto));
-                }
-                await Task.WhenAll(multiTaskList);
-                count += multiTaskList.Count;
-            }
-
-            if (total > 0)
-            {
-                _logger.LogInformation("PendingTreasuryOrderWorker finish, total:{Count}/{Total}", count, total);
-            }
-            else
-            {
-                _logger.LogDebug("PendingTreasuryOrderWorker finish, total:{Count}/{Total}", count, total);
-            }
+            _logger.LogWarning("PendingTreasuryOrderWorker running, skip");
+            return;
         }
-        catch (Exception e)
+
+        _logger.LogDebug("PendingTreasuryOrderWorker start");
+
+        var pageSize = _thirdPartOptions.CurrentValue.Timer.TreasuryTxConfirmWorkerPageSize;
+        var lastModifyTimeLt = DateTime.UtcNow.ToUtcMilliSeconds();
+        var expireTimeGtEq = DateTime.UtcNow.ToUtcMilliSeconds();
+        var total = 0;
+        var count = 0;
+        while (true)
         {
-            _logger.LogError(e, "PendingTreasuryOrderWorker error");
+            var pendingData = await _treasuryOrderProvider.QueryPendingTreasuryOrderAsync(
+                new PendingTreasuryOrderCondition(0, pageSize)
+                {
+                    StatusIn = new List<string>() { OrderStatusType.Pending.ToString() },
+                    LastModifyTimeLt = lastModifyTimeLt,
+                    ExpireTimeGtEq = expireTimeGtEq
+                });
+            if (pendingData.Items.IsNullOrEmpty()) break;
+            total += pendingData.Items.Count();
+            lastModifyTimeLt = pendingData.Items.Min(order => order.LastModifyTime);
+
+
+            var thirdPartIdDict = pendingData.Items.GroupBy(p => p.ThirdPartName)
+                .ToDictionary(g => g.Key, g => g.Select(dto => dto.ThirdPartOrderId).ToList());
+            var rampOrderTask = new List<Task<PagedResultDto<OrderDto>>>();
+            foreach (var (thirdPartName, thirdPartIds) in thirdPartIdDict)
+            {
+                rampOrderTask.Add(_thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
+                    new GetThirdPartOrderConditionDto(0, pendingData.Items.Count)
+                    {
+                        ThirdPartName = thirdPartName,
+                        ThirdPartOrderNoIn = thirdPartIds
+                    }));
+            }
+
+            var rampOrders = (await Task.WhenAll(rampOrderTask)).SelectMany(pageResult => pageResult.Items)
+                .ToDictionary(order =>
+                    string.Join(CommonConstant.Underline, order.MerchantName, order.ThirdPartOrderNo));
+
+            var multiTaskList = new List<Task>();
+            foreach (var pendingTreasuryOrderDto in pendingData.Items)
+            {
+                var rampOrderKey = string.Join(CommonConstant.Underline, pendingTreasuryOrderDto.ThirdPartName,
+                    pendingTreasuryOrderDto.ThirdPartOrderId);
+                var rampOrderExits = rampOrders.TryGetValue(rampOrderKey, out var rampOrder);
+                if (!rampOrderExits || rampOrder == null ||
+                    rampOrder.Status == OrderStatusType.Initialized.ToString())
+                    continue;
+
+                multiTaskList.Add(_processorFactory.Processor(pendingTreasuryOrderDto.ThirdPartName)
+                    .HandlePendingTreasuryOrderAsync(rampOrder, pendingTreasuryOrderDto));
+            }
+
+            await Task.WhenAll(multiTaskList);
+            count += multiTaskList.Count;
+        }
+
+        if (total > 0)
+        {
+            _logger.LogInformation("PendingTreasuryOrderWorker finish, total:{Count}/{Total}", count, total);
+        }
+        else
+        {
+            _logger.LogDebug("PendingTreasuryOrderWorker finish, total:{Count}/{Total}", count, total);
         }
     }
 }

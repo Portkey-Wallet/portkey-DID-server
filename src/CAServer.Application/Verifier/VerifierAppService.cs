@@ -129,7 +129,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var endTime = DateTime.UtcNow.ToUniversalTime();
             var costTime = (endTime - startTime).TotalMilliseconds;
             _logger.LogDebug("TotalCount Time is {time}", (long)costTime);
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "SendVerificationRequestAsync has error, {Message}", e.Message);
             throw new UserFriendlyException(e.Message);
         }
     }
@@ -163,7 +163,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "VerifyCodeAsync has error, {Message}", e.Message);
             throw new UserFriendlyException(e.Message);
         }
     }
@@ -198,7 +198,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "VerifyGoogleTokenAsync has error, {Message}", e.Message);
 
             if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
             {
@@ -301,7 +301,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "VerifyAppleTokenAsync has error, {Message}", e.Message);
             if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
             {
                 throw new UserFriendlyException(e.Message, ThirdPartyMessage.MessageDictionary[e.Message]);

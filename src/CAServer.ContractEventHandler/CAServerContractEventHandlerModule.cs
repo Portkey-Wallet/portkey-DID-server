@@ -1,4 +1,5 @@
 using System;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Commons;
@@ -62,6 +63,7 @@ namespace CAServer.ContractEventHandler;
     typeof(CAServerMongoDbModule),
     typeof(CAServerMonitorModule),
     typeof(AbpBackgroundJobsHangfireModule),
+    typeof(AOPExceptionModule),
     typeof(AElfIndexingElasticsearchModule)
 )]
 public class CAServerContractEventHandlerModule : AbpModule

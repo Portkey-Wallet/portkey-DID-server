@@ -46,7 +46,7 @@ public class SignaturePreValidationProvider : CAServerAppService, IPreValidation
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "_contractProvider.VerifySignature failed");
+            _logger.LogError(e, "_contractProvider.VerifySignature failed caHash = {0}", caHash);
         }
         return result.Value;
     }

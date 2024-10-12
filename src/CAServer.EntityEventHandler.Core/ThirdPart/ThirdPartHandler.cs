@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -30,39 +32,33 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
         _orderStatusInfoRepository = orderStatusInfoRepository;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ThirdPartHandler OrderEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(OrderEto eventData)
     {
-        try
-        {
-            var userOrder = _objectMapper.Map<OrderEto, RampOrderIndex>(eventData);
+        var userOrder = _objectMapper.Map<OrderEto, RampOrderIndex>(eventData);
 
-            await _orderRepository.AddOrUpdateAsync(userOrder);
+        await _orderRepository.AddOrUpdateAsync(userOrder);
 
-            _logger.LogInformation($"Order{eventData.Id} add or update success orderId.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"An error occurred while processing the event,orderId: {eventData.Id}");
-        }
+        _logger.LogInformation($"Order{eventData.Id} add or update success orderId.");
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ThirdPartHandler OrderStatusInfoEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(OrderStatusInfoEto eventData)
     {
-        try
-        {
-            var orderStatusInfo = _objectMapper.Map<OrderStatusInfoEto, OrderStatusInfoIndex>(eventData);
+        var orderStatusInfo = _objectMapper.Map<OrderStatusInfoEto, OrderStatusInfoIndex>(eventData);
 
-            await _orderStatusInfoRepository.AddOrUpdateAsync(orderStatusInfo);
+        await _orderStatusInfoRepository.AddOrUpdateAsync(orderStatusInfo);
 
-            _logger.LogInformation("Order status add or update success, statusId:{id}, orderId:{orderId}", eventData.Id,
-                eventData.OrderId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while processing the event, statusId:{id}, orderId:{orderId}",
-                eventData.Id,
-                eventData.OrderId);
-        }
+        _logger.LogInformation("Order status add or update success, statusId:{id}, orderId:{orderId}", eventData.Id,
+            eventData.OrderId);
     }
 
 }

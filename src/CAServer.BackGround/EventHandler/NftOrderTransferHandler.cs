@@ -1,4 +1,6 @@
+using AElf.ExceptionHandler;
 using CAServer.Common;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processors;
@@ -34,6 +36,11 @@ public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITran
                && ResultStatus.Contains(eventData.Status);
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "NftOrderSettlementHandler exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(OrderEto eventData)
     {
         // verify event is NFT pay result
@@ -42,18 +49,8 @@ public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITran
         var orderId = eventData.Id;
         var status = eventData.Status;
         var thirdPart = eventData.MerchantName;
-        try
-        {
-            await _nftCheckoutService.GetProcessor(thirdPart).SettlementTransferAsync(orderId);
-        }
-        catch (UserFriendlyException e)
-        {
-            _logger.LogWarning(e, "HandleAsync nft order pay result fail, Id={Id}, Status={Status}", orderId, status);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "HandleAsync nft order pay result error, Id={Id}, Status={Status}", orderId, status);
-            throw;
-        }
+        _logger.LogInformation("NftOrderSettlementHandler HandleAsync nft order pay result fail, Id={Id}, Status={Status}", orderId, status);
+        
+        await _nftCheckoutService.GetProcessor(thirdPart).SettlementTransferAsync(orderId);
     }
 }

@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Client.Dto;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Commons;
 using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.HubsEventHandler;
+using CAServer.Monitor.Interceptor;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -44,43 +46,41 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
         _chainOptions = chainOptions.Value;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "TransactionReportAppService HandleTransactionAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleTransactionAsync(TransactionReportEto eventData)
     {
         // success -> return, pending or fail -> save
         // pending -> hangfire
-        try
+        var transactionResult =
+            await _contractProvider.GetTransactionResultAsync(eventData.ChainId, eventData.TransactionId);
+        _logger.LogInformation(
+            "HandleTransactionAsync transaction status:{status}, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+            transactionResult.Status, eventData.ChainId, eventData.CaAddress, eventData.TransactionId);
+
+        if (transactionResult.Transaction == null)
         {
-            var transactionResult =
-                await _contractProvider.GetTransactionResultAsync(eventData.ChainId, eventData.TransactionId);
-            _logger.LogInformation(
-                "transaction status:{status}, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+            _logger.LogWarning(
+                "HandleTransactionAsync  transaction is null, status:{status}, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
                 transactionResult.Status, eventData.ChainId, eventData.CaAddress, eventData.TransactionId);
-
-            if (transactionResult.Transaction == null)
-            {
-                _logger.LogWarning(
-                    "transaction is null, status:{status}, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
-                    transactionResult.Status, eventData.ChainId, eventData.CaAddress, eventData.TransactionId);
-                return;
-            }
-
-            if (transactionResult.Status == TransactionState.Mined)
-            {
-                return;
-            }
-
-            await SaveTransactionAsync(eventData, transactionResult);
-
-            if (transactionResult.Status == TransactionState.Pending)
-            {
-                BackgroundJob.Enqueue(() =>
-                    QueryTransactionAsync(
-                        _objectMapper.Map<TransactionReportEto, TransactionReportContext>(eventData)));
-            }
+            return;
         }
-        catch (Exception e)
+
+        if (transactionResult.Status == TransactionState.Mined)
         {
-            _logger.LogError(e, "handle report transaction error, data:{data}", JsonConvert.SerializeObject(eventData));
+            return;
+        }
+
+        await SaveTransactionAsync(eventData, transactionResult);
+
+        if (transactionResult.Status == TransactionState.Pending)
+        {
+            BackgroundJob.Enqueue(() =>
+                QueryTransactionAsync(
+                    _objectMapper.Map<TransactionReportEto, TransactionReportContext>(eventData)));
         }
     }
 

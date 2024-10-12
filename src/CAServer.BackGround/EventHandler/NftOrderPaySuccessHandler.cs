@@ -1,4 +1,6 @@
+using AElf.ExceptionHandler;
 using CAServer.Common;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processors;
@@ -33,6 +35,11 @@ public class NftOrderPaySuccessHandler : IDistributedEventHandler<OrderEto>, ITr
                && ResultStatus.Contains(eventData.Status);
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "NftOrderPaySuccessHandler exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(OrderEto eventData)
     {
         // verify event is NFT pay result
@@ -40,22 +47,12 @@ public class NftOrderPaySuccessHandler : IDistributedEventHandler<OrderEto>, ITr
 
         var orderId = eventData.Id;
         var status = eventData.Status;
-        try
-        {
-            var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
-            AssertHelper.NotNull(orderGrainDto, "Order {orderId} not found", orderId);
-            orderGrainDto.Status = OrderStatusType.StartTransfer.ToString();
-            var updateRes = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
-            AssertHelper.IsTrue(updateRes.Success, "Update order status failed, status={Status}", orderGrainDto.Status);
-        }
-        catch (UserFriendlyException e)
-        {
-            _logger.LogWarning(e, "HandleAsync nft order pay result fail, Id={Id}, Status={Status}", orderId, status);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "HandleAsync nft order pay result error, Id={Id}, Status={Status}", orderId, status);
-            throw;
-        }
+        _logger.LogInformation("NftOrderPaySuccessHandler nft order pay, Id={Id}, Status={Status}", orderId, status);
+        
+        var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
+        AssertHelper.NotNull(orderGrainDto, "Order {orderId} not found", orderId);
+        orderGrainDto.Status = OrderStatusType.StartTransfer.ToString();
+        var updateRes = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
+        AssertHelper.IsTrue(updateRes.Success, "Update order status failed, status={Status}", orderGrainDto.Status);
     }
 }

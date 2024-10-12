@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Logging;
@@ -26,29 +28,24 @@ public class PendingTreasuryOrderUpdateHandler : IDistributedEventHandler<Pendin
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "PendingTreasuryOrderEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(PendingTreasuryOrderEto eventData)
     {
-        PendingTreasuryOrderDto orderGrainDto = null;
-        try
-        {
-            orderGrainDto = eventData?.Data;
-            AssertHelper.NotNull(orderGrainDto, "Empty message");
+        PendingTreasuryOrderDto orderGrainDto = eventData?.Data;
+        AssertHelper.NotNull(orderGrainDto, "Empty message");
 
             
-            var nftOrderInfo = _objectMapper.Map<PendingTreasuryOrderDto, PendingTreasuryOrderIndex>(orderGrainDto);
+        var nftOrderInfo = _objectMapper.Map<PendingTreasuryOrderDto, PendingTreasuryOrderIndex>(orderGrainDto);
 
-            await _pendingTreasuryOrderRepository.AddOrUpdateAsync(nftOrderInfo);
+        await _pendingTreasuryOrderRepository.AddOrUpdateAsync(nftOrderInfo);
 
-            _logger.LogInformation(
-                "Pending Treasury order index add or update success, Id:{Id}, ThirdPartName:{ThirdPartName}, ThirdPartOrderId:{ThirdPartOrderId}",
-                orderGrainDto?.Id, orderGrainDto?.ThirdPartName, orderGrainDto?.ThirdPartOrderId);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e,
-                "An error occurred while processing the event, Id:{Id}, ThirdPartName:{ThirdPartName}, ThirdPartOrderId:{ThirdPartOrderId}",
-                orderGrainDto?.Id, orderGrainDto?.ThirdPartName, orderGrainDto?.ThirdPartOrderId);
-        }
+        _logger.LogInformation(
+            "Pending Treasury order index add or update success, Id:{Id}, ThirdPartName:{ThirdPartName}, ThirdPartOrderId:{ThirdPartOrderId}",
+            orderGrainDto?.Id, orderGrainDto?.ThirdPartName, orderGrainDto?.ThirdPartOrderId);
         
         
     }

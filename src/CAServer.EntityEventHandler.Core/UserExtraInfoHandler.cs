@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -27,20 +29,17 @@ public class UserExtraInfoHandler : IDistributedEventHandler<UserExtraInfoEto>, 
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "UserExtraInfoHandler UserExtraInfoEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(UserExtraInfoEto eventData)
     {
-        try
-        {
-            var userInfo = _objectMapper.Map<UserExtraInfoEto, UserExtraInfoIndex>(eventData);
-            _logger.LogDebug("User extra info add or update: {eventData}", JsonConvert.SerializeObject(userInfo));
-            await _userExtraInfoRepository.AddOrUpdateAsync(userInfo);
+        var userInfo = _objectMapper.Map<UserExtraInfoEto, UserExtraInfoIndex>(eventData);
+        _logger.LogDebug("UserExtraInfoHandler UserExtraInfoEto User extra info add or update: {eventData}", JsonConvert.SerializeObject(userInfo));
+        await _userExtraInfoRepository.AddOrUpdateAsync(userInfo);
 
-            _logger.LogDebug($"User extra info add or update success: {JsonConvert.SerializeObject(userInfo)}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Message}: {Data}", "User extra info add or update fail",
-                JsonConvert.SerializeObject(eventData));
-        }
+        _logger.LogDebug($"UserExtraInfoHandler UserExtraInfoEto User extra info add or update success: {JsonConvert.SerializeObject(userInfo)}");
     }
 }

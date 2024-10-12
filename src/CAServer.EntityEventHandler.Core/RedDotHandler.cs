@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.RedDot.Etos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -26,18 +28,16 @@ public class RedDotHandler : IDistributedEventHandler<RedDotEto>, ITransientDepe
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "RedDotHandler HandleEventAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(RedDotEto eventData)
     {
-        try
-        {
-            await _redDotRepository.AddAsync(_objectMapper.Map<RedDotEto, RedDotIndex>(eventData));
-            _logger.LogInformation(
-                "red dot info add or update success, redDotInfo:{redDotInfo}", JsonConvert.SerializeObject(eventData));
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e,
-                "red dot info add or update error, redDotInfo:{redDotInfo}", JsonConvert.SerializeObject(eventData));
-        }
+        await _redDotRepository.AddAsync(_objectMapper.Map<RedDotEto, RedDotIndex>(eventData));
+        _logger.LogInformation(
+            "RedDotHandler HandleEventAsync red dot info add or update success, redDotInfo:{redDotInfo}", JsonConvert.SerializeObject(eventData));
+
     }
 }

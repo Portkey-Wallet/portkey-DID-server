@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Logging;
@@ -27,25 +29,22 @@ public class OrderSettlementUpdateHandler : IDistributedEventHandler<OrderSettle
     }
 
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "OrderSettlementEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(OrderSettlementEto eventData)
     {
 
-        OrderSettlementGrainDto orderSettlementGrain = null;
-        try
-        {
-            orderSettlementGrain = eventData?.Data;
-            AssertHelper.NotNull(orderSettlementGrain, "Empty message");
+        OrderSettlementGrainDto orderSettlementGrain = eventData?.Data;;
+        AssertHelper.NotNull(orderSettlementGrain, "Empty message");
             
-            var orderSettlementInfo = _objectMapper.Map<OrderSettlementGrainDto, OrderSettlementIndex>(orderSettlementGrain);
+        var orderSettlementInfo = _objectMapper.Map<OrderSettlementGrainDto, OrderSettlementIndex>(orderSettlementGrain);
 
-            await _orderSettlementRepository.AddOrUpdateAsync(orderSettlementInfo);
+        await _orderSettlementRepository.AddOrUpdateAsync(orderSettlementInfo);
 
-            _logger.LogInformation("Order settlement index add or update success, Id:{Id}", orderSettlementGrain?.Id);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Order settlement index add or update success, Id:{Id}", orderSettlementGrain?.Id);
-        }
+        _logger.LogInformation("Order settlement index add or update success, Id:{Id}", orderSettlementGrain?.Id);
         
     }
 }

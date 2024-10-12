@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -39,6 +41,11 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         _logger.LogInformation($"IRecordsBucketContainer init MaxBucket {_indexOptions.MaxBucket}");
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "RecordsBucketContainer IRecordsBucketContainer exist error",
+        TargetType = typeof(ExceptionHandlingService),
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP2))
+    ]
     public async Task AddValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
         if (records.IsNullOrEmpty())
@@ -51,25 +58,23 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             _logger.LogInformation($"IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord
                 .BlockHeight}");
         }
-        try
-        {
-            var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
+        var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
 
-            foreach (var bucket in dict)
-            {
-                var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
-                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket.Key));
-                await grain.AddValidatedRecordsAsync(bucket.Value);
-            }
-
-            _logger.LogInformation("IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {id} Success", chainId);
-        }
-        catch (Exception e)
+        foreach (var bucket in dict)
         {
-            _logger.LogError(e, "IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {id} error, {records}", chainId,records.Count.ToString());
+            var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
+                GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket.Key));
+            await grain.AddValidatedRecordsAsync(bucket.Value);
         }
+
+        _logger.LogInformation("IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {id} Success", chainId);
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "RecordsBucketContainer AddToBeValidatedRecordsAsync exist error",
+        TargetType = typeof(ExceptionHandlingService),
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP2))
+    ]
     public async Task AddToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
         if (records.IsNullOrEmpty())
@@ -81,9 +86,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             _logger.LogInformation($"IRecordsBucketContainer AddToBeValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord
                 .BlockHeight}");
         }
-        try
-        {
-            var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
+        var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
 
             foreach (var bucket in dict)
             {
@@ -93,11 +96,6 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             }
 
             _logger.LogInformation("IRecordsBucketContainer AddToBeValidatedRecordsAsync to Chain: {id} Success", chainId);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "IRecordsBucketContainer AddToBeValidatedRecordsAsync to Chain: {id} error, {records}", chainId, records.Count.ToString());
-        }
     }
 
     public async Task<List<SyncRecord>> GetValidatedRecordsAsync(string chainId)

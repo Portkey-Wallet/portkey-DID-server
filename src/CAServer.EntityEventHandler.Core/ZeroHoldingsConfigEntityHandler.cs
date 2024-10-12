@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.ZeroHoldings.Etos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -22,18 +24,17 @@ public class ZeroHoldingsConfigEntityHandler : EntityHandlerBase,
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ZeroHoldingsConfig exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(ZeroHoldingsConfigEto eventData)
     {
-        try
-        {
-            _logger.LogInformation($"[ZeroHoldingsConfig] HandleEventAsync eventData : {JsonConvert.SerializeObject(eventData)} ");
-            var index = ObjectMapper.Map<ZeroHoldingsConfigEto, ZeroHoldingsConfigIndex>(eventData);
-            await _repository.AddOrUpdateAsync(index);
-            _logger.LogInformation($"[ZeroHoldingsConfig] HandleEventAsync eventData : {JsonConvert.SerializeObject(eventData)} done");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"[ZeroHoldingsConfig] HandleEventAsync eventData : {JsonConvert.SerializeObject(eventData)} has error");
-        }
+        _logger.LogInformation($"[ZeroHoldingsConfig] HandleEventAsync eventData : {JsonConvert.SerializeObject(eventData)} ");
+        var index = ObjectMapper.Map<ZeroHoldingsConfigEto, ZeroHoldingsConfigIndex>(eventData);
+        await _repository.AddOrUpdateAsync(index);
+        _logger.LogInformation($"[ZeroHoldingsConfig] HandleEventAsync eventData : {JsonConvert.SerializeObject(eventData)} done");
+
     }
 }

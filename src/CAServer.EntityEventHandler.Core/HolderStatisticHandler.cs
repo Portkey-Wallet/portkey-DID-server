@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.IpInfo;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -39,66 +41,60 @@ public class HolderStatisticHandler : IDistributedEventHandler<HolderExtraInfoEt
         _objectMapper = objectMapper;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "HolderStatisticHandler HolderExtraInfoCompletedEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(HolderExtraInfoEto eventData)
     {
-        try
+        if (eventData.ExtraInfo.IsNullOrEmpty()) return;
+
+        var statisticIndex = new HolderStatisticIndex
         {
-            if (eventData.ExtraInfo.IsNullOrEmpty()) return;
+            Id = eventData.GrainId,
+            OperationType = eventData.OperationType.ToString(),
+            CreateTime = DateTime.UtcNow,
+            Status = AccountOperationStatus.Pending.ToString()
+        };
 
-            var statisticIndex = new HolderStatisticIndex
-            {
-                Id = eventData.GrainId,
-                OperationType = eventData.OperationType.ToString(),
-                CreateTime = DateTime.UtcNow,
-                Status = AccountOperationStatus.Pending.ToString()
-            };
-
-            if (eventData.ExtraInfo.TryGetValue(ActivityIdKey, out var activityId))
-            {
-                statisticIndex.ActivityId = activityId.ToString();
-            }
-
-            if (eventData.ExtraInfo.TryGetValue(IpKey, out var ip))
-            {
-                statisticIndex.IpAddress = ip.ToString();
-                statisticIndex.CountryInfo = await GetCountryInfoAsync(ip.ToString());
-            }
-
-            await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
-            _logger.LogInformation(
-                "save HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
-                statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
-                statisticIndex.ActivityId ?? "-");
-        }
-        catch (Exception e)
+        if (eventData.ExtraInfo.TryGetValue(ActivityIdKey, out var activityId))
         {
-            _logger.LogError(
-                e, "save HolderExtraInfo data = {0} error {1}", JsonSerializer.Serialize(eventData), e.ToString());
+            statisticIndex.ActivityId = activityId.ToString();
         }
+
+        if (eventData.ExtraInfo.TryGetValue(IpKey, out var ip))
+        {
+            statisticIndex.IpAddress = ip.ToString();
+            statisticIndex.CountryInfo = await GetCountryInfoAsync(ip.ToString());
+        }
+
+        await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
+        _logger.LogInformation(
+            "HolderExtraInfoEto save HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
+            statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
+            statisticIndex.ActivityId ?? "-");
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "HolderStatisticHandler HolderExtraInfoCompletedEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(HolderExtraInfoCompletedEto eventData)
     {
-        try
-        {
-            var statisticIndex = await _holderStatisticRepository.GetAsync(eventData.GrainId);
-            if (statisticIndex == null) return;
+        var statisticIndex = await _holderStatisticRepository.GetAsync(eventData.GrainId);
+        if (statisticIndex == null) return;
 
-            statisticIndex.CaAddress = eventData.CaAddress;
-            statisticIndex.CaHash = eventData.CaHash;
-            statisticIndex.Status = eventData.Status;
+        statisticIndex.CaAddress = eventData.CaAddress;
+        statisticIndex.CaHash = eventData.CaHash;
+        statisticIndex.Status = eventData.Status;
 
-            await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
-            _logger.LogInformation(
-                "save completed HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
-                statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
-                statisticIndex.ActivityId ?? "-");
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(
-                e, "save completed HolderExtraInfo data = {0} error {1}", JsonSerializer.Serialize(eventData), e.ToString());
-        }
+        await _holderStatisticRepository.AddOrUpdateAsync(statisticIndex);
+        _logger.LogInformation(
+            "HolderExtraInfoCompletedEto save completed HolderExtraInfo success, grainId:{grainId},ip:{ip},country:{country},activityId:{activityId}",
+            statisticIndex.Id, statisticIndex.IpAddress ?? "-", statisticIndex.CountryInfo?.CountryName ?? "-",
+            statisticIndex.ActivityId ?? "-");
     }
 
     private async Task<CountryInfo> GetCountryInfoAsync(string ip)

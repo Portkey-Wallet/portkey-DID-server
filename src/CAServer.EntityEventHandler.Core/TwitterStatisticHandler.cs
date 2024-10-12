@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.TwitterAuth.Etos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -26,44 +28,42 @@ public class TwitterStatisticHandler : IDistributedEventHandler<TwitterStatistic
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "TwitterStatisticHandler TwitterStatisticEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(TwitterStatisticEto eventData)
     {
-        try
+        var item = await _twitterStatisticRepository.GetAsync(eventData.Id);
+        if (item != null)
         {
-            var item = await _twitterStatisticRepository.GetAsync(eventData.Id);
-            if (item != null)
+            var date = TimeHelper.GetDateTimeFromSecondTimeStamp(item.UpdateTime);
+            if (date.Date < DateTime.UtcNow.Date)
             {
-                var date = TimeHelper.GetDateTimeFromSecondTimeStamp(item.UpdateTime);
-                if (date.Date < DateTime.UtcNow.Date)
-                {
-                    item.CallCount = 1;
-                }
-                else
-                {
-                    item.CallCount += 1;
-                }
-                item.UpdateTime = eventData.UpdateTime;
-                await _twitterStatisticRepository.UpdateAsync(item);
+                item.CallCount = 1;
+            }
+            else
+            {
+                item.CallCount += 1;
+            }
+            item.UpdateTime = eventData.UpdateTime;
+            await _twitterStatisticRepository.UpdateAsync(item);
 
-                _logger.LogInformation("statistic twitter call api count, userId:{userId}, count:{count}", eventData.Id,
+            _logger.LogInformation("statistic twitter call api count, userId:{userId}, count:{count}", eventData.Id,
+                item.CallCount);
+
+            if (item.CallCount > CommonConstant.TwitterLimitCount)
+            {
+                _logger.LogWarning("user call twitter api limit, userId:{userId}, count:{count}", eventData.Id,
                     item.CallCount);
-
-                if (item.CallCount > CommonConstant.TwitterLimitCount)
-                {
-                    _logger.LogWarning("user call twitter api limit, userId:{userId}, count:{count}", eventData.Id,
-                        item.CallCount);
-                }
-
-                return;
             }
 
-            await _twitterStatisticRepository.AddOrUpdateAsync(
-                _objectMapper.Map<TwitterStatisticEto, TwitterStatisticIndex>(eventData));
-            _logger.LogInformation("statistic twitter call api count, userId:{userId}", eventData.Id);
+            return;
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "statistic twitter call api count error, userId:{userId}", eventData.Id);
-        }
+
+        await _twitterStatisticRepository.AddOrUpdateAsync(
+            _objectMapper.Map<TwitterStatisticEto, TwitterStatisticIndex>(eventData));
+        _logger.LogInformation("statistic twitter call api count, userId:{userId}", eventData.Id);
     }
 }

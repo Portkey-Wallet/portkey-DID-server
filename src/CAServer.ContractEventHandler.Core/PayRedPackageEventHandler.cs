@@ -1,5 +1,8 @@
+using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Monitor.Interceptor;
 using CAServer.RedPackage.Etos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -20,6 +23,11 @@ public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageE
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "PayRedPackageEventHandler PayRedPackageEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public Task HandleEventAsync(PayRedPackageEto eventData)
     {
         _logger.LogInformation("receive PayRedPackageEto RedPackageId:{0} receiverId:{1}", eventData.RedPackageId, eventData.ReceiverId);

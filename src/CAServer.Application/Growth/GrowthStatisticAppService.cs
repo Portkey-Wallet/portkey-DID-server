@@ -799,7 +799,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             }
             catch (Exception e)
             {
-                _logger.LogDebug("Repair Data failed.Failed data is {data},reason is {msg}", repair.CaHash, e.Message);
+                _logger.LogError("Repair Data failed.Failed data is {data},reason is {msg}", repair.CaHash, e.Message);
             }
         }
 

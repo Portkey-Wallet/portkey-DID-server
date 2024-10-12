@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.Commons;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
+using CAServer.Monitor.Interceptor;
 using CAServer.Monitor.Logger;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -112,26 +114,24 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         });
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "MonitorLogProvider FinishAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP3))
+    ]
     public async Task FinishAsync(SyncRecord record, string endChainId, long endHeight)
     {
-        try
-        {
-            if (!Check(record)) return;
+        if (!Check(record)) return;
+        _logger.LogInformation("MonitorLogProvider FinishAsync write monitor, caHash: {caHash}, changeType: {changeType}", record.CaHash, record.ChangeType);
 
-            AddNode(record, DataSyncType.EndSync);
-            var endBlock = await _contractProvider.GetBlockByHeightAsync(endChainId, endHeight);
-            var blockInterval = endBlock.Header.Time - record.DataSyncMonitor.StartTime;
-            record.DataSyncMonitor.TotalTime = (int)blockInterval.TotalMilliseconds;
-            AddFinishNode(record, TimeHelper.GetTimeStampFromDateTime(endBlock.Header.Time));
+        AddNode(record, DataSyncType.EndSync);
+        var endBlock = await _contractProvider.GetBlockByHeightAsync(endChainId, endHeight);
+        var blockInterval = endBlock.Header.Time - record.DataSyncMonitor.StartTime;
+        record.DataSyncMonitor.TotalTime = (int)blockInterval.TotalMilliseconds;
+        AddFinishNode(record, TimeHelper.GetTimeStampFromDateTime(endBlock.Header.Time));
 
-            WriteMonitorLog(record);
-            AddSyncLog(record);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "write monitor log fail, caHash: {caHash}, changeType: {changeType}",
-                record.CaHash, record.ChangeType);
-        }
+        WriteMonitorLog(record);
+        AddSyncLog(record);
     }
 
     private void AddFinishNode(SyncRecord record, long blockTime)
@@ -190,20 +190,18 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         }
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "AddHeightIndexMonitorLogAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP2))
+    ]
     public async Task AddHeightIndexMonitorLogAsync(string chainId, long indexHeight)
     {
-        try
-        {
-            if (!_indicatorLogger.IsEnabled()) return;
+        if (!_indicatorLogger.IsEnabled()) return;
 
-            var height = await _contractProvider.GetBlockHeightAsync(chainId);
-            var duration = (int)Math.Abs(height - indexHeight);
-            _indicatorLogger.LogInformation(MonitorTag.DataSyncHeightIndex, chainId,
-                duration);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "add height index monitor log error.");
-        }
+        var height = await _contractProvider.GetBlockHeightAsync(chainId);
+        var duration = (int)Math.Abs(height - indexHeight);
+        _indicatorLogger.LogInformation(MonitorTag.DataSyncHeightIndex, chainId,
+            duration);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
@@ -15,6 +16,7 @@ using CAServer.Grains.Grain.Device;
 using CAServer.Growth;
 using CAServer.Hubs;
 using CAServer.Monitor;
+using CAServer.Monitor.Interceptor;
 using CAServer.Monitor.Logger;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -74,44 +76,41 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _distributedCache = distributedCache;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "AccountRegisterCreateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
     {
-        try
+        _logger.LogInformation("AccountRegisterCreateEto received account register message:{0}", JsonConvert.SerializeObject(eventData));
+        _logger.LogDebug("AccountRegisterCreateEto the first event: create register");
+        var register = _objectMapper.Map<AccountRegisterCreateEto, AccountRegisterIndex>(eventData);
+        if (eventData.GuardianInfo.ZkLoginInfo != null)
         {
-            _logger.LogInformation("received account register message:{0}", JsonConvert.SerializeObject(eventData));
-            _logger.LogDebug("the first event: create register");
-            var register = _objectMapper.Map<AccountRegisterCreateEto, AccountRegisterIndex>(eventData);
-            if (eventData.GuardianInfo.ZkLoginInfo != null)
-            {
-                register.GuardianInfo.ZkLoginInfo = eventData.GuardianInfo.ZkLoginInfo;
-            }
-            register.RegisterStatus = AccountOperationStatus.Pending;
-            await _registerRepository.AddAsync(register);
-            _logger.LogDebug($"register add success: {JsonConvert.SerializeObject(register)}");
+            register.GuardianInfo.ZkLoginInfo = eventData.GuardianInfo.ZkLoginInfo;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
-        }
+        register.RegisterStatus = AccountOperationStatus.Pending;
+        await _registerRepository.AddAsync(register);
+        _logger.LogDebug($"AccountRegisterCreateEto register add success: {JsonConvert.SerializeObject(register)}");
+
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "AccountRecoverCreateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(AccountRecoverCreateEto eventData)
     {
-        try
-        {
-            _logger.LogInformation("received account recover message:{0}", JsonConvert.SerializeObject(eventData));
-            _logger.LogDebug("the first event: create recover");
+        _logger.LogInformation("AccountRecoverCreateEto received account recover message:{0}", JsonConvert.SerializeObject(eventData));
+        _logger.LogDebug("the first event: create recover");
 
-            var recover = _objectMapper.Map<AccountRecoverCreateEto, AccountRecoverIndex>(eventData);
+        var recover = _objectMapper.Map<AccountRecoverCreateEto, AccountRecoverIndex>(eventData);
 
-            recover.RecoveryStatus = AccountOperationStatus.Pending;
-            await _recoverRepository.AddAsync(recover);
-            _logger.LogDebug($"recovery add success: {JsonConvert.SerializeObject(recover)}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
-        }
+        recover.RecoveryStatus = AccountOperationStatus.Pending;
+        await _recoverRepository.AddAsync(recover);
+        _logger.LogDebug($"AccountRecoverCreateEto recovery add success: {JsonConvert.SerializeObject(recover)}");
     }
 
     public async Task HandleEventAsync(CreateHolderEto eventData)

@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Etos.Chain;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -29,42 +31,36 @@ public class ChainHandler : IDistributedEventHandler<ChainCreateEto>,
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ChainHandler HandleEventAsync exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(ChainCreateEto eventData)
     {
-        try
-        {
-            await _chainsInfoRepository.AddAsync(_objectMapper.Map<ChainCreateEto, ChainsInfoIndex>(eventData));
-            _logger.LogDebug($"Chain info add success: {JsonConvert.SerializeObject(eventData)}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,"{Message}", JsonConvert.SerializeObject(eventData));
-        }
+        await _chainsInfoRepository.AddAsync(_objectMapper.Map<ChainCreateEto, ChainsInfoIndex>(eventData));
+        _logger.LogDebug($"ChainCreateEto Chain info add success: {JsonConvert.SerializeObject(eventData)}");
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ChainHandler ChainUpdateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(ChainUpdateEto eventData)
     {
-        try
-        {
-            await _chainsInfoRepository.UpdateAsync(_objectMapper.Map<ChainUpdateEto, ChainsInfoIndex>(eventData));
-            _logger.LogDebug($"chain info update success: {JsonConvert.SerializeObject(eventData)}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,"{Message}", JsonConvert.SerializeObject(eventData));
-        }
+        await _chainsInfoRepository.UpdateAsync(_objectMapper.Map<ChainUpdateEto, ChainsInfoIndex>(eventData));
+        _logger.LogDebug($"ChainUpdateEto chain info update success: {JsonConvert.SerializeObject(eventData)}");
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ChainHandler ChainDeleteEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(ChainDeleteEto eventData)
     {
-        try
-        {
-            await _chainsInfoRepository.DeleteAsync(_objectMapper.Map<ChainDeleteEto, ChainsInfoIndex>(eventData));
-            _logger.LogDebug("chain info delete success");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,"{Message}", JsonConvert.SerializeObject(eventData));
-        }
+        await _chainsInfoRepository.DeleteAsync(_objectMapper.Map<ChainDeleteEto, ChainsInfoIndex>(eventData));
+        _logger.LogDebug("ChainDeleteEto chain info delete success");
     }
 }

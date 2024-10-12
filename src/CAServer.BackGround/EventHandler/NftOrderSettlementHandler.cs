@@ -1,3 +1,5 @@
+using AElf.ExceptionHandler;
+using CAServer.Monitor.Interceptor;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using Volo.Abp;
@@ -29,26 +31,18 @@ public class NftOrderSettlementHandler : IDistributedEventHandler<OrderEto>, ITr
                && NftReleaseResultStatus.Contains(eventData.Status);
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "NftOrderSettlementHandler exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(OrderEto eventData)
     {
         // verify event is NFT release result
         if (!Match(eventData)) return;
-
-        try
-        {
-            await _nftCheckoutService.GetProcessor(eventData.MerchantName)
-                .SaveOrderSettlementAsync(eventData.Id);
-        }
-        catch (UserFriendlyException e)
-        {
-            _logger.LogWarning(e, "Notify nft release result fail, Id={Id}, Status={Status}",
-                eventData.Id, eventData.Status);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Notify nft release result error, Id={Id}, Status={Status}",
-                eventData.Id, eventData.Status);
-            throw;
-        }
+        _logger.LogInformation("NftOrderSettlementHandler Notify nft release, Id={Id}, Status={Status}", eventData.Id, eventData.Status);
+        
+        await _nftCheckoutService.GetProcessor(eventData.MerchantName)
+            .SaveOrderSettlementAsync(eventData.Id);
     }
 }

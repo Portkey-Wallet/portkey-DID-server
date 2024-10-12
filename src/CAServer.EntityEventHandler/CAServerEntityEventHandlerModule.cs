@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Cache;
 using CAServer.CoinGeckoApi;
@@ -49,6 +50,7 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(CAServerCoinGeckoApiModule),
+    typeof(AOPExceptionModule),
     typeof(AbpEventBusRabbitMqModule))]
 public class CAServerEntityEventHandlerModule : AbpModule
 {

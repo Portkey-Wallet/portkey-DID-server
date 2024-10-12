@@ -1,4 +1,5 @@
-﻿using CAServer.CAActivity.Provider;
+﻿using AElf.ExceptionHandler;
+using CAServer.CAActivity.Provider;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
@@ -58,6 +59,7 @@ namespace CAServer.BackGround;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpBackgroundJobsHangfireModule),
+    typeof(AOPExceptionModule),
     typeof(AbpEventBusRabbitMqModule)
 )]
 public class CABackGroundModule : AbpModule

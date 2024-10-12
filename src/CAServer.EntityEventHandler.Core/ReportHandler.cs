@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -25,25 +27,22 @@ public class ReportHandler : IDistributedEventHandler<AccountReportEto>, ITransi
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "ReportHandler AccountReportEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(AccountReportEto eventData)
     {
-        try
+        var index = _objectMapper.Map<AccountReportEto, AccountReportIndex>(eventData);
+        var reportIndex = await _repository.GetAsync(index.Id);
+        if (reportIndex == null)
         {
-            var index = _objectMapper.Map<AccountReportEto, AccountReportIndex>(eventData);
-            var reportIndex = await _repository.GetAsync(index.Id);
-            if (reportIndex == null)
-            {
-                index.CreateTime = DateTime.UtcNow;
-            }
+            index.CreateTime = DateTime.UtcNow;
+        }
 
-            await _repository.AddOrUpdateAsync(index);
-            _logger.LogInformation("[AccountReport] account report info handle success, caHash:{caHash}",
-                eventData.CaHash);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[AccountReport] handle report account data error, data:{data}",
-                JsonConvert.SerializeObject(eventData));
-        }
+        await _repository.AddOrUpdateAsync(index);
+        _logger.LogInformation("[AccountReport] account report info handle success, caHash:{caHash}",
+            eventData.CaHash);
     }
 }

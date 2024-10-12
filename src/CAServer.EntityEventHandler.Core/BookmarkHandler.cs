@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Bookmark.Etos;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
@@ -29,60 +31,54 @@ public class BookmarkHandler : IDistributedEventHandler<BookmarkCreateEto>, IDis
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "BookmarkHandler BookmarkCreateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(BookmarkCreateEto eventData)
     {
-        try
-        {
-            var bookmark = _objectMapper.Map<BookmarkCreateEto, BookmarkIndex>(eventData);
-            await _bookmarkRepository.AddOrUpdateAsync(bookmark);
-            _logger.LogInformation("Bookmark add success: {0}-{1}", eventData.UserId.ToString(), eventData.Name);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Bookmark add error: {message}", JsonConvert.SerializeObject(eventData));
-        }
+        var bookmark = _objectMapper.Map<BookmarkCreateEto, BookmarkIndex>(eventData);
+        await _bookmarkRepository.AddOrUpdateAsync(bookmark);
+        _logger.LogInformation("Bookmark add success: {0}-{1}", eventData.UserId.ToString(), eventData.Name);
     }
 
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "BookmarkHandler BookmarkDeleteEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(BookmarkDeleteEto eventData)
     {
-        try
-        {
-            var mustQuery = new List<Func<QueryContainerDescriptor<BookmarkIndex>, QueryContainer>>();
-            mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(eventData.UserId)));
+        var mustQuery = new List<Func<QueryContainerDescriptor<BookmarkIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(eventData.UserId)));
 
-            QueryContainer Filter(QueryContainerDescriptor<BookmarkIndex> f) => f.Bool(b => b.Must(mustQuery));
+        QueryContainer Filter(QueryContainerDescriptor<BookmarkIndex> f) => f.Bool(b => b.Must(mustQuery));
 
-            var (totalCount, bookmarkIndices) = await _bookmarkRepository.GetListAsync(Filter);
-            if (totalCount <= 0) return;
+        var (totalCount, bookmarkIndices) = await _bookmarkRepository.GetListAsync(Filter);
+        if (totalCount <= 0) return;
             
-            await _bookmarkRepository.BulkDeleteAsync(bookmarkIndices);
-            _logger.LogInformation("Bookmark delete all success: {0}", eventData.UserId.ToString());
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Bookmark delete all error: {message}", JsonConvert.SerializeObject(eventData));
-        }
+        await _bookmarkRepository.BulkDeleteAsync(bookmarkIndices);
+        _logger.LogInformation("Bookmark delete all success: {0}", eventData.UserId.ToString());
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "BookmarkHandler BookmarkMultiDeleteEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(BookmarkMultiDeleteEto eventData)
     {
-        try
-        {
-            var mustQuery = new List<Func<QueryContainerDescriptor<BookmarkIndex>, QueryContainer>>();
-            mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(eventData.UserId)));
-            mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(eventData.Ids)));
-            QueryContainer Filter(QueryContainerDescriptor<BookmarkIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var mustQuery = new List<Func<QueryContainerDescriptor<BookmarkIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(eventData.UserId)));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(eventData.Ids)));
+        QueryContainer Filter(QueryContainerDescriptor<BookmarkIndex> f) => f.Bool(b => b.Must(mustQuery));
 
-            var (totalCount, bookmarkIndices) = await _bookmarkRepository.GetListAsync(Filter);
-            if (totalCount <= 0) return;
+        var (totalCount, bookmarkIndices) = await _bookmarkRepository.GetListAsync(Filter);
+        if (totalCount <= 0) return;
 
-            await _bookmarkRepository.BulkDeleteAsync(bookmarkIndices);
-            _logger.LogInformation("Bookmark delete all success: {0}", eventData.UserId.ToString());
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Bookmark delete all error: {message}", JsonConvert.SerializeObject(eventData));
-        }
+        await _bookmarkRepository.BulkDeleteAsync(bookmarkIndices);
+        _logger.LogInformation("Bookmark delete all success: {0}", eventData.UserId.ToString());
     }
 }

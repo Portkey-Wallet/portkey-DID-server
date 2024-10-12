@@ -43,7 +43,7 @@ public class ZkLoginPreValidationProvider : CAServerAppService, IPreValidationSt
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "_contractProvider.VerifyZkLogin failed");
+            _logger.LogError(e, "_contractProvider.VerifyZkLogin failed caHash = {0}", caHash);
         }
         return result.Value;
     }

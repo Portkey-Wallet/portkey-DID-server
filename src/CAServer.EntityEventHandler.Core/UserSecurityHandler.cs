@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
+using CAServer.Monitor.Interceptor;
 using CAServer.Security.Etos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -24,20 +26,18 @@ public class UserSecurityHandler : IDistributedEventHandler<UserTransferLimitHis
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "UserSecurityHandler UserTransferLimitHistoryEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(UserTransferLimitHistoryEto eventData)
     {
-        try
-        {
-            var userTransferLimitHistoryIndex =
-                _objectMapper.Map<UserTransferLimitHistoryEto, UserTransferLimitHistoryIndex>(eventData);
+        var userTransferLimitHistoryIndex =
+            _objectMapper.Map<UserTransferLimitHistoryEto, UserTransferLimitHistoryIndex>(eventData);
 
-            await _userTransferLimitHistoryRepository.AddOrUpdateAsync(userTransferLimitHistoryIndex);
+        await _userTransferLimitHistoryRepository.AddOrUpdateAsync(userTransferLimitHistoryIndex);
 
-            _logger.LogInformation("Order {eventDataId} add or update success orderId.",eventData.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while processing the event,orderId: {eventDataId}",eventData.Id);
-        }
+        _logger.LogInformation("UserSecurityHandler UserTransferLimitHistoryEto Order {eventDataId} add or update success orderId.",eventData.Id);
     }
 }

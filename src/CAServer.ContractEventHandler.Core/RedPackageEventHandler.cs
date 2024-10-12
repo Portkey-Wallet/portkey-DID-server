@@ -1,5 +1,8 @@
+using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Monitor.Interceptor;
 using CAServer.RedPackage.Etos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -16,6 +19,11 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
         _contractAppService = contractAppService;
     }
 
+    [ExceptionHandler(typeof(Exception),
+        Message = "RedPackageEventHandler RedPackageCreateEto exist error",  
+        TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleExceptionP1))
+    ]
     public async Task HandleEventAsync(RedPackageCreateEto eventData)
     {
        
