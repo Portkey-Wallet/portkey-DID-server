@@ -145,6 +145,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             registerCreateEto.GuardianInfo.ZkLoginInfo = result.Data.GuardianInfo.ZkLoginInfo;
         }
+
         registerCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, registerCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(registerCreateEto);
@@ -160,9 +161,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
         else
         {
-            registerDto.GuardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(input.ZkLoginInfo.Jwt, input.ZkLoginInfo.Nonce, input.ZkLoginInfo.ZkProof,
+            registerDto.GuardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(input.ZkLoginInfo.Jwt, input.ZkLoginInfo.Nonce,
+                input.ZkLoginInfo.ZkProof,
                 input.ZkLoginInfo.Salt, input.ZkLoginInfo.CircuitId,
-                input.Manager, input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Timestamp, input.ZkLoginInfo.PoseidonIdentifierHash);
+                input.Manager, input.ZkLoginInfo.IdentifierHash, input.ZkLoginInfo.Timestamp,
+                input.ZkLoginInfo.PoseidonIdentifierHash);
         }
     }
 
@@ -172,30 +175,30 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwt);
         InternalRapidSnarkProofRepr proofRepr = JsonConvert.DeserializeObject<InternalRapidSnarkProofRepr>(zkProof);
         return new ZkLoginInfoDto()
+        {
+            IdentifierHash = identifierHash,
+            Issuer = jwtToken.Payload.Iss,
+            Kid = jwtToken.Header.Kid,
+            Nonce = nonce,
+            ZkProof = zkProof,
+            ZkProofPiA = proofRepr.PiA,
+            ZkProofPiB1 = proofRepr.PiB[0],
+            ZkProofPiB2 = proofRepr.PiB[1],
+            ZkProofPiB3 = proofRepr.PiB[2],
+            ZkProofPiC = proofRepr.PiC,
+            Salt = salt,
+            CircuitId = circuitId,
+            NoncePayload = new NoncePayload()
             {
-                IdentifierHash = identifierHash,
-                Issuer = jwtToken.Payload.Iss,
-                Kid = jwtToken.Header.Kid,
-                Nonce = nonce,
-                ZkProof = zkProof,
-                ZkProofPiA = proofRepr.PiA,
-                ZkProofPiB1 = proofRepr.PiB[0],
-                ZkProofPiB2 = proofRepr.PiB[1],
-                ZkProofPiB3 = proofRepr.PiB[2],
-                ZkProofPiC = proofRepr.PiC,
-                Salt = salt,
-                CircuitId = circuitId,
-                NoncePayload = new NoncePayload()
+                AddManager = new Dtos.Zklogin.ManagerInfoDto()
                 {
-                    AddManager = new Dtos.Zklogin.ManagerInfoDto()
-                    {
-                        CaHash = string.Empty,
-                        ManagerAddress = manager,
-                        Timestamp = timestamp
-                    }
-                },
-                PoseidonIdentifierHash = poseidonIdentifierHash
-            };
+                    CaHash = string.Empty,
+                    ManagerAddress = manager,
+                    Timestamp = timestamp
+                }
+            },
+            PoseidonIdentifierHash = poseidonIdentifierHash
+        };
     }
 
     private static ZkLoginInfoDto GetDefaultZkJwtAuthInfo()
@@ -238,6 +241,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
             throw new UserFriendlyException(guardianGrainDto.Message);
         }
+
         return guardianGrainDto.Data;
     }
 
@@ -258,7 +262,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var guardianGrain = GetGuardian(t.IdentifierHash);
             t.IdentifierHash = guardianGrain.IdentifierHash;
         });
-        
+
         _logger.LogInformation($"recover dto :{JsonConvert.SerializeObject(recoveryDto)}");
 
         var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.ChainId, input.Manager);
@@ -287,14 +291,16 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
-        
+
         var recoverCreateEto = ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data);
         recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, recoverCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(recoverCreateEto);
-        
-        var existedManagers = ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
-        var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved, existedManagers);
+
+        var existedManagers =
+            ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
+        var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId,
+            input.Manager, recoveryDto.GuardianApproved, existedManagers);
         if (!preValidateResult)
         {
             throw new UserFriendlyException("social recovery validation failed, please try again later");
@@ -311,10 +317,12 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     {
         try
         {
-            if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
+            if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } ||
+                referralInfo.ReferralCode.IsNullOrEmpty())
             {
                 return;
             }
+
             var infos = referralInfo.ReferralCode.Split("#");
             if (infos.Length == 2 && !infos[1].IsNullOrEmpty())
             {
@@ -332,7 +340,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             _logger.LogError(e, "CheckAndResetReferralInfo error message:{0}", e.Message);
         }
     }
-    
+
     private async Task<string> GetIdentityCodeFromCache(string ipAddress)
     {
         try
@@ -343,6 +351,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             _logger.LogError(e, "GetIdentityCodeFromCache error ipAddress:{0}", ipAddress);
         }
+
         return string.Empty;
     }
 
@@ -360,15 +369,21 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 && ((int)guardian.Type) == ((int)recoveryGuardian.Type));
             if (guardianInfo == null)
             {
-                _logger.LogWarning("recoveryGuardian:{0} not exist in RecoveryDto", JsonConvert.SerializeObject(recoveryGuardian));
+                _logger.LogWarning("recoveryGuardian:{0} not exist in RecoveryDto",
+                    JsonConvert.SerializeObject(recoveryGuardian));
                 continue;
             }
+
             if (recoveryGuardian.ZkLoginInfo != null)
             {
-                guardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt, recoveryGuardian.ZkLoginInfo.Nonce,
-                    recoveryGuardian.ZkLoginInfo.ZkProof, recoveryGuardian.ZkLoginInfo.Salt, recoveryGuardian.ZkLoginInfo.CircuitId,
-                    input.Manager, recoveryGuardian.ZkLoginInfo.IdentifierHash, recoveryGuardian.ZkLoginInfo.Timestamp, recoveryGuardian.ZkLoginInfo.PoseidonIdentifierHash);
-            } else
+                guardianInfo.ZkLoginInfo = GetZkJwtAuthInfo(recoveryGuardian.ZkLoginInfo.Jwt,
+                    recoveryGuardian.ZkLoginInfo.Nonce,
+                    recoveryGuardian.ZkLoginInfo.ZkProof, recoveryGuardian.ZkLoginInfo.Salt,
+                    recoveryGuardian.ZkLoginInfo.CircuitId,
+                    input.Manager, recoveryGuardian.ZkLoginInfo.IdentifierHash, recoveryGuardian.ZkLoginInfo.Timestamp,
+                    recoveryGuardian.ZkLoginInfo.PoseidonIdentifierHash);
+            }
+            else
             {
                 guardianInfo.ZkLoginInfo = GetDefaultZkJwtAuthInfo();
             }
@@ -839,7 +854,16 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private async Task PublishExtraInfoAsync(string grainId, Dictionary<string, object> extraInfo)
     {
-        if (extraInfo.IsNullOrEmpty()) return;
+        extraInfo ??= new Dictionary<string, object>();
+        try
+        {
+            var ipAddress = _ipInfoAppService.GetRemoteIp();
+            extraInfo.Add(nameof(ipAddress), ipAddress);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Get remote ip error");
+        }
 
         await _distributedEventBus.PublishAsync(new HolderExtraInfoEto
         {
