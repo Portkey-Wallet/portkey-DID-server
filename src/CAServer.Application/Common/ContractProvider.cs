@@ -31,6 +31,8 @@ public interface IContractProvider
 {
     public Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash, string chainId);
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
+    public Task<BoolValue> VerifyZkLogin(string chainId, GuardianInfo guardianInfo, Hash caHash);
+    public Task<BoolValue> VerifySignature(string chainId, GuardianInfo guardianInfo, string methodName, Hash caHash, string operationDetails);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
 
@@ -235,6 +237,31 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         return await CallTransactionAsync<GetVerifierServersOutput>(AElfContractMethodName.GetVerifierServers,
             new Empty(), _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
+    }
+
+    public async Task<BoolValue> VerifyZkLogin(string chainId, Portkey.Contracts.CA.GuardianInfo guardianInfo, Hash caHash)
+    {
+        var param = new VerifyZkLoginRequest()
+        {
+            GuardianApproved = guardianInfo,
+            CaHash = caHash
+        };
+        return await CallTransactionAsync<BoolValue>(
+            AElfContractMethodName.VerifyZkLogin, param, _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
+    }
+
+    public async Task<BoolValue> VerifySignature(string chainId, GuardianInfo guardianInfo, string methodName, Hash caHash,
+        string operationDetails)
+    {
+        var param = new VerifySignatureRequest()
+        {
+            GuardianApproved = guardianInfo,
+            MethodName = methodName,
+            CaHash = caHash,
+            OperationDetails = operationDetails
+        };
+        return await CallTransactionAsync<BoolValue>(
+            AElfContractMethodName.VerifySignature, param, _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
     }
 
     public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
