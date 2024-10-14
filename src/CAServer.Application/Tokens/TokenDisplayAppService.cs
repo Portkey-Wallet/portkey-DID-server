@@ -114,7 +114,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         {
             var caAddressInfos = requestDto.CaAddressInfos;
             var indexerTokenInfos = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
-                0, Int32.MaxValue);
+                0, PagedResultRequestDto.MaxMaxResultCount);
 
             indexerTokenInfos.CaHolderTokenBalanceInfo.Data =
                 indexerTokenInfos.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
