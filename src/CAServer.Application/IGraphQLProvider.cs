@@ -15,6 +15,7 @@ using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer;
@@ -59,8 +60,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         _graphQLOptions = graphQLOptions.Value;
         _graphQLClient = new GraphQLHttpClient(_graphQLOptions.Configuration, new NewtonsoftJsonSerializer());
     }
-
-    // todo: handle exception
+    
     public async Task<long> GetIndexBlockHeightAsync(string chainId)
     {
         try
@@ -70,14 +70,14 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             var blockHeightItem = blockHeightInfo?.CurrentVersion?.Items?.FirstOrDefault(t => t.ChainId == chainId);
             if (blockHeightItem == null)
             {
-                return ContractAppServiceConstant.LongEmpty;
+                throw new UserFriendlyException("[GetIndexBlockHeightAsync] data empty.");
             }
 
             return blockHeightItem.LongestChainHeight;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[GetIndexBlockHeightAsync] on chain {id} error", chainId);
+            _logger.LogError(e, "[GetIndexBlockHeightAsync] on chain {chainId} error", chainId);
             return ContractAppServiceConstant.LongEmpty;
         }
     }
