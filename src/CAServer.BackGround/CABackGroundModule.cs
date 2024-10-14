@@ -59,8 +59,8 @@ namespace CAServer.BackGround;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpBackgroundJobsHangfireModule),
-    typeof(AbpEventBusRabbitMqModule),
-    typeof(OpenTelemetryModule)
+    typeof(AbpEventBusRabbitMqModule)
+    // typeof(OpenTelemetryModule)
 )]
 public class CABackGroundModule : AbpModule
 {
