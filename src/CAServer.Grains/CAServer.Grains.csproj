@@ -14,6 +14,10 @@
         <PackageReference Include="Microsoft.Orleans.Reminders" Version="7.2.6" />
         <PackageReference Include="Microsoft.Orleans.Sdk" Version="7.2.6" />
         <PackageReference Include="Microsoft.Orleans.Streaming" Version="7.2.6" />
+        <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="7.2.6">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="MongoDB.Bson" Version="2.21.0" />
         <PackageReference Include="AElf.Client" Version="1.1.0" />
         <PackageReference Include="AElf.Core" Version="1.2.3" />

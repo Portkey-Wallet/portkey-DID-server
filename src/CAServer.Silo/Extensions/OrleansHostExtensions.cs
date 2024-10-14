@@ -27,11 +27,13 @@ public static class OrleansHostExtensions
         {
             //Configure OrleansSnapshot
             siloBuilder
-                .ConfigureEndpoints(advertisedIP:IPAddress.Parse(configSection.GetValue<string>("AdvertisedIP")),siloPort: configSection.GetValue<int>("SiloPort"), gatewayPort: configSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
+                .ConfigureEndpoints(advertisedIP: IPAddress.Parse(configSection.GetValue<string>("AdvertisedIP")),
+                    siloPort: configSection.GetValue<int>("SiloPort"), gatewayPort: configSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
                 .UseMongoDBClient(configSection.GetValue<string>("MongoDBClient"))
                 .UseMongoDBClustering(options =>
                 {
-                    options.DatabaseName = configSection.GetValue<string>("DataBase");;
+                    options.DatabaseName = configSection.GetValue<string>("DataBase");
+                    ;
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
                 .Configure<JsonGrainStateSerializerOptions>(options => options.ConfigureJsonSerializerSettings =
@@ -42,7 +44,7 @@ public static class OrleansHostExtensions
                         settings.DefaultValueHandling = DefaultValueHandling.Populate;
                     })
                 .ConfigureServices(services => services.AddSingleton<IGrainStateSerializer, VerifierJsonGrainStateSerializer>())
-                .AddMongoDBGrainStorage("Default",(MongoDBGrainStorageOptions op) =>
+                .AddMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
                 {
                     op.CollectionPrefix = "GrainStorage";
                     op.DatabaseName = configSection.GetValue<string>("DataBase");
@@ -53,7 +55,7 @@ public static class OrleansHostExtensions
                     //     jsonSettings.DefaultValueHandling = DefaultValueHandling.Populate;
                     //     jsonSettings.ObjectCreationHandling = ObjectCreationHandling.Replace;
                     // };
-                    
+
                 })
                 .UseMongoDBReminders(options =>
                 {
@@ -65,18 +67,22 @@ public static class OrleansHostExtensions
                     options.ClusterId = configSection.GetValue<string>("ClusterId");
                     options.ServiceId = configSection.GetValue<string>("ServiceId");
                 })
-               // .AddMemoryGrainStorage("PubSubStore")
-                // .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
-                .UseDashboard(options => {
-                    options.Username = configSection.GetValue<string>("DashboardUserName");
-                    options.Password = configSection.GetValue<string>("DashboardPassword");
-                    options.Host = "*";
-                    options.Port = configSection.GetValue<int>("DashboardPort");
-                    options.HostSelf = true;
-                    options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
-                })
                 // .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
+               // .AddMemoryGrainStorage("PubSubStore")
+                // .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
+                if (configSection.GetValue<bool>("UseDashboard", false))
+                {
+                    siloBuilder.UseDashboard(options =>
+                    {
+                        options.Username = configSection.GetValue<string>("DashboardUserName");
+                        options.Password = configSection.GetValue<string>("DashboardPassword");
+                        options.Host = "*";
+                        options.Port = configSection.GetValue<int>("DashboardPort");
+                        options.HostSelf = true;
+                        options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
+                    });
+                }
         });
     }
 }
