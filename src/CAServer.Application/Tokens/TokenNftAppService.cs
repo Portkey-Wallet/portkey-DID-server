@@ -652,7 +652,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         {
             var res = await _userAssetsProvider.SearchUserAssetsAsync(requestDto.CaAddressInfos,
                 requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword,
-                requestDto.SkipCount, requestDto.MaxResultCount);
+                0, LimitedResultRequestDto.MaxMaxResultCount);
 
             var dto = new SearchUserAssetsDto
             {
@@ -756,13 +756,13 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
                 .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
-
+            
+            dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
             SetSeedStatusAndTypeForUserAssets(dto.Data);
 
             OptimizeSeedAliasDisplayForUserAssets(dto.Data);
 
             TryUpdateImageUrlForUserAssets(dto.Data);
-
             return dto;
         }
         catch (Exception e)
