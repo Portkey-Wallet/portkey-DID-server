@@ -27,6 +27,10 @@ public class Token
     public string TokenContractAddress { get; set; }
     public string ImageUrl { get; set; }
     public string Label { get; set; }
+    
+    public string DisplayChainName { get; set; }
+    
+    public string ChainUrl { get; set; }
 }
 public class TokenWithoutChain
 {
