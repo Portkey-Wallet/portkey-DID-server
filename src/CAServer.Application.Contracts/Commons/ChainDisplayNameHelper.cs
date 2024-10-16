@@ -9,20 +9,20 @@ public static class ChainDisplayNameHelper
 {
     public static readonly string MainChain = "aelf MainChain";
     public static readonly string DAppChain = "aelf dAppChain";
-    public static readonly string MainChainUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/mainChain.png";
-    public static readonly string DAppChainUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/dappChain.png";
+    public static readonly string MainChainImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/mainChain.png";
+    public static readonly string DAppChainImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/dappChain.png";
 
-    public static Dictionary<string, string> DisplayNameMap = new Dictionary<string, string>
+    public static readonly Dictionary<string, string> DisplayNameMap = new Dictionary<string, string>
     {
         { "AELF", MainChain },
         { "tDVV", DAppChain },
         { "tDVW", DAppChain },
     };
-    public static Dictionary<string, string> ChainUrlMap = new Dictionary<string, string>
+    public static readonly Dictionary<string, string> ChainImageUrlMap = new Dictionary<string, string>
     {
-        { "AELF", MainChainUrl },
-        { "tDVV", DAppChainUrl },
-        { "tDVW", DAppChainUrl },
+        { "AELF", MainChainImageUrl },
+        { "tDVV", DAppChainImageUrl },
+        { "tDVW", DAppChainImageUrl },
     };
 
     // if not exits, maybe throw exception
@@ -34,7 +34,7 @@ public static class ChainDisplayNameHelper
     // if not exits, maybe throw exception
     public static string MustGetChainUrl(string chainId)
     {
-        return ChainUrlMap[chainId];
+        return ChainImageUrlMap[chainId];
     }
 
     // if not exits, return default
@@ -52,13 +52,13 @@ public static class ChainDisplayNameHelper
         }
 
         SetPropertyValue(obj, "DisplayChainName",  MustGetChainDisplayName(chainId));
-        SetPropertyValue(obj, "ChainUrl",  MustGetChainUrl(chainId));
+        SetPropertyValue(obj, "ChainImageUrl",  MustGetChainUrl(chainId));
     }
     
     public static void SetDisplayName (ChainDisplayNameDto obj, string chainId)
     {
         obj.DisplayChainName = MustGetChainDisplayName(chainId);
-        obj.ChainUrl = MustGetChainUrl(chainId);
+        obj.ChainImageUrl = MustGetChainUrl(chainId);
     }
 
     public static void SetDisplayName<T>(List<T> list)

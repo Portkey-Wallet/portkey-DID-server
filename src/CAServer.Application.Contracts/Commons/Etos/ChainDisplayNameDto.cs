@@ -3,7 +3,7 @@ namespace CAServer.Commons.Etos;
 public class ChainDisplayNameDto
 {
     public string DisplayChainName { get; set; }
-    public string ChainUrl { get; set; }
+    public string ChainImageUrl { get; set; }
 
     private string _chainId;
     public string ChainId
