@@ -15,8 +15,7 @@ public class DisplayNameHelperTest
             {
                 ChainId = "AELF"
             };
-            bool result = ChainDisplayNameHelper.SetDisplayName(dto);
-            result.ShouldBeTrue();
+            ChainDisplayNameHelper.SetDisplayName(dto);
             dto.DisplayName.ShouldBe(ChainDisplayNameHelper.MainChain);
         }
         {
@@ -28,21 +27,18 @@ public class DisplayNameHelperTest
                 },
             };
             
-            bool result = ChainDisplayNameHelper.SetDisplayName(dtos);
-            result.ShouldBeTrue();
+            ChainDisplayNameHelper.SetDisplayName(dtos);
         }
         {
             var dto = new DTOB
             {
                 ChainId = "AELF"
             };
-            bool result = ChainDisplayNameHelper.SetDisplayName(dto);
-            result.ShouldBeFalse();
+            ChainDisplayNameHelper.SetDisplayName(dto);
         }
         {
             var dto = new DTOC();
-            bool result = ChainDisplayNameHelper.SetDisplayName(dto);
-            result.ShouldBeFalse();
+            ChainDisplayNameHelper.SetDisplayName(dto);
         }
     }
 
