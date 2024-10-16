@@ -53,6 +53,9 @@ public class NftInfoDto
     public string TokenName { get; set; }
     public  bool IsSeed { get; set; }
     public int SeedType { get; set; }
+    public string DisplayChainName { get; set; }
+    public string ChainImageUrl { get; set; }
+    public string ChainId{ get; set; }
 }
 
 public class NftCollectionDto
