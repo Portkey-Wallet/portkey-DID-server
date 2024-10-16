@@ -50,7 +50,7 @@ public static class ChainDisplayNameHelper
             return;
         }
 
-        SetPropertyValue(obj, "DisplayName",  MustGetChainDisplayName(chainId));
+        SetPropertyValue(obj, "DisplayChainName",  MustGetChainDisplayName(chainId));
         SetPropertyValue(obj, "ChainUrl",  MustGetChainUrl(chainId));
     }
 

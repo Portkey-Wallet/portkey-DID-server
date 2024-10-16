@@ -75,6 +75,7 @@ using CAServer.Tokens.Provider;
 using CAServer.Transfer.Dtos;
 using CAServer.Upgrade.Dtos;
 using CAServer.Upgrade.Etos;
+using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo;
@@ -1079,5 +1080,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<GrowthIndex, GrowthUserInfoDto>();
         CreateMap<IndexerToken, GetUserTokenDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.TokenContractAddress));
+        
+        CreateMap<TokenInfoDto, TokenInfoV2Dto>();
+        CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
     }
 }

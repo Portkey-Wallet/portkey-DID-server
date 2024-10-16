@@ -43,4 +43,14 @@ public class UserAssetsV2Controller
         var result = TokenHelper.ConvertFromGetToken(dto);
         return result;
     }
+    
+    [HttpPost("searchUserAssets")]
+    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto)
+    {
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        var searchDto = VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion)
+            ? await _tokenNftAppService.SearchUserAssetsAsync(requestDto)
+            : await _userAssetsAppService.SearchUserAssetsAsync(requestDto);
+        return await _userAssetsAppService.SearchUserAssetsAsyncV2(requestDto, searchDto);
+    }
 }
