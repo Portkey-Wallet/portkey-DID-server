@@ -44,7 +44,11 @@ public class SearchUserAssetsHelper
             return result;
         }
 
-        var nftMap = assets.Where(p => p.NftInfo != null).Select(p => p.NftInfo).GroupBy(p => p.CollectionName);
+        var nftMap = assets.Where(p => p.NftInfo != null).Select(p =>
+        {
+            p.NftInfo.ChainId = p.ChainId;
+            return p.NftInfo;
+        }).GroupBy(p => p.CollectionName);
         foreach (var nftEntry in nftMap)
         {
             result.Add(new NftCollectionDto
