@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Commons;
 
@@ -52,6 +53,12 @@ public static class ChainDisplayNameHelper
 
         SetPropertyValue(obj, "DisplayChainName",  MustGetChainDisplayName(chainId));
         SetPropertyValue(obj, "ChainUrl",  MustGetChainUrl(chainId));
+    }
+    
+    public static void SetDisplayName (ChainDisplayNameDto obj, string chainId)
+    {
+        obj.DisplayChainName = MustGetChainDisplayName(chainId);
+        obj.ChainUrl = MustGetChainUrl(chainId);
     }
 
     public static void SetDisplayName<T>(List<T> list)
