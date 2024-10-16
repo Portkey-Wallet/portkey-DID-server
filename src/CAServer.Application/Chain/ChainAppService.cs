@@ -13,6 +13,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using Environment = CAServer.Options.Environment;
 
 namespace CAServer.Chain;
 
@@ -91,30 +92,20 @@ public class ChainAppService : CAServerAppService, IChainAppService
         {
             switch (_hostInfoOptions.Environment)
             {
-                case Options.Environment.Production:
+                case Environment.Production:
                 {
-                    result.Add(CommonConstant.TDVVChainId, new ChainDisplayNameDto()
-                    {
-                        DisplayChainName = ChainDisplayNameHelper.MustGetChainDisplayName(CommonConstant.TDVVChainId),
-                        ChainUrl = ChainDisplayNameHelper.MainChainUrl(CommonConstant.TDVVChainId)
-                    });
+                    AddChainDisplayInfo(result, CommonConstant.TDVVChainId);
                     break;
                 }
+                case Environment.Development:
+                case Environment.Staging:
                 default:
                 {
-                    result.Add(CommonConstant.TDVWChainId, new ChainDisplayNameDto()
-                    {
-                        DisplayChainName = ChainDisplayNameHelper.MustGetChainDisplayName(CommonConstant.TDVWChainId),
-                        ChainUrl = ChainDisplayNameHelper.MainChainUrl(CommonConstant.TDVWChainId)
-                    });
+                    AddChainDisplayInfo(result, CommonConstant.TDVWChainId);
                     break;
                 }
             }
-            result.Add(CommonConstant.MainChainId, new ChainDisplayNameDto()
-            {
-                DisplayChainName = ChainDisplayNameHelper.MustGetChainDisplayName(CommonConstant.MainChainId),
-                ChainUrl = ChainDisplayNameHelper.MainChainUrl(CommonConstant.MainChainId)
-            });
+            AddChainDisplayInfo(result, CommonConstant.MainChainId);
         }
         else
         {
@@ -124,18 +115,28 @@ public class ChainAppService : CAServerAppService, IChainAppService
                 throw new UserFriendlyException("the display name of the chain doesn't exist");
             }
 
-            var iconUrl =  ChainDisplayNameHelper.ChainUrlMap.GetValueOrDefault(chainId);
+            var iconUrl =  ChainDisplayNameHelper.ChainImageUrlMap.GetValueOrDefault(chainId);
             if (iconUrl.IsNullOrEmpty())
             {
                 throw new UserFriendlyException("the icon url of the chain doesn't exist");
             }
-            result.Add(chainId, new ChainDisplayNameDto()
-            {
-                DisplayChainName = displayName,
-                ChainUrl = iconUrl
-            });
+            AddChainDisplayInfo(result, chainId);
         }
 
         return result;
+    }
+
+    private static void AddChainDisplayInfo(IDictionary<string, ChainDisplayNameDto> result, string chainId)
+    {
+        result.Add(chainId, BuildChainDisplayNameDto(chainId));
+    }
+
+    private static ChainDisplayNameDto BuildChainDisplayNameDto(string chainId)
+    {
+        return new ChainDisplayNameDto()
+        {
+            DisplayChainName = ChainDisplayNameHelper.MustGetChainDisplayName(chainId),
+            ChainImageUrl = ChainDisplayNameHelper.MustGetChainUrl(chainId)
+        };
     }
 }
