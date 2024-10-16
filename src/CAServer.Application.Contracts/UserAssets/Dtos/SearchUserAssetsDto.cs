@@ -38,7 +38,7 @@ public class TokenInfoV2Dto : TokenInfoDto
     public string Symbol { get; set; }
     public string Address { get; set; }
     public string DisplayChainName { get; set; }
-    public string ChainUrl { get; set; }
+    public string ChainImageUrl { get; set; }
 }
 
 public class NftInfoDto
