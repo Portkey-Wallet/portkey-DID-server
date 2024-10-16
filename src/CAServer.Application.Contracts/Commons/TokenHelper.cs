@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CAServer.Commons;
 using CAServer.UserAssets.Dtos;
 
 namespace CAServer.Common;
@@ -35,6 +36,7 @@ public static class TokenHelper
         Dictionary<string, TokenWithoutChain> generatedTokens = new Dictionary<string, TokenWithoutChain>();
         foreach (var token in tokenDto.Data)
         {
+            ChainDisplayNameHelper.SetDisplayName(token);
             if (generatedTokens.ContainsKey(token.Symbol))
             {
                 generatedTokens[token.Symbol].tokens.Add(token);
@@ -59,7 +61,7 @@ public static class TokenHelper
             }
         }
 
-        result.TotalRecordCount = result.Data.Count();
+        result.TotalRecordCount = result.Data.Select(item => item.tokens.Count).Sum(); //result.Data.Count();
         return result;
     }
 
