@@ -22,6 +22,7 @@ using Orleans;
 using Shouldly;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
 using Xunit;
 using Token = CAServer.UserAssets.Dtos.Token;
@@ -87,7 +88,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             tokenCacheProvider: tokenCacheProvider.Object,
             ipfsOption: ipfsOption.Object,
             tokenPriceService: tokenPriceServiceMock.Object,
-            activityProvider: activityProviderMock.Object
+            activityProvider: activityProviderMock.Object,
+            objectMapper: null
             );
         return userAssetsAppService;
     }
