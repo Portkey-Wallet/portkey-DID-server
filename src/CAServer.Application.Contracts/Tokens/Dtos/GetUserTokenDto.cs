@@ -1,6 +1,8 @@
+using CAServer.Commons.Etos;
+
 namespace CAServer.Tokens.Dtos;
 
-public class GetUserTokenDto
+public class GetUserTokenDto : ChainDisplayNameDto
 {
     public string Id { get; set; }
     public string ChainId { get; set; }
