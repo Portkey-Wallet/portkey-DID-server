@@ -47,6 +47,7 @@ public class SearchUserAssetsHelper
         var nftMap = assets.Where(p => p.NftInfo != null).Select(p =>
         {
             p.NftInfo.ChainId = p.ChainId;
+            ChainDisplayNameHelper.SetDisplayName(p.NftInfo);
             return p.NftInfo;
         }).GroupBy(p => p.CollectionName);
         foreach (var nftEntry in nftMap)
