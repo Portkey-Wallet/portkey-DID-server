@@ -8,8 +8,8 @@ public static class ChainDisplayNameHelper
 {
     public static readonly string MainChain = "aelf MainChain";
     public static readonly string DAppChain = "aelf dAppChain";
-    public static readonly string MainChainUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin-ELF.png";
-    public static readonly string DAppChainUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin-ELF.png";
+    public static readonly string MainChainUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/mainChain.png";
+    public static readonly string DAppChainUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/dappChain.png";
 
     public static Dictionary<string, string> DisplayNameMap = new Dictionary<string, string>
     {
@@ -50,7 +50,7 @@ public static class ChainDisplayNameHelper
             return;
         }
 
-        SetPropertyValue(obj, "DisplayName",  MustGetChainDisplayName(chainId));
+        SetPropertyValue(obj, "DisplayChainName",  MustGetChainDisplayName(chainId));
         SetPropertyValue(obj, "ChainUrl",  MustGetChainUrl(chainId));
     }
 

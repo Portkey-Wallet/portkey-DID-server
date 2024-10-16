@@ -16,7 +16,7 @@ public class DisplayNameHelperTest
                 ChainId = "AELF"
             };
             ChainDisplayNameHelper.SetDisplayName(dto);
-            dto.DisplayName.ShouldBe(ChainDisplayNameHelper.MainChain);
+            dto.DisplayChainName.ShouldBe(ChainDisplayNameHelper.MainChain);
         }
         {
             List<DTOA> dtos = new List<DTOA>
@@ -45,7 +45,7 @@ public class DisplayNameHelperTest
     public class DTOA
     {
         public string ChainId { get; set; }
-        public string DisplayName { get; set; }
+        public string DisplayChainName { get; set; }
     }
 
     public class DTOB
