@@ -260,7 +260,12 @@ public class SignatureGrantHandler : ITokenExtensionGrant
     private async Task<string> GetCacheItemWithRetryAsync(string key, int retryCount = 3, int delayMilliseconds = 500)
     {
         var retryPolicy = Policy.Handle<Exception>()
-            .WaitAndRetryAsync(retryCount, retry => TimeSpan.FromMilliseconds(delayMilliseconds));
+            .WaitAndRetryAsync(retryCount: retryCount,
+                sleepDurationProvider: retry => TimeSpan.FromMilliseconds(delayMilliseconds),
+                onRetry: (exception, timeSpan, rc) =>
+                {
+                    _logger.LogInformation($"Retry {rc} after {timeSpan.Milliseconds} milli-seconds due to {exception.Message}");
+                });
 
         return await retryPolicy.ExecuteAsync(async () =>
         {
