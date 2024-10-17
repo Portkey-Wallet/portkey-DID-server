@@ -836,6 +836,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (needMap)
             {
                 await MapMethodNameAsync(caAddresses, dto, ht.ToContractAddress, guardian);
+                AppendStatusIcon(dto);
             }
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress, ht.MethodName);
@@ -855,14 +856,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (_activityTypeOptions.TypeMap[CryptoGiftConstants.CreateCryptoBox].Equals(dto.TransactionName))
             {
                 await ReplaceSentRedPackageActivity(dto);
+                dto.StatusIcon = _activitiesStatus.Send;
             }
             else if (_activityTypeOptions.TypeMap[CryptoGiftConstants.TransferCryptoBoxes].Equals(dto.TransactionName))
             {
                 await ReplacePayedRedPackageActivity(dto);
+                dto.StatusIcon = _activitiesStatus.Receive;
             }
             else if (_activityTypeOptions.TypeMap[CryptoGiftConstants.RefundCryptoBox].Equals(dto.TransactionName))
             {
                 await ReplaceRefundedRedPackageActivity(dto);
+                dto.StatusIcon = _activitiesStatus.Receive;
             }
         }
         catch (Exception e)
@@ -888,8 +892,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         dto.TransactionName = CryptoGiftConstants.SendTransactionName;
-        dto.StatusIcon = _activitiesStatus.Send;
-        _logger.LogInformation("===========SentRedPackage condition IsReceived:{0} SendICon:{1} result:{2}", dto.IsReceived, _activitiesStatus.Send, dto.StatusIcon);
         return true;
     }
 
@@ -929,8 +931,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         dto.TransactionName = CryptoGiftConstants.ClaimTransactionName;
-        dto.StatusIcon = _activitiesStatus.Receive;
-        _logger.LogInformation("===========PayedRedPackage condition IsReceived:{0} ReceiveICon:{1} result:{2}", dto.IsReceived, _activitiesStatus.Receive, dto.StatusIcon);
         return true;
     }
 
@@ -952,9 +952,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
-        dto.StatusIcon = _activitiesStatus.Receive;
-        _logger.LogInformation("===========RefundedRedPackage condition IsReceived:{0} ReceiveICon:{1} result:{2}", dto.IsReceived, _activitiesStatus.Receive, dto.StatusIcon);
         return true;
+    }
+
+    private void AppendStatusIcon(GetActivityDto activityDto)
+    {
+        activityDto.StatusIcon = activityDto.TransactionType switch
+        {
+            ActivityConstants.TransferName when ActivityConstants.CrossChainTransferDisplayName.Equals(activityDto
+                .TransactionName) => _activitiesStatus.Send,
+            ActivityConstants.DepositTypeName when ActivityConstants.DepositName.Equals(activityDto.TransactionName) =>
+                _activitiesStatus.Receive,
+            _ => activityDto.StatusIcon
+        };
     }
 
     private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
@@ -989,14 +999,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
             activityDto.StatusIcon = activityDto.IsReceived ? _activitiesStatus.Receive : _activitiesStatus.Send;
-            _logger.LogInformation("===========TransferName condition IsReceived:{0} ReceiveICon:{1} result:{2}", activityDto.IsReceived, _activitiesStatus.Receive, activityDto.StatusIcon);
         }
 
         if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             activityDto.TransactionName = ActivityConstants.DepositName;
             activityDto.StatusIcon = _activitiesStatus.Receive;
-            _logger.LogInformation("===========IsETransfer condition IsReceived:{0} ReceiveICon:{1} result:{2}", activityDto.IsReceived, _activitiesStatus.Receive, activityDto.StatusIcon);
             return;
         }
 
