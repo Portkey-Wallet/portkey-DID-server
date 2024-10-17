@@ -154,6 +154,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<ActivitiesStatusIconOptions>(configuration.GetSection("ActivitiesStatusIcon"));
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
