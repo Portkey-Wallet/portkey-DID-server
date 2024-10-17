@@ -55,6 +55,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly TokenSpenderOptions _tokenSpenderOptions;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
+    private readonly ActivitiesStatusIconOptions _activitiesStatus;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -64,7 +65,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IOptionsSnapshot<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor,
-        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
+        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
+        IOptionsSnapshot<ActivitiesStatusIconOptions> activitiesStatus)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -83,6 +85,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _httpContextAccessor = httpContextAccessor;
         _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
         _redPackageIndexRepository = redPackageIndexRepository;
+        _activitiesStatus = activitiesStatus.Value;
     }
 
 
@@ -980,6 +983,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
+            activityDto.StatusIcon = activityDto.IsReceived ? _activitiesStatus.Receive : _activitiesStatus.Send;
         }
 
         if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
