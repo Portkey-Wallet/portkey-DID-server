@@ -19,6 +19,7 @@ namespace CAServer.Common;
 
 public interface IGetVerifierServerProvider
 {
+    public Task<VerifierServerInfo> GetVerifierServerAsync(string verifierId, string chainId);
     public Task<string> GetVerifierServerEndPointsAsync(string verifierId, string chainId);
     
     public Task<string> GetFirstVerifierServerEndPointAsync(string chainId);
@@ -43,6 +44,20 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
         _distributedCache = distributedCache;
         _logger = logger;
         _contractProvider = contractProvider;
+    }
+    
+    public async Task<VerifierServerInfo> GetVerifierServerAsync(string verifierId, string chainId)
+    {
+        //GetVerifiereServerList
+        var verifierServerDto = await GetVerifierServerAsync(chainId);
+        if (verifierServerDto == null || verifierServerDto.GuardianVerifierServers.Count == 0)
+        {
+            _logger.LogInformation($"No Available Service Tips,Invalid VerifierId is : {verifierId}");
+            return null;
+        }
+
+        var servers = verifierServerDto.GuardianVerifierServers;
+        return servers.FirstOrDefault(p => p.Id.ToString() == verifierId);
     }
 
 
@@ -112,7 +127,8 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
             verifierServerList.Add(new VerifierServerInfo
             {
                 Id = t.Id.ToHex(),
-                EndPoints = t.EndPoints.ToList()
+                EndPoints = t.EndPoints.ToList(),
+                VerifierAddresses = t.VerifierAddresses.Select(ad => ad.ToBase58()).ToList()
             });
         });
         return verifierServerList;

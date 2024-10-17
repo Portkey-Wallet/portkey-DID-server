@@ -71,6 +71,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
         Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
         Configure<HamsterOptions>(configuration.GetSection("Hamster"));
+        Configure<TonGiftsOptions>(configuration.GetSection("TonGifts"));
 
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
@@ -200,6 +201,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitAddChatBotContactsWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterActivityWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterDataRepairWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TonGiftsValidateWorker>());
         
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);

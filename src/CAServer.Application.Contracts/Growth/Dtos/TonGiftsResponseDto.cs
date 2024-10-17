@@ -7,6 +7,8 @@ public class TonGiftsResponseDto
     public List<SuccessfulUpdate> SuccessfulUpdates { get; set; }
 
     public List<FailedUpdate> FailedUpdates { get; set; }
+    
+    public string Message { get; set; }
 }
 
 public class SuccessfulUpdate : TonGiftsBase

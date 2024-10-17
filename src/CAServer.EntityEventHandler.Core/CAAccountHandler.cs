@@ -185,6 +185,14 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             },
             Context = Context
         });
+
+        await _distributedEventBus.PublishAsync(new HolderExtraInfoCompletedEto
+        {
+            Status = GetAccountStatus(register.RegisterSuccess),
+            CaAddress = register.CaAddress,
+            CaHash = register.CaHash,
+            GrainId = register.GrainId
+        });
     }
 
     public async Task HandleEventAsync(SocialRecoveryEto eventData)

@@ -88,6 +88,27 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         });
     }
 
+    public async Task<IndexerTransactions> GetActivitiesAsync(string inputChainId, List<string> inputTransactionTypes, long startBlockHeight, long endBlockHeight, int maxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
+        {
+            Query = @"
+			    query ($chainId:String,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {chainId:$chainId,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount},isManagerConsumer,
+                            toContractAddress,tokenTransferInfos{tokenInfo{symbol,decimals,tokenName,tokenContractAddress},nftInfo{symbol,decimals,tokenName,collectionName,collectionSymbol,inscriptionName,imageUrl},transferInfo{amount,fromAddress,fromCAAddress,toAddress,fromChainId,toChainId}}},totalRecordCount
+                    }
+                }",
+            Variables = new
+            {
+                chainId = inputChainId,
+                methodNames = inputTransactionTypes, 
+                startBlockHeight, endBlockHeight,
+                skipCount = 0, maxResultCount,
+            }
+        });
+    }
+
     public async Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash,
         List<CAAddressInfo> caAddressInfos)
     {
@@ -213,8 +234,8 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         return await _graphQlHelper.QueryAsync<GuardiansDto>(new GraphQLRequest
         {
             Query = @"
-			    query($loginGuardianIdentifierHash:String,$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderInfo(dto: {loginGuardianIdentifierHash:$loginGuardianIdentifierHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+			    query(loginGuardianIdentifierHash:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderInfo(dto: {loginGuardianIdentifierHash:loginGuardianIdentifierHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                             id,chainId,caHash,caAddress,originChainId,managerInfos{address,extraData},guardianList{guardians{verifierId,identifierHash,salt,isLoginGuardian,type}}}
                 }",
             Variables = new

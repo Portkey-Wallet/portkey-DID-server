@@ -8,6 +8,8 @@ using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
+using CAServer.CAAccount;
+using CAServer.CAAccount.Dtos;
 using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
@@ -24,6 +26,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Portkey.Contracts.CA;
@@ -134,7 +137,6 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             CreateTime = DateTime.UtcNow,
             FromCaServer = true
         });
-        _logger.LogInformation("userId:{0} time:{1} sent login message", user.Id, DateTimeOffset.Now.ToUnixTimeMilliseconds());
         return new SignInResult(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme, claimsPrincipal);
     }
 
@@ -234,13 +236,26 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         ChainOptions chainOptions)
     {
         var graphQlResult = await CheckAddressFromGraphQlAsync(graphQlUrl, caHash, manager);
-        if (!graphQlResult.HasValue || !graphQlResult.Value)
+        if (graphQlResult.HasValue && graphQlResult.Value)
         {
-            _logger.LogDebug("graphql is invalid.");
-            return await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
+            return true;
         }
 
-        return true;
+        _logger.LogDebug("graphql is invalid.");
+        var contractResult = await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
+        if (contractResult.HasValue && contractResult.Value)
+        {
+            return true;
+        }
+
+        var result = await _distributedCache.GetAsync(GetCacheKey(manager));
+        return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
+
+    }
+
+    private string GetCacheKey(string manager)
+    {
+        return "Portkey:SocialRecover:" + manager;
     }
 
     private async Task<bool?> CheckAddressFromGraphQlAsync(string url, string caHash,
