@@ -61,7 +61,7 @@ public static class TokenHelper
             }
         }
 
-        result.TotalRecordCount = result.Data.Select(item => item.tokens.Count).Sum(); //result.Data.Count();
+        result.TotalRecordCount = result.Data.Count(); //result.Data.Select(item => item.tokens.Count).Sum();
         return result;
     }
 

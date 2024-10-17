@@ -888,6 +888,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         dto.TransactionName = CryptoGiftConstants.SendTransactionName;
+        dto.StatusIcon = _activitiesStatus.Send;
+        _logger.LogInformation("===========SentRedPackage condition IsReceived:{0} SendICon:{1} result:{2}", dto.IsReceived, _activitiesStatus.Send, dto.StatusIcon);
         return true;
     }
 
@@ -927,6 +929,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         dto.TransactionName = CryptoGiftConstants.ClaimTransactionName;
+        dto.StatusIcon = _activitiesStatus.Receive;
+        _logger.LogInformation("===========PayedRedPackage condition IsReceived:{0} ReceiveICon:{1} result:{2}", dto.IsReceived, _activitiesStatus.Receive, dto.StatusIcon);
         return true;
     }
 
@@ -948,6 +952,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
+        dto.StatusIcon = _activitiesStatus.Receive;
+        _logger.LogInformation("===========RefundedRedPackage condition IsReceived:{0} ReceiveICon:{1} result:{2}", dto.IsReceived, _activitiesStatus.Receive, dto.StatusIcon);
         return true;
     }
 
@@ -966,8 +972,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             await CheckCryptoGiftByTransactionId(activityDto);
         }
 
-        if (transactionType == ActivityConstants.AddGuardianName ||
-            transactionType == ActivityConstants.AddManagerInfo)
+        if (transactionType is ActivityConstants.AddGuardianName or ActivityConstants.AddManagerInfo)
         {
             guardian ??= await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
@@ -984,11 +989,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
             activityDto.StatusIcon = activityDto.IsReceived ? _activitiesStatus.Receive : _activitiesStatus.Send;
+            _logger.LogInformation("===========TransferName condition IsReceived:{0} ReceiveICon:{1} result:{2}", activityDto.IsReceived, _activitiesStatus.Receive, activityDto.StatusIcon);
         }
 
         if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             activityDto.TransactionName = ActivityConstants.DepositName;
+            activityDto.StatusIcon = _activitiesStatus.Receive;
+            _logger.LogInformation("===========IsETransfer condition IsReceived:{0} ReceiveICon:{1} result:{2}", activityDto.IsReceived, _activitiesStatus.Receive, activityDto.StatusIcon);
             return;
         }
 
