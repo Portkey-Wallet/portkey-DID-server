@@ -36,6 +36,7 @@ public class UserAssetsV2Controller
     public async Task<GetTokenV2Dto> GetTokenAsync(GetTokenRequestDto requestDto)
     {
         requestDto.MaxResultCount = requestDto.MaxResultCount * 2;
+        requestDto.SkipCount = requestDto.SkipCount * 2;
         var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
         var dto = VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion)
             ? await _tokenNftAppService.GetTokenAsync(requestDto)
