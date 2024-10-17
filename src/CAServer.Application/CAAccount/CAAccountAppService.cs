@@ -283,6 +283,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             if (RequestSource.Sdk.Equals(input.Source))
             {
                 _logger.LogInformation("{0} RecoverRequest processing SaveManagerInCache ended at:{1}", caHash, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                var cache = await _preValidationProvider.GetManagerFromCache(input.Manager);
+                _logger.LogInformation("{0} query quickly after writing data cache:{1}", caHash, JsonConvert.SerializeObject(cache));
             }
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
