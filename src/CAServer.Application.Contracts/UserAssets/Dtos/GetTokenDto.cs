@@ -30,7 +30,7 @@ public class Token
     
     public string DisplayChainName { get; set; }
     
-    public string ChainUrl { get; set; }
+    public string ChainImageUrl { get; set; }
 }
 public class TokenWithoutChain
 {
