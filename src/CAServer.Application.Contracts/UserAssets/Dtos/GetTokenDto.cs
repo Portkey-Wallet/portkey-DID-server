@@ -14,6 +14,8 @@ public class GetTokenV2Dto
     public List<TokenWithoutChain> Data { get; set; }
     public string TotalBalanceInUsd { get; set; }
     public long TotalRecordCount { get; set; }
+    
+    public long TotalDisplayCount { get; set; }
 }
 
 public class Token
