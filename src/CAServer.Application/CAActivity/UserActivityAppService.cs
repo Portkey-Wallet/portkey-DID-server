@@ -440,8 +440,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (request.ActivityType != CommonConstant.TransferCard)
             {
-                caAddressInfos = caAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
+                caAddressInfos = request.CaAddressInfos.IsNullOrEmpty()
+                    ? new List<CAAddressInfo>() : request.CaAddressInfos;
             }
 
             var indexerTransactions =
@@ -1158,7 +1158,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return transactions;
     }
 
-    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes, string chainId, long startHeight, long endHeight)
+    public async Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<string> inputTransactionTypes,
+        string chainId, long startHeight, long endHeight)
     {
         return await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), chainId,
             null, inputTransactionTypes, 0, 100, startHeight, endHeight);
