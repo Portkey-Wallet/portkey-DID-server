@@ -247,44 +247,9 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         {
             return true;
         }
-        _logger.LogInformation("{0} manager:{1} Login in processing CheckAddress started at:{2}", caHash, manager, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         var cacheKey = GetCacheKey(manager);
         var result = await _distributedCache.GetAsync(cacheKey);
-        if (result.IsNullOrEmpty())
-        {
-            try
-            {
-                result = await GetCacheItemWithRetryAsync(cacheKey);
-            }
-            catch (Exception e)
-            {
-                return false;
-            }
-        }
         return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
-    }
-
-    private async Task<string> GetCacheItemWithRetryAsync(string key, int retryCount = 3, int delayMilliseconds = 500)
-    {
-        var retryPolicy = Policy.Handle<Exception>()
-            .WaitAndRetryAsync(retryCount: retryCount,
-                sleepDurationProvider: retry => TimeSpan.FromMilliseconds(delayMilliseconds),
-                onRetry: (exception, timeSpan, rc) =>
-                {
-                    _logger.LogInformation($"Retry {rc} after {timeSpan.Milliseconds} milli-seconds due to {exception.Message}");
-                });
-
-        return await retryPolicy.ExecuteAsync(async () =>
-        {
-            var cacheItem = await _distributedCache.GetAsync(key);
-
-            if (cacheItem.IsNullOrEmpty())
-            {
-                throw new Exception("Cache item not found");
-            }
-
-            return cacheItem;
-        });
     }
 
     private string GetCacheKey(string manager)
