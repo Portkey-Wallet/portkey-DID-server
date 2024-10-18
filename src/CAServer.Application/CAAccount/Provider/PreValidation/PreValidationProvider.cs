@@ -72,12 +72,13 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
         return true;
     }
 
-    public async Task SaveManagerInCache(string manager, string caHash, string caAddress)
+    public async Task SaveManagerInCache(string manager, string caHash, string caAddress, string chainId)
     {
         var managerCacheDto = new ManagerCacheDto()
         {
             CaHash = caHash,
-            CaAddress = caAddress
+            CaAddress = caAddress,
+            ChainId = chainId
         };
         await _distributedCache.SetAsync(GetCacheKey(manager), JsonConvert.SerializeObject(managerCacheDto), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1) });
     }

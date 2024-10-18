@@ -247,7 +247,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         {
             return true;
         }
-        _logger.LogInformation("{0} Login in processing CheckAddress started at:{1}", caHash, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        _logger.LogInformation("{0} manager:{1} Login in processing CheckAddress started at:{2}", caHash, manager, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         var cacheKey = GetCacheKey(manager);
         var result = await _distributedCache.GetAsync(cacheKey);
         if (result.IsNullOrEmpty())
