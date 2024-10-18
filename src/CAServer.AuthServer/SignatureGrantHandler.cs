@@ -252,7 +252,14 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         var result = await _distributedCache.GetAsync(cacheKey);
         if (result.IsNullOrEmpty())
         {
-            result = await GetCacheItemWithRetryAsync(cacheKey);
+            try
+            {
+                result = await GetCacheItemWithRetryAsync(cacheKey);
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
         }
         return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
     }
