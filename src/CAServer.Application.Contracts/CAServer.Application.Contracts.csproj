@@ -23,10 +23,10 @@
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
         <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
-        <PackageReference Include="Microsoft.Orleans.Client" Version="7.2.6" />
-        <PackageReference Include="Microsoft.Orleans.Sdk" Version="7.2.6" />
+        <PackageReference Include="Microsoft.Orleans.Client" Version="8.1.0" />
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="8.1.0" />
         <PackageReference Include="NEST" Version="7.17.1" />
-        <PackageReference Include="Orleans.Providers.MongoDB" Version="7.6.1" />
+        <PackageReference Include="Orleans.Providers.MongoDB" Version="8.0.3" />
         <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
         <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
         <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
