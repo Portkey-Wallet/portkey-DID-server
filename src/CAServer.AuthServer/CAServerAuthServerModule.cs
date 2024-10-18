@@ -161,7 +161,7 @@ public class CAServerAuthServerModule : AbpModule
 
         Configure<AbpBackgroundJobOptions>(options => { options.IsJobExecutionEnabled = false; });
 
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:Auth:"; });
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
 
         var dataProtectionBuilder = context.Services.AddDataProtection().SetApplicationName("CAServer");
         if (!hostingEnvironment.IsDevelopment())

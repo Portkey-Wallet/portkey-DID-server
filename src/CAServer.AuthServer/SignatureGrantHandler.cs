@@ -7,14 +7,13 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
+using AElf.Cryptography;
 using AElf.Types;
-using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
 using CAServer.Model;
-using CAServer.Signature;
 using CAServer.Signature.Provider;
 using Google.Protobuf;
 using GraphQL;
@@ -82,7 +81,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         }
 
         var hash = Encoding.UTF8.GetBytes(address + "-" + timestamp).ComputeHash();
-        if (!AElf.Cryptography.CryptoHelper.VerifySignature(signature, hash, publicKey))
+        if (!CryptoHelper.VerifySignature(signature, hash, publicKey))
         {
             return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest, "Signature validation failed.");
         }
@@ -241,16 +240,13 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             return true;
         }
 
-        _logger.LogDebug("graphql is invalid.");
         var contractResult = await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
         if (contractResult.HasValue && contractResult.Value)
         {
             return true;
         }
-        _logger.LogInformation("{0} Login in processing CheckAddress started at:{1}", caHash, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         var result = await _distributedCache.GetAsync(GetCacheKey(manager));
         return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
-
     }
 
     private string GetCacheKey(string manager)

@@ -279,15 +279,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var caHash = holderInfo?.CaHash?.ToHex();
         if (caHash != null)
         {
-            if (RequestSource.Sdk.Equals(input.Source))
-            {
-                _logger.LogInformation("{0} RecoverRequest processing SaveManagerInCache started at:{1}", caHash, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            }
-            await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58());
-            if (RequestSource.Sdk.Equals(input.Source))
-            {
-                _logger.LogInformation("{0} RecoverRequest processing SaveManagerInCache ended at:{1}", caHash, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            }
+            await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58(), input.ChainId);
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
