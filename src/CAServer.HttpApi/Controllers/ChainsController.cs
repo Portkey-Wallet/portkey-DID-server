@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Chain;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;

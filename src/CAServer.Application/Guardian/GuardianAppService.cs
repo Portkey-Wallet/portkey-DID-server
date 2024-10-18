@@ -25,6 +25,7 @@ using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace CAServer.Guardian;
 
@@ -214,12 +215,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<string> GetOriginChainIdAsync(string guardianIdentifierHash, string caHash)
     {
+        _logger.LogInformation("GetOriginChainIdAsync guardianIdentifierHash = {0} caHash = {1}", guardianIdentifierHash, caHash);
         foreach (var (chainId, chainInfo) in _chainOptions.ChainInfos)
         {
             try
             {
                 var holderInfo =
                     await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                _logger.LogInformation("GetOriginChainIdAsync guardianIdentifierHash = {0} caHash = {1} holderInfo = {2}", guardianIdentifierHash, caHash,
+                    JsonSerializer.Serialize(holderInfo));
+
                 if (holderInfo.CreateChainId > 0)
                 {
                     return ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId);
@@ -232,6 +237,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             }
             catch (Exception e)
             {
+                _logger.LogError(e,"GetOriginChainIdAsync guardianIdentifierHash = {0} caHash = {1} has error, message = {2}", guardianIdentifierHash, caHash, e.Message);
                 if (!e.Message.Contains("Not found ca_hash"))
                 {
                     _logger.LogError(e, "GetRegisterHolderInfoAsync: guardian hash call contract GetHolderInfo fail.");

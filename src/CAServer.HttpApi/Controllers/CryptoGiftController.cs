@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.CryptoGift;
 using CAServer.CryptoGift.Dtos;
 using CAServer.RedPackage.Dtos;

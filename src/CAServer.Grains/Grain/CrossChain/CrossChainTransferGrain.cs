@@ -76,9 +76,9 @@ public class CrossChainTransferGrain : Orleans.Grain<CrossChainTransferState>, I
         await WriteStateAsync();
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 }

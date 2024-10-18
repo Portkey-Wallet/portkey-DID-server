@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.PrivacyPermission;
 using CAServer.PrivacyPermission.Dtos;
 using Microsoft.AspNetCore.Authorization;
