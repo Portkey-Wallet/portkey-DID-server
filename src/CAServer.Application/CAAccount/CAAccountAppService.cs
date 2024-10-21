@@ -272,10 +272,10 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var holderInfo = await GetCAHashAsync(input.ChainId, guardianGrainDto.IdentifierHash);
-        var caHash = holderInfo?.CaHash?.ToHex();
+        var caHash = holderInfo?.CaHash;
         if (caHash != null)
         {
-            await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58(), input.ChainId);
+            await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress, input.ChainId);
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
@@ -284,9 +284,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, recoverCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(recoverCreateEto);
-        
-        var existedManagers = ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
-        var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId, input.Manager, recoveryDto.GuardianApproved, existedManagers);
+
+        var existedManagers = holderInfo?.ManagerInfos;
+            // ObjectMapper.Map<List<ManagerInfo>, List<ManagerDto>>(new List<ManagerInfo>(holderInfo?.ManagerInfos));
+        var preValidateResult = await _preValidationProvider.ValidateSocialRecovery(input.Source, caHash, input.ChainId,
+            input.Manager, recoveryDto.GuardianApproved, existedManagers);
         if (!preValidateResult)
         {
             throw new UserFriendlyException("social recovery validation failed, please try again later");
@@ -295,7 +297,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             SessionId = recoveryDto.Id.ToString(),
             CaHash = caHash,
-            CaAddress = holderInfo?.CaAddress?.ToBase58()
+            CaAddress = holderInfo?.CaAddress
         };
     }
 
@@ -802,7 +804,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return guardianGrainDto.Data;
     }
 
-    private async Task<GetHolderInfoOutput> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
+    private async Task<GuardianResultDto> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
         var output = await _guardianProvider.GetHolderInfoFromCacheAsync(loginGuardianIdentifierHash, chainId);
             // await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),

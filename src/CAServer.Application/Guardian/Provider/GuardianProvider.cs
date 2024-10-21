@@ -19,10 +19,10 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly IContractProvider _contractProvider;
     private readonly IObjectMapper _objectMapper;
-    private readonly IDistributedCache<string> _guardiansCache;
+    private readonly IDistributedCache<GuardianResultDto> _guardiansCache;
 
     public GuardianProvider(IGraphQLHelper graphQlHelper, IContractProvider contractProvider,
-        IObjectMapper objectMapper, IDistributedCache<string> guardiansCache)
+        IObjectMapper objectMapper, IDistributedCache<GuardianResultDto> guardiansCache)
     {
         _graphQlHelper = graphQlHelper;
         _contractProvider = contractProvider;
@@ -62,26 +62,26 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         return await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(guardianIdentifierHash), chainId);
     }
 
-    public async Task<GetHolderInfoOutput> GetHolderInfoFromCacheAsync(string guardianIdentifierHash, string chainId, bool needCache = false)
+    public async Task<GuardianResultDto> GetHolderInfoFromCacheAsync(string guardianIdentifierHash, string chainId, bool needCache = false)
     {
         var key = GetHolderInfoCacheKey(guardianIdentifierHash, chainId);
         var result = await _guardiansCache.GetAsync(key: key);
         if (result != null)
         {
             Log.Logger.Information("===================================================GetHolderInfoFromCacheAsync invoked");
-            return JsonConvert.DeserializeObject<GetHolderInfoOutput>(result);
+            return result;
         }
         var holderInfoOutput = await GetHolderInfoFromContractAsync(guardianIdentifierHash, null, chainId);
-        // var guardianResult = _objectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfoOutput);
+        var guardianResult = _objectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfoOutput);
         if (needCache && holderInfoOutput != null)
         {
             
-            await _guardiansCache.SetAsync(key, JsonConvert.SerializeObject(holderInfoOutput), new DistributedCacheEntryOptions
+            await _guardiansCache.SetAsync(key, guardianResult, new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(20)
             });
         }
-        return holderInfoOutput;
+        return guardianResult;
     }
     
     private static string GetHolderInfoCacheKey(string guardianIdentifierHash, string chainId)

@@ -303,16 +303,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         try
         {
-            GetHolderInfoOutput holderInfo;
             if (!guardianIdentifierHash.IsNullOrEmpty() && !chainId.IsNullOrEmpty())
             {
-                holderInfo = await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash:guardianIdentifierHash, chainId:chainId, needCache:true);
+                var guardianResultDto = await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash:guardianIdentifierHash, chainId:chainId, needCache:true);
+                return guardianResultDto.CreateChainId.IsNullOrEmpty() ? null : guardianResultDto.CreateChainId;
             }
             else
             {
-                holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                return holderInfo.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId) : null;
             }
-            return holderInfo.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId) : null;
         }
         catch (Exception e)
         {
@@ -373,10 +373,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         try
         {
-            if (!guardianIdentifierHash.IsNullOrEmpty() && !chainId.IsNullOrEmpty())
-            {
-                return await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId);
-            }
             return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
         }
         catch (Exception ex)
