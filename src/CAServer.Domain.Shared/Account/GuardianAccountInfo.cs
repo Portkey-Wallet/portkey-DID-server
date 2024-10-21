@@ -9,8 +9,6 @@ public class GuardianInfo
     public VerificationInfo VerificationInfo { get; set; }
     
     public ZkLoginInfoDto ZkLoginInfo { get; set; }
-    
-    public VerificationDo VerificationDo { get; set; }
 }
 
 public class VerificationInfo

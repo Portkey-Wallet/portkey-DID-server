@@ -36,8 +36,5 @@ public interface IVerifierServerClient
     Task<ResponseResultDto<VerifyTwitterTokenDto>> VerifyTwitterTokenAsync(VerifyTokenRequestDto input,
         string identifierHash, string salt);
 
-    Task<ResponseResultDto<EmailNotificationDto>> VerifyTonWalletTokenAsync(VerifyTokenRequestDto input,
-        string identifierHash, string salt);
-
     Task<bool> VerifyRevokeCodeAsync(VerifyRevokeCodeInput input);
 }

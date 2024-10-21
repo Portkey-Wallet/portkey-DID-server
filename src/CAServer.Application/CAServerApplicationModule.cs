@@ -3,9 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
 using CAServer.Amazon;
 using CAServer.AppleAuth;
-using CAServer.CAAccount;
 using CAServer.CAAccount.Provider;
-using CAServer.CAAccount.Strategy;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
@@ -116,7 +114,6 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
-        context.Services.AddSingleton<IVerificationAlgorithmStrategy, TonWalletVerificationStrategy>();
         context.Services.AddSingleton<IPreValidationStrategy, ZkLoginPreValidationProvider>();
         context.Services.AddSingleton<IPreValidationStrategy, SignaturePreValidationProvider>();
         context.Services.AddSingleton<AlchemyProvider>();
@@ -157,7 +154,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
-        Configure<ActivitiesStatusIconOptions>(configuration.GetSection("ActivitiesStatusIcon"));
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));

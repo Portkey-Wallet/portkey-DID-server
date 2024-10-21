@@ -234,8 +234,8 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         return await _graphQlHelper.QueryAsync<GuardiansDto>(new GraphQLRequest
         {
             Query = @"
-			    query($loginGuardianIdentifierHash:String,$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderInfo(dto: {loginGuardianIdentifierHash:$loginGuardianIdentifierHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+			    query(loginGuardianIdentifierHash:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderInfo(dto: {loginGuardianIdentifierHash:loginGuardianIdentifierHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                             id,chainId,caHash,caAddress,originChainId,managerInfos{address,extraData},guardianList{guardians{verifierId,identifierHash,salt,isLoginGuardian,type}}}
                 }",
             Variables = new

@@ -18,6 +18,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Growth.constant;
+using CAServer.Grains.Grain.Guardian;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Provider;
 using CAServer.Guardian;
@@ -35,8 +36,8 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
 using Volo.Abp.Users;
-using Volo.Abp.Validation;
 using JsonSerializer = System.Text.Json.JsonSerializer;
+using Volo.Abp.Validation;
 using Result = CAServer.Growth.Dtos.Result;
 
 namespace CAServer.Growth;
@@ -811,12 +812,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         }
     }
 
-    public async Task CollectHamsterUserIdsAsync(string userId)
-    {
-        var expire = TimeSpan.FromDays(30);
-        await _cacheProvider.SetAddAsync(HamsterTonGiftsUserIdsKey, userId, expire);
-    }
-
+    
     public async Task<GetGrowthInfosDto> GetGrowthInfosAsync(GetGrowthInfosRequestDto input)
     {
         if (input.ReferralCodes.IsNullOrEmpty() && input.ProjectCode.IsNullOrEmpty())
@@ -830,9 +826,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             Data = ObjectMapper.Map<List<GrowthIndex>, List<GrowthUserInfoDto>>(result.Item2)
         };
     }
-
-
-    public async Task TonGiftsValidateAsync()
+public async Task TonGiftsValidateAsync()
     {
         if (!_tonGiftsOptions.IsStart)
         {
@@ -923,6 +917,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         string startBlockHeight = await _cacheProvider.Get(HamsterTonGiftsConstant.HeightKey);
         long endBlockHeight = await _graphQlProvider.GetIndexBlockHeightAsync(_tonGiftsOptions.ChainId);
+        endBlockHeight += 1000;
         if (null == startBlockHeight)
         {
             await _cacheProvider.Set(HamsterTonGiftsConstant.HeightKey, endBlockHeight.ToString(), HamsterTonGiftsConstant.KeyExpire);
@@ -933,6 +928,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         IndexerTransactions indexerTransactions = await _activityProvider.GetActivitiesAsync(_tonGiftsOptions.ChainId, new List<string> { "Play" }, long.Parse
                 (startBlockHeight), endBlockHeight,
             HamsterTonGiftsConstant.MaxResultCount);
+        _logger.LogInformation("TonGiftsValidateAsync getFromAddressSet startBlockHeight = {0} endBlockHeight = {1} ChainId = {2} indexerTransactions = {3}",
+            startBlockHeight, endBlockHeight, _tonGiftsOptions.ChainId, JsonSerializer.Serialize(indexerTransactions));
+
         if (indexerTransactions?.CaHolderTransaction?.Data?.Count == 0)
         {
             nextBlockHeight = long.Parse(startBlockHeight);
@@ -949,9 +947,6 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
     public async Task TonGiftsToCall(HashSet<string> telegramIdSet)
     {
-        // todo del
-        await _cacheProvider.Delete(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId);
-        await _cacheProvider.Delete(HamsterTonGiftsConstant.UserIdsKey);
         // insert
         var doneList = await _cacheProvider.SetMembersAsync(HamsterTonGiftsConstant.DoneUserIdsKeyPrefix + _tonGiftsOptions.TaskId);
         var toAddList = telegramIdSet.Where(t => !doneList.Contains(t)).ToList();
@@ -979,36 +974,13 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         var client = _httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Add("User-Agent", "curl/7.68.0");
         var tokenParam = JsonConvert.SerializeObject(param);
-        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client requestParam: {0} {1}", tokenParam, _tonGiftsOptions.HostUrl);
         var requestParam = new StringContent(tokenParam, Encoding.UTF8, MediaTypeNames.Application.Json);
-        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client requestParam: {0}", JsonSerializer.Serialize(requestParam));
-
         var response = await client.PostAsync(_tonGiftsOptions.HostUrl, requestParam);
         var result = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client response: {0}", result);
+        _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client param = {0} response = {1} taskId = {2}", tokenParam, result, _tonGiftsOptions.TaskId);
 
         // handle reusult
         await handleTonGiftsResult(result, ids);
-    }
-    public async Task send()
-    {
-        var url = "http://devmini.tongifts.app/api/open/updateTask";
-        var data = new
-        {
-            key1 = "value1",
-            key2 = "value2"
-        };
-
-        var aa=  JsonConvert.SerializeObject(data);
-        
-        using (var client = new HttpClient())
-        {
-            client.DefaultRequestHeaders.Add("User-Agent", "curl/7.68.0");
-            var content = new StringContent("{\"key1\":\"value1\",\"key2\":\"value2\"}", Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await client.PostAsync(url, content);
-            string responseData = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation("TonGiftsValidateAsync TonGiftsToCall client response3: {0} {1}", responseData,aa);
-        }
     }
 
     private async Task handleTonGiftsResult(string result, List<string> allIDs)
@@ -1021,7 +993,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             HamsterTonGiftsConstant.KeyExpire);
         await _cacheProvider.SetRemoveAsync(HamsterTonGiftsConstant.UserIdsKey, successfulUpdates);
     }
-
+    
     private async Task<Dictionary<string, CAHolderIndex>> GetNickNameByCaHashes(List<string> caHashes)
     {
         var caHolderList = await GetCaHolderByCaHashAsync(caHashes);

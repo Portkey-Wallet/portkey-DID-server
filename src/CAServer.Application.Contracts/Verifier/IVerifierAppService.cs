@@ -18,6 +18,4 @@ public interface IVerifierAppService
     public Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto);
     Task<VerificationCodeResponse> VerifyTwitterTokenAsync(VerifyTokenRequestDto requestDto);
     Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash);
-
-    public Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyEdaAlgorithmRequestDto requestDto);
 }

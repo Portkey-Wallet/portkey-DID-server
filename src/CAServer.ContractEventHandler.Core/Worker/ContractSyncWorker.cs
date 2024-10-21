@@ -19,16 +19,15 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly ContractSyncOptions _contractSyncOptions;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
     private readonly N9EClientFactory _n9EClientFactory;
-    private readonly ILogger<ContractSyncWorker> _logger;
-    
 
+    private readonly ILogger<ContractSyncWorker> _logger;
     private const string WorkerName = "ContractSyncWorker";
 
 
     public ContractSyncWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IContractAppService contractAppService, IOptions<ContractSyncOptions> workerOptions,
         IBackgroundWorkerRegistrarProvider registrarProvider, IHostApplicationLifetime hostApplicationLifetime,
-        N9EClientFactory n9EClientFactory,ILogger<ContractSyncWorker> logger) : base(
+        N9EClientFactory n9EClientFactory, ILogger<ContractSyncWorker> logger) : base(
         timer,
         serviceScopeFactory)
     {
@@ -37,13 +36,12 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         _registrarProvider = registrarProvider;
         _n9EClientFactory = n9EClientFactory;
         Timer.Period = 1000 * _contractSyncOptions.Sync;
+        _logger = logger;
 
         hostApplicationLifetime.ApplicationStopped.Register(() =>
         {
             _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
         });
-        _logger = logger;
-        
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
@@ -57,17 +55,16 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            _logger.LogDebug("ContractSyncWorker started");
+            _logger.LogInformation("ContractSyncWorker DoWorkAsync start");
             await _contractAppService.QueryAndSyncAsync();
-            _logger.LogDebug("ContractSyncWorker end");
+            _logger.LogInformation("ContractSyncWorker DoWorkAsync end");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "ContractSyncWorker Error while syncing contracts");
+            _logger.LogError(e, "ContractSyncWorker DoWorkAsync has error");
         }
         finally
         {
-            _logger.LogDebug("ContractSyncWorker end2");
             stopwatch.Stop();
             await _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
             await _n9EClientFactory.TrackTransactionSync(N9EClientConstant.Biz, WorkerName,

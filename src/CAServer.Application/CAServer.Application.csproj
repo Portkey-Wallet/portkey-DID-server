@@ -22,9 +22,7 @@
     <PackageReference Include="GoogleAuthenticator" Version="3.1.1" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.14" />
     <PackageReference Include="Groth16.Net" Version="1.1.0" />
-    <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
     <PackageReference Include="Poseidon.Net" Version="0.1.1" />
-    <PackageReference Include="TonLib.Net" Version="0.22.0" />
     <PackageReference Include="Volo.Abp.Account.Application" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.DistributedLocking" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="7.0.0" />

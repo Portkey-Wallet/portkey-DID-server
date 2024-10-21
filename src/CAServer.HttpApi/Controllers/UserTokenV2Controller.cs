@@ -32,9 +32,7 @@ public class UserTokenV2Controller: CAServerController
     [HttpGet, Authorize]
     public async Task<CaPageResultDto<GetUserTokenV2Dto>> GetTokensAsync(GetTokenInfosV2RequestDto requestDto)
     {
-        var result = await _userTokenAppService.GetTokensAsync(requestDto);
-        result?.Data?.ForEach(p => ChainDisplayNameHelper.SetDisplayName(p.Tokens));
-        return result;
+        return await _userTokenAppService.GetTokensAsync(requestDto);
     }
     
     [Authorize, HttpGet("/api/app/v2/tokens/list")]
