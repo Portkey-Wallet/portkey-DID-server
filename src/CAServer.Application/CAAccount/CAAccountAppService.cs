@@ -275,17 +275,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var caHash = holderInfo?.CaHash?.ToHex();
         if (caHash != null)
         {
-            if (RequestSource.Sdk.Equals(input.Source))
-            {
-                _logger.LogInformation("{0} manager:{1} RecoverRequest processing SaveManagerInCache started at:{2}", caHash, input.Manager, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            }
             await _preValidationProvider.SaveManagerInCache(input.Manager, caHash, holderInfo?.CaAddress?.ToBase58(), input.ChainId);
-            if (RequestSource.Sdk.Equals(input.Source))
-            {
-                _logger.LogInformation("{0} manager:{1} RecoverRequest processing SaveManagerInCache ended at:{2}", caHash, input.Manager, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-                var cache = await _preValidationProvider.GetManagerFromCache(input.Manager);
-                _logger.LogInformation("{0} query quickly after writing data cache:{1}", caHash, JsonConvert.SerializeObject(cache));
-            }
             result.Data.ManagerInfo.ExtraData =
                 await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
@@ -814,9 +804,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private async Task<GetHolderInfoOutput> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
-        var output =
-            await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
-                chainId);
+        var output = await _guardianProvider.GetHolderInfoFromCacheAsync(loginGuardianIdentifierHash, chainId);
+            // await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
+            //     chainId);
         _logger.LogInformation("GetHolderInfoAsync loginGuardianIdentifierHash:{0},chainId:{1},output:{2}",
             loginGuardianIdentifierHash, chainId, JsonConvert.SerializeObject(output));
         return output;

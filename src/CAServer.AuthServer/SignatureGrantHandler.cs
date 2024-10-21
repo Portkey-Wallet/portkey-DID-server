@@ -7,14 +7,13 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
+using AElf.Cryptography;
 using AElf.Types;
-using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
 using CAServer.Model;
-using CAServer.Signature;
 using CAServer.Signature.Provider;
 using Google.Protobuf;
 using GraphQL;
@@ -29,7 +28,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
-using Polly;
 using Portkey.Contracts.CA;
 using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
@@ -83,7 +81,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         }
 
         var hash = Encoding.UTF8.GetBytes(address + "-" + timestamp).ComputeHash();
-        if (!AElf.Cryptography.CryptoHelper.VerifySignature(signature, hash, publicKey))
+        if (!CryptoHelper.VerifySignature(signature, hash, publicKey))
         {
             return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest, "Signature validation failed.");
         }
@@ -247,44 +245,8 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         {
             return true;
         }
-        _logger.LogInformation("{0} manager:{1} Login in processing CheckAddress started at:{2}", caHash, manager, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        var cacheKey = GetCacheKey(manager);
-        var result = await _distributedCache.GetAsync(cacheKey);
-        if (result.IsNullOrEmpty())
-        {
-            try
-            {
-                result = await GetCacheItemWithRetryAsync(cacheKey);
-            }
-            catch (Exception e)
-            {
-                return false;
-            }
-        }
+        var result = await _distributedCache.GetAsync(GetCacheKey(manager));
         return !result.IsNullOrEmpty() && caHash.Equals(JsonConvert.DeserializeObject<ManagerCacheDto>(result)?.CaHash);
-    }
-
-    private async Task<string> GetCacheItemWithRetryAsync(string key, int retryCount = 3, int delayMilliseconds = 500)
-    {
-        var retryPolicy = Policy.Handle<Exception>()
-            .WaitAndRetryAsync(retryCount: retryCount,
-                sleepDurationProvider: retry => TimeSpan.FromMilliseconds(delayMilliseconds),
-                onRetry: (exception, timeSpan, rc) =>
-                {
-                    _logger.LogInformation($"Retry {rc} after {timeSpan.Milliseconds} milli-seconds due to {exception.Message}");
-                });
-
-        return await retryPolicy.ExecuteAsync(async () =>
-        {
-            var cacheItem = await _distributedCache.GetAsync(key);
-
-            if (cacheItem.IsNullOrEmpty())
-            {
-                throw new Exception("Cache item not found");
-            }
-
-            return cacheItem;
-        });
     }
 
     private string GetCacheKey(string manager)
