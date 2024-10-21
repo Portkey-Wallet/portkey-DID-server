@@ -819,9 +819,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private async Task<GetHolderInfoOutput> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
-        var output =
-            await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
-                chainId);
+        var output = await _guardianProvider.GetHolderInfoFromCacheAsync(loginGuardianIdentifierHash, chainId);
+            // await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
+            //     chainId);
         _logger.LogInformation("GetHolderInfoAsync loginGuardianIdentifierHash:{0},chainId:{1},output:{2}",
             loginGuardianIdentifierHash, chainId, JsonConvert.SerializeObject(output));
         return output;
