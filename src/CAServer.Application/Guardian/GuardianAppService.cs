@@ -124,12 +124,12 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         //get holderInfo from contract
         //100-1600ms, Key optimization
         sw.Restart();
-        var holderInfo = await GetHolderInfosAsync(guardianIdentifierHash, guardianIdentifierDto.ChainId, guardianIdentifierDto.CaHash,
+        var guardianResult = await GetHolderInfosAsync(guardianIdentifierHash, guardianIdentifierDto.ChainId, guardianIdentifierDto.CaHash,
             guardianIdentifierDto.GuardianIdentifier);
         sw.Stop();
         _logger.LogInformation("GetGuardianIdentifiersAsync:GetHolderInfosAsync=>cost:{0}ms", sw.ElapsedMilliseconds);
-        var guardianResult =
-            ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
+        // var guardianResult =
+        //     ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
 
         if (guardianResult.GuardianList?.Guardians?.Count == 0 ||
             (!guardianResult.CreateChainId.IsNullOrWhiteSpace() &&
@@ -138,7 +138,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException("This address is already registered on another chain.", "20004");
         }
 
-        var identifierHashList = holderInfo.GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex()).ToList();
+        var identifierHashList = guardianResult.GuardianList.Guardians.Select(t => t.IdentifierHash).ToList();
         //batch get guardianIdentifierHash's relevant Identifier from es
         //cost 2-5ms, ignore
         sw.Restart();
@@ -153,11 +153,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         sw.Stop();
         _logger.LogInformation("GetGuardianIdentifiersAsync:GetUserExtraInfoAsync=>cost:{0}ms", sw.ElapsedMilliseconds);
         await AddGuardianInfoAsync(guardianResult.GuardianList?.Guardians, hashDic, userExtraInfos);
-        SetGuardianVerifiedZkField(guardianResult, holderInfo);
+        SetGuardianVerifiedZkField(guardianResult);
         return guardianResult;
     }
 
-    private void SetGuardianVerifiedZkField(GuardianResultDto guardianResult, GetHolderInfoOutput holderInfo)
+    private void SetGuardianVerifiedZkField(GuardianResultDto guardianResult)
     {
         if (guardianResult.GuardianList is null || guardianResult.GuardianList.Guardians.IsNullOrEmpty())
         {
@@ -166,13 +166,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         foreach (var guardian in guardianResult.GuardianList.Guardians)
         {
-            var guardianVerifiedByZk = holderInfo.GuardianList.Guardians.FirstOrDefault(
-                g => g.IdentifierHash.Equals(Hash.LoadFromHex(guardian.IdentifierHash)));
-            if (guardianVerifiedByZk is null)
-            {
-                continue;
-            }
-            var zkLoginInfo = guardianVerifiedByZk.ZkLoginInfo;
+            // var guardianVerifiedByZk = holderInfo.GuardianList.Guardians.FirstOrDefault(
+            //     g => g.IdentifierHash.Equals(Hash.LoadFromHex(guardian.IdentifierHash)));
+            // if (guardianVerifiedByZk is null)
+            // {
+            //     continue;
+            // }
+            // var zkLoginInfo = guardianVerifiedByZk.ZkLoginInfo;
+            var zkLoginInfo = guardian.ZkLoginInfo;
             guardian.VerifiedByZk = zkLoginInfo is not null
                                     && zkLoginInfo.IdentifierHash != null && !Hash.Empty.Equals(zkLoginInfo.IdentifierHash)
                                     && zkLoginInfo.Salt is not (null or "")
@@ -368,12 +369,15 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     }
 
 
-    private async Task<GetHolderInfoOutput> GetHolderInfosAsync(string guardianIdentifierHash, string chainId,
+    private async Task<GuardianResultDto> GetHolderInfosAsync(string guardianIdentifierHash, string chainId,
         string caHash, string guardianIdentifier)
     {
         try
         {
-            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+            var result = await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId);
+            _logger.LogInformation("**************************************GetHolderInfoFromCacheAsync:{0}", JsonConvert.SerializeObject(result));
+            return result;
+            // return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
         }
         catch (Exception ex)
         {
