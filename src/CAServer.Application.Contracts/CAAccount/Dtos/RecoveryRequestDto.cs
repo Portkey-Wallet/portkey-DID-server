@@ -106,6 +106,8 @@ public class RecoveryGuardian : IValidatableObject
     public string VerificationDoc { get; set; }
     public string Signature { get; set; }
     public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
+    
+    public VerificationRequestInfo VerificationRequestInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)

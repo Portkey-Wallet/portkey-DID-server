@@ -296,6 +296,14 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         var requestUri = "/api/app/account/verifyTelegramToken";
         return await GetResultAsync<VerifyTokenDto<TelegramUserExtraInfo>>(input, requestUri, identifierHash, salt);
     }
+    
+    public async Task<ResponseResultDto<EmailNotificationDto>> VerifyTonWalletTokenAsync(VerifyTokenRequestDto input,
+        string identifierHash, string salt)
+    {
+        var requestUri = "/api/app/account/verifyTonWalletToken";
+        var endpoint = await _getVerifierServerProvider.GetFirstVerifierServerEndPointAsync(input.ChainId);
+        return await GetResultAsync<EmailNotificationDto>(input, requestUri, identifierHash, salt, endpoint);
+    }
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(
         VerifyTokenRequestDto requestDto, string identifierHash, string salt)
@@ -360,21 +368,28 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     }
 
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
-        string requestUri, string identifierHash, string salt)
+        string requestUri, string identifierHash, string salt, string verifierServerEndpoint = null)
     {
-        var endPoint =
-            await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
-        if (null == endPoint)
+        string url;
+        if (verifierServerEndpoint.IsNullOrEmpty())
         {
-            _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
-            return new ResponseResultDto<T>
+            var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+            if (null == endPoint)
             {
-                Success = false,
-                Message = "No Available Service Tips."
-            };
+                _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
+                return new ResponseResultDto<T>
+                {
+                    Success = false,
+                    Message = "No Available Service Tips."
+                };
+            }
+            url = endPoint + requestUri;
         }
-
-        var url = endPoint + requestUri;
+        else
+        {
+            url = verifierServerEndpoint + requestUri;
+        }
+        
         var operationDetails =
             _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
         var showOperationDetails = new ShowOperationDetailsDto

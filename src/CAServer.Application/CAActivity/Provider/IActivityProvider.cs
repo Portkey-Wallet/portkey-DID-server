@@ -21,7 +21,7 @@ public interface IActivityProvider
         long startHeight, long endHeight);
 
     Task<IndexerTransactions> GetActivitiesAsync(string inputChainId, List<string> inputTransactionTypes, long startBlockHeight, long endBlockHeight, int maxResultCount);
-    
+
     Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash,
         List<CAAddressInfo> addressInfos);
 

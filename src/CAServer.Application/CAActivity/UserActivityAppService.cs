@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
@@ -55,6 +56,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly TokenSpenderOptions _tokenSpenderOptions;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
+    private readonly ActivitiesStatusIconOptions _activitiesStatus;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -64,7 +66,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IOptionsSnapshot<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor,
-        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
+        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
+        IOptionsSnapshot<ActivitiesStatusIconOptions> activitiesStatus)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -83,6 +86,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _httpContextAccessor = httpContextAccessor;
         _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
         _redPackageIndexRepository = redPackageIndexRepository;
+        _activitiesStatus = activitiesStatus.Value;
     }
 
 
@@ -123,13 +127,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
+            var sw = new Stopwatch();
+            sw.Start();
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
             var transactionInfos = await GetTransactionInfosAsync(request);
+            sw.Stop();
+            _logger.LogInformation("======GetActivities Stats Step1 GetTransactionInfosAsync cost:{0}ms", sw.ElapsedMilliseconds);
+            sw.Restart();
             var activitiesDto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
                 request.ChainId,
                 request.Width,
                 request.Height, needMap: true);
-
+            sw.Stop();
+            _logger.LogInformation("======GetActivities Stats Step2 IndexerTransaction2Dto cost:{0}ms", sw.ElapsedMilliseconds);
             SetSeedStatusAndTypeForActivityDtoList(activitiesDto.Data);
 
             OptimizeSeedAliasDisplay(activitiesDto.Data);
@@ -833,6 +843,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (needMap)
             {
                 await MapMethodNameAsync(caAddresses, dto, ht.ToContractAddress, guardian);
+                AppendStatusIcon(dto);
             }
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress, ht.MethodName);
@@ -852,14 +863,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (_activityTypeOptions.TypeMap[CryptoGiftConstants.CreateCryptoBox].Equals(dto.TransactionName))
             {
                 await ReplaceSentRedPackageActivity(dto);
+                dto.StatusIcon = _activitiesStatus.Send;
             }
             else if (_activityTypeOptions.TypeMap[CryptoGiftConstants.TransferCryptoBoxes].Equals(dto.TransactionName))
             {
                 await ReplacePayedRedPackageActivity(dto);
+                dto.StatusIcon = _activitiesStatus.Receive;
             }
             else if (_activityTypeOptions.TypeMap[CryptoGiftConstants.RefundCryptoBox].Equals(dto.TransactionName))
             {
                 await ReplaceRefundedRedPackageActivity(dto);
+                dto.StatusIcon = _activitiesStatus.Receive;
             }
         }
         catch (Exception e)
@@ -948,6 +962,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return true;
     }
 
+    private void AppendStatusIcon(GetActivityDto activityDto)
+    {
+        activityDto.StatusIcon = activityDto.TransactionType switch
+        {
+            ActivityConstants.TransferName when ActivityConstants.CrossChainTransferDisplayName.Equals(activityDto
+                .TransactionName) => _activitiesStatus.Send,
+            ActivityConstants.DepositTypeName when ActivityConstants.DepositName.Equals(activityDto.TransactionName) =>
+                _activitiesStatus.Receive,
+            _ => activityDto.StatusIcon
+        };
+    }
+
     private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
         string toContractAddress,
         GuardiansDto guardian = null)
@@ -963,8 +989,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             await CheckCryptoGiftByTransactionId(activityDto);
         }
 
-        if (transactionType == ActivityConstants.AddGuardianName ||
-            transactionType == ActivityConstants.AddManagerInfo)
+        if (transactionType is ActivityConstants.AddGuardianName or ActivityConstants.AddManagerInfo)
         {
             guardian ??= await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
@@ -980,11 +1005,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
+            activityDto.StatusIcon = activityDto.IsReceived ? _activitiesStatus.Receive : _activitiesStatus.Send;
         }
 
         if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             activityDto.TransactionName = ActivityConstants.DepositName;
+            activityDto.StatusIcon = _activitiesStatus.Receive;
             return;
         }
 

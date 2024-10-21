@@ -74,6 +74,12 @@ public class CAAccountController : CAServerController
         _logger.LogInformation("controller GetGuardianIdentifiers cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
     }
+
+    [HttpGet("guardian/index")]
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(string identifierHash)
+    {
+        return await _guardianAppService.GetGuardianListAsync(new List<string>() {identifierHash});
+    }
     
     [HttpPost("guardianIdentifiers/unset")]
     [Authorize]

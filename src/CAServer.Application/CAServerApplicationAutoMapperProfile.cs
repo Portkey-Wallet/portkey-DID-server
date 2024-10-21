@@ -4,9 +4,11 @@ using System.Linq;
 using AElf;
 using AElf.Types;
 using AutoMapper;
+using CAServer.Account;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Enums;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -75,6 +77,7 @@ using CAServer.Tokens.Provider;
 using CAServer.Transfer.Dtos;
 using CAServer.Upgrade.Dtos;
 using CAServer.Upgrade.Etos;
+using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo;
@@ -101,6 +104,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.IdentityModel.Tokens;
 using Enum = System.Enum;
 using GuardianDto = CAServer.Guardian.GuardianDto;
+using ManagerInfo = Portkey.Contracts.CA.ManagerInfo;
 using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
 
 namespace CAServer;
@@ -465,7 +469,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
                         ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
-                }
+                },
+                // VerificationExt = e.GuardianInfo.VerificationExt
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -518,7 +523,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
                         ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
                     }
-                }
+                },
+                // VerificationExt = e.GuardianInfo.VerificationExt
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -571,17 +577,16 @@ public class CAServerApplicationAutoMapperProfile : Profile
                                     : g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
                             }
                         },
-                        ZkProofInfo = g.ZkLoginInfo == null
-                            ? new ZkProofInfo()
-                            : new ZkProofInfo
-                            {
-                                ZkProofPiA = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
-                                ZkProofPiB1 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
-                                ZkProofPiB2 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
-                                ZkProofPiB3 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
-                                ZkProofPiC = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
-                            }
-                    }
+                        ZkProofInfo = g.ZkLoginInfo == null ? new ZkProofInfo() : new ZkProofInfo
+                        {
+                            ZkProofPiA = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                            ZkProofPiB1 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                            ZkProofPiB2 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                            ZkProofPiB3 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                            ZkProofPiC = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
+                        }
+                    },
+                    // VerificationExt = g.VerificationExt
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -622,8 +627,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.GuardianInfo.VerificationInfo.Id, m => m.MapFrom(f => f.VerifierId))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
             .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
-            .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature));
-
+            .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature))
+            .ForPath(t => t.GuardianInfo.VerificationDo.VerifierType, m => m.MapFrom(f =>
+                f.VerificationRequestInfo == null ? VerifierType.Unknown : f.VerificationRequestInfo.VerifierType))
+            .ForPath(t => t.GuardianInfo.VerificationDo.VerificationDetails, m => m.MapFrom(f =>
+                f.VerificationRequestInfo == null ? null : f.VerificationRequestInfo.VerificationDetails));
+            
         CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
             {
                 dest.ManagerInfo = new Account.ManagerInfo();
@@ -642,6 +651,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         Id = t.VerifierId,
                         VerificationDoc = t.VerificationDoc,
                         Signature = t.Signature
+                    },
+                    VerificationDo = t.VerificationRequestInfo == null ? new VerificationDo() : new VerificationDo()
+                    {
+                        VerifierType = t.VerificationRequestInfo.VerifierType,
+                        VerificationDetails = t.VerificationRequestInfo.VerificationDetails
                     }
                 }).ToList()));
 
@@ -882,13 +896,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(dest => dest.Username, src => src.MapFrom(m => "Pending Deposit"));
         CreateMap<PreGrabbedItemDto, GrabItemDto>();
         CreateMap<RedPackageDetailDto, CryptoGiftHistoryItemDto>()
-            .ForMember(dest => dest.Label,
-                src => src.MapFrom(m =>
-                    ETransferConstant.SgrName.Equals(m.Symbol) ? ETransferConstant.SgrDisplayName : null))
+            .ForMember(dest => dest.Label, src => src.MapFrom(m => ETransferConstant.SgrName.Equals(m.Symbol) ? ETransferConstant.SgrDisplayName : null))
             .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
             .ForMember(dest => dest.Decimals, src => src.MapFrom(m => m.Decimal))
-            .ForMember(dest => dest.DisplayStatus,
-                src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
+            .ForMember(dest => dest.DisplayStatus, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
@@ -1022,7 +1033,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CAServer.Options.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenItem, UserTokenIndexDto>();
         CreateMap<AuthTokenRequestDto, ETransferAuthTokenRequestDto>().ForMember(des => des.ClientId,
-                opt => opt.MapFrom(f => ETransferConstant.ClientId))
+            opt => opt.MapFrom(f => ETransferConstant.ClientId))
             .ForMember(des => des.GrantType,
                 opt => opt.MapFrom(f => ETransferConstant.GrantType))
             .ForMember(des => des.Version,
@@ -1034,37 +1045,24 @@ public class CAServerApplicationAutoMapperProfile : Profile
             ;
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
-        CreateMap<CoinMarkets, MarketCryptocurrencyDto>()
+        CreateMap<CoinMarkets, MarketCryptocurrencyDto> ()
             .ForMember(t => t.Symbol, s => s.MapFrom(m => m.Symbol.ToUpper()))
             .ForMember(t => t.OriginalMarketCap, s => s.MapFrom(m => m.MarketCap))
             .ForMember(t => t.OriginalCurrentPrice, s => s.MapFrom(m => m.CurrentPrice))
-            .ForMember(t => t.PriceChangePercentage24H, s =>
-                s.MapFrom(m =>
-                    !m.PriceChangePercentage24H.HasValue
-                        ? Decimal.Zero
-                        : Math.Round((decimal)m.PriceChangePercentage24H, 1)))
+            .ForMember(t => t.PriceChangePercentage24H, s => 
+                s.MapFrom(m => !m.PriceChangePercentage24H.HasValue ? Decimal.Zero : Math.Round((decimal)m.PriceChangePercentage24H, 1)))
             .ForMember(t => t.CurrentPrice, s =>
-                s.MapFrom(m => (m.CurrentPrice == null || !m.CurrentPrice.HasValue)
-                    ? Decimal.Zero
-                    : Decimal.Compare((decimal)m.CurrentPrice, Decimal.One) >= 0
-                        ? Math.Round((decimal)m.CurrentPrice, 2)
-                        : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.1) >= 0
-                            ? Math.Round((decimal)m.CurrentPrice, 4, MidpointRounding.ToZero)
-                            : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.01) >= 0
-                                ? Math.Round((decimal)m.CurrentPrice, 5, MidpointRounding.ToZero)
-                                : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.001) >= 0
-                                    ? Math.Round((decimal)m.CurrentPrice, 6, MidpointRounding.ToZero)
-                                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.0001) >= 0
-                                        ? Math.Round((decimal)m.CurrentPrice, 7, MidpointRounding.ToZero)
-                                        : (decimal)m.CurrentPrice))
-            .ForMember(t => t.MarketCap, s =>
-                s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue)
-                    ? string.Empty
-                    : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0)
-                        ? Decimal.Divide((decimal)m.MarketCap, 1000000000).ToString("0.00") + "B"
-                        : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0)
-                            ? Decimal.Divide((decimal)m.MarketCap, 1000000).ToString("0.00") + "M"
-                            : m.MarketCap.ToString()));
+                s.MapFrom(m => (m.CurrentPrice == null || !m.CurrentPrice.HasValue) ? Decimal.Zero
+                    : Decimal.Compare((decimal)m.CurrentPrice, Decimal.One) >= 0 ? Math.Round((decimal)m.CurrentPrice, 2) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.1) >= 0 ? Math.Round((decimal)m.CurrentPrice, 4, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.01) >= 0 ? Math.Round((decimal)m.CurrentPrice, 5, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 6, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.0001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 7, MidpointRounding.ToZero) : (decimal)m.CurrentPrice))
+            .ForMember(t => t.MarketCap, s => 
+                s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue) ? string.Empty
+                : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000).ToString("0.00") + "B"
+                : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000).ToString("0.00") + "M"
+                : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
         CreateMap<ActivityConfig, ActivityConfigDto>();
@@ -1080,5 +1078,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<IndexerToken, GetUserTokenDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.TokenContractAddress));
         CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
+        
+        CreateMap<TokenInfoDto, TokenInfoV2Dto>();
+        CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
     }
 }

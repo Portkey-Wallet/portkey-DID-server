@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
 using CAServer.Contacts;
 using CAServer.Contacts.Provider;
@@ -253,6 +254,10 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
                 return GetEmailFormat(nickname, guardianIdentifier, string.Empty, string.Empty);
             }
+            else if ((int)GuardianType.GUARDIAN_TYPE_OF_TONWALLET == int.Parse(guardianType))
+            {
+                return GetAddressFormat(nickname, guardianIdentifier, string.Empty);
+            }
         }
         catch (Exception e)
         {
@@ -301,17 +306,25 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             address = guardianResultDto.CaAddress;
         }
 
-        if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type) || "Facebook".Equals(guardian.Type))
+        if (GuardianIdentifierType.Telegram.ToString().Equals(guardian.Type) 
+            || GuardianIdentifierType.Twitter.ToString().Equals(guardian.Type) 
+            || GuardianIdentifierType.Facebook.ToString().Equals(guardian.Type))
         {
             return new Tuple<string, string>(GetFirstNameFormat(nickname, guardian.FirstName, address),
                 guardian.IdentifierHash);
         }
 
-        if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
+        if (GuardianIdentifierType.Email.ToString().Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
         {
             return new Tuple<string, string>(
                 GetEmailFormat(nickname, guardian.GuardianIdentifier, guardian.FirstName, address),
                 guardian.IdentifierHash);
+        }
+        
+        if (GuardianIdentifierType.TonWallet.ToString().Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
+        {
+            return new Tuple<string, string>(
+                GetAddressFormat(nickname, guardian.GuardianIdentifier, address), guardian.IdentifierHash);
         }
 
         return new Tuple<string, string>(
@@ -392,6 +405,18 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
 
         return nickname;
+    }
+    
+    private string GetAddressFormat(string nickname, string thirdPartyAddress, string address)
+    {
+        address = thirdPartyAddress.IsNullOrEmpty() ? address : thirdPartyAddress;
+        if (address.IsNullOrEmpty() || address.Length <= 4)
+        {
+            return nickname;
+        }
+
+        var length = address.Length;
+        return length <= 8 ? string.Concat(address.AsSpan(0, 4), "***") : string.Concat(address.AsSpan(0, 4), "***", address.AsSpan(length - 4));
     }
 
     public async Task HandleEventAsync(UpdateCAHolderEto eventData)

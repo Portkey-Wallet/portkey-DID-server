@@ -11,7 +11,7 @@ public class OperationDetailsDto
     public string NewVerifierId { get; set; }
     public string To { get; set; }
     public string Symbol { get; set; }
-    public long Amount { get; set; }
+    public string Amount { get; set; }
     public string Spender { get; set; }
     public long SingleLimit { get; set; }
     public long DailyLimit { get; set; }

@@ -28,6 +28,8 @@ public class RegisterRequestDto : IValidatableObject
     public string AccessToken { get; set; }
     public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
     
+    public VerificationRequestInfo VerificationRequestInfo { get; set; }
+    
     public Dictionary<string, object> ExtraInfo { get; set; } = new();
 
     public IEnumerable<ValidationResult> Validate(

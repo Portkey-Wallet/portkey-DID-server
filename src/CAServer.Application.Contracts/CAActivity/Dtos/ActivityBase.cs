@@ -24,6 +24,8 @@ public class ActivityBase
     public string PriceInUsd { get; set; }
     public bool IsDelegated { get; set; }
     public bool IsSystem { get; set; }
+    
+    public string StatusIcon { get; set; }
 }
 
 public class TransactionFee

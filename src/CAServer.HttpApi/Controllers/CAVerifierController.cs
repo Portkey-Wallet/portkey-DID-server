@@ -256,6 +256,13 @@ public class CAVerifierController : CAServerController
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyTwitterTokenAsync(requestDto);
     }
+    
+    [HttpPost("verifyTonWalletToken")]
+    public async Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyEdaAlgorithmRequestDto requestDto)
+    {
+        ValidateOperationType(requestDto.OperationType);
+        return await _verifierAppService.VerifyTonWalletAsync(requestDto);
+    }
 
     [HttpPost("isGoogleRecaptchaOpen")]
     public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version,

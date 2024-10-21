@@ -13,6 +13,8 @@ using CAServer.AppleVerify;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
+using CAServer.CAAccount.Enums;
+using CAServer.CAAccount.TonWallet;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
@@ -62,6 +64,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IHttpClientService _httpClientService;
     private readonly IDistributedCache<AppleKeys> _distributedCache;
     private readonly ICAAccountProvider _accountProvider;
+    private readonly IEnumerable<IVerificationAlgorithmStrategy> _verificationStrategies;
+    private readonly ITonWalletProvider _tonWalletProvider;
+
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
     private readonly IdentityUserManager _userManager;
     private readonly IAppleZkProvider _appleZkProvider;
@@ -82,6 +87,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IDistributedCache<AppleKeys> distributedCache,
         ICAAccountProvider accountProvider,
         IdentityUserManager userManager,
+        IEnumerable<IVerificationAlgorithmStrategy> verificationStrategies,
+        ITonWalletProvider tonWalletProvider,
         IAppleZkProvider appleZkProvider)
     {
         _accountValidator = accountValidator;
@@ -95,6 +102,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
+        _verificationStrategies = verificationStrategies;
+        _tonWalletProvider = tonWalletProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
         _distributedCache = distributedCache;
         _accountProvider = accountProvider;
@@ -535,6 +544,53 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             _logger.LogError("Verify Facebook Failed, {Message}", e.Message);
             throw new UserFriendlyException("Verify Facebook Failed.");
+        }
+    }
+
+    public async Task<VerificationCodeResponse> VerifyTonWalletAsync(VerifyEdaAlgorithmRequestDto requestDto)
+    {
+        try
+        {
+            var guardianIdentifier = requestDto.TonWalletRequest.UserFriendlyAddress;
+            var hashInfo = await GetSaltAndHashAsync(guardianIdentifier);
+            var verifyTokenRequestDto = new VerifyTokenRequestDto
+            {
+                AccessToken = requestDto.AccessToken,
+                ChainId = requestDto.ChainId,
+                TargetChainId = requestDto.TargetChainId, 
+                OperationType = requestDto.OperationType,
+                OperationDetails = requestDto.OperationDetails,
+            };
+            await AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.TonWallet);
+            var response =
+                await _verifierServerClient.VerifyTonWalletTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
+            if (response is not { Success: true } || response.Data is not { Result: true })
+            {
+                _logger.LogWarning("send notification email error verifyTokenRequestDto:{0}", JsonConvert.SerializeObject(verifyTokenRequestDto));
+            }
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(guardianIdentifier, hashInfo.Item2, hashInfo.Item1);
+            }
+            
+            var verificationStrategy = _verificationStrategies
+                .FirstOrDefault(v => v.VerifierType.Equals(VerifierType.TonWallet));
+            if (verificationStrategy == null)
+            {
+                throw new UserFriendlyException("verification Strategy not exist");
+            }
+
+            var message = _tonWalletProvider.GetTonWalletMessage(requestDto.TonWalletRequest.Request);
+            return new VerificationCodeResponse
+            {
+                Extra = verificationStrategy.ExtraHandler(hashInfo.Item2, message),
+                GuardianIdentifierHash = hashInfo.Item1
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{Message}", e.Message);
+            throw new UserFriendlyException(e.Message);
         }
     }
 
