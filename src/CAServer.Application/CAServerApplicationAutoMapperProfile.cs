@@ -1077,6 +1077,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<GrowthIndex, GrowthUserInfoDto>();
         CreateMap<IndexerToken, GetUserTokenDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.TokenContractAddress));
+        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
         
         CreateMap<TokenInfoDto, TokenInfoV2Dto>();
         CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();

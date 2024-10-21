@@ -141,7 +141,7 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
             async () => await GetVerifierServerListAsync(chainId),
             () => new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_adaptableVariableOptions.VerifierServerExpireTime)
+                AbsoluteExpiration = DateTimeOffset.Now.AddDays(_adaptableVariableOptions.VerifierServerExpireTime)
             }
         );
     }
