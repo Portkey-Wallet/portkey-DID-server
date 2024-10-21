@@ -4,6 +4,7 @@ using AElf.Types;
 using CAServer.Common;
 using GraphQL;
 using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Serilog;
 using Volo.Abp.Caching;
@@ -18,10 +19,10 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly IContractProvider _contractProvider;
     private readonly IObjectMapper _objectMapper;
-    private readonly IDistributedCache<GetHolderInfoOutput> _guardiansCache;
+    private readonly IDistributedCache<string> _guardiansCache;
 
     public GuardianProvider(IGraphQLHelper graphQlHelper, IContractProvider contractProvider,
-        IObjectMapper objectMapper, IDistributedCache<GetHolderInfoOutput> guardiansCache)
+        IObjectMapper objectMapper, IDistributedCache<string> guardiansCache)
     {
         _graphQlHelper = graphQlHelper;
         _contractProvider = contractProvider;
@@ -68,13 +69,14 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         if (result != null)
         {
             Log.Logger.Information("===================================================GetHolderInfoFromCacheAsync invoked");
-            return result;
+            return JsonConvert.DeserializeObject<GetHolderInfoOutput>(result);
         }
         var holderInfoOutput = await GetHolderInfoFromContractAsync(guardianIdentifierHash, null, chainId);
         // var guardianResult = _objectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfoOutput);
         if (needCache && holderInfoOutput != null)
         {
-            await _guardiansCache.SetAsync(key, holderInfoOutput, new DistributedCacheEntryOptions
+            
+            await _guardiansCache.SetAsync(key, JsonConvert.SerializeObject(holderInfoOutput), new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(20)
             });
