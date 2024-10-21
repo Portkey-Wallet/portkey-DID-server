@@ -10,5 +10,5 @@ public interface IGuardianProvider
     Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(string guardianIdentifierHash, string caHash,
         string chainId);
 
-    Task<GetHolderInfoOutput> GetHolderInfoFromCacheAsync(string guardianIdentifierHash, string chainId, bool needCache = false);
+    Task<GuardianResultDto> GetHolderInfoFromCacheAsync(string guardianIdentifierHash, string chainId, bool needCache = false);
 }
