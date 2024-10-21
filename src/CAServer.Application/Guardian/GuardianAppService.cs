@@ -19,6 +19,7 @@ using CAServer.Options;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -374,10 +375,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         try
         {
-            var result = await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId);
-            _logger.LogInformation("**************************************GetHolderInfoFromCacheAsync:{0}", JsonConvert.SerializeObject(result));
-            return result;
-            // return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+            if (!guardianIdentifierHash.IsNullOrEmpty() && !chainId.IsNullOrEmpty())
+            {
+                var result = await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId);
+                return result;
+            }
+            
+            var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+            return ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
         }
         catch (Exception ex)
         {
