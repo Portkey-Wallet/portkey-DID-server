@@ -183,7 +183,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             // var zkLoginInfo = guardianVerifiedByZk.ZkLoginInfo;
             var zkLoginInfo = guardian.ZkLoginInfo;
             guardian.VerifiedByZk = zkLoginInfo is not null
-                                    && zkLoginInfo.IdentifierHash != null && !Hash.Empty.Equals(zkLoginInfo.IdentifierHash)
+                                    && zkLoginInfo.IdentifierHash != null && !zkLoginInfo.IdentifierHash.IsNullOrEmpty()
                                     && zkLoginInfo.Salt is not (null or "")
                                     && zkLoginInfo.Nonce is not (null or "")
                                     && zkLoginInfo.ZkProof is not (null or "")
