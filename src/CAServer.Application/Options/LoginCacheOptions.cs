@@ -6,5 +6,5 @@ public class LoginCacheOptions
 
     public int GuardianIdentifiersCacheSeconds { get; set; } = 10;
 
-    public int HolderInfoCacheSeconds { get; set; } = 30;
+    public int HolderInfoCacheSeconds { get; set; } = 40;
 }
