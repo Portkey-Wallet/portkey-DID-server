@@ -39,6 +39,6 @@ public class GuardianInfoBase
     public bool ManuallySupportForZk { get; set; }
     
     [JsonIgnore]
-    public ZkLoginInfoDto ZkLoginInfo { get; set; }
+    public ZkLoginInfo ZkLoginInfo { get; set; }
     public string PoseidonIdentifierHash { get; set; }
 }
