@@ -36,6 +36,7 @@ namespace CAServer.Guardian;
 public class GuardianAppService : CAServerAppService, IGuardianAppService
 {
     private const string GuardianCachePrefix = "Portkey:GuardiansCache:";
+    private const string RegisterInfoCachePrefix = "Portkey:RegisterInfoCache:";
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly ILogger<GuardianAppService> _logger;
@@ -48,6 +49,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly INicknameProvider _nicknameProvider;
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly IDistributedCache<GuardianResultDto> _guardiansCache;
+    private readonly IDistributedCache<RegisterInfoResultDto> _registerInfoCache;
+    private readonly LoginCacheOptions _loginCacheOptions;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
@@ -57,7 +60,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
         INicknameProvider nicknameProvider,
         IZkLoginProvider zkLoginProvider,
-        IDistributedCache<GuardianResultDto> guardiansCache)
+        IDistributedCache<GuardianResultDto> guardiansCache,
+        IDistributedCache<RegisterInfoResultDto> registerInfoCache,
+        IOptions<LoginCacheOptions> loginCacheOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -71,6 +76,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _nicknameProvider = nicknameProvider;
         _zkLoginProvider = zkLoginProvider;
         _guardiansCache = guardiansCache;
+        _registerInfoCache = registerInfoCache;
+        _loginCacheOptions = loginCacheOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersWrapperAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -92,7 +99,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             await _guardiansCache.SetAsync(key, result, new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(5)
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(_loginCacheOptions.GuardianIdentifiersCacheSeconds)
             });
         }
 
@@ -101,7 +108,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private string GetGuardianIdentifiersCacheKey(string guardianIdentifier, string chainId)
     {
-        return GuardianCachePrefix + guardianIdentifier + chainId;
+        return GuardianCachePrefix + guardianIdentifier + ":" + chainId;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -188,8 +195,37 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
     }
 
-    //It is necessary to determine whether the originalChainId corresponding to the Identifier will change.
-    //If it does not change, it can be cached periodically or requested to be cached by the interface
+    public async Task<RegisterInfoResultDto> GetRegisterInfoWrapperAsync(RegisterInfoDto requestDto)
+    {
+        if (requestDto.LoginGuardianIdentifier.IsNullOrEmpty())
+        {
+            return await GetRegisterInfoAsync(requestDto);
+        }
+
+        var key = GetRegisterInfoCacheKey(requestDto.LoginGuardianIdentifier);
+        var result = await _registerInfoCache.GetAsync(key);
+        if (result != null)
+        {
+            return result;
+        }
+
+        result = await GetRegisterInfoAsync(requestDto);
+        if (result != null)
+        {
+            await _registerInfoCache.SetAsync(key, result, new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(_loginCacheOptions.RegisterCacheSeconds)
+            });
+        }
+
+        return result;
+    }
+    
+    private string GetRegisterInfoCacheKey(string guardianIdentifier)
+    {
+        return RegisterInfoCachePrefix + guardianIdentifier;
+    }
+
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
         if (_appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
@@ -288,7 +324,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
 
         var originalChainIds = await Task.WhenAll(holderInfoTasks);
-        if (originalChainIds.IsNullOrEmpty())
+        if (originalChainIds.IsNullOrEmpty() || originalChainIds.Where(item => !item.IsNullOrEmpty()).IsNullOrEmpty())
         {
             throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
         }

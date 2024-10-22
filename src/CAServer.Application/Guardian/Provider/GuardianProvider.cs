@@ -2,8 +2,10 @@ using System;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Options;
 using GraphQL;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Serilog;
@@ -20,14 +22,17 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
     private readonly IContractProvider _contractProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IDistributedCache<GuardianResultDto> _guardiansCache;
+    private readonly LoginCacheOptions _loginCacheOptions;
 
     public GuardianProvider(IGraphQLHelper graphQlHelper, IContractProvider contractProvider,
-        IObjectMapper objectMapper, IDistributedCache<GuardianResultDto> guardiansCache)
+        IObjectMapper objectMapper, IDistributedCache<GuardianResultDto> guardiansCache,
+        IOptions<LoginCacheOptions> loginCacheOptions)
     {
         _graphQlHelper = graphQlHelper;
         _contractProvider = contractProvider;
         _objectMapper = objectMapper;
         _guardiansCache = guardiansCache;
+        _loginCacheOptions = loginCacheOptions.Value;
     }
 
     public async Task<GuardiansDto> GetGuardiansAsync(string loginGuardianIdentifierHash, string caHash)
@@ -68,7 +73,6 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         var result = await _guardiansCache.GetAsync(key: key);
         if (result != null)
         {
-            Log.Logger.Information("===================================================GetHolderInfoFromCacheAsync invoked");
             return result;
         }
         var holderInfoOutput = await GetHolderInfoFromContractAsync(guardianIdentifierHash, null, chainId);
@@ -78,7 +82,7 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
             
             await _guardiansCache.SetAsync(key, guardianResult, new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(20)
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(_loginCacheOptions.HolderInfoCacheSeconds)
             });
         }
         return guardianResult;
