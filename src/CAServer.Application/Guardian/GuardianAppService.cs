@@ -174,16 +174,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         foreach (var guardian in guardianResult.GuardianList.Guardians)
         {
-            // var guardianVerifiedByZk = holderInfo.GuardianList.Guardians.FirstOrDefault(
-            //     g => g.IdentifierHash.Equals(Hash.LoadFromHex(guardian.IdentifierHash)));
-            // if (guardianVerifiedByZk is null)
-            // {
-            //     continue;
-            // }
-            // var zkLoginInfo = guardianVerifiedByZk.ZkLoginInfo;
             var zkLoginInfo = guardian.ZkLoginInfo;
             guardian.VerifiedByZk = zkLoginInfo is not null
-                                    && zkLoginInfo.IdentifierHash != null
+                                    && zkLoginInfo.IdentifierHash is not (null or "")
                                     && zkLoginInfo.Salt is not (null or "")
                                     && zkLoginInfo.Nonce is not (null or "")
                                     && zkLoginInfo.ZkProof is not (null or "")
