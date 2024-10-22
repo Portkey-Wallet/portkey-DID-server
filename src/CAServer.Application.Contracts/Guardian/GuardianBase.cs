@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using CAServer.CAAccount.Dtos.Zklogin;
+using Newtonsoft.Json;
+using Portkey.Contracts.CA;
 
 namespace CAServer.Guardian;
 
@@ -35,6 +37,5 @@ public class GuardianInfoBase
     public string TransactionId { get; set; }
     public bool VerifiedByZk { get; set; }
     public bool ManuallySupportForZk { get; set; }
-    
     public string PoseidonIdentifierHash { get; set; }
 }

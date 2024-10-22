@@ -232,16 +232,12 @@ public class SendingTransactionInfoByEmailAfterApprovalWorker : AsyncPeriodicBac
 
     private async Task CommonOperationTypeHandler(string chainId, long startHeight, long endHeight)
     {
-        _logger.LogDebug("=======================CommonOperationTypeHandler starting");
         var transaction = await _activityProvider.GetActivitiesWithBlockHeightAsync(new List<CAAddressInfo>(), chainId, 
             null, AElfContractMethodName.MethodNames, 0, _notifyWorkerOptions.MaxResultCount, startHeight,  endHeight);
-        _logger.LogDebug("=======================CommonOperationTypeHandler GetActivities startHeight:{0} endHeight:{1} chainId:{2} methods:{3} result:{4}",
-            startHeight,  endHeight, chainId, JsonConvert.SerializeObject(AElfContractMethodName.MethodNames), JsonConvert.SerializeObject(transaction));
         if (transaction?.CaHolderTransaction == null || transaction.CaHolderTransaction.Data.IsNullOrEmpty())
         {
             return;
         }
-        _logger.LogDebug("CommonOperationTypeHandler starting transactionTotalAccount:{0}", transaction.CaHolderTransaction.TotalRecordCount);
         var indexerTransactions = transaction.CaHolderTransaction.Data;
         foreach (var indexerTransaction in indexerTransactions)
         {

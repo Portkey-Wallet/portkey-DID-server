@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.CAAccount.Provider;
 
@@ -26,6 +27,7 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IVerifierServerClient _verifierServerClient;
     private readonly IGetVerifierServerProvider _verifierServerProvider;
+    private readonly IObjectMapper _objectMapper;
     
     public GoogleZkProvider(
         IGuardianUserProvider guardianUserProvider,
@@ -33,7 +35,8 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         IHttpClientFactory httpClientFactory,
         IHttpContextAccessor httpContextAccessor,
         IVerifierServerClient verifierServerClient,
-        IGetVerifierServerProvider verifierServerProvider)
+        IGetVerifierServerProvider verifierServerProvider,
+        IObjectMapper objectMapper)
     {
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
@@ -41,6 +44,7 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         _httpContextAccessor = httpContextAccessor;
         _verifierServerClient = verifierServerClient;
         _verifierServerProvider = verifierServerProvider;
+        _objectMapper = objectMapper;
     }
     
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
@@ -49,28 +53,7 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userInfo.Id, requestDto.Salt, requestDto.PoseidonIdentifierHash);
-            if (requestDto.VerifierId.IsNullOrEmpty())
-            {
-                requestDto.VerifierId = await _verifierServerProvider.GetFirstVerifierServerEndPointAsync(requestDto.ChainId);
-            }
-            var verifyTokenRequestDto = new VerifyTokenRequestDto()
-            {
-                AccessToken = requestDto.AccessToken,
-                VerifierId = requestDto.VerifierId,
-                ChainId = requestDto.ChainId,
-                OperationType = requestDto.OperationType,
-                OperationDetails = requestDto.OperationDetails,
-                CaHash = requestDto.CaHash,
-                TargetChainId = requestDto.TargetChainId
-            };
-            var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? string.Empty : userInfo.Email;
-            await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Google);
-            var response =
-                await _verifierServerClient.VerifyGoogleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
-            if (!response.Success)
-            {
-                _logger.LogError($"Validate VerifierGoogle Failed :{response.Message}");
-            }
+            SendNotification(requestDto, userInfo, hashInfo);
             if (!hashInfo.Item3)
             {
                 await _guardianUserProvider.AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
@@ -84,7 +67,24 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
             throw new UserFriendlyException(e.Message);
         }
     }
-    
+
+    private async void SendNotification(VerifiedZkLoginRequestDto requestDto, GoogleUserInfoDto userInfo, Tuple<string, string, bool> hashInfo)
+    {
+        if (requestDto.VerifierId.IsNullOrEmpty())
+        {
+            requestDto.VerifierId = await _verifierServerProvider.GetFirstVerifierServerEndPointAsync(requestDto.ChainId);
+        }
+        var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
+        var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? string.Empty : userInfo.Email;
+        await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Google);
+        var response =
+            await _verifierServerClient.VerifyGoogleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
+        if (!response.Success)
+        {
+            _logger.LogError($"Validate VerifierGoogle Failed :{response.Message}");
+        }
+    }
+
     private async Task<GoogleUserInfoDto> GetUserInfoFromGoogleAsync(string accessToken)
     {
         var requestUrl = $"https://www.googleapis.com/oauth2/v2/userinfo?access_token={accessToken}";

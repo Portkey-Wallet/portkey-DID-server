@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
+using CAServer.Guardian;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -32,7 +33,7 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
     }
     
     public async Task<bool> ValidateSocialRecovery(RequestSource source, string caHash,
-        string chainId, string manager, List<GuardianInfo> guardiansApproved, List<ManagerDto> existedManagers)
+        string chainId, string manager, List<GuardianInfo> guardiansApproved, List<ManagerInfoDto> existedManagers)
     {
         if (!RequestSource.Sdk.Equals(source))
         {

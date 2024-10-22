@@ -7,6 +7,7 @@ using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -102,6 +103,7 @@ using Microsoft.IdentityModel.Tokens;
 using Enum = System.Enum;
 using GuardianDto = CAServer.Guardian.GuardianDto;
 using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
+using NoncePayload = Portkey.Contracts.CA.NoncePayload;
 
 namespace CAServer;
 
@@ -1079,5 +1081,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<GrowthIndex, GrowthUserInfoDto>();
         CreateMap<IndexerToken, GetUserTokenDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.TokenContractAddress));
+        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
     }
 }
