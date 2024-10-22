@@ -135,7 +135,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var guardianResult = await GetHolderInfosAsync(guardianIdentifierHash, guardianIdentifierDto.ChainId, guardianIdentifierDto.CaHash,
             guardianIdentifierDto.GuardianIdentifier);
         sw.Stop();
-        _logger.LogInformation("GetHolderInfosAsync result:{0}", JsonConvert.SerializeObject(guardianResult));
         _logger.LogInformation("GetGuardianIdentifiersAsync:GetHolderInfosAsync=>cost:{0}ms", sw.ElapsedMilliseconds);
         // var guardianResult =
         //     ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
@@ -162,32 +161,32 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         sw.Stop();
         _logger.LogInformation("GetGuardianIdentifiersAsync:GetUserExtraInfoAsync=>cost:{0}ms", sw.ElapsedMilliseconds);
         await AddGuardianInfoAsync(guardianResult.GuardianList?.Guardians, hashDic, userExtraInfos);
-        SetGuardianVerifiedZkField(guardianResult);
+        // SetGuardianVerifiedZkField(guardianResult);
         return guardianResult;
     }
 
-    private void SetGuardianVerifiedZkField(GuardianResultDto guardianResult)
-    {
-        if (guardianResult.GuardianList is null || guardianResult.GuardianList.Guardians.IsNullOrEmpty())
-        {
-            return;
-        }
-
-        foreach (var guardian in guardianResult.GuardianList.Guardians)
-        {
-            var zkLoginInfo = guardian.ZkLoginInfo;
-            guardian.VerifiedByZk = zkLoginInfo is not null
-                                    && zkLoginInfo.IdentifierHash is not (null or "")
-                                    && zkLoginInfo.Salt is not (null or "")
-                                    && zkLoginInfo.Nonce is not (null or "")
-                                    && zkLoginInfo.ZkProof is not (null or "")
-                                    && zkLoginInfo.CircuitId is not (null or "")
-                                    && zkLoginInfo.Issuer is not (null or "")
-                                    && zkLoginInfo.Kid is not (null or "")
-                                    && zkLoginInfo.NoncePayload is not null;
-            guardian.PoseidonIdentifierHash = zkLoginInfo is not null ? zkLoginInfo.PoseidonIdentifierHash : "";
-        }
-    }
+    // private void SetGuardianVerifiedZkField(GuardianResultDto guardianResult)
+    // {
+    //     if (guardianResult.GuardianList is null || guardianResult.GuardianList.Guardians.IsNullOrEmpty())
+    //     {
+    //         return;
+    //     }
+    //
+    //     foreach (var guardian in guardianResult.GuardianList.Guardians)
+    //     {
+    //         var zkLoginInfo = guardian.ZkLoginInfo;
+    //         guardian.VerifiedByZk = zkLoginInfo is not null
+    //                                 && zkLoginInfo.IdentifierHash is not (null or "")
+    //                                 && zkLoginInfo.Salt is not (null or "")
+    //                                 && zkLoginInfo.Nonce is not (null or "")
+    //                                 && zkLoginInfo.ZkProof is not (null or "")
+    //                                 && zkLoginInfo.CircuitId is not (null or "")
+    //                                 && zkLoginInfo.Issuer is not (null or "")
+    //                                 && zkLoginInfo.Kid is not (null or "")
+    //                                 && zkLoginInfo.NoncePayload is not null;
+    //         guardian.PoseidonIdentifierHash = zkLoginInfo is not null ? zkLoginInfo.PoseidonIdentifierHash : "";
+    //     }
+    // }
 
     public async Task<RegisterInfoResultDto> GetRegisterInfoWrapperAsync(RegisterInfoDto requestDto)
     {
@@ -407,12 +406,13 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             if (!guardianIdentifierHash.IsNullOrEmpty() && !chainId.IsNullOrEmpty())
             {
-                var result = await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId);
-                return result;
+                return await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId);
             }
             
             var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
-            return ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
+            var guardianResultDto = ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
+            _guardianProvider.AppendZkLoginInfo(holderInfo, guardianResultDto);
+            return guardianResultDto;
         }
         catch (Exception ex)
         {

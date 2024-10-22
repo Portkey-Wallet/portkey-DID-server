@@ -408,40 +408,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()))
             .ForMember(t => t.CreateChainId,
                 m => m.MapFrom(f =>
-                    f.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(f.CreateChainId) : string.Empty))
-            .ForMember(t => t.GuardianList,
-                m => m.MapFrom(f =>
-                    new GuardianListDto()
-                    {
-                        Guardians = f.GuardianList.Guardians.Select(g => new GuardianDto()
-                        {
-                            IdentifierHash = g.IdentifierHash.ToHex(),
-                            Salt = g.Salt,
-                            VerifierId = g.VerifierId.ToHex(),
-                            Type = ((GuardianIdentifierType)(int)g.Type).ToString(),
-                            ZkLoginInfo = g.ZkLoginInfo == null ? new ZkLoginInfoDto() : new ZkLoginInfoDto()
-                            {
-                                IdentifierHash = g.ZkLoginInfo.IdentifierHash.ToHex(),
-                                CircuitId = g.ZkLoginInfo.CircuitId,
-                                Issuer = g.ZkLoginInfo.Issuer,
-                                Kid = g.ZkLoginInfo.Kid,
-                                Nonce = g.ZkLoginInfo.Nonce,
-                                NoncePayload = g.ZkLoginInfo.NoncePayload == null ? new CAAccount.Dtos.Zklogin.NoncePayload() : new CAAccount.Dtos.Zklogin.NoncePayload()
-                                {
-                                    AddManager = g.ZkLoginInfo.NoncePayload.AddManagerAddress == null ? new CAAccount.Dtos.Zklogin.ManagerInfoDto() : new CAAccount.Dtos.Zklogin.ManagerInfoDto()
-                                    {
-                                        CaHash = g.ZkLoginInfo.NoncePayload.AddManagerAddress.CaHash.ToHex(),
-                                        Timestamp = g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp.Seconds,
-                                        ManagerAddress = g.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress.ToBase58()
-                                    }
-                                },
-                                PoseidonIdentifierHash = g.ZkLoginInfo.PoseidonIdentifierHash,
-                                Salt = g.ZkLoginInfo.Salt,
-                                ZkProof = g.ZkLoginInfo.ZkProof
-                            },
-                            PoseidonIdentifierHash = g.PoseidonIdentifierHash
-                        }).ToList()
-                    }));
+                    f.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(f.CreateChainId) : string.Empty));
         // .ForPath(t => t.GuardianList, m => m.MapFrom(f => f.GuardianList.Guardians));
 
         //used by the ContractService class
