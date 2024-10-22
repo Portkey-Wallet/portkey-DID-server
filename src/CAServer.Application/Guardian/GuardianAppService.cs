@@ -135,6 +135,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var guardianResult = await GetHolderInfosAsync(guardianIdentifierHash, guardianIdentifierDto.ChainId, guardianIdentifierDto.CaHash,
             guardianIdentifierDto.GuardianIdentifier);
         sw.Stop();
+        _logger.LogInformation("GetHolderInfosAsync result:{0}", JsonConvert.SerializeObject(guardianResult));
         _logger.LogInformation("GetGuardianIdentifiersAsync:GetHolderInfosAsync=>cost:{0}ms", sw.ElapsedMilliseconds);
         // var guardianResult =
         //     ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
@@ -146,7 +147,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException("This address is already registered on another chain.", "20004");
         }
 
-        var identifierHashList = guardianResult.GuardianList.Guardians.Select(t => t.IdentifierHash).ToList();
+        var identifierHashList = guardianResult.GuardianList?.Guardians?.Select(t => t.IdentifierHash).ToList();
         //batch get guardianIdentifierHash's relevant Identifier from es
         //cost 2-5ms, ignore
         sw.Restart();
