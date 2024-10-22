@@ -1,22 +1,38 @@
+using System;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Options;
 using GraphQL;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Portkey.Contracts.CA;
+using Serilog;
+using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Guardian.Provider;
 
 public class GuardianProvider : IGuardianProvider, ITransientDependency
 {
+    private const string HolderInfoCachePrefix = "Portkey:HolderInfoCache:";
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly IContractProvider _contractProvider;
+    private readonly IObjectMapper _objectMapper;
+    private readonly IDistributedCache<GuardianResultDto> _guardiansCache;
+    private readonly LoginCacheOptions _loginCacheOptions;
 
-
-    public GuardianProvider(IGraphQLHelper graphQlHelper, IContractProvider contractProvider)
+    public GuardianProvider(IGraphQLHelper graphQlHelper, IContractProvider contractProvider,
+        IObjectMapper objectMapper, IDistributedCache<GuardianResultDto> guardiansCache,
+        IOptions<LoginCacheOptions> loginCacheOptions)
     {
         _graphQlHelper = graphQlHelper;
         _contractProvider = contractProvider;
+        _objectMapper = objectMapper;
+        _guardiansCache = guardiansCache;
+        _loginCacheOptions = loginCacheOptions.Value;
     }
 
     public async Task<GuardiansDto> GetGuardiansAsync(string loginGuardianIdentifierHash, string caHash)
@@ -49,5 +65,31 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         }
 
         return await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(guardianIdentifierHash), chainId);
+    }
+
+    public async Task<GuardianResultDto> GetHolderInfoFromCacheAsync(string guardianIdentifierHash, string chainId, bool needCache = false)
+    {
+        var key = GetHolderInfoCacheKey(guardianIdentifierHash, chainId);
+        var result = await _guardiansCache.GetAsync(key: key);
+        if (result != null)
+        {
+            return result;
+        }
+        var holderInfoOutput = await GetHolderInfoFromContractAsync(guardianIdentifierHash, null, chainId);
+        var guardianResult = _objectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfoOutput);
+        if (needCache && holderInfoOutput != null)
+        {
+            
+            await _guardiansCache.SetAsync(key, guardianResult, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(_loginCacheOptions.HolderInfoCacheSeconds)
+            });
+        }
+        return guardianResult;
+    }
+    
+    private static string GetHolderInfoCacheKey(string guardianIdentifierHash, string chainId)
+    {
+        return HolderInfoCachePrefix + guardianIdentifierHash + chainId;
     }
 }

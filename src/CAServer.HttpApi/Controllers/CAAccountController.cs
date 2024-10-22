@@ -69,7 +69,7 @@ public class CAAccountController : CAServerController
     {
         var sw = new Stopwatch();
         sw.Start();
-        var result = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+        var result = await _guardianAppService.GetGuardianIdentifiersWrapperAsync(guardianIdentifierDto);
         sw.Stop();
         _logger.LogInformation("controller GetGuardianIdentifiers cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
@@ -90,7 +90,7 @@ public class CAAccountController : CAServerController
     {
         var sw = new Stopwatch();
         sw.Start();
-        var result = await _guardianAppService.GetRegisterInfoAsync(requestDto);
+        var result = await _guardianAppService.GetRegisterInfoWrapperAsync(requestDto);
         sw.Stop();
         _logger.LogInformation("controller GetRegisterInfo cost:{0}ms", sw.ElapsedMilliseconds);
         return result;

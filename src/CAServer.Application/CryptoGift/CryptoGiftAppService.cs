@@ -1138,7 +1138,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         cryptoGiftIndices = cryptoGiftIndices.Where(crypto => crypto.CreateTime > createTime).ToList();
-        _logger.LogInformation("====================cryptoGiftIndices:{0} ", JsonConvert.SerializeObject(cryptoGiftIndices));
         var details = new List<RedPackageDetailDto>();
         foreach (var cryptoGiftIndex in cryptoGiftIndices)
         {
@@ -1151,7 +1150,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             details.Add(redPackageDetail.Data);
         }
 
-        _logger.LogInformation("====================redPackageDetail:{0} ", JsonConvert.SerializeObject(details));
         var cryptoGiftClaimDtos = details.Select(detail => new CryptoGiftClaimDto()
         {
             UserId = detail.SenderId,
@@ -1163,7 +1161,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IDictionary<string, string> groupToCaAddress = new Dictionary<string, string>();
         var userIdChainId = cryptoGiftClaimDtos.GroupBy(c => c.UserId + "#" + c.ChainId)
             .Select(group => new {Group = group.Key});
-        _logger.LogInformation("===========userIdChainId:{0}", JsonConvert.SerializeObject(userIdChainId));
         foreach (var item in userIdChainId)
         {
             if (groupToCaAddress.TryGetValue(item.Group, out var value))
@@ -1174,7 +1171,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             var split = item.Group.Split("#");
             groupToCaAddress.Add(item.Group, await GetCaAddress(Guid.Parse(split[0]), split[1]));
         }
-        _logger.LogInformation("===========groupToCaAddress:{0}", JsonConvert.SerializeObject(groupToCaAddress));
         foreach (var cryptoGiftClaimDto in cryptoGiftClaimDtos)
         {
             var key = cryptoGiftClaimDto.UserId + "#" + cryptoGiftClaimDto.ChainId;
@@ -1197,7 +1193,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var caHash = caHolderIndex.CaHash;
         try
         {
-            _logger.LogInformation("---------------GetCaAddress userId:{0} caHash:{1} chainId:{2}", userId, caHash, chainId);
             var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
             if (result != null)
             {

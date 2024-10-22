@@ -76,6 +76,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<UserProfilePictureOptions>(configuration.GetSection("UserPictures"));
         Configure<MarketCacheOptions>(configuration.GetSection("MarketCache"));
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
+        Configure<LoginCacheOptions>(configuration.GetSection("LoginCache"));
         Configure<SecondaryEmailOptions>(configuration.GetSection("SecondaryEmail"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
