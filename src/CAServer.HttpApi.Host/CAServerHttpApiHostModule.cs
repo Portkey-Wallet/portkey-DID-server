@@ -14,6 +14,7 @@ using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.ThirdPart.Adaptor;
+using CAServer.Transfer;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -429,6 +430,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         // to start pre heat
         _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
+        context.ServiceProvider.GetService<IShiftChainService>().Init();
 
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
