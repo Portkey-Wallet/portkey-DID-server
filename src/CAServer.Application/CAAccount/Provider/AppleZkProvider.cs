@@ -63,7 +63,8 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
             var userInfo = GetUserInfoFromToken(securityToken);
             userInfo.GuardianType = GuardianIdentifierType.Apple.ToString();
             userInfo.AuthTime = DateTime.UtcNow;
-            await SendNotification(requestDto, userInfo, hashInfo);
+            var verifyTokenRequestDto = await PrepareEmailParams(requestDto, userInfo, hashInfo);
+            SendNotification(verifyTokenRequestDto, hashInfo);
             if (!hashInfo.Item3)
             {
                 await _guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
@@ -81,7 +82,17 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         }
     }
 
-    private async Task SendNotification(VerifiedZkLoginRequestDto requestDto, AppleUserExtraInfo userInfo, Tuple<string, string, bool> hashInfo)
+    private async void SendNotification(VerifyTokenRequestDto verifyTokenRequestDto, Tuple<string, string, bool> hashInfo)
+    {
+        var response =
+            await _verifierServerClient.VerifyAppleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
+        if (!response.Success)
+        {
+            _logger.LogError($"Validate VerifierApple Failed :{response.Message}");
+        }
+    }
+
+    private async Task<VerifyTokenRequestDto> PrepareEmailParams(VerifiedZkLoginRequestDto requestDto, AppleUserExtraInfo userInfo, Tuple<string, string, bool> hashInfo)
     {
         if (requestDto.VerifierId.IsNullOrEmpty())
         {
@@ -90,12 +101,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
         var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? string.Empty : userInfo.Email;
         await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
-        var response =
-            await _verifierServerClient.VerifyAppleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
-        if (!response.Success)
-        {
-            _logger.LogError($"Validate VerifierApple Failed :{response.Message}");
-        }
+        return verifyTokenRequestDto;
     }
 
     private string GetAppleUserId(string identityToken)
