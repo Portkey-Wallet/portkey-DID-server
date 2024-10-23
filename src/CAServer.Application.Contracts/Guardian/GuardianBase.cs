@@ -37,8 +37,5 @@ public class GuardianInfoBase
     public string TransactionId { get; set; }
     public bool VerifiedByZk { get; set; }
     public bool ManuallySupportForZk { get; set; }
-    
-    [JsonIgnore]
-    public ZkLoginInfo ZkLoginInfo { get; set; }
     public string PoseidonIdentifierHash { get; set; }
 }

@@ -11,4 +11,6 @@ public interface IGuardianProvider
         string chainId);
 
     Task<GuardianResultDto> GetHolderInfoFromCacheAsync(string guardianIdentifierHash, string chainId, bool needCache = false);
+
+    void AppendZkLoginInfo(GetHolderInfoOutput holderInfo, GuardianResultDto guardianResult);
 }
