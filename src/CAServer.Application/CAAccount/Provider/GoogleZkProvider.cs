@@ -53,7 +53,8 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userInfo.Id, requestDto.Salt, requestDto.PoseidonIdentifierHash);
-            SendNotification(requestDto, userInfo, hashInfo);
+            var verifyTokenRequestDto = await PrepareEmailParams(requestDto, userInfo, hashInfo);
+            SendNotification(verifyTokenRequestDto, hashInfo);
             if (!hashInfo.Item3)
             {
                 await _guardianUserProvider.AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
@@ -68,7 +69,7 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         }
     }
 
-    private async void SendNotification(VerifiedZkLoginRequestDto requestDto, GoogleUserInfoDto userInfo, Tuple<string, string, bool> hashInfo)
+    private async Task<VerifyTokenRequestDto> PrepareEmailParams(VerifiedZkLoginRequestDto requestDto, GoogleUserInfoDto userInfo, Tuple<string, string, bool> hashInfo)
     {
         if (requestDto.VerifierId.IsNullOrEmpty())
         {
@@ -77,6 +78,11 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         var verifyTokenRequestDto = _objectMapper.Map<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>(requestDto);
         var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? string.Empty : userInfo.Email;
         await _guardianUserProvider.AppendSecondaryEmailInfo(verifyTokenRequestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Google);
+        return verifyTokenRequestDto;
+    }
+
+    private async void SendNotification(VerifyTokenRequestDto verifyTokenRequestDto, Tuple<string, string, bool> hashInfo)
+    {
         var response =
             await _verifierServerClient.VerifyGoogleTokenAsync(verifyTokenRequestDto, hashInfo.Item1, hashInfo.Item2);
         if (!response.Success)
