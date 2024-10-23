@@ -80,7 +80,7 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         var holderInfoOutput = await GetHolderInfoFromContractAsync(guardianIdentifierHash, null, chainId);
         var guardianResult = _objectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfoOutput);
         AppendZkLoginInfo(holderInfoOutput, guardianResult);
-        if (needCache && holderInfoOutput != null)
+        if (needCache && guardianResult != null)
         {
             await _guardiansCache.SetAsync(key, guardianResult, new DistributedCacheEntryOptions
             {
