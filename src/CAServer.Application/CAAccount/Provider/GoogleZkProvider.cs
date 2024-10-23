@@ -53,7 +53,7 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await _guardianUserProvider.GetSaltAndHashAsync(userInfo.Id, requestDto.Salt, requestDto.PoseidonIdentifierHash);
-            SendNotification(requestDto, userInfo, hashInfo);
+            await SendNotification(requestDto, userInfo, hashInfo);
             if (!hashInfo.Item3)
             {
                 await _guardianUserProvider.AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
@@ -68,7 +68,7 @@ public class GoogleZkProvider : CAServerAppService, IGoogleZkProvider
         }
     }
 
-    private async void SendNotification(VerifiedZkLoginRequestDto requestDto, GoogleUserInfoDto userInfo, Tuple<string, string, bool> hashInfo)
+    private async Task SendNotification(VerifiedZkLoginRequestDto requestDto, GoogleUserInfoDto userInfo, Tuple<string, string, bool> hashInfo)
     {
         if (requestDto.VerifierId.IsNullOrEmpty())
         {

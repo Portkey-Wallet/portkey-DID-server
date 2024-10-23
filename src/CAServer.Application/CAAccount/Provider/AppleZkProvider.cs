@@ -63,7 +63,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
             var userInfo = GetUserInfoFromToken(securityToken);
             userInfo.GuardianType = GuardianIdentifierType.Apple.ToString();
             userInfo.AuthTime = DateTime.UtcNow;
-            SendNotification(requestDto, userInfo, hashInfo);
+            await SendNotification(requestDto, userInfo, hashInfo);
             if (!hashInfo.Item3)
             {
                 await _guardianUserProvider.AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1, requestDto.PoseidonIdentifierHash);
@@ -81,7 +81,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         }
     }
 
-    private async void SendNotification(VerifiedZkLoginRequestDto requestDto, AppleUserExtraInfo userInfo, Tuple<string, string, bool> hashInfo)
+    private async Task SendNotification(VerifiedZkLoginRequestDto requestDto, AppleUserExtraInfo userInfo, Tuple<string, string, bool> hashInfo)
     {
         if (requestDto.VerifierId.IsNullOrEmpty())
         {
