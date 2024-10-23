@@ -226,12 +226,12 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
-        var originChainId = await GetOriginalChainIdParallelMode(guardianIdentifierHash, requestDto.CaHash);
-        // var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
-        // var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
-        // var originChainId = guardian == null
-        //     ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
-        //     : guardian.OriginChainId;
+        // var originChainId = await GetOriginalChainIdParallelMode(guardianIdentifierHash, requestDto.CaHash);
+        var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
+        var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
+        var originChainId = guardian == null
+            ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
+            : guardian.OriginChainId;
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
@@ -278,16 +278,33 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             try
             {
-                var holderInfo =
-                    await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
-                if (holderInfo.CreateChainId > 0)
+                if (guardianIdentifierHash.IsNullOrEmpty())
                 {
-                    return ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId);
-                }
+                    var holderInfo =
+                        await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                    if (holderInfo.CreateChainId > 0)
+                    {
+                        return ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId);
+                    }
 
-                if (holderInfo?.GuardianList?.Guardians?.Count > 0)
+                    if (holderInfo?.GuardianList?.Guardians?.Count > 0)
+                    {
+                        return chainId;
+                    }
+                }
+                else
                 {
-                    return chainId;
+                    var guardianResult =
+                        await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId, true);
+                    if (!guardianResult.CreateChainId.IsNullOrEmpty())
+                    {
+                        return guardianResult.CreateChainId;
+                    }
+
+                    if (guardianResult?.GuardianList?.Guardians?.Count > 0)
+                    {
+                        return chainId;
+                    }
                 }
             }
             catch (Exception e)
@@ -406,7 +423,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             if (!guardianIdentifierHash.IsNullOrEmpty() && !chainId.IsNullOrEmpty())
             {
-                return await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId);
+                return await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId, true);
             }
             
             var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
