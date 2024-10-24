@@ -156,6 +156,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
         }
         catch (Exception e)
         {
+            return;
         }
 
         if (etransfer?.Data?.NetworkList?.Count != 0)
