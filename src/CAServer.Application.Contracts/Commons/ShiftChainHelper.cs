@@ -93,6 +93,7 @@ public static class ShiftChainHelper
         { "MATIC", new ChainInfo("MATIC", "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainPolygon.png", AddressFormat.ETH) },
         { "Solana", new ChainInfo("Solana", "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainSolana.png", AddressFormat.Solana) },
         { "TRX", new ChainInfo("TRX", "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainTron.png", AddressFormat.TRX) },
+        { "TON", new ChainInfo("TON", "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainTON.png", AddressFormat.TON) },
     };
 
     public static string GetChainImage(string network)
@@ -172,6 +173,11 @@ public static class ShiftChainHelper
             return AddressFormat.Solana;
         }
 
+        if (address.Length == 48)
+        {
+            return AddressFormat.TON;
+        }
+
         return AddressFormat.NoSupport;
     }
     
@@ -202,6 +208,7 @@ public enum AddressFormat
     Dapp,
     ETH,
     TRX,
+    TON,
     Solana,
     NoSupport,
 }
