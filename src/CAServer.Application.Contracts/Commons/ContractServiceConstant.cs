@@ -139,8 +139,8 @@ public static class CommonConstant
     public const string ActivitiesStartVersion = "1.17.0";
     public const string NftToFtStartVersion = "1.18.0";
 
-    public const string ReferralKey = "Portkey:ReferralBank";
-    public const string HamsterRankKey = "Portkey:HamsterBank";
+    public const string ReferralKey = "Portkey:ReferralRank";
+    public const string HamsterRankKey = "Portkey:HamsterRank";
     
 
     public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
