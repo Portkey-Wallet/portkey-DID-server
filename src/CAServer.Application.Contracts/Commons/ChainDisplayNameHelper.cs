@@ -14,15 +14,15 @@ public static class ChainDisplayNameHelper
 
     public static readonly Dictionary<string, string> DisplayNameMap = new Dictionary<string, string>
     {
-        { "AELF", MainChain },
-        { "tDVV", DAppChain },
-        { "tDVW", DAppChain },
+        { CommonConstant.MainChainId, MainChain },
+        { CommonConstant.TDVVChainId, DAppChain },
+        { CommonConstant.TDVWChainId, DAppChain },
     };
     public static readonly Dictionary<string, string> ChainImageUrlMap = new Dictionary<string, string>
     {
-        { "AELF", MainChainImageUrl },
-        { "tDVV", DAppChainImageUrl },
-        { "tDVW", DAppChainImageUrl },
+        { CommonConstant.MainChainId, MainChainImageUrl },
+        { CommonConstant.TDVVChainId, DAppChainImageUrl },
+        { CommonConstant.TDVWChainId, DAppChainImageUrl },
     };
 
     // if not exits, maybe throw exception

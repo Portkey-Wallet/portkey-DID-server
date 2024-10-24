@@ -8,4 +8,5 @@ public class ETransferOptions
     public string Prefix { get; set; } = string.Empty;
     public int Timeout { get; set; } = 20;
     public string Version { get; set; }
+    public string EBridgeLimiterUrl { get; set; }
 }
