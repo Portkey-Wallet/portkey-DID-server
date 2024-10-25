@@ -113,7 +113,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     {
         // set ebridge
         var ebridge = _networkCacheService.GetSendNetworkList(request);
-        if (ebridge?.Count != 0)
+        if (ebridge?.Count > 0)
         {
             foreach (var network in ebridge)
             {
@@ -307,8 +307,8 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                     continue;
                 }
 
-
-                if (!sendEBridgeMap.TryGetValue(tokenInfo.Token, out var sendInfo))
+                string key = tokenInfo.Token + ";" + limiter.FromChain;
+                if (!sendEBridgeMap.TryGetValue(key, out var sendInfo))
                 {
                     sendInfo = new SendNetworkDto { NetworkList = new List<NetworkInfoDto>() };
                     sendEBridgeMap[tokenInfo.Token] = sendInfo;
