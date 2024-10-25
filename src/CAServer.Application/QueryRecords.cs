@@ -48,6 +48,27 @@ public class SyncState
     public long ConfirmedBlockHeight { get; set; }
 }
 
+public class SyncStateDto
+{
+    public  IndexerVersionInfo CurrentVersion { get; set; }
+}
+
+public class IndexerVersionInfo
+{
+    public List<SyncStateItem> Items { get; set; } = new();
+}
+
+public class SyncStateItem
+{
+    public string ChainId { get; set; }
+    public string LongestChainBlockHash { get; set; }
+    public long LongestChainHeight { get; set; }
+    public string BestChainBlockHash { get; set; }
+    public long BestChainHeight { get; set; }
+    public string LastIrreversibleBlockHash { get; set; }
+    public long LastIrreversibleBlockHeight { get; set; }
+}
+
 public class QueryEventDto : ChangeRecordDto
 {
     public string NotLoginGuardian { get; set; }

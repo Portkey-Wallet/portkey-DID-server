@@ -76,5 +76,8 @@ public static class CommonConstant
 
     public const string ProtocolName = "http";
     public const string UpgradeGrainIdPrefix = "UpgradeInfo";
+    
+    public const string SyncStateUri = "apps/sync-state";
+    public const string ReplaceUri = "app/graphql";
 
 }
