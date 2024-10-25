@@ -125,8 +125,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
           
             if (request.ActivityType != CommonConstant.TransferCard)
             {
-                caAddressInfos = caAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
+                caAddressInfos = request.CaAddressInfos.IsNullOrEmpty()
+                    ? new List<CAAddressInfo>() : request.CaAddressInfos;
             }
 
             var indexerTransactions =
