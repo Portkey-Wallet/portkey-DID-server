@@ -32,6 +32,7 @@ public class SearchUserAssetsHelper
         result.ChainId = dto.ChainId;
         result.Symbol = dto.Symbol;
         result.Address = dto.Address;
+        result.Label = dto.Label;
         ChainDisplayNameHelper.SetDisplayName(result);
         return result;
     }
@@ -48,6 +49,7 @@ public class SearchUserAssetsHelper
         {
             p.NftInfo.ChainId = p.ChainId;
             ChainDisplayNameHelper.SetDisplayName(p.NftInfo);
+            p.NftInfo.Label = p.Label;
             return p.NftInfo;
         }).GroupBy(p => p.CollectionName);
         foreach (var nftEntry in nftMap)

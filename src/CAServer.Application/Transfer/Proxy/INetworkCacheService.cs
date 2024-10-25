@@ -60,7 +60,8 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
 
     public List<NetworkInfoDto> GetSendNetworkList(GetSendNetworkListRequestDto request)
     {
-        if (_sendEBridgeMap.TryGetValue(request.Symbol, out SendNetworkDto result))
+        string key = request.Symbol + ";" + request.ChainId;
+        if (_sendEBridgeMap.TryGetValue(key, out SendNetworkDto result))
         {
             return result.NetworkList.Where(p => ShiftChainHelper.MatchForAddress(p.Network, request.ChainId, request.ToAddress)).ToList();
         }
