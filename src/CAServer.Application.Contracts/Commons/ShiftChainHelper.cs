@@ -183,7 +183,9 @@ public static class ShiftChainHelper
     
     public static string ExtractAddress(string addressSuffix)
     {
-        return addressSuffix.Split("_").First(p => p.Length > 10);
+        return addressSuffix
+            .Split('_')
+            .FirstOrDefault(p => p.Length == 50) ?? addressSuffix;
     }
     
 }
