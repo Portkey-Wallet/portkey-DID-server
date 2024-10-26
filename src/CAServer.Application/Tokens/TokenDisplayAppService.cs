@@ -921,7 +921,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             userTokens.RemoveAll(t => t.IsDisplay);
         }
 
-        userTokens.AddRange(tokenList);
+        // userTokens.AddRange(tokenList);
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
         return result;
