@@ -1024,7 +1024,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             userTokens.RemoveAll(t => t.IsDisplay);
         }
 
-        userTokens.AddRange(tokenList);
+        //userTokens.AddRange(tokenList);
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
         return result;
