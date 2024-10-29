@@ -16,10 +16,12 @@ namespace CAServer.Controllers;
 public class TransferController : CAServerController
 {
     private readonly ITransferAppService _transferAppService;
+    private readonly IShiftChainService _shiftChainService;
 
-    public TransferController(ITransferAppService transferAppService)
+    public TransferController(ITransferAppService transferAppService, IShiftChainService shiftChainService)
     {
         _transferAppService = transferAppService;
+        _shiftChainService = shiftChainService;
     }
 
     [AllowAnonymous]
@@ -46,6 +48,17 @@ public class TransferController : CAServerController
     public async Task<ResponseWrapDto<GetNetworkListDto>> GetNetworkListAsync(GetNetworkListRequestDto request)
     {
         return await _transferAppService.GetNetworkListAsync(request);
+    }
+    [HttpGet("getReceiveNetworkList")]
+    public async Task<ResponseWrapDto<ReceiveNetworkDto>> GetNetworkListBySymbolAsync(GetReceiveNetworkListRequestDto request)
+    {
+        return await _shiftChainService.GetReceiveNetworkList(request);
+    }
+
+    [HttpGet("getSendNetworkList")]
+    public async Task<ResponseWrapDto<SendNetworkDto>> GetDestinationList(GetSendNetworkListRequestDto request)
+    {
+        return await _shiftChainService.GetSendNetworkList(request);
     }
 
     [HttpGet("deposit/calculator")]

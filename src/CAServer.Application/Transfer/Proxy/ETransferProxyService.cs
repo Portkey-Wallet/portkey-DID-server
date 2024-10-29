@@ -62,7 +62,8 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         var isMainChain = IsMainChain(request.ChainId);
         if (!request.Symbol.IsNullOrEmpty())
         {
-            var wrapDto = await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
+            var url = GetUrl(ETransferConstant.GetNetworkList, request);
+            var wrapDto = await _clientProvider.GetAsync<GetNetworkListDto>(url,
                 request);
             var list = ReRangeList(wrapDto.Data.NetworkList, isMainChain, request.Symbol);
             var resultList = list.Where(t => t.Status == "Health").ToList();

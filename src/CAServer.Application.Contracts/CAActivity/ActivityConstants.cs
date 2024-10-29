@@ -14,4 +14,6 @@ public static class ActivityConstants
     public const string SendName = "Send";
     public const string SwapExactTokensForTokensName = "SwapExactTokensForTokens";
     public const string FreeMintNftName = "MintNft";
+    public const string DepositTypeName = "ReleaseToken";
+    public const string CrossChainTransferDisplayName = "Cross-Chain Transfer";
 }

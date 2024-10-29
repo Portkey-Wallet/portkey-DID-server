@@ -9,6 +9,13 @@ public class SearchUserAssetsDto
     public long TotalRecordCount { get; set; }
 }
 
+public class SearchUserAssetsV2Dto
+{
+    public List<TokenInfoV2Dto> TokenInfos { get; set; }
+    public List<NftCollectionDto> NftInfos { get; set; }
+    public long TotalRecordCount { get; set; }
+}
+
 public class UserAsset
 {
     public string ChainId { get; set; }
@@ -38,6 +45,27 @@ public class NftInfoDto
     public string TokenContractAddress { get; set; }
     public string Decimals { get; set; }
     public string TokenName { get; set; }
-    public  bool IsSeed { get; set; }
+    public bool IsSeed { get; set; }
     public int SeedType { get; set; }
+    public string DisplayChainName { get; set; }
+    public string ChainImageUrl { get; set; }
+    public string ChainId { get; set; }
+    public string Label { get; set; }
+}
+
+public class TokenInfoV2Dto : TokenInfoDto
+{
+    public string ChainId { get; set; }
+    public string Symbol { get; set; }
+    public string Address { get; set; }
+    public string DisplayChainName { get; set; }
+    public string ChainImageUrl { get; set; }
+    public string Label { get; set; }
+}
+
+public class NftCollectionDto
+{
+    public string CollectionName { get; set; }
+    public string ImageUrl { get; set; }
+    public List<NftInfoDto> Items { get; set; }
 }
