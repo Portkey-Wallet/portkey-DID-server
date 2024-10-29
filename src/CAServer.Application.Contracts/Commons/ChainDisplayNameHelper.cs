@@ -14,12 +14,16 @@ public static class ChainDisplayNameHelper
 
     public static readonly Dictionary<string, string> DisplayNameMap = new Dictionary<string, string>
     {
+        {MainChain, MainChain },
+        {DAppChain, DAppChain },
         { CommonConstant.MainChainId, MainChain },
         { CommonConstant.TDVVChainId, DAppChain },
         { CommonConstant.TDVWChainId, DAppChain },
     };
     public static readonly Dictionary<string, string> ChainImageUrlMap = new Dictionary<string, string>
     {
+        { MainChain, MainChainImageUrl },
+        { DAppChain, DAppChainImageUrl },
         { CommonConstant.MainChainId, MainChainImageUrl },
         { CommonConstant.TDVVChainId, DAppChainImageUrl },
         { CommonConstant.TDVWChainId, DAppChainImageUrl },
