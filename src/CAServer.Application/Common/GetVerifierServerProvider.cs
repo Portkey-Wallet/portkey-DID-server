@@ -23,6 +23,8 @@ public interface IGetVerifierServerProvider
     public Task<string> GetVerifierServerEndPointsAsync(string verifierId, string chainId);
     
     public Task<string> GetFirstVerifierServerEndPointAsync(string chainId);
+
+    public Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId);
 }
 
 public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonDependency
@@ -31,19 +33,23 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
     private readonly AdaptableVariableOptions _adaptableVariableOptions;
     private readonly ILogger<GetVerifierServerProvider> _logger;
     private readonly IContractProvider _contractProvider;
+    private readonly IDistributedCache<VerifierServersBasicInfoResponse> _verifierServerCache;
 
 
     private const string VerifierServerListCacheKey = "CAVerifierServer";
+    private const string VerifierServerListWithDetailCacheKey = "CAVerifierServerWithDetail";
 
     public GetVerifierServerProvider(
         IDistributedCache<GuardianVerifierServerCacheItem> distributedCache,
         IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions, ILogger<GetVerifierServerProvider> logger,
-        IContractProvider contractProvider)
+        IContractProvider contractProvider,
+        IDistributedCache<VerifierServersBasicInfoResponse> verifierServerCache)
     {
         _adaptableVariableOptions = adaptableVariableOptions.Value;
         _distributedCache = distributedCache;
         _logger = logger;
         _contractProvider = contractProvider;
+        _verifierServerCache = verifierServerCache;
     }
     
     public async Task<VerifierServerInfo> GetVerifierServerAsync(string verifierId, string chainId)
@@ -144,5 +150,49 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
                 AbsoluteExpiration = DateTimeOffset.Now.AddDays(_adaptableVariableOptions.VerifierServerExpireTime)
             }
         );
+    }
+    
+    public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId)
+    {
+        return await _verifierServerCache.GetOrAddAsync(
+            string.Join(":", VerifierServerListWithDetailCacheKey, chainId),
+            async () => await GetVerifierServersAsync(chainId),
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddDays(_adaptableVariableOptions.VerifierServerExpireTime)
+            }
+        );
+    }
+    
+    private async Task<VerifierServersBasicInfoResponse> GetVerifierServersAsync(string chainId)
+    {
+        var result = await _contractProvider.GetVerifierServersListAsync(chainId);
+
+        if (null == result)
+        {
+            return null;
+        }
+
+        var verifierServerList = BuildVerifierServers(result);
+        return new VerifierServersBasicInfoResponse
+        {
+            GuardianVerifierServers = verifierServerList
+        };
+    }
+
+    private List<VerifierServerBasicInfo> BuildVerifierServers(GetVerifierServersOutput output)
+    {
+        var verifierServers = new List<VerifierServerBasicInfo>();
+        var servers = output.VerifierServers;
+        servers.ForEach(t =>
+        {
+            verifierServers.Add(new VerifierServerBasicInfo
+            {
+                Id = t.Id.ToHex(),
+                Name = t.Name,
+                ImageUrl = t.ImageUrl
+            });
+        });
+        return verifierServers;
     }
 }
