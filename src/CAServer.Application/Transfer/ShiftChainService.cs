@@ -307,11 +307,11 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                     continue;
                 }
 
-                string key = tokenInfo.Token + ";" + limiter.FromChain;
+                string key = tokenInfo.Token + ";" + ShiftChainHelper.FormatEBridgeChain(limiter.ToChain);
                 if (!sendEBridgeMap.TryGetValue(key, out var sendInfo))
                 {
                     sendInfo = new SendNetworkDto { NetworkList = new List<NetworkInfoDto>() };
-                    sendEBridgeMap[tokenInfo.Token] = sendInfo;
+                    sendEBridgeMap[key] = sendInfo;
                 }
 
                 if (!sendInfo.NetworkList.Any(p => p.Network == limiter.FromChain))
