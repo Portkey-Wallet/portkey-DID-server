@@ -226,12 +226,12 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
-        // var originChainId = await GetOriginalChainIdParallelMode(guardianIdentifierHash, requestDto.CaHash);
-        var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
-        var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
-        var originChainId = guardian == null
-            ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
-            : guardian.OriginChainId;
+        var originChainId = await GetOriginalChainIdParallelMode(guardianIdentifierHash, requestDto.CaHash);
+        // var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
+        // var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
+        // var originChainId = guardian == null
+        //     ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
+        //     : guardian.OriginChainId;
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
