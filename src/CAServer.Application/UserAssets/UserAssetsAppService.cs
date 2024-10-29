@@ -65,6 +65,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IDistributedCache<string> _userNftTraitsCountCache;
     private const string TraitsCachePrefix = "PortKey:NFTtraits:";
     private readonly IActivityProvider _activityProvider;
+    private readonly NftToFtOptions _nftToFtOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -78,7 +79,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
         IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
-        IDistributedCache<string> userNftTraitsCountCache, IActivityProvider activityProvider)
+        IDistributedCache<string> userNftTraitsCountCache, IActivityProvider activityProvider,
+        IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -103,6 +105,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenPriceService = tokenPriceService;
         _userNftTraitsCountCache = userNftTraitsCountCache;
         _activityProvider = activityProvider;
+        _nftToFtOptions = nftToFtOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -1397,6 +1400,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     public async Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request)
     {
+        if (request.Type == "token")
+        {
+            request.Type = _nftToFtOptions.NftToFtInfos.ContainsKey(request.Symbol) ? "nft" : "token";
+        }
+
         switch (request.Type)
         {
             case "token":
