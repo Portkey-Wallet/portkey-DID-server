@@ -436,4 +436,14 @@ public class CAVerifierController : CAServerController
 
         return null;
     }
+
+    [HttpPost("verifierServers")]
+    public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(GetVerifierServerInfoInput input)
+    {
+        if (input.ChainId.IsNullOrWhiteSpace())
+        {
+            throw new UserFriendlyException("Please input the chainId");
+        }
+        return await _verifierAppService.GetVerifierServerDetailsAsync(input.ChainId);
+    }
 }
