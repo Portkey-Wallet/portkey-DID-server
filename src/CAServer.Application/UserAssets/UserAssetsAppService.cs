@@ -66,6 +66,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IDistributedCache<string> _userNftTraitsCountCache;
     private const string TraitsCachePrefix = "PortKey:NFTtraits:";
     private readonly IActivityProvider _activityProvider;
+    private readonly NftToFtOptions _nftToFtOptions;
     private readonly IObjectMapper _objectMapper;
 
     public UserAssetsAppService(
@@ -81,6 +82,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
         IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
         IDistributedCache<string> userNftTraitsCountCache, IActivityProvider activityProvider,
+        IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
         IObjectMapper objectMapper)
     {
         _logger = logger;
@@ -105,7 +107,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _ipfsOptions = ipfsOption.Value;
         _tokenPriceService = tokenPriceService;
         _userNftTraitsCountCache = userNftTraitsCountCache;
-        _activityProvider = activityProvider;        
+        _activityProvider = activityProvider;
+        _nftToFtOptions = nftToFtOptions.Value;
         _objectMapper = objectMapper;
     }
 
@@ -1408,6 +1411,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     public async Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request)
     {
+        if (request.Type == "token" && _nftToFtOptions.NftToFtInfos.ContainsKey(request.Symbol))
+        {
+            request.Type = "nft";
+        }
+
         switch (request.Type)
         {
             case "token":
