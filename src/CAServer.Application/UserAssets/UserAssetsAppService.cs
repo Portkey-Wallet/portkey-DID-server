@@ -1400,9 +1400,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     public async Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request)
     {
-        if (request.Type == "token")
+        if (request.Type == "token" && _nftToFtOptions.NftToFtInfos.ContainsKey(request.Symbol))
         {
-            request.Type = _nftToFtOptions.NftToFtInfos.ContainsKey(request.Symbol) ? "nft" : "token";
+            request.Type = "nft";
         }
 
         switch (request.Type)
