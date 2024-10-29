@@ -79,6 +79,7 @@ public static class CommonConstant
     public const string MainChainId = "AELF";
     public const string TDVVChainId = "tDVV";
     public const string TDVWChainId = "tDVW";
+    public static List<string> ChainIds = new List<string> { MainChainId, TDVWChainId, TDVVChainId };
     public const double DefaultAchFee = 0.39;
     public const double DefaultCrossChainFee = 0.35;
     public const double DefaultMaxFee = 0.39;

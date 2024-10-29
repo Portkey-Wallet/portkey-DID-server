@@ -9,6 +9,31 @@ public class GetNetworkListDto
     public string ChainId { get; set; }
 }
 
+public class ReceiveNetworkDto
+{
+    public Dictionary<string, List<NetworkInfoDto>> DestinationMap { get; set; }
+}
+
+public class SendNetworkDto
+{
+    public List<NetworkInfoDto> NetworkList { get; set; }
+}
+
+public class NetworkInfoDto
+{
+    public string Network { get; set; }
+    public string Name { get; set; }
+    public string ImageUrl { get; set; }
+    public List<ServiceDto> ServiceList { get; set; } // null if in aelf
+}
+
+public class ServiceDto
+{
+    public string ServiceName { get; set; }
+    public string MultiConfirmTime { get; set; }
+    public string MaxAmount { get; set; } // only with ETransfer
+}
+
 public class NetworkDto
 {
     public string Network { get; set; }
