@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Threading.Tasks;
@@ -437,13 +438,30 @@ public class CAVerifierController : CAServerController
         return null;
     }
 
-    [HttpPost("verifierServers")]
-    public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(GetVerifierServerInfoInput input)
+    [HttpGet("verifierServers")]
+    public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId)
+    {
+        if (chainId.IsNullOrWhiteSpace())
+        {
+            throw new UserFriendlyException("Please input the chainId");
+        }
+
+        var sw = new Stopwatch();
+        sw.Start();
+        var result = await _verifierAppService.GetVerifierServerDetailsAsync(chainId);
+        sw.Stop();
+        _logger.LogInformation("GetVerifierServerDetailsAsync cost:{0}ms", sw.ElapsedMilliseconds);
+        return result;
+    }
+
+    [HttpDelete("verifierServers")]
+    public async Task RemoveVerifierServerDetailsCacheAsync(GetVerifierServerInfoInput input)
     {
         if (input.ChainId.IsNullOrWhiteSpace())
         {
             throw new UserFriendlyException("Please input the chainId");
         }
-        return await _verifierAppService.GetVerifierServerDetailsAsync(input.ChainId);
+
+        await _verifierAppService.RemoveVerifierServerDetailsCacheAsync(input.ChainId);
     }
 }
