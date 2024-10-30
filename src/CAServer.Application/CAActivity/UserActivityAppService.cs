@@ -9,6 +9,7 @@ using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Commons.Etos;
 using CAServer.CryptoGift;
 using CAServer.Entities.Es;
 using CAServer.EnumType;
@@ -841,6 +842,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress, ht.MethodName);
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
+            dto.FromChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.FromChainId);
+            dto.ToChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.ToChainId);
             getActivitiesDto.Add(dto);
         }
 
