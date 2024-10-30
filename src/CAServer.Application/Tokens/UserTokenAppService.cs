@@ -66,25 +66,33 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     [Authorize]
     public async Task<UserTokenDto> ChangeTokenDisplayAsync(bool isDisplay, string id)
     {
-        if (!Guid.TryParse(id, out var grainId))
+        try
         {
-            var valueTuple = GetTokenInfoFromId(id);
-            grainId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
-        }
+            if (!Guid.TryParse(id, out var grainId))
+            {
+                var valueTuple = GetTokenInfoFromId(id);
+                grainId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
+            }
 
-        //var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
-        var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
-        var userId = CurrentUser.GetId();
-        var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, false);
-        _logger.LogInformation("ChangeTokenDisplayAsync tokenResult = {0}",JsonConvert.SerializeObject(tokenResult));
-        if (!tokenResult.Success)
+            //var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
+            var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
+            var userId = CurrentUser.GetId();
+            var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, false);
+            _logger.LogInformation("ChangeTokenDisplayAsync tokenResult = {0}",JsonConvert.SerializeObject(tokenResult));
+            if (!tokenResult.Success)
+            {
+                throw new UserFriendlyException(tokenResult.Message);
+            }
+
+            await HandleTokenCacheAsync(userId, tokenResult.Data);
+            await PublishAsync(tokenResult.Data, false);
+            return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
+        }
+        catch (Exception e)
         {
-            throw new UserFriendlyException(tokenResult.Message);
+            _logger.LogError(e, "ChangeTokenDisplayAsync has error");
+            throw e;
         }
-
-        await HandleTokenCacheAsync(userId, tokenResult.Data);
-        await PublishAsync(tokenResult.Data, false);
-        return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
     }
 
     private async Task HandleTokenCacheAsync(Guid userId, UserTokenGrainDto tokenDto)
