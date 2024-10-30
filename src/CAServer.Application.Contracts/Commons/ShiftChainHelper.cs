@@ -20,6 +20,11 @@ public static class ShiftChainHelper
             formatChain = "TBSC";
         }
 
+        if (networkMap.ContainsKey("BSC") && formatChain == "TBSC")
+        {
+            formatChain = "BSC";
+        }
+
         if (networkMap.TryGetValue(formatChain, out var existingNetworkInfo))
         {
             return new NetworkInfoDto
