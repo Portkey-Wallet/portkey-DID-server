@@ -54,13 +54,15 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
             if (!_receiveNetworkMap.TryGetValue(request.Symbol, out ReceiveNetworkDto result))
             {
                 result = new ReceiveNetworkDto { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
-                
-                foreach (var chainId in _chainOptions.ChainInfos.Keys)
+
+                var chainIds = _chainOptions.ChainInfos.Keys;
+                foreach (var chainId in chainIds)
                 {
-                    result.DestinationMap[chainId] = new List<NetworkInfoDto>
+                    result.DestinationMap[chainId] = new List<NetworkInfoDto>();
+                    foreach (var chainInfosKey in chainIds)
                     {
-                        ShiftChainHelper.GetAELFInfo(chainId)
-                    }; 
+                        result.DestinationMap[chainId].Add(ShiftChainHelper.GetAELFInfo(chainInfosKey));
+                    }
                 }
             }
 

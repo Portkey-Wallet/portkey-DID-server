@@ -325,9 +325,14 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     private ReceiveNetworkDto initAELFChain(string symbol)
     {
         ReceiveNetworkDto receiveNetwork = new ReceiveNetworkDto { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
-        foreach (var chainName in _chainOptions.ChainInfos.Keys)
+        var chainIds = _chainOptions.ChainInfos.Keys;
+        foreach (var chainId in chainIds)
         {
-            receiveNetwork.DestinationMap[chainName] = new List<NetworkInfoDto> { ShiftChainHelper.GetAELFInfo(chainName) };
+            receiveNetwork.DestinationMap[chainId] = new List<NetworkInfoDto>();
+            foreach (var chainInfosKey in chainIds)
+            {
+                receiveNetwork.DestinationMap[chainId].Add(ShiftChainHelper.GetAELFInfo(chainInfosKey));
+            }
         }
 
         return receiveNetwork;
