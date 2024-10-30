@@ -1,8 +1,9 @@
+using CAServer.Commons.Etos;
+
 namespace CAServer.Guardian;
 
-public class GuardianIndexerInfoDto
+public class GuardianIndexerInfoDto : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string Identifier { get; set; }
     public string IdentifierHash { get; set; }
     public string OriginalIdentifier { get; set; }

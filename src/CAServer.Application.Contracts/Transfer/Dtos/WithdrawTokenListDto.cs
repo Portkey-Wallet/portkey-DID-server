@@ -1,12 +1,11 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Transfer.Dtos;
 
-public class WithdrawTokenListDto
+public class WithdrawTokenListDto : ChainDisplayNameDto
 {
     public List<TokenConfigDto> TokenList { get; set; }
-
-    public string ChainId { get; set; }
 }
 
 public class TokenConfigDto

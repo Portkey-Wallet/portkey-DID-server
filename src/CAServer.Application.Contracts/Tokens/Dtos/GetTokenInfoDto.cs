@@ -1,9 +1,10 @@
+using CAServer.Commons.Etos;
+
 namespace CAServer.Tokens.Dtos;
 
-public class GetTokenInfoDto
+public class GetTokenInfoDto : ChainDisplayNameDto
 {
     public string Id { get; set; }
-    public string ChainId { get; set; }
     public string BlockHash { get; set; }
     public int BlockHeight { get; set; }
     public string Symbol { get; set; }

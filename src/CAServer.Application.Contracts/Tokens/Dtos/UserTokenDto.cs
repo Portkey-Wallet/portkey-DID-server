@@ -1,4 +1,5 @@
 using System;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Tokens.Dtos;
 
@@ -12,10 +13,9 @@ public class UserTokenDto
     public Token Token { get; set; }
 }
 
-public class Token
+public class Token : ChainDisplayNameDto
 {
     public Guid Id { get; set; }
-    public string ChainId { get; set; }
     public string Address { get; set; }
     public string Symbol { get; set; }
     public int Decimals { get; set; }

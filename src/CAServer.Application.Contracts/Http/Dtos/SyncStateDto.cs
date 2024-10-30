@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Http.Dtos;
 
@@ -12,9 +13,8 @@ public class IndexerVersionInfo
     public List<SyncStateItem> Items { get; set; } = new();
 }
 
-public class SyncStateItem
+public class SyncStateItem : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string LongestChainBlockHash { get; set; }
     public long LongestChainHeight { get; set; }
     public string BestChainBlockHash { get; set; }
