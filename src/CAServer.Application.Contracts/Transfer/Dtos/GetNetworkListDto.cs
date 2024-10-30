@@ -1,12 +1,12 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 using JetBrains.Annotations;
 
 namespace CAServer.Transfer.Dtos;
 
-public class GetNetworkListDto
+public class GetNetworkListDto : ChainDisplayNameDto
 {
     public List<NetworkDto> NetworkList { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class ReceiveNetworkDto

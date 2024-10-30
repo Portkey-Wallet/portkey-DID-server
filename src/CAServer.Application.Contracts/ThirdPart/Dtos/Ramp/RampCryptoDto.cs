@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CAServer.Commons;
+using CAServer.Commons.Etos;
 
 namespace CAServer.ThirdPart.Dtos.Ramp;
 
@@ -21,12 +22,11 @@ public class RampCryptoDto
 }
 
 
-public class RampCurrencyItem
+public class RampCurrencyItem : ChainDisplayNameDto
 {
     public string Symbol { get; set; }
     public string Icon { get; set; }
     public string Decimals { get; set; }
     public string Network { get; set; }
-    public string ChainId { get; set; }
     public string Address { get; set; }
 }

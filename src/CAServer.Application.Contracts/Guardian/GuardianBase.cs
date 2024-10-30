@@ -1,16 +1,16 @@
 using System.Collections.Generic;
 using CAServer.CAAccount.Dtos.Zklogin;
+using CAServer.Commons.Etos;
 using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 
 namespace CAServer.Guardian;
 
-public class GuardianBase
+public class GuardianBase : ChainDisplayNameDto
 {
     public string CreateChainId { get; set; }
     public string CaHash { get; set; }
     public string CaAddress { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class GuardianBaseListDto

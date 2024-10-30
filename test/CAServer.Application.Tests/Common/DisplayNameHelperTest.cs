@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CAServer.Commons;
+using CAServer.Commons.Etos;
 using CAServer.Tokens.Dtos;
 using Shouldly;
 using Xunit;
@@ -59,6 +60,32 @@ public class DisplayNameHelperTest
             dto.DisplayChainName.ShouldBe(ChainDisplayNameHelper.MainChain);
         }
     }
+    [Fact]
+    public void TestDisplayName3()
+    {
+        {
+            var dto = new DTOD
+            {
+                ChainId = "AELF"
+            };
+            dto.DisplayChainName.ShouldBe(ChainDisplayNameHelper.MainChain);
+        }
+        {
+            var dto = new DTOE();
+            dto.ChainId = "AELF";
+            dto.DisplayChainName.ShouldBe(ChainDisplayNameHelper.MainChain);
+        }
+        {
+            var dto = new DTOE();
+            dto.ChainId = null;
+            dto.DisplayChainName.ShouldBe(null);
+        }
+        {
+            var dto = new DTOE();
+            dto.ChainId = "xxx";
+            dto.DisplayChainName.ShouldBe(null);
+        }
+    }
 
     public class DTOA
     {
@@ -73,5 +100,15 @@ public class DisplayNameHelperTest
 
     public class DTOC
     {
+    }
+
+    public class DTOD : ChainDisplayNameDto
+    {
+        public string D;
+    }
+    
+    public class DTOE : DTOD
+    {
+        public string E;
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.UserAssets.Dtos;
 
@@ -14,10 +15,8 @@ public class SearchUserPackageAssetsDto
     public long NftRecordCount { get; set; }
 }
 
-public class UserPackageAsset
+public class UserPackageAsset : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
-    
     public string Symbol { get; set; }
 
     public string Decimals { get; set; }
