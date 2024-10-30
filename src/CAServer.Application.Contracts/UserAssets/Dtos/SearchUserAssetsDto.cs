@@ -35,7 +35,7 @@ public class TokenInfoDto : ChainDisplayNameDto
     public string ImageUrl { get; set; }
 }
 
-public class NftInfoDto
+public class NftInfoDto : ChainDisplayNameDto
 {
     public string ImageUrl { get; set; }
     public string Alias { get; set; }
