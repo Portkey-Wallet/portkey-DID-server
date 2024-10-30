@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CAServer.Commons;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Transfer.Dtos;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Transfer.Proxy;
@@ -19,11 +21,17 @@ public interface INetworkCacheService
 
 public class NetworkCacheService : INetworkCacheService, ISingletonDependency
 {
+    private readonly ChainOptions _chainOptions;
     private Dictionary<string, ReceiveNetworkDto> _receiveNetworkMap;
     private Dictionary<string, NetworkInfoDto> _networkMap;
     private Dictionary<string, SendNetworkDto> _sendEBridgeMap;
     private long _lastCacheTime = 0L;
     private long _maxCacheTime = 60 * 60 * 1000L;
+
+    public NetworkCacheService(IOptionsSnapshot<ChainOptions> chainOptions)
+    {
+        _chainOptions = chainOptions.Value;
+    }
 
     public void SetCache(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap, Dictionary<string, NetworkInfoDto> networkMap,
         Dictionary<string, SendNetworkDto> sendEBridgeMap)
@@ -46,10 +54,14 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
             if (!_receiveNetworkMap.TryGetValue(request.Symbol, out ReceiveNetworkDto result))
             {
                 result = new ReceiveNetworkDto { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
-                result.DestinationMap[request.ChainId] = new List<NetworkInfoDto>
+                
+                foreach (var chainId in _chainOptions.ChainInfos.Keys)
                 {
-                    ShiftChainHelper.GetAELFInfo(request.ChainId)
-                };
+                    result.DestinationMap[chainId] = new List<NetworkInfoDto>
+                    {
+                        ShiftChainHelper.GetAELFInfo(chainId)
+                    }; 
+                }
             }
 
             return result;
