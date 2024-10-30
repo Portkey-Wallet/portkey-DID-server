@@ -19,7 +19,9 @@ public class ActivityBase
     public string FromAddress { get; set; }
     public string ToAddress { get; set; }
     public string FromChainId { get; set; }
+    public string FromChainIdUpdated { get; set; }
     public string ToChainId { get; set; }
+    public string ToChainIdUpdated { get; set; }
     public List<TransactionFee> TransactionFees { get; set; }
     public string PriceInUsd { get; set; }
     public bool IsDelegated { get; set; }
