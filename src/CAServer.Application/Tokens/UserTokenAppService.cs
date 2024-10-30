@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -40,7 +41,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly NftToFtOptions _nftToFtOptions;
-
+    private readonly ILogger<UserTokenAppService> _logger;
     public UserTokenAppService(
         IClusterClient clusterClient,
         IOptionsSnapshot<TokenListOptions> tokenListOptions,
@@ -48,7 +49,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         IDistributedCache<List<string>> distributedCache,
         ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache,
         IAssetsLibraryProvider assetsLibraryProvider, IHttpContextAccessor httpContextAccessor,
-        IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
+        IOptionsSnapshot<NftToFtOptions> nftToFtOptions,ILogger<UserTokenAppService> logger)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -59,6 +60,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         _httpContextAccessor = httpContextAccessor;
         _nftToFtOptions = nftToFtOptions.Value;
         _tokenListOptions = tokenListOptions.Value;
+        _logger = logger;
     }
 
     [Authorize]
@@ -74,6 +76,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
         var userId = CurrentUser.GetId();
         var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, false);
+        _logger.LogInformation("ChangeTokenDisplayAsync tokenResult = {0}",JsonConvert.SerializeObject(tokenResult));
         if (!tokenResult.Success)
         {
             throw new UserFriendlyException(tokenResult.Message);

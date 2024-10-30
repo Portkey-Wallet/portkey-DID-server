@@ -186,7 +186,7 @@ public class ChainsInfoSearchService : SearchService<ChainsInfoIndex, string>
         _objectMapper = objectMapper;
     }
 
-    public async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
+    public override async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
         _logger.LogInformation($"GetListByLucenceAsync chainsinfoindex start: {indexName}");
         Func<SortDescriptor<ChainsInfoIndex>, IPromise<IList<ISort>>> sort = null;
