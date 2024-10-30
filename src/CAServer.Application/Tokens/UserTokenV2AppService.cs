@@ -11,6 +11,7 @@ using CAServer.UserAssets;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -31,13 +32,14 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
     private readonly ChainOptions _chainOptions;
     private readonly IDistributedCache<IndexerToken> _tokenInfoCache;
     private readonly AddTokenOptions _addTokenOptions;
-
+    private readonly ILogger<UserTokenV2AppService> _logger;
     public UserTokenV2AppService(IOptionsSnapshot<TokenListOptions> tokenListOptions,
         IUserTokenAppService tokenAppService, ITokenProvider tokenProvider,
         IOptionsSnapshot<NftToFtOptions> nftToFtOptions, IAssetsLibraryProvider assetsLibraryProvider,
         ITokenNftAppService tokenNftAppService, IOptions<ChainOptions> chainOptions,
         IDistributedCache<IndexerToken> tokenInfoCache,
-        IOptionsSnapshot<AddTokenOptions> addTokenOptions)
+        IOptionsSnapshot<AddTokenOptions> addTokenOptions,
+        ILogger<UserTokenV2AppService> logger)
     {
         _tokenAppService = tokenAppService;
         _tokenProvider = tokenProvider;
@@ -48,6 +50,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         _tokenListOptions = tokenListOptions.Value;
         _chainOptions = chainOptions.Value;
         _addTokenOptions = addTokenOptions.Value;
+        this._logger = logger;
     }
 
     public async Task ChangeTokenDisplayAsync(ChangeTokenDisplayDto requestDto)
@@ -232,6 +235,11 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             });
 
         userTokens.Add(ObjectMapper.Map<IndexerToken, GetUserTokenDto>(tokenInfo));
+        // todo del
+        foreach (var token in userTokens)
+        {
+            _logger.LogInformation("CheckTokenAsync getUserTokenDto = {0}", JsonConvert.SerializeObject(token));
+        }
         return userTokens.OrderBy(t => t.ChainId).ToList();
     }
 
