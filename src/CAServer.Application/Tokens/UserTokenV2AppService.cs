@@ -233,18 +233,12 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             {
                 AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
             });
+
+        if (null != tokenInfo)
+        {
+            userTokens.Add(ObjectMapper.Map<IndexerToken, GetUserTokenDto>(tokenInfo));
+        }
         
-        _logger.LogInformation("CheckTokenAsync token = {0}",JsonConvert.SerializeObject(tokenInfo));
-        foreach (var token in userTokens)
-        {
-            _logger.LogInformation("CheckTokenAsync getUserTokenDto = {0}", JsonConvert.SerializeObject(token));
-        }
-        userTokens.Add(ObjectMapper.Map<IndexerToken, GetUserTokenDto>(tokenInfo));
-        // todo del
-        foreach (var token in userTokens)
-        {
-            _logger.LogInformation("CheckTokenAsync2 getUserTokenDto = {0}", JsonConvert.SerializeObject(token));
-        }
         return userTokens.OrderBy(t => t.ChainId).ToList();
     }
 
