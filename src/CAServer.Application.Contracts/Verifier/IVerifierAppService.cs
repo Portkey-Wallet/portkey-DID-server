@@ -19,4 +19,5 @@ public interface IVerifierAppService
     Task<VerificationCodeResponse> VerifyTwitterTokenAsync(VerifyTokenRequestDto requestDto);
     Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash);
     Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId);
+    Task RemoveVerifierServerDetailsCacheAsync(string chainId);
 }

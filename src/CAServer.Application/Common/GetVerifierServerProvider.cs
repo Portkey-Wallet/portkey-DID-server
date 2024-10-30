@@ -25,6 +25,8 @@ public interface IGetVerifierServerProvider
     public Task<string> GetFirstVerifierServerEndPointAsync(string chainId);
 
     public Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId);
+
+    public Task RemoveVerifierServerDetailsCacheAsync(string chainId);
 }
 
 public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonDependency
@@ -164,6 +166,13 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
         );
     }
     
+    public async Task RemoveVerifierServerDetailsCacheAsync(string chainId)
+    {
+        await _verifierServerCache.RemoveAsync(
+            string.Join(":", VerifierServerListWithDetailCacheKey, chainId)
+        );
+    }
+    
     private async Task<VerifierServersBasicInfoResponse> GetVerifierServersAsync(string chainId)
     {
         var result = await _contractProvider.GetVerifierServersListAsync(chainId);
@@ -190,7 +199,9 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
             {
                 Id = t.Id.ToHex(),
                 Name = t.Name,
-                ImageUrl = t.ImageUrl
+                ImageUrl = t.ImageUrl,
+                EndPoints = t.EndPoints.ToList(),
+                VerifierAddresses = t.VerifierAddresses.Select(address => address.ToBase58()).ToList()
             });
         });
         return verifierServers;

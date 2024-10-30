@@ -795,4 +795,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         return await _getVerifierServerProvider.GetVerifierServerDetailsAsync(chainId);
     }
+
+    public async Task RemoveVerifierServerDetailsCacheAsync(string chainId)
+    {
+        await _getVerifierServerProvider.RemoveVerifierServerDetailsCacheAsync(chainId);
+    }
 }
