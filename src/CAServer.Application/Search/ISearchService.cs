@@ -188,6 +188,7 @@ public class ChainsInfoSearchService : SearchService<ChainsInfoIndex, string>
 
     public async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
+        _logger.LogInformation($"GetListByLucenceAsync chainsinfoindex start: {indexName}");
         Func<SortDescriptor<ChainsInfoIndex>, IPromise<IList<ISort>>> sort = null;
         if (!string.IsNullOrEmpty(input.Sort))
         {
