@@ -233,7 +233,8 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             {
                 AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
             });
-
+        
+        _logger.LogInformation("CheckTokenAsync token = {0}",JsonConvert.SerializeObject(tokenInfo));
         foreach (var token in userTokens)
         {
             _logger.LogInformation("CheckTokenAsync getUserTokenDto = {0}", JsonConvert.SerializeObject(token));
