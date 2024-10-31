@@ -121,7 +121,7 @@ public static class ShiftChainHelper
             return ETransferMaxAmountUsd.ToString();
         }
 
-        return Math.Floor(priceInUsd / ETransferMaxAmountUsd).ToString();
+        return Math.Floor(ETransferMaxAmountUsd / priceInUsd).ToString();
     }
 
     public static NetworkInfoDto GetAELFInfo(string chainId)
@@ -189,14 +189,13 @@ public static class ShiftChainHelper
 
         return AddressFormat.NoSupport;
     }
-    
+
     public static string ExtractAddress(string addressSuffix)
     {
         return addressSuffix
             .Split('_')
             .FirstOrDefault(p => p.Length == 50) ?? addressSuffix;
     }
-    
 }
 
 public class ChainInfo
