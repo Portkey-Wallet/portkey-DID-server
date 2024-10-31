@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.ImUser.Dto;
 
@@ -12,8 +13,7 @@ public class HolderInfoResultDto
     public List<AddressInfoDto> AddressInfos { get; set; }
 }
 
-public class AddressInfoDto
+public class AddressInfoDto : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string Address { get; set; }
 }

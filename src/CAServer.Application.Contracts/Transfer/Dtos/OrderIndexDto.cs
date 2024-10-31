@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Transfer.Dtos;
 
@@ -14,10 +15,9 @@ public class OrderIndexDto
     public TransferInfoDto ToTransfer { get; set; }
 }
 
-public class TransferInfoDto
+public class TransferInfoDto : ChainDisplayNameDto
 {
     public string Network { get; set; }
-    public string ChainId { get; set; }
     public string Symbol { get; set; }
     public string Amount { get; set; }
     public string FromAddress { get; set; }

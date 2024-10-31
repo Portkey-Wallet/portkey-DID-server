@@ -1,4 +1,5 @@
 using System;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Tokens.Dtos;
 

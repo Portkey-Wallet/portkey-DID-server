@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Indexing.Elasticsearch.Options;
+using CAServer.Chain;
 using CAServer.Entities.Es;
 using CAServer.Search.Dtos;
 using CAServer.UserAssets;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
@@ -172,12 +174,50 @@ public class ContactSearchService : SearchService<ContactIndex, Guid>
 public class ChainsInfoSearchService : SearchService<ChainsInfoIndex, string>
 {
     private readonly IndexSettingOptions _indexSettingOptions;
+    private readonly ILogger<ChainsInfoSearchService> _logger;
+    private readonly IObjectMapper _objectMapper;
     public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.chainsinfoindex";
 
     public ChainsInfoSearchService(INESTRepository<ChainsInfoIndex, string> nestRepository,
-        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions,ILogger<ChainsInfoSearchService> logger,IObjectMapper objectMapper) : base(nestRepository)
     {
         _indexSettingOptions = indexSettingOptions.Value;
+        _logger = logger;
+        _objectMapper = objectMapper;
+    }
+
+    public override async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
+    {
+        _logger.LogInformation($"GetListByLucenceAsync chainsinfoindex start: {indexName}");
+        Func<SortDescriptor<ChainsInfoIndex>, IPromise<IList<ISort>>> sort = null;
+        if (!string.IsNullOrEmpty(input.Sort))
+        {
+            var sortList = ConvertSortOrder(input.Sort);
+            var sortDescriptor = new SortDescriptor<ChainsInfoIndex>();
+            sortDescriptor = sortList.Aggregate(sortDescriptor,
+                (current, sortType) => current.Field(new Field(sortType.SortField), sortType.SortOrder));
+            sort = s => sortDescriptor;
+        }
+
+        var (totalCount, items) = await _nestRepository.GetListByLucenceAsync(input.Filter, sort,
+            input.MaxResultCount,
+            input.SkipCount, indexName);
+        
+        List<ChainResultDto> chainResultDtos = new List<ChainResultDto>();
+        foreach (var entity in items)
+        {
+            chainResultDtos.Add(_objectMapper.Map<ChainsInfoIndex, ChainResultDto>(entity));
+        }
+        
+        var serializeSetting = new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        };
+        return JsonConvert.SerializeObject(new PagedResultDto<ChainResultDto>
+        {
+            Items = chainResultDtos,
+            TotalCount = totalCount
+        }, Formatting.None, serializeSetting);
     }
 }
 
