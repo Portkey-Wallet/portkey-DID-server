@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AElf;
 using CAServer.Accelerate;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Dtos;
 using CAServer.IpInfo;
 using CAServer.Options;
@@ -28,6 +29,7 @@ using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using ChainInfo = CAServer.Options.ChainInfo;
 
 namespace CAServer.Verifier;
 
@@ -556,8 +558,14 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         var chainDetails = _chainOptions.ChainInfos.TryGetValue(chain, out var chainInfo);
         if (chainDetails)
         {
-            var isMainChain = chainInfo.IsMainChain;
-            return isMainChain ? "MainChain " + chainInfo.ChainId : "SideChain " + chainInfo.ChainId;
+            var displayName = ChainDisplayNameHelper.GetDisplayName(chain);
+            bool isTestnet = _chainOptions.ChainInfos.ContainsKey(CommonConstant.TDVWChainId);
+            if (isTestnet)
+            {
+                displayName += " Testnet";
+            }
+
+            return displayName;
         }
 
         _logger.LogError("GetChainInfo Error:{chainId}", chain);
