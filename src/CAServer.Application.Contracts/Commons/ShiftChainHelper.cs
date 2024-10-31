@@ -112,7 +112,7 @@ public static class ShiftChainHelper
             : ChainDisplayNameHelper.DAppChainImageUrl;
     }
 
-    public const decimal ETransferMaxAmountUsd = 50000;
+    public const decimal ETransferMaxAmountUsd = 20000;
 
     public static string GetMaxAmount(decimal priceInUsd)
     {
