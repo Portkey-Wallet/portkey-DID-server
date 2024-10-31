@@ -5,7 +5,7 @@ using CAServer.EnumType;
 
 namespace CAServer.RedPackage.Dtos;
 [Serializable]
-public class RedPackageDetailDto : ChainDisplayNameDto
+public class RedPackageDetailDto
 {
     public Guid SessionId { get; set; }
     public RedPackageDisplayType RedPackageDisplayType { get; set; }
@@ -17,6 +17,7 @@ public class RedPackageDetailDto : ChainDisplayNameDto
     public string MinAmount { get; set; }
     public string CurrentUserGrabbedAmount { get; set; } = "0";
     public string Memo { get; set; } = string.Empty;
+    public string ChainId { get; set; }
     public string PublicKey { get; set; } = string.Empty;
     public Guid SenderId { get; set; }
     public Guid LuckKingId { get; set; } = Guid.Empty;
