@@ -9,7 +9,9 @@ using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Transfer.Dtos;
 using CAServer.Transfer.Proxy;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 
@@ -25,10 +27,12 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     private readonly ETransferOptions _eTransferOptions;
     private readonly INetworkCacheService _networkCacheService;
     private readonly TransferAppService _transferAppService;
+    private readonly ILogger<ShiftChainService> _logger;
 
     public ShiftChainService(IETransferProxyService eTransferProxyService,
         IOptionsSnapshot<ChainOptions> chainOptions, ITokenAppService tokenAppService, IHttpClientService httpClientService,
-        IOptionsSnapshot<ETransferOptions> eTransferOptions, INetworkCacheService networkCacheService, TransferAppService transferAppService)
+        IOptionsSnapshot<ETransferOptions> eTransferOptions, INetworkCacheService networkCacheService, TransferAppService transferAppService,
+        ILogger<ShiftChainService> logger)
     {
         _eTransferProxyService = eTransferProxyService;
         _chainOptions = chainOptions.Value;
@@ -37,6 +41,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
         _eTransferOptions = eTransferOptions.Value;
         _networkCacheService = networkCacheService;
         _transferAppService = transferAppService;
+        _logger = logger;
     }
 
     public async Task Init()
@@ -201,6 +206,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
             ReceiveNetworkDto receiveNetwork = initAELFChain(symbol);
             receiveNetworkMap[symbol] = receiveNetwork;
             var price = await _tokenAppService.GetTokenPriceListAsync(new List<string> { symbol });
+            _logger.LogInformation("setReceiveByETransfer symbol = {0} price = {1}", symbol, JsonConvert.SerializeObject(price));
             var maxAmount = ShiftChainHelper.GetMaxAmount(price.Items[0].PriceInUsd);
             foreach (var chainId in toToken.ChainIdList)
             {

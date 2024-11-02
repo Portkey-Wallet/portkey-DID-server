@@ -1,9 +1,9 @@
+using CAServer.Commons.Etos;
+
 namespace CAServer.CAAccount.Dtos;
 
-public class ManagerCacheDto
+public class ManagerCacheDto : ChainDisplayNameDto
 {
     public string CaHash { get; set; }
     public string CaAddress { get; set; }
-    
-    public string ChainId { get; set; }
 }

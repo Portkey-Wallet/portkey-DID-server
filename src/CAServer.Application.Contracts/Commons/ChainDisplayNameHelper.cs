@@ -14,8 +14,8 @@ public static class ChainDisplayNameHelper
 
     public static readonly Dictionary<string, string> DisplayNameMap = new Dictionary<string, string>
     {
-        {MainChain, MainChain },
-        {DAppChain, DAppChain },
+        { MainChain, MainChain },
+        { DAppChain, DAppChain },
         { CommonConstant.MainChainId, MainChain },
         { CommonConstant.TDVVChainId, DAppChain },
         { CommonConstant.TDVWChainId, DAppChain },
@@ -47,7 +47,7 @@ public static class ChainDisplayNameHelper
         return DisplayNameMap.GetValueOrDefault(chainId, DAppChain);
     }
 
-    public static void SetDisplayName<T> (T obj)
+    public static void SetDisplayName<T>(T obj)
     {
         string chainId = GetPropertyValue(obj, "ChainId");
         if (null == chainId)
@@ -55,14 +55,25 @@ public static class ChainDisplayNameHelper
             return;
         }
 
-        SetPropertyValue(obj, "DisplayChainName",  MustGetChainDisplayName(chainId));
-        SetPropertyValue(obj, "ChainImageUrl",  MustGetChainUrl(chainId));
+        SetPropertyValue(obj, "DisplayChainName", MustGetChainDisplayName(chainId));
+        SetPropertyValue(obj, "ChainImageUrl", MustGetChainUrl(chainId));
     }
-    
-    public static void SetDisplayName (ChainDisplayNameDto obj, string chainId)
+
+    public static void SetDisplayName(ChainDisplayNameDto obj, string chainId)
     {
+        if (null == chainId || !(DisplayNameMap.ContainsKey(chainId)))
+        {
+            return;
+        }
+
         obj.DisplayChainName = MustGetChainDisplayName(chainId);
         obj.ChainImageUrl = MustGetChainUrl(chainId);
+    }
+    public static string GetDisplayName(string chainId)
+    {
+        return DisplayNameMap.TryGetValue(chainId, out var displayName) 
+            ? displayName 
+            : chainId;
     }
 
     public static void SetDisplayName<T>(List<T> list)
@@ -78,7 +89,7 @@ public static class ChainDisplayNameHelper
         }
     }
 
-    private static string GetPropertyValue<T> (T obj, string propertyName)
+    private static string GetPropertyValue<T>(T obj, string propertyName)
     {
         if (obj == null || string.IsNullOrEmpty(propertyName))
             return null;
@@ -96,7 +107,7 @@ public static class ChainDisplayNameHelper
     }
 
 
-    private static bool SetPropertyValue<T> (T obj, string propertyName, string value)
+    private static bool SetPropertyValue<T>(T obj, string propertyName, string value)
     {
         if (obj == null || string.IsNullOrEmpty(propertyName))
             return false;

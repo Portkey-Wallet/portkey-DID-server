@@ -1,10 +1,10 @@
 using System;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Chain;
 
-public class ChainDto
+public class ChainDto : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string ChainName { get; set; }
     public string EndPoint { get; set; }
     public string ExplorerUrl { get; set; }
