@@ -65,6 +65,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
     private readonly IdentityUserManager _userManager;
     private readonly IAppleZkProvider _appleZkProvider;
+    private readonly IGetVerifierServerProvider _getVerifierServerProvider;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
@@ -82,7 +83,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IDistributedCache<AppleKeys> distributedCache,
         ICAAccountProvider accountProvider,
         IdentityUserManager userManager,
-        IAppleZkProvider appleZkProvider)
+        IAppleZkProvider appleZkProvider,
+        IGetVerifierServerProvider getVerifierServerProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -100,6 +102,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _accountProvider = accountProvider;
         _userManager = userManager;
         _appleZkProvider = appleZkProvider;
+        _getVerifierServerProvider = getVerifierServerProvider;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -786,5 +789,15 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new UserFriendlyException(result.Message);
         }
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
+    }
+    
+    public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId)
+    {
+        return await _getVerifierServerProvider.GetVerifierServerDetailsAsync(chainId);
+    }
+
+    public async Task RemoveVerifierServerDetailsCacheAsync(string chainId)
+    {
+        await _getVerifierServerProvider.RemoveVerifierServerDetailsCacheAsync(chainId);
     }
 }
