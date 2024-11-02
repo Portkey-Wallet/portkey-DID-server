@@ -453,15 +453,4 @@ public class CAVerifierController : CAServerController
         _logger.LogInformation("GetVerifierServerDetailsAsync cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
     }
-
-    [HttpDelete("verifierServers")]
-    public async Task RemoveVerifierServerDetailsCacheAsync(GetVerifierServerInfoInput input)
-    {
-        if (input.ChainId.IsNullOrWhiteSpace())
-        {
-            throw new UserFriendlyException("Please input the chainId");
-        }
-
-        await _verifierAppService.RemoveVerifierServerDetailsCacheAsync(input.ChainId);
-    }
 }
