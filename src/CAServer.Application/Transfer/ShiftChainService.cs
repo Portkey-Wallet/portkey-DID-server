@@ -96,9 +96,18 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
 
     public async Task<ResponseWrapDto<SendNetworkDto>> GetSendNetworkList(GetSendNetworkListRequestDto request)
     {
-        SendNetworkDto result = new SendNetworkDto { NetworkList = new List<NetworkInfoDto>() };
-        if (ShiftChainHelper.GetAddressFormat(request.ChainId, request.ToAddress) == AddressFormat.Main ||
-            ShiftChainHelper.GetAddressFormat(request.ChainId, request.ToAddress) == AddressFormat.Dapp)
+        var result = new SendNetworkDto { NetworkList = new List<NetworkInfoDto>() };
+        var addressFormat = ShiftChainHelper.GetAddressFormat(request.ChainId, request.ToAddress);
+        if (addressFormat == AddressFormat.NoSupport)
+        {
+            return new ResponseWrapDto<SendNetworkDto>()
+            {
+                Code = ETransferConstant.InvalidAddressCode,
+                Message = ETransferConstant.InvalidAddressMessage
+            };
+        }
+
+        if (addressFormat is AddressFormat.Main or AddressFormat.Dapp)
         {
             result.NetworkList.Add(_networkCacheService.GetNetwork(request.ChainId));
         }
