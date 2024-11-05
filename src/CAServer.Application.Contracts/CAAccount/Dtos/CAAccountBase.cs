@@ -1,4 +1,5 @@
 using System;
+using CAServer.CAAccount;
 
 namespace CAServer.Account;
 
@@ -10,5 +11,5 @@ public class CAAccountBase
     public string ChainId { get; set; }
     public string CaHash { get; set; }
     public string CaAddress { get; set; }
-
+    public RequestSource Source { get; set; }
 }
