@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CAServer.Account;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Hubs;
@@ -20,4 +21,5 @@ public class AccountRecoverCreateEto : CAAccountBase
     public HubRequestContext Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
     public string IpAddress { get; set; }
+    public RequestSource Source { get; set; }
 }

@@ -11,6 +11,7 @@ using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Users;
 
@@ -57,6 +58,7 @@ public class CAAccountController : CAServerController
     {
         var sw = new Stopwatch();
         sw.Start();
+        _logger.LogInformation("========RecoverRequestAsync input:{0}", JsonConvert.SerializeObject(input));
         var result = await _caAccountService.RecoverRequestAsync(input);
         sw.Stop();
         _logger.LogInformation("controller RecoverRequest cost:{0}ms", sw.ElapsedMilliseconds);

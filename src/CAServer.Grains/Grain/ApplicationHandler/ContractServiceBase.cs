@@ -49,4 +49,6 @@ public class ContractDtoBase
     public Address CaAddress { get; set; }
     public HubRequestContext Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
+    
+    public int Platform { get; set; }
 }

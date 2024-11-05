@@ -104,6 +104,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
             }));
 
         CreateMap<AccountRecoverCreateEto, SocialRecoveryDto>()
+            .ForMember(d => d.Platform, opt => opt.MapFrom(e => (int)e.Source))
             .ForMember(d => d.GuardianApproved,
                 opt => opt.MapFrom(e => e.GuardianApproved.Select(g => new GuardianInfo
                 {
