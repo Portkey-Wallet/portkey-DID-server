@@ -16,5 +16,4 @@ public class RecoveryDto: CAAccountBase
     public string RecoveryMessage { get; set; }
     public HubRequestContext Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
-    public RequestSource Source { get; set; }
 }
