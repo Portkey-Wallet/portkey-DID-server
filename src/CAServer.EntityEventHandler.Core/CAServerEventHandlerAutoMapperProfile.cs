@@ -1,5 +1,7 @@
 using System;
 using AutoMapper;
+using CAServer.AddressBook.Dtos;
+using CAServer.AddressBook.Etos;
 using CAServer.Chain;
 using CAServer.Guardian;
 using CAServer.ContractEventHandler;
@@ -92,5 +94,8 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
             .ForMember(t => t.CreateTime, f => f.MapFrom(f => DateTime.UtcNow));
 
         CreateMap<IpInfoDto, CountryInfo>();
+        CreateMap<AddressBookEto, AddressBookIndex>();
+        CreateMap<CAServer.AddressBook.Dtos.ContactCaHolderInfo, CAServer.Entities.Es.ContactCaHolderInfo>();
+        CreateMap<ContactAddressInfoDto, AddressInfo>();
     }
 }

@@ -4,6 +4,8 @@ using System.Linq;
 using AElf;
 using AElf.Types;
 using AutoMapper;
+using CAServer.AddressBook.Dtos;
+using CAServer.AddressBook.Etos;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
@@ -24,6 +26,7 @@ using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.AddressBook;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
@@ -1089,5 +1092,17 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
         CreateMap<ChainsInfoIndex, ChainResultDto>();
         CreateMap< CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
+        
+        CreateMap<CAHolderIndex, AddressBook.Dtos.ContactCaHolderInfo>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
+
+        CreateMap<AddressBookDto, AddressBookGrainDto>().ReverseMap();
+        CreateMap<AddressBookGrainDto, AddressBookEto>();
+        CreateMap<AddressBookIndex, AddressBookDto>();
+        CreateMap<AddressInfo, ContactAddressInfoDto>().ReverseMap();
+        CreateMap<ContactAddressInfoDto, ContactAddressInfo>().ReverseMap();
+        CreateMap<AddressInfo, ContactAddressInfo>().ReverseMap();
+        CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, CAServer.AddressBook.Dtos.ContactCaHolderInfo>().ReverseMap();
+        CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, ContactAddressInfoDto>().ReverseMap();
     }
 }
