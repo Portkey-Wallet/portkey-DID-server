@@ -1,12 +1,11 @@
 using System;
+using CAServer.Commons.Etos;
 
 namespace CAServer.CryptoGift.Dtos;
 
-public class CryptoGiftClaimDto
+public class CryptoGiftClaimDto : ChainDisplayNameDto
 {
     public Guid UserId { get; set; }
-    
-    public string ChainId { get; set; }
     
     public string CaAddress { get; set; }
     

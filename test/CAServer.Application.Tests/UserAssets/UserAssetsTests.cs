@@ -88,7 +88,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             ipfsOption: ipfsOption.Object,
             tokenPriceService: tokenPriceServiceMock.Object,
             activityProvider: activityProviderMock.Object,
-            objectMapper: null
+            objectMapper: null,
+            nftToFtOptions: null
             );
         return userAssetsAppService;
     }

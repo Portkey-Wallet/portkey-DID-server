@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CAServer.Commons;
+using CAServer.Commons.Etos;
 using CAServer.ThirdPart.Dtos.Ramp;
 using JetBrains.Annotations;
 
@@ -53,10 +54,9 @@ public class TransakCryptoItem
     public Dictionary<string, string> Image { get; set; }
 }
 
-public class TransakCryptoNetwork
+public class TransakCryptoNetwork : ChainDisplayNameDto
 {
     public string Name { get; set; }
-    public string ChainId { get; set; }
     public List<TransakCryptoFiatNotSupported> FiatCurrenciesNotSupported { get; set; }
 
     public string ToNetworkId()

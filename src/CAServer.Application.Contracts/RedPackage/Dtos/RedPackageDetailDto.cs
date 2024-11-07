@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 using CAServer.EnumType;
 
 namespace CAServer.RedPackage.Dtos;

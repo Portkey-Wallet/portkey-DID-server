@@ -1085,5 +1085,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
         CreateMap<TokenInfoDto, TokenInfoV2Dto>();
         CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
+        CreateMap<ChainsInfoIndex, ChainResultDto>();
+        CreateMap< CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
     }
 }

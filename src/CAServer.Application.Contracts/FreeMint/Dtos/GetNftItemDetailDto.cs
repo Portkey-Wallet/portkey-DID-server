@@ -1,12 +1,12 @@
+using CAServer.Commons.Etos;
 using CAServer.EnumType;
 using CAServer.UserAssets.Dtos;
 
 namespace CAServer.FreeMint.Dtos;
 
-public class GetNftItemDetailDto
+public class GetNftItemDetailDto : ChainDisplayNameDto
 {
     public string Symbol { get; set; }
-    public string ChainId { get; set; }
     public string TokenId { get; set; }
     public string Alias { get; set; }
     public string Balance { get; set; }

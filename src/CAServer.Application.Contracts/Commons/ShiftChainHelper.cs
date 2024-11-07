@@ -15,6 +15,15 @@ public static class ShiftChainHelper
         {
             formatChain = "SETH";
         }
+        if (networkMap.ContainsKey("TBSC") && formatChain == "BSC")
+        {
+            formatChain = "TBSC";
+        }
+
+        if (networkMap.ContainsKey("BSC") && formatChain == "TBSC")
+        {
+            formatChain = "BSC";
+        }
 
         if (networkMap.TryGetValue(formatChain, out var existingNetworkInfo))
         {
@@ -103,7 +112,7 @@ public static class ShiftChainHelper
             : ChainDisplayNameHelper.DAppChainImageUrl;
     }
 
-    public const decimal ETransferMaxAmountUsd = 50000;
+    public const decimal ETransferMaxAmountUsd = 20000;
 
     public static string GetMaxAmount(decimal priceInUsd)
     {
@@ -112,7 +121,7 @@ public static class ShiftChainHelper
             return ETransferMaxAmountUsd.ToString();
         }
 
-        return Math.Floor(priceInUsd / ETransferMaxAmountUsd).ToString();
+        return Math.Floor(ETransferMaxAmountUsd / priceInUsd).ToString();
     }
 
     public static NetworkInfoDto GetAELFInfo(string chainId)

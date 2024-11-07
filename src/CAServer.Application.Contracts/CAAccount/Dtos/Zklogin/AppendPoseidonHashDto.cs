@@ -1,9 +1,9 @@
+using CAServer.Commons.Etos;
 using Portkey.Contracts.CA;
 
 namespace CAServer.CAAccount.Dtos.Zklogin;
 
-public class AppendPoseidonHashDto
+public class AppendPoseidonHashDto : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public AppendGuardianInput Input { get; set; }
 }

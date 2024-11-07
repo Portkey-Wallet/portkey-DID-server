@@ -1,10 +1,10 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Security.Dtos;
 
-public class ManagerApprovedDto
+public class ManagerApprovedDto : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string CaHash { get; set; }
     public string Spender { get; set; }
     public string Symbol { get; set; }

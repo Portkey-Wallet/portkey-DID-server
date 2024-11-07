@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.UserAssets.Dtos;
 
@@ -17,9 +18,8 @@ public class GetTokenV2Dto
     public long TotalDisplayCount { get; set; }
 }
 
-public class Token
+public class Token : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string Symbol { get; set; }
     public decimal Price { get; set; }
     public string Balance { get; set; }

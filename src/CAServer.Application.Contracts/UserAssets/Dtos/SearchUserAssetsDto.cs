@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 using Org.BouncyCastle.Asn1.Crmf;
 
 namespace CAServer.UserAssets.Dtos;
@@ -16,9 +17,8 @@ public class SearchUserAssetsV2Dto
     public long TotalRecordCount { get; set; }
 }
 
-public class UserAsset
+public class UserAsset : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string Symbol { get; set; }
     public string Address { get; set; }
     public TokenInfoDto TokenInfo { get; set; }
@@ -26,7 +26,7 @@ public class UserAsset
     public string Label { get; set; }
 }
 
-public class TokenInfoDto
+public class TokenInfoDto : ChainDisplayNameDto
 {
     public string Balance { get; set; }
     public string Decimals { get; set; }
@@ -35,7 +35,7 @@ public class TokenInfoDto
     public string ImageUrl { get; set; }
 }
 
-public class NftInfoDto
+public class NftInfoDto : ChainDisplayNameDto
 {
     public string ImageUrl { get; set; }
     public string Alias { get; set; }
@@ -49,17 +49,13 @@ public class NftInfoDto
     public int SeedType { get; set; }
     public string DisplayChainName { get; set; }
     public string ChainImageUrl { get; set; }
-    public string ChainId { get; set; }
     public string Label { get; set; }
 }
 
 public class TokenInfoV2Dto : TokenInfoDto
 {
-    public string ChainId { get; set; }
     public string Symbol { get; set; }
     public string Address { get; set; }
-    public string DisplayChainName { get; set; }
-    public string ChainImageUrl { get; set; }
     public string Label { get; set; }
 }
 
