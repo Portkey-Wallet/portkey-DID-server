@@ -223,7 +223,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     private string GetNetworkName(string network)
     {
-        throw new NotImplementedException();
+        return "aelf MainChain";
     }
 
     private void SetNetworkImage(AddressBookDto addressBookDto)
