@@ -844,6 +844,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
             dto.FromChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.FromChainId);
             dto.ToChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.ToChainId);
+            dto.FromChainIcon = ChainDisplayNameHelper.MustGetChainUrl(dto.ToChainId);
+            dto.ToChainIcon = ChainDisplayNameHelper.MustGetChainUrl(dto.ToChainId);
             getActivitiesDto.Add(dto);
         }
 
