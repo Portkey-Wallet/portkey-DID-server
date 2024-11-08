@@ -10,7 +10,9 @@ using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.AddressBook;
 using CAServer.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -197,6 +199,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         var contact = await _addressBookProvider.GetContactByAddressInfoAsync(userId, network, chainId, address);
         if (contact != null)
         {
+            Logger.LogInformation("### contact:{0}", JsonConvert.SerializeObject(contact));
             throw new UserFriendlyException("This address has already been taken in other contacts");
         }
     }

@@ -72,13 +72,17 @@ public class AddressBookGrain : Grain<AddressBookState>, IAddressBookGrain
             var addContactNameResult = await contactNameGrain.AddContactNameAsync(contactDto.UserId, contactDto.Name);
             if (!addContactNameResult)
             {
-                result.Message = ContactMessage.NotExistMessage;
+                result.Message = ContactMessage.ExistedMessage;
                 return result;
             }
 
             var oldContactNameGrain = GetContactNameGrain(contactDto.UserId, State.Name);
             await oldContactNameGrain.DeleteContactNameAsync(contactDto.UserId, State.Name);
         }
+        
+        State = _objectMapper.Map<AddressBookGrainDto, AddressBookState>(contactDto);
+        State.Id = this.GetPrimaryKey();
+        State.IsDeleted = false;
         State.ModificationTime = DateTime.UtcNow;
         SetIndex();
         
