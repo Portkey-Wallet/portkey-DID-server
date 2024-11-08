@@ -46,14 +46,14 @@ public class AddressBookController : CAServerController
     {
         return await _addressBookAppService.ExistAsync(name);
     }
-    
+
     [HttpGet("list")]
     public async Task<PagedResultDto<AddressBookDto>> GetListAsync(AddressBookListRequestDto requestDto)
     {
         return await _addressBookAppService.GetListAsync(requestDto);
     }
-    
-    [HttpGet("network")]
+
+    [HttpGet("network"), AllowAnonymous]
     public async Task<GetNetworkListDto> GetNetworkListAsync()
     {
         return await _addressBookAppService.GetNetworkListAsync();

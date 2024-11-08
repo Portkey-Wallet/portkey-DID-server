@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
+using CAServer.AddressBook.Dtos;
 using CAServer.Transfer.Dtos;
 using Volo.Abp.Application.Dtos;
+using GetNetworkListDto = CAServer.Transfer.Dtos.GetNetworkListDto;
 
 namespace CAServer.Transfer;
 
@@ -14,4 +16,5 @@ public interface ITransferAppService
     Task<ResponseWrapDto<GetDepositInfoDto>> GetDepositInfoAsync(GetDepositRequestDto request);
     Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request);
     Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetOrderRecordRequestDto request);
+    Task<GetSupportNetworkDto> GetSupportNetworkListAsync();
 }
