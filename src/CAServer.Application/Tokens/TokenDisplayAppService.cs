@@ -60,6 +60,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
     private readonly NftToFtOptions _nftToFtOptions;
     private readonly IZeroHoldingsConfigAppService _zeroHoldingsConfigAppService;
     private readonly IHttpClientService _httpClientService;
+    private readonly HostInfoOptions _hostInfoOptions;
+    private readonly AwakenOptions _awakenOptions;
 
     public TokenDisplayAppService(
         ILogger<TokenDisplayAppService> logger, IUserAssetsProvider userAssetsProvider,
@@ -72,7 +74,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
-        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService, IHttpClientService httpClientService
+        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService, IHttpClientService httpClientService,
+        IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IOptionsSnapshot<AwakenOptions> awakenOptions
         )
     {
         _logger = logger;
@@ -94,6 +97,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         _nftToFtOptions = nftToFtOptions.Value;
         _zeroHoldingsConfigAppService = zeroHoldingsConfigAppService;
         _httpClientService = httpClientService;
+        _hostInfoOptions = hostInfoOptions.Value;
+        _awakenOptions = awakenOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -114,6 +119,11 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             _logger.LogError(e, "send UserLoginEto fail,user {id}", CurrentUser.GetId());
         }
 
+        return await DoGetTokenDtos(requestDto);
+    }
+
+    private async Task<GetTokenDto> DoGetTokenDtos(GetTokenRequestDto requestDto)
+    {
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -265,7 +275,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
     }
-    
+
     private async Task filterZeroByConfig(GetTokenDto dto)
     {
         try
@@ -320,9 +330,15 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
     }
 
-    public async Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount, int page, string chainId)
+    public async Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount, int page, string chainId, string caAddress)
     {
-        var awakenUrl = "https://test-app.awaken.finance/api/app/trade-pairs?skipCount=0&maxResultCount=100&page=1&chainId=tDVW";
+        if (chainId.IsNullOrEmpty())
+        {
+            chainId = _hostInfoOptions.Environment == Options.Environment.Development
+                ? CommonConstant.TDVWChainId
+                : CommonConstant.TDVVChainId;
+        }
+        var awakenUrl = _awakenOptions.Domain + $"/api/app/trade-pairs?skipCount={skipCount}&maxResultCount={maxResultCount}&page={page}&chainId={chainId}";
         var response = await _httpClientService.GetAsync<CommonResponseDto<TradePairsDto>>(awakenUrl);
         if (!response.Success || response.Data == null || response.Data.Items.IsNullOrEmpty())
         {
@@ -337,11 +353,58 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         var tokens1 = response.Data.Items.Select(item => item.Token1).Distinct(new TokenComparer()).ToList();
         tokens0.AddRange(tokens1);
         var tokens = tokens0.Distinct(new TokenComparer()).ToList();
+        var result = ObjectMapper.Map<List<TradePairsItemToken>, List<CAServer.UserAssets.Dtos.Token>>(tokens);
+        var symbolToToken = await ListSideChainUserTokens(chainId, caAddress, tokens);
+        foreach (var token in result)
+        {
+            ChainDisplayNameHelper.SetDisplayName(token);
+            if (!symbolToToken.TryGetValue(token.Symbol, out var userToken))
+            {
+                continue;
+            }
+
+            token.Decimals = userToken.Decimals;
+            token.ImageUrl = userToken.ImageUrl;
+            token.Balance = userToken.Balance;
+            token.BalanceInUsd = userToken.BalanceInUsd;
+            token.Price = userToken.Price;
+            token.Label = userToken.Label;
+        }
+        result = SortTokens(result);
+        result = result.Skip(skipCount).Take(maxResultCount).ToList();
         return new AwakenSupportedTokenResponse()
         {
-            Total = tokens.Count,
-            Data = ObjectMapper.Map<List<TradePairsItemToken>, List<CAServer.UserAssets.Dtos.Token>>(tokens)
+            Total = result.Count,
+            Data = result
         };
+    }
+
+    private async Task<Dictionary<string, Token>> ListSideChainUserTokens(string chainId, string caAddress, List<TradePairsItemToken> tokens)
+    {
+        var userTokens = await DoGetTokenDtos(new GetTokenRequestDto()
+        {
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    ChainId = chainId,
+                    CaAddress = caAddress
+                }
+            },
+            SkipCount = 0,
+            MaxResultCount = 1000
+        });
+        var symbols = tokens.Select(t => t.Symbol).Distinct().ToList();
+        var sideChainUserTokens = userTokens.Data.Where(t => chainId.Equals(t.ChainId) && symbols.Contains(t.Symbol)).ToList();
+        try
+        {
+            return sideChainUserTokens.ToDictionary(token => token.Symbol, token => token);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "sideChainUserTokens.ToDictionary error");
+            return new Dictionary<string, Token>();
+        }
     }
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(

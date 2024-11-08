@@ -44,9 +44,12 @@ public class UserAssetsController
 
     [HttpGet("awaken/token")]
     public async Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount,
-        int page, string chainId)
+        int page, string chainId, string caAddress)
     {
-        return await _tokenDisplayAppService.ListAwakenSupportedTokensAsync(skipCount, maxResultCount, page, chainId);
+        skipCount = skipCount <= 0 ? 0 : skipCount;
+        maxResultCount = maxResultCount <= 0 ? 100 : maxResultCount;
+        page = page <= 1 ? 1 : page;
+        return await _tokenDisplayAppService.ListAwakenSupportedTokensAsync(skipCount, maxResultCount, page, chainId, caAddress);
     }
 
     [HttpPost("nftCollections")]
