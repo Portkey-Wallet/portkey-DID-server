@@ -338,7 +338,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 ? CommonConstant.TDVWChainId
                 : CommonConstant.TDVVChainId;
         }
-        var awakenUrl = _awakenOptions.Domain + $"?skipCount={skipCount}&maxResultCount={maxResultCount}&page={page}&chainId={chainId}";
+        var awakenUrl = _awakenOptions.Domain + $"/api/app/trade-pairs?skipCount={skipCount}&maxResultCount={maxResultCount}&page={page}&chainId={chainId}";
         var response = await _httpClientService.GetAsync<CommonResponseDto<TradePairsDto>>(awakenUrl);
         if (!response.Success || response.Data == null || response.Data.Items.IsNullOrEmpty())
         {
