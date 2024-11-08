@@ -745,6 +745,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                         await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
                             requestDto.Height, ImageResizeType.Forest);
                     item.NftInfo.TokenName = searchItem.NftInfo.TokenName;
+                    item.NftInfo.Symbol = searchItem.NftInfo.Symbol;
                 }
 
                 dto.Data.Add(item);
