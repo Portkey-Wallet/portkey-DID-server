@@ -14,5 +14,5 @@ public interface ITokenDisplayAppService
     Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto);
 
     Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount,
-        int page, string chainId);
+        int page, string chainId, string caAddress);
 }
