@@ -223,7 +223,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         return addressBookDto;
     }
 
-    private string GetAddress(string address, string network)
+    private string GetAddress(string network, string address)
     {
         return network != "aelf" ? address : AddressHelper.ToShortAddress(address);
     }
