@@ -339,6 +339,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SocialRecoveryInput> __Marshaller_ca_SocialRecoveryInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SocialRecoveryInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.IsManagerReadOnlyInput> __Marshaller_ca_IsManagerReadOnlyInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.IsManagerReadOnlyInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.BoolValue> __Marshaller_google_protobuf_BoolValue = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.BoolValue.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveReadOnlyManagerInput> __Marshaller_ca_RemoveReadOnlyManagerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveReadOnlyManagerInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddManagerInfoInput> __Marshaller_ca_AddManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddManagerInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveManagerInfoInput> __Marshaller_ca_RemoveManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveManagerInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveOtherManagerInfoInput> __Marshaller_ca_RemoveOtherManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveOtherManagerInfoInput.Parser.ParseFrom);
@@ -511,6 +512,13 @@ namespace Portkey.Contracts.CA {
         "IsManagerReadOnly",
         __Marshaller_ca_IsManagerReadOnlyInput,
         __Marshaller_google_protobuf_BoolValue);
+
+    static readonly aelf::Method<global::Portkey.Contracts.CA.RemoveReadOnlyManagerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveReadOnlyManager = new aelf::Method<global::Portkey.Contracts.CA.RemoveReadOnlyManagerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "RemoveReadOnlyManager",
+        __Marshaller_ca_RemoveReadOnlyManagerInput,
+        __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::Portkey.Contracts.CA.AddManagerInfoInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddManagerInfo = new aelf::Method<global::Portkey.Contracts.CA.AddManagerInfoInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
@@ -1148,6 +1156,11 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveReadOnlyManager(global::Portkey.Contracts.CA.RemoveReadOnlyManagerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty AddManagerInfo(global::Portkey.Contracts.CA.AddManagerInfoInput input)
       {
         throw new global::System.NotImplementedException();
@@ -1553,6 +1566,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_ManagerTransferFrom, serviceImpl.ManagerTransferFrom)
           .AddMethod(__Method_SocialRecovery, serviceImpl.SocialRecovery)
           .AddMethod(__Method_IsManagerReadOnly, serviceImpl.IsManagerReadOnly)
+          .AddMethod(__Method_RemoveReadOnlyManager, serviceImpl.RemoveReadOnlyManager)
           .AddMethod(__Method_AddManagerInfo, serviceImpl.AddManagerInfo)
           .AddMethod(__Method_RemoveManagerInfo, serviceImpl.RemoveManagerInfo)
           .AddMethod(__Method_RemoveOtherManagerInfo, serviceImpl.RemoveOtherManagerInfo)
