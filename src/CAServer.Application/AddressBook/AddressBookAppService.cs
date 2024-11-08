@@ -78,7 +78,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             throw new UserFriendlyException(contactResult.Message);
         }
 
-        await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address);
+        await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address, isUpdate: true);
 
         var addressBookDto = await GetAddressBookDtoAsync(requestDto);
         addressBookDto.UserId = userId;
@@ -168,7 +168,8 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         return await contactNameGrain.IsNameExist(name);
     }
 
-    private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address)
+    private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address,
+        bool isUpdate = false)
     {
         // check self
         var holder = await _addressBookProvider.GetCaHolderAsync(userId, string.Empty);
@@ -180,14 +181,15 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         var guardianDto = await _addressBookProvider.GetGuardianInfoAsync(new List<string>() { }, holder.CaHash);
         if (guardianDto.CaHolderInfo.Select(t => t.CaAddress).ToList().Contains(address))
         {
-            throw new UserFriendlyException("Unable to add yourself to your Contacts");
+            throw new UserFriendlyException("Unable to add yourself to your address book.");
         }
 
+        if (isUpdate) return;
         // check if address already exist
         var contact = await _addressBookProvider.GetContactByAddressInfoAsync(userId, network, chainId, address);
         if (contact != null)
         {
-            throw new UserFriendlyException("This address has already been taken in other contacts");
+            throw new UserFriendlyException("This address has already been taken in other contacts.");
         }
     }
 
