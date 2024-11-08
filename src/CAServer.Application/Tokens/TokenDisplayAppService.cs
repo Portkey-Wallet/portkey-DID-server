@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Awaken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -17,6 +18,7 @@ using CAServer.UserAssets.Provider;
 using CAServer.ZeroHoldings;
 using CAServer.ZeroHoldings.constant;
 using CAServer.ZeroHoldings.Dtos;
+using MassTransit.Util;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -57,6 +59,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
     private readonly IContractProvider _contractProvider;
     private readonly NftToFtOptions _nftToFtOptions;
     private readonly IZeroHoldingsConfigAppService _zeroHoldingsConfigAppService;
+    private readonly IHttpClientService _httpClientService;
 
     public TokenDisplayAppService(
         ILogger<TokenDisplayAppService> logger, IUserAssetsProvider userAssetsProvider,
@@ -69,7 +72,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
-        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
+        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService, IHttpClientService httpClientService
         )
     {
         _logger = logger;
@@ -90,6 +93,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         _tokenListOptions = tokenListOptions.Value;
         _nftToFtOptions = nftToFtOptions.Value;
         _zeroHoldingsConfigAppService = zeroHoldingsConfigAppService;
+        _httpClientService = httpClientService;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -314,6 +318,30 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             : input.MaxResultCount;
 
         return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
+    }
+
+    public async Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount, int page, string chainId)
+    {
+        var awakenUrl = "https://test-app.awaken.finance/api/app/trade-pairs?skipCount=0&maxResultCount=100&page=1&chainId=tDVW";
+        var response = await _httpClientService.GetAsync<CommonResponseDto<TradePairsDto>>(awakenUrl);
+        if (!response.Success || response.Data == null || response.Data.Items.IsNullOrEmpty())
+        {
+            return new AwakenSupportedTokenResponse()
+            {
+                Total = 0,
+                Data = new List<Token>()
+            };
+        }
+
+        var tokens0 = response.Data.Items.Select(item => item.Token0).Distinct(new TokenComparer()).ToList();
+        var tokens1 = response.Data.Items.Select(item => item.Token1).Distinct(new TokenComparer()).ToList();
+        tokens0.AddRange(tokens1);
+        var tokens = tokens0.Distinct(new TokenComparer()).ToList();
+        return new AwakenSupportedTokenResponse()
+        {
+            Total = tokens.Count,
+            Data = ObjectMapper.Map<List<TradePairsItemToken>, List<CAServer.UserAssets.Dtos.Token>>(tokens)
+        };
     }
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(

@@ -6,6 +6,7 @@ using AElf.Types;
 using AutoMapper;
 using CAServer.AddressBook.Dtos;
 using CAServer.AddressBook.Etos;
+using CAServer.Awaken;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
@@ -145,7 +146,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactIndex, ContactDto>().ForMember(c => c.ModificationTime,
             d => d.MapFrom(s => new DateTimeOffset(s.ModificationTime).ToUnixTimeMilliseconds()));
         CreateMap<Entities.Es.ContactAddress, ContactAddressDto>().ReverseMap();
-
+        CreateMap<TradePairsItemToken, CAServer.UserAssets.Dtos.Token>()
+            .ForMember(d => d.Symbol, f => f.MapFrom(s => s.Symbol))
+            .ForMember(d => d.Decimals, f => f.MapFrom(s => s.Decimals))
+            .ForMember(d => d.ChainId, f => f.MapFrom(s => s.ChainId))
+            .ForMember(d => d.ImageUrl, f => f.MapFrom(s => s.ImageUri))
+            ;
         CreateMap<HubRequestContextDto, HubRequestContext>();
         CreateMap<RegisterDto, RegisterGrainDto>();
         CreateMap<CreateHolderEto, CreateHolderResultGrainDto>();
