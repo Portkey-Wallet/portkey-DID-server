@@ -114,8 +114,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             throw new UserFriendlyException(result.Message);
         }
 
-        await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<AddressBookGrainDto, AddressBookDeleteEto>(result.Data));
+        await _distributedEventBus.PublishAsync(new AddressBookDeleteEto { Id = result.Data.Id });
     }
 
     public async Task<AddressBookExistDto> ExistAsync(string name)
