@@ -39,6 +39,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     public async Task<AddressBookDto> CreateAsync(AddressBookCreateRequestDto requestDto)
     {
+        requestDto.Address = GetAddress(requestDto.Network, requestDto.Address);
         var userId = CurrentUser.GetId();
         // var existed = await CheckNameExistAsync(userId, requestDto.Name);
         // if (existed)
@@ -71,6 +72,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     public async Task<AddressBookDto> UpdateAsync(AddressBookUpdateRequestDto requestDto)
     {
+        requestDto.Address = GetAddress(requestDto.Network, requestDto.Address);
         var userId = CurrentUser.GetId();
         var addressBookGrain = _clusterClient.GetGrain<IAddressBookGrain>(requestDto.Id);
         var contactResult = await addressBookGrain.GetContactAsync();
@@ -79,7 +81,8 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             throw new UserFriendlyException(contactResult.Message);
         }
 
-        await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address);
+        await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address,
+            originAddress: contactResult.Data.AddressInfo.Address, isUpdate: true);
 
         var addressBookDto = await GetAddressBookDtoAsync(requestDto);
         addressBookDto.UserId = userId;
@@ -169,7 +172,8 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         return await contactNameGrain.IsNameExist(name);
     }
 
-    private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address)
+    private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address,
+        string originAddress = "", bool isUpdate = false)
     {
         // check self
         var holder = await _addressBookProvider.GetCaHolderAsync(userId, string.Empty);
@@ -182,6 +186,11 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         if (guardianDto.CaHolderInfo.Select(t => t.CaAddress).ToList().Contains(address))
         {
             throw new UserFriendlyException("Unable to add yourself to your Contacts");
+        }
+
+        if (isUpdate && originAddress == address)
+        {
+            return;
         }
 
         // check if address already exist
@@ -199,7 +208,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             Name = input.Name,
             AddressInfo = new ContactAddressInfoDto
             {
-                Address = GetAddress(input.Network, input.Address),
+                Address = input.Address,
                 ChainId = input.ChainId,
                 Network = input.Network,
                 NetworkName = GetNetworkName(input.Network),
