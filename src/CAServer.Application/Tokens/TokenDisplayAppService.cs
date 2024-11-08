@@ -370,7 +370,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             token.Price = userToken.Price;
             token.Label = userToken.Label;
         }
-        result = SortTokens(result);
+        // result = SortTokens(result);
         result = result.Skip(skipCount).Take(maxResultCount).ToList();
         return new AwakenSupportedTokenResponse()
         {
