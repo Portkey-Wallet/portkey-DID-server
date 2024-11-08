@@ -11,8 +11,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.EntityEventHandler.Core;
 
-public class AddressBookHandler : IDistributedEventHandler<AddressBookEto>,
-    IDistributedEventHandler<AddressBookDeleteEto>, ITransientDependency
+public class AddressBookHandler : IDistributedEventHandler<AddressBookEto>, ITransientDependency
 {
     private readonly INESTRepository<AddressBookIndex, Guid> _addressBookRepository;
     private readonly IObjectMapper _objectMapper;
@@ -33,25 +32,13 @@ public class AddressBookHandler : IDistributedEventHandler<AddressBookEto>,
         {
             var addressBook = _objectMapper.Map<AddressBookEto, AddressBookIndex>(eventData);
             await _addressBookRepository.AddOrUpdateAsync(addressBook);
-            _logger.LogInformation("address book add success, userId:{userId}, address:{address}, name:{name}",
-                eventData.UserId.ToString(), eventData.AddressInfo.Address, eventData.Name);
+            _logger.LogInformation(
+                "address book add or update success, userId:{userId}, address:{address}, name:{name}, isDeleted:{isDeleted}",
+                eventData.UserId.ToString(), eventData.AddressInfo.Address, eventData.Name, eventData.IsDeleted);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "address book add error, {data}", JsonConvert.SerializeObject(eventData));
-        }
-    }
-
-    public async Task HandleEventAsync(AddressBookDeleteEto eventData)
-    {
-        try
-        {
-            await _addressBookRepository.DeleteAsync(eventData.Id);
-            _logger.LogInformation("address book delete success, id:{userId}", eventData.Id.ToString());
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "address book delete error, {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 }

@@ -97,9 +97,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             throw new UserFriendlyException(result.Message);
         }
 
-        var eto = ObjectMapper.Map<AddressBookGrainDto, AddressBookEto>(result.Data);
-        await _distributedEventBus.PublishAsync(eto);
-
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<AddressBookGrainDto, AddressBookEto>(result.Data));
         var resultDto = ObjectMapper.Map<AddressBookGrainDto, AddressBookDto>(result.Data);
         SetNetworkImage(resultDto);
         return resultDto;
@@ -111,10 +109,12 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         var result = await addressBookGrain.DeleteContactAsync(CurrentUser.GetId());
         if (!result.Success)
         {
+            Logger.LogInformation("Contact delete fail, id:{0}, message:{message}", requestDto.Id,result.Message);
             throw new UserFriendlyException(result.Message);
         }
 
-        await _distributedEventBus.PublishAsync(new AddressBookDeleteEto { Id = result.Data.Id });
+        Logger.LogInformation("Contact delete success, id:{0}", requestDto.Id);
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<AddressBookGrainDto, AddressBookEto>(result.Data));
     }
 
     public async Task<AddressBookExistDto> ExistAsync(string name)
