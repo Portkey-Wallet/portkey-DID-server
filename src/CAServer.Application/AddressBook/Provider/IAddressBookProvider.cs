@@ -86,11 +86,11 @@ public class AddressBookProvider : IAddressBookProvider, ISingletonDependency
         string address)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<AddressBookIndex>, QueryContainer>>() { };
-        QueryContainer Filter(QueryContainerDescriptor<AddressBookIndex> f) => f.Bool(b => b.Must(mustQuery));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.AddressInfo.Network).Value(network)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.AddressInfo.ChainId).Value(chainId)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.AddressInfo.Address).Value(address)));
+        QueryContainer Filter(QueryContainerDescriptor<AddressBookIndex> f) => f.Bool(b => b.Must(mustQuery));
         var contacts = await _addressBookRepository.GetListAsync(Filter);
         return contacts?.Item2?.FirstOrDefault();
     }
