@@ -1079,9 +1079,9 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             token.Decimals = userToken.Decimals;
             token.ImageUrl = userToken.ImageUrl;
             token.Balance = userToken.Balance;
-            token.Balance ??= "0";
+            token.Balance = token.Balance.IsNullOrEmpty() ? "0" : token.Balance;
             token.BalanceInUsd = userToken.BalanceInUsd;
-            token.BalanceInUsd ??= "0";
+            token.BalanceInUsd = token.BalanceInUsd.IsNullOrEmpty() ? "0" : token.BalanceInUsd;
             token.Price = userToken.Price;
             token.Label = userToken.Label;
         }
