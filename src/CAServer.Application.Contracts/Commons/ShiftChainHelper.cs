@@ -147,14 +147,17 @@ public static class ShiftChainHelper
 
     public static AddressFormat GetAddressFormat(string fromChain, string address)
     {
-        if (address.Contains("_"))
+        if (address.Split("_").Length == 3 && address.Split("_")[1].Length == 50)
         {
             if (address.EndsWith(CommonConstant.MainChainId))
             {
                 return AddressFormat.Main;
+            }else if (address.EndsWith(CommonConstant.TDVWChainId) || address.EndsWith(CommonConstant.TDVVChainId))
+            {
+                return AddressFormat.Dapp;
             }
 
-            return AddressFormat.Dapp;
+            return AddressFormat.NoSupport;
         }
 
         if (address.Length == 50)
