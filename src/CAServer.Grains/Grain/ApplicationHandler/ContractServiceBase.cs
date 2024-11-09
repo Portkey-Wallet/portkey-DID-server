@@ -50,5 +50,5 @@ public class ContractDtoBase
     public HubRequestContext Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
     
-    public int Platform { get; set; }
+    public Platform Platform { get; set; }
 }

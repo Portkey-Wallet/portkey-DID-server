@@ -270,7 +270,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var grain = _clusterClient.GetGrain<IRecoveryGrain>(grainId);
 
         var result = await grain.RequestAsync(ObjectMapper.Map<RecoveryDto, RecoveryGrainDto>(recoveryDto));
-        _logger.LogInformation($"RecoveryGrainDto: {JsonConvert.SerializeObject(result)}");
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
@@ -286,7 +285,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var recoverCreateEto = ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data);
-        _logger.LogInformation($"recoverCreateEto:{JsonConvert.SerializeObject(recoverCreateEto)}");
         recoverCreateEto.IpAddress = _ipInfoAppService.GetRemoteIp(input.ReferralInfo?.Random);
         await CheckAndResetReferralInfo(input.ReferralInfo, recoverCreateEto.IpAddress);
         await _distributedEventBus.PublishAsync(recoverCreateEto);

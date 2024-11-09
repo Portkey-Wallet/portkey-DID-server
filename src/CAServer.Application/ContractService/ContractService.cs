@@ -194,9 +194,7 @@ public class ContractService : IContractService, ISingletonDependency
 
     public async Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto)
     {
-        _logger.LogInformation($"SocialRecoveryAsync socialRecoveryDto: {JsonConvert.SerializeObject(socialRecoveryDto)}");
         var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);
-        _logger.LogInformation($"SocialRecoveryAsync param: {JsonConvert.SerializeObject(param)}");
         var result = await SendTransactionToChainAsync(socialRecoveryDto.ChainId, param, MethodName.SocialRecovery);
 
         return result.TransactionResultDto;
