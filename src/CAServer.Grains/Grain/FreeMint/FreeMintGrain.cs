@@ -63,8 +63,10 @@ public class FreeMintGrain : Grain<FreeMintState>, IFreeMintGrain
 
         if (!string.IsNullOrEmpty(State.Id) && !State.MintInfos.IsNullOrEmpty())
         {
-            statusDto.Status = State.MintInfos.Last().Status.ToString();
-            statusDto.ItemId = State.MintInfos.Last().ItemId;
+            var mintInfo = State.MintInfos.Last();
+            statusDto.Status = mintInfo.Status.ToString();
+            statusDto.ItemId = mintInfo.ItemId;
+            statusDto.ImageUrl = mintInfo.ImageUrl;
         }
 
         result.Success = true;
