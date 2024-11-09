@@ -49,7 +49,7 @@ public class UserAssetsController
         skipCount = skipCount <= 0 ? 0 : skipCount;
         maxResultCount = maxResultCount <= 0 ? 100 : maxResultCount;
         page = page <= 1 ? 1 : page;
-        return await _tokenDisplayAppService.ListAwakenSupportedTokensAsync(skipCount, maxResultCount, page, chainId, caAddress);
+        return await _tokenNftAppService.ListAwakenSupportedTokensAsync(skipCount, maxResultCount, page, chainId, caAddress);
     }
 
     [HttpPost("nftCollections")]
