@@ -1081,6 +1081,8 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             ChainDisplayNameHelper.SetDisplayName(token);
             if (!symbolToToken.TryGetValue(token.Symbol, out var userToken))
             {
+                token.Balance = token.Balance.IsNullOrEmpty() ? "0" : token.Balance;
+                token.BalanceInUsd = token.BalanceInUsd.IsNullOrEmpty() ? "0" : token.BalanceInUsd;
                 continue;
             }
 
