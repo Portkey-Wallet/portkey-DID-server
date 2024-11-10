@@ -1039,6 +1039,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.TransactionName = contractConfig.MethodNameMap.ContainsKey(transactionType)
             ? contractConfig.MethodNameMap[transactionType]
             : activityDto.TransactionName;
+
+        if (!contractConfig.DappName.IsNullOrEmpty())
+        {
+            activityDto.DappName = contractConfig.DappName;
+        }
     }
 
     private void SetHamsterName(GetActivityDto activityDto)
