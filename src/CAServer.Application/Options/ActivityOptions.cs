@@ -35,6 +35,7 @@ public class TransactionFeeFix
 public class ContractConfig
 {
     public string ContractAddress { get; set; }
+    public string DappName { get; set; }
     public Dictionary<string, string> MethodNameMap { get; set; } = new();
 }
 
