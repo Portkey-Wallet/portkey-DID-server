@@ -269,6 +269,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
+        var contractConfig =
+            _activityOptions.ContractConfigs.FirstOrDefault(t => t.ContractAddress == toContractAddress);
+
+        if (contractConfig != null && !contractConfig.DappName.IsNullOrEmpty())
+        {
+            activityDto.DappName = contractConfig.DappName;
+            activityDto.DappIcon = contractConfig.DappIcon;
+            return;
+        }
+
         var tokenSpender =
             _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t => t.ContractAddress == toContractAddress);
         if (tokenSpender == null)
@@ -445,7 +455,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (request.ActivityType != CommonConstant.TransferCard)
             {
                 caAddressInfos = request.CaAddressInfos.IsNullOrEmpty()
-                    ? new List<CAAddressInfo>() : request.CaAddressInfos;
+                    ? new List<CAAddressInfo>()
+                    : request.CaAddressInfos;
             }
 
             var indexerTransactions =
@@ -959,7 +970,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
         return true;
     }
-    
+
     private void AppendStatusIcon(GetActivityDto activityDto)
     {
         activityDto.StatusIcon = activityDto.TransactionType switch
@@ -1039,11 +1050,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.TransactionName = contractConfig.MethodNameMap.ContainsKey(transactionType)
             ? contractConfig.MethodNameMap[transactionType]
             : activityDto.TransactionName;
-
-        if (!contractConfig.DappName.IsNullOrEmpty())
-        {
-            activityDto.DappName = contractConfig.DappName;
-        }
     }
 
     private void SetHamsterName(GetActivityDto activityDto)
