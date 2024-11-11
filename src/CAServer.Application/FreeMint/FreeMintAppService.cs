@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.FreeMint.Dtos;
 using CAServer.FreeMint.Etos;
@@ -24,16 +26,18 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
     private readonly FreeMintOptions _freeMintOptions;
     private readonly IFreeMintProvider _freeMintProvider;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly ChainOptions _chainOptions;
 
     public FreeMintAppService(ILogger<FreeMintAppService> logger, IClusterClient clusterClient,
         IOptionsSnapshot<FreeMintOptions> freeMintOptions, IFreeMintProvider freeMintProvider,
-        IDistributedEventBus distributedEventBus)
+        IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions)
     {
         _logger = logger;
         _clusterClient = clusterClient;
         _freeMintProvider = freeMintProvider;
         _distributedEventBus = distributedEventBus;
         _freeMintOptions = freeMintOptions.Value;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<GetRecentStatusDto> GetRecentStatusAsync()
@@ -49,7 +53,8 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
         {
             CollectionInfo = _freeMintOptions.CollectionInfo,
             IsLimitExceed = grain.CheckLimitExceed().Result,
-            LimitCount = _freeMintOptions.LimitCount
+            LimitCount = _freeMintOptions.LimitCount,
+            ChainId = GetSideChainId()
         };
         return mintInfoDto;
     }
@@ -111,5 +116,11 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
     {
         var index = await _freeMintProvider.GetFreeMintItemAsync(itemId);
         return ObjectMapper.Map<FreeMintIndex, GetItemInfoDto>(index);
+    }
+
+    private string GetSideChainId()
+    {
+        var chainIds = _chainOptions.ChainInfos.Keys;
+        return chainIds.FirstOrDefault(chainId => chainId != CommonConstant.MainChainId);
     }
 }
