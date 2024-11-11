@@ -27,6 +27,8 @@ public class ActivityBase
     public bool IsDelegated { get; set; }
     public bool IsSystem { get; set; }
     public string StatusIcon { get; set; }
+    
+    public string SourceIcon { get; set; }
 }
 
 public class TransactionFee
