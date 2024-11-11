@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CAServer.Account;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.Hubs;
 

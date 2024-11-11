@@ -313,11 +313,11 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                     continue;
                 }
 
-                string key = tokenInfo.Token + ";" + limiter.FromChain;
+                string key = tokenInfo.Token + ";" + ShiftChainHelper.FormatEBridgeChain(limiter.ToChain);
                 if (!sendEBridgeMap.TryGetValue(key, out var sendInfo))
                 {
                     sendInfo = new SendNetworkDto { NetworkList = new List<NetworkInfoDto>() };
-                    sendEBridgeMap[tokenInfo.Token] = sendInfo;
+                    sendEBridgeMap[key] = sendInfo;
                 }
 
                 if (!sendInfo.NetworkList.Any(p => p.Network == limiter.FromChain))
@@ -331,9 +331,14 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     private ReceiveNetworkDto initAELFChain(string symbol)
     {
         ReceiveNetworkDto receiveNetwork = new ReceiveNetworkDto { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
-        foreach (var chainName in _chainOptions.ChainInfos.Keys)
+        var chainIds = _chainOptions.ChainInfos.Keys;
+        foreach (var chainId in chainIds)
         {
-            receiveNetwork.DestinationMap[chainName] = new List<NetworkInfoDto> { ShiftChainHelper.GetAELFInfo(chainName) };
+            receiveNetwork.DestinationMap[chainId] = new List<NetworkInfoDto>();
+            foreach (var chainInfosKey in chainIds)
+            {
+                receiveNetwork.DestinationMap[chainId].Add(ShiftChainHelper.GetAELFInfo(chainInfosKey));
+            }
         }
 
         return receiveNetwork;

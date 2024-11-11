@@ -602,7 +602,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.ReferralCode,
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
             .ForMember(t => t.ProjectCode,
-                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode))
+            .ForMember(t => t.Platform,
+                f => f.MapFrom(m => m.Platform));
 
         CreateMap<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>()
             .ForMember(d => d.LoginGuardians,

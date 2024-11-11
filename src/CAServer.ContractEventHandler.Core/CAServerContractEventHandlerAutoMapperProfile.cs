@@ -13,6 +13,7 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Portkey.Contracts.CA;
+using Enum = System.Enum;
 
 namespace CAServer.ContractEventHandler.Core;
 
@@ -104,6 +105,8 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
             }));
 
         CreateMap<AccountRecoverCreateEto, SocialRecoveryDto>()
+            .ForMember(d => d.Platform,
+            opt => opt.MapFrom(e => Enum.IsDefined(typeof(Platform), (int)e.Source) ? (Platform)(int)e.Source : Platform.Undefined))
             .ForMember(d => d.GuardianApproved,
                 opt => opt.MapFrom(e => e.GuardianApproved.Select(g => new GuardianInfo
                 {

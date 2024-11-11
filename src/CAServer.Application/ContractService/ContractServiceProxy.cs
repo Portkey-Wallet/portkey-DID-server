@@ -163,33 +163,4 @@ public class ContractServiceProxy : ISingletonDependency
                 return await _contractService.AuthorizeDelegateAsync(assignProjectDelegateeDto);
         }
     }
-    
-    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
-    {
-        switch (_contractServiceOptions.CurrentValue.UseGrainService)
-        {
-            case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.AppendGuardianPoseidonHashAsync(chainId, appendGuardianRequest);
-            }
-            default:
-                return await _contractService.AppendGuardianPoseidonHashAsync(chainId, appendGuardianRequest);
-        }
-    }
-
-    public async Task<TransactionResultDto> AppendSingleGuardianPoseidonAsync(string chainId,
-        GuardianIdentifierType guardianIdentifierType, AppendSingleGuardianPoseidonInput input)
-    {
-        switch (_contractServiceOptions.CurrentValue.UseGrainService)
-        {
-            case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.AppendSingleGuardianPoseidonAsync(chainId, guardianIdentifierType, input);
-            }
-            default:
-                return await _contractService.AppendSingleGuardianPoseidonAsync(chainId, guardianIdentifierType, input);
-        }
-    }
 }

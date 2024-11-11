@@ -72,10 +72,6 @@ public interface IContractProvider : ISingletonDependency
 
     public Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
         GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom);
-
-    Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest);
-    
-    Task<TransactionResultDto> AppendSingleGuardianPoseidonAsync(string chainId, GuardianIdentifierType guardianIdentifierType, AppendSingleGuardianPoseidonInput input);
 }
 
 public class ContractProvider : IContractProvider
@@ -642,55 +638,5 @@ public class ContractProvider : IContractProvider
 
         return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);
-    }
-    
-    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
-    {
-        try
-        {
-            var result = await _contractServiceProxy.AppendGuardianPoseidonHashAsync(chainId, appendGuardianRequest);
-
-            _logger.LogInformation(
-                "AppendGuardianPoseidonHash to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
-                chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
-
-            return result;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "AppendGuardianPoseidonHash error: {message}",
-                JsonConvert.SerializeObject(appendGuardianRequest, Formatting.Indented));
-            return new TransactionResultDto
-            {
-                Status = TransactionState.Failed,
-                Error = e.Message
-            };
-        }
-    }
-
-    public async Task<TransactionResultDto> AppendSingleGuardianPoseidonAsync(string chainId, GuardianIdentifierType guardianIdentifierType, AppendSingleGuardianPoseidonInput input)
-    {
-        try
-        {
-            var result = await _contractServiceProxy.AppendSingleGuardianPoseidonAsync(chainId, guardianIdentifierType, input);
-
-            _logger.LogInformation(
-                "AppendSingleGuardianPoseidonHash to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
-                chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
-
-            return result;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "AppendSingleGuardianPoseidonHash error: {message}",
-                JsonConvert.SerializeObject(input, Formatting.Indented));
-            return new TransactionResultDto
-            {
-                Status = TransactionState.Failed,
-                Error = e.Message
-            };
-        }
     }
 }
