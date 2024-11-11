@@ -195,7 +195,6 @@ public class ContractService : IContractService, ISingletonDependency
     public async Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto)
     {
         var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);
-
         var result = await SendTransactionToChainAsync(socialRecoveryDto.ChainId, param, MethodName.SocialRecovery);
 
         return result.TransactionResultDto;
@@ -434,34 +433,6 @@ public class ContractService : IContractService, ISingletonDependency
             _objectMapper.Map<AssignProjectDelegateeDto, AssignProjectDelegateeInput>(assignProjectDelegateeDto);
         var result = await SendTransactionToChainAsync(assignProjectDelegateeDto.ChainId, param,
             MethodName.AssignProjectDelegatee);
-        return result.TransactionResultDto;
-    }
-    
-    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
-    {
-        var result = await SendTransactionToChainAsync(chainId, appendGuardianRequest, MethodName.AppendGuardianPoseidonHash);
-        return result.TransactionResultDto;
-    }
-
-    public async Task<TransactionResultDto> AppendSingleGuardianPoseidonAsync(string chainId, GuardianIdentifierType guardianIdentifierType, AppendSingleGuardianPoseidonInput input)
-    {
-        TransactionInfoDto result;
-        switch (guardianIdentifierType)
-        {
-            case GuardianIdentifierType.Google:
-                result = await SendTransactionToChainAsync(chainId, input, MethodName.AppendGoogleGuardianPoseidon);
-                break;
-            case GuardianIdentifierType.Apple:
-                result = await SendTransactionToChainAsync(chainId, input, MethodName.AppendAppleGuardianPoseidon);
-                break;
-            case GuardianIdentifierType.Email:
-            case GuardianIdentifierType.Phone:
-            case GuardianIdentifierType.Telegram:
-            case GuardianIdentifierType.Facebook:
-            case GuardianIdentifierType.Twitter:
-            default:
-                return null;
-        }
         return result.TransactionResultDto;
     }
 }

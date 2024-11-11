@@ -35,7 +35,7 @@ public class PreValidationProvider : CAServerAppService, IPreValidationProvider
     public async Task<bool> ValidateSocialRecovery(RequestSource source, string caHash,
         string chainId, string manager, List<GuardianInfo> guardiansApproved, List<ManagerInfoDto> existedManagers)
     {
-        if (!RequestSource.Sdk.Equals(source))
+        if (!RequestSource.Sdk.Equals(source) && !RequestSource.Telegram.Equals(source))
         {
             return true;
         }
