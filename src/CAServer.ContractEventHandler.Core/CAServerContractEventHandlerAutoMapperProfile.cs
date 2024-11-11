@@ -22,6 +22,8 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
     public CAServerContractEventHandlerAutoMapperProfile()
     {
         CreateMap<AccountRegisterCreateEto, CreateHolderDto>()
+            .ForMember(d => d.Platform,
+                opt => opt.MapFrom(e => Enum.IsDefined(typeof(Platform), (int)e.Source) ? (Platform)(int)e.Source : Platform.Undefined))
             .ForMember(d => d.GuardianInfo, opt => opt.MapFrom(e => new GuardianInfo
             {
                 Type = (GuardianType)(int)e.GuardianInfo.Type,
