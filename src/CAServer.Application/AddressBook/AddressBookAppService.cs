@@ -159,6 +159,25 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
                     Name = "aelf MainChain",
                     Network = "aelf",
                     ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/mainChain.png"
+                },
+                new AddressBookNetwork()
+                {
+                    ChainId = "tDVW",
+                    Name = "aelf dAppChain",
+                    Network = "aelf",
+                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/dappChain.png"
+                },
+                new AddressBookNetwork()
+                {
+                    Name = "Ethereum",
+                    Network = "ETH",
+                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainEthereum.png"
+                },
+                new AddressBookNetwork()
+                {
+                    Name = "BNB Smart Chain",
+                    Network = "BSC",
+                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainBinance.png"
                 }
             }
         };
@@ -176,6 +195,10 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address,
         string originAddress = "", bool isUpdate = false)
     {
+        if (!AddressHelper.CheckAddress(network, address))
+        {
+            throw new UserFriendlyException("Invalid address.");
+        }
         // check self
         var holder = await _addressBookProvider.GetCaHolderAsync(userId, string.Empty);
         if (holder == null)
