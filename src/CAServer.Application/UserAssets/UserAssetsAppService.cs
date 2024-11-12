@@ -385,6 +385,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             SetSeedStatusAndTrimCollectionNameForCollections(dto.Data);
 
             TryUpdateImageUrlForCollections(dto.Data);
+
+            DealWithDisplayChainImage(dto);
             dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
             return dto;
         }
@@ -394,7 +396,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
         }
     }
-    
+
+    private static void DealWithDisplayChainImage(GetNftCollectionsDto dto)
+    {
+        var symbolToCount = dto.Data.GroupBy(nft => nft.Symbol)
+            .Select(g => new {GroupId = g.Key, Count = g.Count()})
+            .ToDictionary(g => g.GroupId, g => g.Count);
+        foreach (var nftCollection in dto.Data)
+        {
+            symbolToCount.TryGetValue(nftCollection.Symbol, out var count);
+            nftCollection.DisplayChainImage = count > 1;
+        }
+    }
+
     public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto, SearchUserAssetsDto searchDto)
     {
         var nftRequestDto = _objectMapper.Map<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>(requestDto);
