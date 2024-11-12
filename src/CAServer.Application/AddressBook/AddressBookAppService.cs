@@ -61,7 +61,8 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
         if (!result.Success)
         {
-            throw new UserFriendlyException(result.Message);
+            throw new UserFriendlyException(result.Message,
+                code: result.Message == AddressBookMessage.ExistedMessage ? AddressBookMessage.NameExistedCode : null);
         }
 
         var eto = ObjectMapper.Map<AddressBookGrainDto, AddressBookEto>(result.Data);
@@ -94,7 +95,8 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
         if (!result.Success)
         {
-            throw new UserFriendlyException(result.Message);
+            throw new UserFriendlyException(result.Message,
+                code: result.Message == AddressBookMessage.ExistedMessage ? AddressBookMessage.NameExistedCode : null);
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<AddressBookGrainDto, AddressBookEto>(result.Data));
@@ -109,7 +111,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         var result = await addressBookGrain.DeleteContactAsync(CurrentUser.GetId());
         if (!result.Success)
         {
-            Logger.LogInformation("Contact delete fail, id:{0}, message:{message}", requestDto.Id,result.Message);
+            Logger.LogInformation("Contact delete fail, id:{0}, message:{message}", requestDto.Id, result.Message);
             throw new UserFriendlyException(result.Message);
         }
 
@@ -197,8 +199,9 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     {
         if (!AddressHelper.CheckAddress(network, address))
         {
-            throw new UserFriendlyException("Invalid address.");
+            throw new UserFriendlyException("Invalid address.", AddressBookMessage.AddressInvalidCode);
         }
+
         // check self
         var holder = await _addressBookProvider.GetCaHolderAsync(userId, string.Empty);
         if (holder == null)
