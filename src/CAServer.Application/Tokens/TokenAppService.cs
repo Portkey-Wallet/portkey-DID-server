@@ -36,6 +36,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly IOptionsMonitor<TokenSpenderOptions> _tokenSpenderOptions;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
 
     public TokenAppService(IOptions<ContractAddressOptions> contractAddressesOptions,
         ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
@@ -43,7 +44,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         IDistributedCache<TokenExchange> historyExchange,
         ITokenCacheProvider tokenCacheProvider,
         ITokenPriceService tokenPriceService,
-        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions)
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions,
+        IAssetsLibraryProvider assetsLibraryProvider)
     {
         _tokenProvider = tokenProvider;
         _latestExchange = latestExchange;
@@ -52,6 +54,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         _exchangeProviders = exchangeProviders.ToDictionary(p => p.Name().ToString(), p => p);
         _tokenCacheProvider = tokenCacheProvider;
         _tokenSpenderOptions = tokenSpenderOptions;
+        _assetsLibraryProvider = assetsLibraryProvider;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -284,7 +287,9 @@ public class TokenAppService : CAServerAppService, ITokenAppService
                 Symbol = s.Symbol,
                 Amount = s.BatchApprovedAmount,
                 Decimals = tokenInfoDtos.FirstOrDefault(i => i.Symbol == s.Symbol.Replace("-*", "-1")) == null ? 0 : 
-                    tokenInfoDtos.First(i => i.Symbol == s.Symbol.Replace("-*", "-1")).Decimals
+                    tokenInfoDtos.First(i => i.Symbol == s.Symbol.Replace("-*", "-1")).Decimals,
+                UpdateTime = s.UpdateTime,
+                ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(s.Symbol),
             }).ToList()
         }).ToList();
         
