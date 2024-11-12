@@ -20,4 +20,5 @@ public class CAHolderTokenApprovedDto
     public string CaAddress { get; set; }
     public string Symbol { get; set; }
     public long BatchApprovedAmount { get; set; }
+    public long UpdateTime { get; set; }
 }
