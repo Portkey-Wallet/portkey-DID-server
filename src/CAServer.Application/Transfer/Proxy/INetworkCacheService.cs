@@ -9,12 +9,14 @@ namespace CAServer.Transfer.Proxy;
 
 public interface INetworkCacheService
 {
-    void SetCache(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap, Dictionary<string, NetworkInfoDto> networkMap,
+    void SetCache(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap,
+        Dictionary<string, NetworkInfoDto> networkMap,
         Dictionary<string, SendNetworkDto> sendEBridgeMap);
 
     NetworkInfoDto GetNetwork(string network);
     ReceiveNetworkDto GetReceiveNetworkList(GetReceiveNetworkListRequestDto request);
     List<NetworkInfoDto> GetSendNetworkList(GetSendNetworkListRequestDto request);
+    Dictionary<string, NetworkInfoDto> GetNetworkMap();
 }
 
 public class NetworkCacheService : INetworkCacheService, ISingletonDependency
@@ -25,7 +27,8 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
     private long _lastCacheTime = 0L;
     private long _maxCacheTime = 60 * 60 * 1000L;
 
-    public void SetCache(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap, Dictionary<string, NetworkInfoDto> networkMap,
+    public void SetCache(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap,
+        Dictionary<string, NetworkInfoDto> networkMap,
         Dictionary<string, SendNetworkDto> sendEBridgeMap)
     {
         _receiveNetworkMap = receiveNetworkMap;
@@ -63,9 +66,12 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
         string key = request.Symbol + ";" + request.ChainId;
         if (_sendEBridgeMap.TryGetValue(key, out SendNetworkDto result))
         {
-            return result.NetworkList.Where(p => ShiftChainHelper.MatchForAddress(p.Network, request.ChainId, request.ToAddress)).ToList();
+            return result.NetworkList
+                .Where(p => ShiftChainHelper.MatchForAddress(p.Network, request.ChainId, request.ToAddress)).ToList();
         }
 
         return null;
     }
+
+    public Dictionary<string, NetworkInfoDto> GetNetworkMap() => _networkMap;
 }
