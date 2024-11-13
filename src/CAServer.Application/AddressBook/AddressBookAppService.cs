@@ -165,7 +165,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
                 Network = AddressHelper.GetNetwork(networkInfo.Network),
                 Name = networkInfo.Name,
                 ImageUrl = networkInfo.ImageUrl,
-                ChainId = AddressHelper.GetNetwork(networkInfo.Network)
+                ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
             };
             networkList.Add(ad);
         }
@@ -174,39 +174,6 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         {
             NetworkList = networkList
         };
-
-        // return new GetNetworkListDto()
-        // {
-        //     NetworkList = new List<AddressBookNetwork>()
-        //     {
-        //         new AddressBookNetwork()
-        //         {
-        //             ChainId = "AELF",
-        //             Name = "aelf MainChain",
-        //             Network = "aelf",
-        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/mainChain.png"
-        //         },
-        //         new AddressBookNetwork()
-        //         {
-        //             ChainId = "tDVW",
-        //             Name = "aelf dAppChain",
-        //             Network = "aelf",
-        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/dappChain.png"
-        //         },
-        //         new AddressBookNetwork()
-        //         {
-        //             Name = "Ethereum",
-        //             Network = "ETH",
-        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainEthereum.png"
-        //         },
-        //         new AddressBookNetwork()
-        //         {
-        //             Name = "BNB Smart Chain",
-        //             Network = "BSC",
-        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainBinance.png"
-        //         }
-        //     }
-        // };
     }
 
     private async Task<bool> CheckNameExistAsync(Guid userId, string name)
