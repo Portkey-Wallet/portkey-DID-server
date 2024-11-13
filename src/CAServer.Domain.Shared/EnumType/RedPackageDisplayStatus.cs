@@ -3,7 +3,7 @@ namespace CAServer.EnumType;
 public static class RedPackageDisplayStatus
 {
     private const string Active = "Active";
-    private const string FullyClaimed = "All claimed";
+    private const string FullyClaimed = "Fully claimed";
     private const string Expired = "Expired";
     private const string Cancelled = "Cancelled";
 
