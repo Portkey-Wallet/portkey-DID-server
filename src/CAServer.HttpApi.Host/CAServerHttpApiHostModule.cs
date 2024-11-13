@@ -424,12 +424,12 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
-        //app.UseOpenTelemetryPrometheusScrapingEndpoint();
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-        // StartOrleans(context.ServiceProvider);
-        //
-        // // to start pre heat
-        // _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
+         StartOrleans(context.ServiceProvider);
+        
+         // to start pre heat
+         _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
         context.ServiceProvider.GetService<IShiftChainService>().Init();
 
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
