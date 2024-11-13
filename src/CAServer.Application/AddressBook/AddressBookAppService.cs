@@ -10,6 +10,7 @@ using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.AddressBook;
 using CAServer.Options;
+using CAServer.Transfer.Proxy;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -29,13 +30,16 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IAddressBookProvider _addressBookProvider;
     private readonly VariablesOptions _variablesOptions;
+    private readonly INetworkCacheService _networkCacheService;
 
     public AddressBookAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IAddressBookProvider addressBookProvider, IOptionsSnapshot<VariablesOptions> variablesOptions)
+        IAddressBookProvider addressBookProvider, IOptionsSnapshot<VariablesOptions> variablesOptions,
+        INetworkCacheService networkCacheService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _addressBookProvider = addressBookProvider;
+        _networkCacheService = networkCacheService;
         _variablesOptions = variablesOptions.Value;
     }
 
@@ -151,38 +155,58 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     public async Task<GetNetworkListDto> GetNetworkListAsync()
     {
-        return new GetNetworkListDto()
+        var networkMap = _networkCacheService.GetNetworkMap();
+        var networkList = new List<AddressBookNetwork>();
+        foreach (var item in networkMap)
         {
-            NetworkList = new List<AddressBookNetwork>()
+            var networkInfo = item.Value;
+            var ad = new AddressBookNetwork()
             {
-                new AddressBookNetwork()
-                {
-                    ChainId = "AELF",
-                    Name = "aelf MainChain",
-                    Network = "aelf",
-                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/mainChain.png"
-                },
-                new AddressBookNetwork()
-                {
-                    ChainId = "tDVW",
-                    Name = "aelf dAppChain",
-                    Network = "aelf",
-                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/dappChain.png"
-                },
-                new AddressBookNetwork()
-                {
-                    Name = "Ethereum",
-                    Network = "ETH",
-                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainEthereum.png"
-                },
-                new AddressBookNetwork()
-                {
-                    Name = "BNB Smart Chain",
-                    Network = "BSC",
-                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainBinance.png"
-                }
-            }
+                Network = AddressHelper.GetNetwork(networkInfo.Network),
+                Name = networkInfo.Name,
+                ImageUrl = networkInfo.ImageUrl,
+                ChainId = AddressHelper.GetNetwork(networkInfo.Network)
+            };
+            networkList.Add(ad);
+        }
+        
+        return new GetNetworkListDto
+        {
+            NetworkList = networkList
         };
+
+        // return new GetNetworkListDto()
+        // {
+        //     NetworkList = new List<AddressBookNetwork>()
+        //     {
+        //         new AddressBookNetwork()
+        //         {
+        //             ChainId = "AELF",
+        //             Name = "aelf MainChain",
+        //             Network = "aelf",
+        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/mainChain.png"
+        //         },
+        //         new AddressBookNetwork()
+        //         {
+        //             ChainId = "tDVW",
+        //             Name = "aelf dAppChain",
+        //             Network = "aelf",
+        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/dappChain.png"
+        //         },
+        //         new AddressBookNetwork()
+        //         {
+        //             Name = "Ethereum",
+        //             Network = "ETH",
+        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainEthereum.png"
+        //         },
+        //         new AddressBookNetwork()
+        //         {
+        //             Name = "BNB Smart Chain",
+        //             Network = "BSC",
+        //             ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainBinance.png"
+        //         }
+        //     }
+        // };
     }
 
     private async Task<bool> CheckNameExistAsync(Guid userId, string name)

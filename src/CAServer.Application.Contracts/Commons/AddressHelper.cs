@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CAServer.Commons;
@@ -26,6 +27,44 @@ public static class AddressHelper
         if (string.IsNullOrEmpty(address)) return string.Empty;
         var chainId = address.Split(FullAddressSeparator).ToList().Last();
         return chainId.Length != 4 ? string.Empty : chainId;
+    }
+
+    public static readonly Dictionary<string, string> ChainNameMap = new Dictionary<string, string>
+    {
+        [CommonConstant.MainChainId] = "aelf",
+        [CommonConstant.TDVWChainId] = "aelf",
+        [CommonConstant.TDVVChainId] = "aelf",
+        ["ARBITRUM"] = "Arbitrum One",
+        ["AVAXC"] = "AVAX C-Chain",
+        ["Base"] = "Base", // need to confirm
+        ["BSC"] = "BNB Smart Chain",
+        ["TBSC"] = "BNB Smart Chain",
+        ["ETH"] = "Ethereum",
+        ["SETH"] = "Ethereum",
+        ["OPTIMISM"] = "Optimism",
+        ["MATIC"] = "Polygon",
+        ["Solana"] = "Solana",
+        ["TRX"] = "TRON",
+        ["TON"] = "The Open Network"
+    };
+
+    public static string GetNetworkName(string network)
+    {
+        return ChainNameMap.GetOrDefault(network);
+    }
+
+    public static string GetNetwork(string network)
+    {
+        return network is CommonConstant.MainChainId or CommonConstant.TDVWChainId or CommonConstant.TDVWChainId
+            ? "aelf"
+            : network;
+    }
+
+    public static string GetAelfChainId(string network)
+    {
+        return network is CommonConstant.MainChainId or CommonConstant.TDVWChainId or CommonConstant.TDVWChainId
+            ? network
+            : null;
     }
 
     public static bool CheckAddress(string network, string address)
