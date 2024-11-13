@@ -1086,6 +1086,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TokenInfoDto, TokenInfoV2Dto>();
         CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
         CreateMap<ChainsInfoIndex, ChainResultDto>();
-        CreateMap< CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
+        CreateMap<CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
+        CreateMap<FreeMintCollectionInfo, FreeMintCollectionInfoDto>();
     }
 }
