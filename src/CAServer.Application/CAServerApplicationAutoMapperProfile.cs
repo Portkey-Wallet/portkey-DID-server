@@ -1101,7 +1101,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TokenInfoDto, TokenInfoV2Dto>();
         CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
         CreateMap<ChainsInfoIndex, ChainResultDto>();
-        CreateMap< CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
+        CreateMap<CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
         
         CreateMap<CAHolderIndex, AddressBook.Dtos.ContactCaHolderInfo>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
@@ -1114,5 +1114,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<AddressInfo, ContactAddressInfo>().ReverseMap();
         CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, CAServer.AddressBook.Dtos.ContactCaHolderInfo>().ReverseMap();
         CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, ContactAddressInfoDto>().ReverseMap();
+        CreateMap<FreeMintCollectionInfo, FreeMintCollectionInfoDto>();
     }
 }

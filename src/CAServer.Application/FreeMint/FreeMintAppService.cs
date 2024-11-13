@@ -49,12 +49,15 @@ public class FreeMintAppService : CAServerAppService, IFreeMintAppService
     public async Task<GetMintInfoDto> GetMintInfoAsync()
     {
         var grain = _clusterClient.GetGrain<IFreeMintGrain>(CurrentUser.GetId());
+        var collectionInfo =
+            ObjectMapper.Map<FreeMintCollectionInfo, FreeMintCollectionInfoDto>(_freeMintOptions.CollectionInfo);
+        collectionInfo.ChainId = GetSideChainId();
+        
         var mintInfoDto = new GetMintInfoDto()
         {
-            CollectionInfo = _freeMintOptions.CollectionInfo,
+            CollectionInfo = collectionInfo,
             IsLimitExceed = grain.CheckLimitExceed().Result,
-            LimitCount = _freeMintOptions.LimitCount,
-            ChainId = GetSideChainId()
+            LimitCount = _freeMintOptions.LimitCount
         };
         return mintInfoDto;
     }

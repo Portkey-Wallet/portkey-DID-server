@@ -1,6 +1,8 @@
+using CAServer.Commons.Etos;
+
 namespace CAServer.FreeMint.Dtos;
 
-public class FreeMintCollectionInfo
+public class FreeMintCollectionInfoDto : ChainDisplayNameDto
 {
     public string ChainId { get; set; }
     public string CollectionName { get; set; }
