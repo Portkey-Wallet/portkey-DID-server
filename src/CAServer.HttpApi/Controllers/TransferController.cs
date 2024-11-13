@@ -91,6 +91,6 @@ public class TransferController : CAServerController
     [HttpGet("support"), AllowAnonymous]
     public async Task<GetSupportNetworkDto> GetSupportNetworkListAsync()
     {
-        return await _transferAppService.GetSupportNetworkListAsync();
+        return await _shiftChainService.GetSupportNetworkListAsync();
     }
 }

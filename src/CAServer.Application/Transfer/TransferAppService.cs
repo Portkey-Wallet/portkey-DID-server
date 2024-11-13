@@ -141,25 +141,4 @@ public class TransferAppService : CAServerAppService, ITransferAppService
 
         return wrapDto;
     }
-
-    public Task<GetSupportNetworkDto> GetSupportNetworkListAsync()
-    {
-        return Task.FromResult(new GetSupportNetworkDto()
-        {
-            SupportedNetworks = new Dictionary<string, Dictionary<string, List<NetworkBasicInfo>>>
-            {
-                ["AELF"] = new Dictionary<string, List<NetworkBasicInfo>>
-                {
-                    ["ELF"]=new List<NetworkBasicInfo>()
-                    {
-                        new NetworkBasicInfo()
-                        {
-                            Name = "ETH",
-                            Network = "Ethereum"
-                        }
-                    }
-                }
-            }
-        });
-    }
 }

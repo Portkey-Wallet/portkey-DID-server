@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.AddressBook.Dtos;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using GetNetworkListDto = CAServer.Transfer.Dtos.GetNetworkListDto;
 
 namespace CAServer.Transfer;
 
@@ -30,8 +32,10 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     private readonly ILogger<ShiftChainService> _logger;
 
     public ShiftChainService(IETransferProxyService eTransferProxyService,
-        IOptionsSnapshot<ChainOptions> chainOptions, ITokenAppService tokenAppService, IHttpClientService httpClientService,
-        IOptionsSnapshot<ETransferOptions> eTransferOptions, INetworkCacheService networkCacheService, TransferAppService transferAppService,
+        IOptionsSnapshot<ChainOptions> chainOptions, ITokenAppService tokenAppService,
+        IHttpClientService httpClientService,
+        IOptionsSnapshot<ETransferOptions> eTransferOptions, INetworkCacheService networkCacheService,
+        TransferAppService transferAppService,
         ILogger<ShiftChainService> logger)
     {
         _eTransferProxyService = eTransferProxyService;
@@ -190,10 +194,12 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     }
 
 
-    private async Task setReceiveByETransfer(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap, Dictionary<string, NetworkInfoDto> networkMap)
+    private async Task setReceiveByETransfer(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap,
+        Dictionary<string, NetworkInfoDto> networkMap)
     {
         string type = "Deposit";
-        var optionList = await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto { Type = type });
+        var optionList =
+            await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto { Type = type });
         foreach (var token in optionList.Data.TokenList)
         {
             var toToken = token.ToTokenList.FirstOrDefault(p => p.Symbol.Equals(token.Symbol));
@@ -206,7 +212,8 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
             ReceiveNetworkDto receiveNetwork = initAELFChain(symbol);
             receiveNetworkMap[symbol] = receiveNetwork;
             var price = await _tokenAppService.GetTokenPriceListAsync(new List<string> { symbol });
-            _logger.LogInformation("setReceiveByETransfer symbol = {0} price = {1}", symbol, JsonConvert.SerializeObject(price));
+            _logger.LogInformation("setReceiveByETransfer symbol = {0} price = {1}", symbol,
+                JsonConvert.SerializeObject(price));
             var maxAmount = ShiftChainHelper.GetMaxAmount(price.Items[0].PriceInUsd);
             foreach (var chainId in toToken.ChainIdList)
             {
@@ -296,7 +303,8 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
         return limiters;
     }
 
-    private void setSendByEBridge(Dictionary<string, SendNetworkDto> sendEBridgeMap, Dictionary<string, NetworkInfoDto> networkMap,
+    private void setSendByEBridge(Dictionary<string, SendNetworkDto> sendEBridgeMap,
+        Dictionary<string, NetworkInfoDto> networkMap,
         EBridgeLimiterDto limiters)
     {
         foreach (var limiter in limiters.Items)
@@ -330,12 +338,57 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
 
     private ReceiveNetworkDto initAELFChain(string symbol)
     {
-        ReceiveNetworkDto receiveNetwork = new ReceiveNetworkDto { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
+        ReceiveNetworkDto receiveNetwork = new ReceiveNetworkDto
+            { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
         foreach (var chainName in _chainOptions.ChainInfos.Keys)
         {
-            receiveNetwork.DestinationMap[chainName] = new List<NetworkInfoDto> { ShiftChainHelper.GetAELFInfo(chainName) };
+            receiveNetwork.DestinationMap[chainName] = new List<NetworkInfoDto>
+                { ShiftChainHelper.GetAELFInfo(chainName) };
         }
 
         return receiveNetwork;
+    }
+
+    public Task<GetSupportNetworkDto> GetSupportNetworkListAsync()
+    {
+        var supportedNetworks = new Dictionary<string, Dictionary<string, List<NetworkBasicInfo>>>();
+
+        _chainOptions.ChainInfos.Keys.ToList().ForEach(chainId =>
+        {
+            supportedNetworks[chainId] = new Dictionary<string, List<NetworkBasicInfo>>();
+        });
+
+        var networkMap = _networkCacheService.GetReceiveNetworkMap();
+        foreach (var networkItem in networkMap)
+        {
+            var symbol = networkItem.Key;
+            var destinationMap = networkItem.Value.DestinationMap;
+            foreach (var destNetworkItem in destinationMap)
+            {
+                var chainId = destNetworkItem.Key;
+                var supportedNetwork = supportedNetworks[chainId];
+                if (!supportedNetwork.ContainsKey(symbol))
+                {
+                    supportedNetwork[symbol] = new List<NetworkBasicInfo>();
+                }
+
+                var supportedNetworkList = supportedNetwork[symbol];
+                foreach (var item in destNetworkItem.Value)
+                {
+                    if (supportedNetworkList.FirstOrDefault(t => t.Network == item.Network) != null)
+                        continue;
+                    supportedNetworkList.Add(new NetworkBasicInfo()
+                    {
+                        Network = item.Network,
+                        Name = AddressHelper.GetNetworkName(item.Network)
+                    });
+                }
+            }
+        }
+
+        return Task.FromResult(new GetSupportNetworkDto()
+        {
+            SupportedNetworks = supportedNetworks
+        });
     }
 }
