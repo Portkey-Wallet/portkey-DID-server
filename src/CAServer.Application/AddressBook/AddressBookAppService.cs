@@ -163,7 +163,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             var ad = new AddressBookNetwork()
             {
                 Network = AddressHelper.GetNetwork(networkInfo.Network),
-                Name = networkInfo.Name,
+                Name = AddressHelper.GetNetworkName(networkInfo.Name),
                 ImageUrl = networkInfo.ImageUrl,
                 ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
             };
