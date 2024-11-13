@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.AddressBook.Dtos;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using GetNetworkListDto = CAServer.Transfer.Dtos.GetNetworkListDto;
 
 namespace CAServer.Transfer;
 
@@ -351,5 +353,48 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
         }
 
         return receiveNetwork;
+    }
+
+    public Task<GetSupportNetworkDto> GetSupportNetworkListAsync()
+    {
+        var supportedNetworks = new Dictionary<string, Dictionary<string, List<NetworkBasicInfo>>>();
+
+        _chainOptions.ChainInfos.Keys.ToList().ForEach(chainId =>
+        {
+            supportedNetworks[chainId] = new Dictionary<string, List<NetworkBasicInfo>>();
+        });
+
+        var networkMap = _networkCacheService.GetReceiveNetworkMap();
+        foreach (var networkItem in networkMap)
+        {
+            var symbol = networkItem.Key;
+            var destinationMap = networkItem.Value.DestinationMap;
+            foreach (var destNetworkItem in destinationMap)
+            {
+                var chainId = destNetworkItem.Key;
+                var supportedNetwork = supportedNetworks[chainId];
+                if (!supportedNetwork.ContainsKey(symbol))
+                {
+                    supportedNetwork[symbol] = new List<NetworkBasicInfo>();
+                }
+
+                var supportedNetworkList = supportedNetwork[symbol];
+                foreach (var item in destNetworkItem.Value)
+                {
+                    if (supportedNetworkList.FirstOrDefault(t => t.Network == item.Network) != null)
+                        continue;
+                    supportedNetworkList.Add(new NetworkBasicInfo()
+                    {
+                        Network = item.Network,
+                        Name = AddressHelper.GetNetworkName(item.Network)
+                    });
+                }
+            }
+        }
+
+        return Task.FromResult(new GetSupportNetworkDto()
+        {
+            SupportedNetworks = supportedNetworks
+        });
     }
 }
