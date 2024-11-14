@@ -270,7 +270,10 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     private void SetNetworkImage(AddressBookDto addressBookDto)
     {
-        addressBookDto.AddressInfo.NetworkImage =
-            _variablesOptions.ImageMap.GetOrDefault(addressBookDto.AddressInfo.Network);
+        var networkId = addressBookDto.AddressInfo.ChainId.IsNullOrEmpty()
+            ? addressBookDto.AddressInfo.Network
+            : addressBookDto.AddressInfo.ChainId;
+        
+        addressBookDto.AddressInfo.NetworkImage = ShiftChainHelper.GetChainImage(networkId);
     }
 }
