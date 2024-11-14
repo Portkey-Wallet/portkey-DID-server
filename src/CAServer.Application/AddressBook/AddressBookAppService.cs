@@ -169,7 +169,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             };
             networkList.Add(ad);
         }
-        
+
         return new GetNetworkListDto
         {
             NetworkList = networkList
@@ -230,7 +230,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
                 Address = input.Address,
                 ChainId = input.ChainId,
                 Network = input.Network,
-                NetworkName = AddressHelper.GetNetworkName(input.Network),
+                NetworkName = GetNetworkName(input.Network, input.ChainId),
                 IsExchange = input.IsExchange
             },
             CaHolderInfo = await GetHolderInfoAsync(input.Address)
@@ -242,6 +242,12 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     private string GetAddress(string network, string address)
     {
         return network != "aelf" ? address : AddressHelper.ToShortAddress(address);
+    }
+
+    private string GetNetworkName(string network, string chainId)
+    {
+        var networkId = chainId.IsNullOrEmpty() ? network : chainId;
+        return AddressHelper.GetNetworkName(networkId);
     }
 
     private async Task<Dtos.ContactCaHolderInfo> GetHolderInfoAsync(string address)
