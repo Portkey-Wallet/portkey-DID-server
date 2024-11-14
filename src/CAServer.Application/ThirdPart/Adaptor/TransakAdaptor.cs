@@ -16,6 +16,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
@@ -107,6 +108,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             var cryptoList =
                 await GetTransakCryptoListWithCacheAsync(request.Type, MappingToTransakNetwork(request.Network), null,
                     request.Fiat);
+            _logger.LogInformation("GetCryptoListAsync {0} request:{1} response:{2}", ThirdPart(),
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(cryptoList));
             AssertHelper.NotEmpty(cryptoList, "Crypto list empty");
 
             var transakNetwork = MappingToTransakNetwork(request.Network);
@@ -141,6 +144,11 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         _logger.LogInformation("Transak adaptor pre heat done");
     }
 
+    public async Task<List<TransakCryptoItem>> GetCryptoCurrenciesAsync()
+    {
+        return await _transakProvider.GetCryptoCurrenciesAsync();
+    }
+    
     // cached crypto list
     private async Task<List<TransakCryptoItem>> GetTransakCryptoListWithCacheAsync(string type,
         [CanBeNull] string network = null, [CanBeNull] string crypto = null, [CanBeNull] string fiat = null)
