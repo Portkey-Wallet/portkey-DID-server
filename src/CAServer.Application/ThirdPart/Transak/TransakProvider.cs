@@ -220,6 +220,7 @@ public class TransakProvider
             withInfoLog: false,
             withDebugLog: false
         );
+        _logger.LogInformation("Transak GetCryptoCurrenciesAsync response:{0}", JsonConvert.SerializeObject(resp));
         AssertHelper.IsTrue(resp.Success,
             "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
             resp.Error?.Message);
