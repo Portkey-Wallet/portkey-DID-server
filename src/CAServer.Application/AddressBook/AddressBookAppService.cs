@@ -188,7 +188,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address,
         string originAddress = "", bool isUpdate = false)
     {
-        if (!AddressHelper.CheckAddress(network, address))
+        if (!ValidateAddress(network, address))
         {
             throw new UserFriendlyException("Invalid address.", AddressBookMessage.AddressInvalidCode);
         }
@@ -218,6 +218,13 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             Logger.LogInformation("### contact:{0}", JsonConvert.SerializeObject(contact));
             throw new UserFriendlyException("This address has already been taken in other contacts");
         }
+    }
+
+    private bool ValidateAddress(string network, string address)
+    {
+        return network == "aelf"
+            ? AElf.AddressHelper.VerifyFormattedAddress(AddressHelper.ToShortAddress(address))
+            : ShiftChainHelper.MatchForAddress(network, network, address);
     }
 
     private async Task<AddressBookDto> GetAddressBookDtoAsync(AddressBookCreateRequestDto input, Guid? contactId = null)
