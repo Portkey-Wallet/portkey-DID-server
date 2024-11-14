@@ -13,8 +13,10 @@ using CAServer.Options;
 using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using Google.Protobuf.WellKnownTypes;
+using MassTransit.Initializers;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -115,6 +117,8 @@ public partial class ThirdPartOrderAppService
                 .Select(list =>
                     list.ToDictionary(crypto => string.Join(CommonConstant.Underline, crypto.Symbol, crypto.Network)))
                 .ToList();
+            _logger.LogInformation("GetRampCryptoListAsync request:{0} response:{1}",
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(cryptoLists));
             AssertHelper.NotEmpty(cryptoLists, "Empty crypto list");
 
             // get support crypto from options
@@ -145,13 +149,36 @@ public partial class ThirdPartOrderAppService
         }
         catch (UserFriendlyException e)
         {
+            //没有打印日志
             Logger.LogWarning(e, "GetRampCryptoListAsync failed, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
             return new CommonResponseDto<RampCryptoDto>().Error(e);
         }
         catch (Exception e)
         {
+            //没有打印日志
             Logger.LogError(e, "GetRampCryptoListAsync ERROR, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
             return new CommonResponseDto<RampCryptoDto>().Error(e, "Internal error, please try again later");
+        }
+    }
+
+    public async Task<(List<TransakCryptoItem>, string)> GetCryptoCurrenciesAsync(RampCryptoRequest request)
+    {
+        try
+        {
+            var tasks = (await GetThirdPartAdaptors(request.Type)).Values
+                .Select(adaptor => adaptor.GetCryptoCurrenciesAsync()).ToList();
+            var result = await Task.WhenAll(tasks);
+            var finalResult = new List<TransakCryptoItem>();
+            foreach (var transakCryptoItemse in result)
+            {
+                finalResult.AddRange(transakCryptoItemse);
+            }
+            return (finalResult, "succeed");
+        }
+        catch (Exception e)
+        {
+            _logger.LogInformation("GetCryptoCurrenciesAsync Error:{0}", e.Message);
+            return (new List<TransakCryptoItem>(), e.Message);
         }
     }
 
