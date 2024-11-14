@@ -230,7 +230,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
                 Address = input.Address,
                 ChainId = input.ChainId,
                 Network = input.Network,
-                NetworkName = GetNetworkName(input.Network),
+                NetworkName = AddressHelper.GetNetworkName(input.Network),
                 IsExchange = input.IsExchange
             },
             CaHolderInfo = await GetHolderInfoAsync(input.Address)
@@ -253,11 +253,6 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
         var caHolder = await _addressBookProvider.GetCaHolderAsync(Guid.Empty, caHash);
         return ObjectMapper.Map<CAHolderIndex, Dtos.ContactCaHolderInfo>(caHolder);
-    }
-
-    private string GetNetworkName(string network)
-    {
-        return "aelf MainChain";
     }
 
     private void SetNetworkImage(AddressBookDto addressBookDto)
