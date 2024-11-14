@@ -115,6 +115,7 @@ public partial class ThirdPartOrderAppService
                 .Select(list =>
                     list.ToDictionary(crypto => string.Join(CommonConstant.Underline, crypto.Symbol, crypto.Network)))
                 .ToList();
+            //没有打印日志
             AssertHelper.NotEmpty(cryptoLists, "Empty crypto list");
 
             // get support crypto from options
@@ -145,11 +146,13 @@ public partial class ThirdPartOrderAppService
         }
         catch (UserFriendlyException e)
         {
+            //没有打印日志
             Logger.LogWarning(e, "GetRampCryptoListAsync failed, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
             return new CommonResponseDto<RampCryptoDto>().Error(e);
         }
         catch (Exception e)
         {
+            //没有打印日志
             Logger.LogError(e, "GetRampCryptoListAsync ERROR, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
             return new CommonResponseDto<RampCryptoDto>().Error(e, "Internal error, please try again later");
         }
