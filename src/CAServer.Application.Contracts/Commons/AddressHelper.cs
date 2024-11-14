@@ -31,9 +31,9 @@ public static class AddressHelper
 
     public static readonly Dictionary<string, string> ChainNameMap = new Dictionary<string, string>
     {
-        [CommonConstant.MainChainId] = "aelf",
-        [CommonConstant.TDVWChainId] = "aelf",
-        [CommonConstant.TDVVChainId] = "aelf",
+        [CommonConstant.MainChainId] = "aelf MainChain",
+        [CommonConstant.TDVWChainId] = "aelf dAppChain",
+        [CommonConstant.TDVVChainId] = "aelf dAppChain",
         ["ARBITRUM"] = "Arbitrum One",
         ["AVAXC"] = "AVAX C-Chain",
         ["Base"] = "Base", // need to confirm
