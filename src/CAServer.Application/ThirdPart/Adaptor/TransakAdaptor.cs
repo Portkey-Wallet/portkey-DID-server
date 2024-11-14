@@ -125,7 +125,6 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         }
         catch (Exception e)
         {
-            //报错日志打出
             _logger.LogError(e, "{ThirdPart} GetCryptoListAsync ERROR", ThirdPart());
         }
 

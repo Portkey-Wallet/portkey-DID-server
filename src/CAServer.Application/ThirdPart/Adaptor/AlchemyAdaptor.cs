@@ -159,7 +159,6 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         }
         catch (UserFriendlyException e)
         {
-            //报错日志打出
             Log.Warning(e, "{ThirdPart} GetCryptoListAsync failed", ThirdPart());
         }
         catch (Exception e)
