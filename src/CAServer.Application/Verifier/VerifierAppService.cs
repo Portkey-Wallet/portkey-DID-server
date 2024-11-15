@@ -149,7 +149,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var response = await _verifierServerClient.VerifyCodeAsync(request);
             if (!response.Success)
             {
-                throw new UserFriendlyException("Validate VerifierCode Failed :" + response.Message);
+                throw new UserFriendlyException(response.Message);
             }
 
             if (!guardianGrainResult.Success)
