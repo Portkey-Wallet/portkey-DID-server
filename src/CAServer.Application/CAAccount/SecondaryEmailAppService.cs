@@ -82,14 +82,14 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         var (key, secondaryEmailCache) = await CheckCacheAndGetEmail(cmd.VerifierSessionId);
         if (secondaryEmailCache == null || secondaryEmailCache.SecondaryEmail.IsNullOrEmpty())
         {
-            throw new UserFriendlyException(ResponseCode.SessionTimeout.ToString());
+            throw new UserFriendlyException(CommonConstant.VerificationCodeExpired);
         }
         
         var result = await _verifierServerClient.VerifySecondaryEmailCodeAsync(
             cmd.VerifierSessionId, cmd.VerificationCode, secondaryEmailCache.SecondaryEmail, secondaryEmailCache.VerifierServerEndpoint);
         if (!result.Success)
         {
-            throw new UserFriendlyException("Validate VerifierCode Failed :" + result.Message);
+            throw new UserFriendlyException(result.Message);
         }
 
         var saveResult = await SetSecondaryEmailAsync(new SetSecondaryEmailCmd()
@@ -107,7 +107,7 @@ public class SecondaryEmailAppService : CAServerAppService, ISecondaryEmailAppSe
         var (key, secondaryEmailCache) = await CheckCacheAndGetEmail(cmd.VerifierSessionId);
         if (secondaryEmailCache == null || secondaryEmailCache.SecondaryEmail.IsNullOrEmpty())
         {
-            throw new UserFriendlyException(ResponseCode.SessionTimeout.ToString());
+            throw new UserFriendlyException(CommonConstant.VerificationCodeExpired);
         }
         
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(CurrentUser.GetId());
