@@ -143,7 +143,10 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
         foreach (var contact in contactList)
         {
-            contact.AddressInfo.NetworkImage = _variablesOptions.ImageMap.GetOrDefault(contact.AddressInfo.Network);
+            var networkId = contact.AddressInfo.ChainId.IsNullOrEmpty()
+                ? contact.AddressInfo.Network
+                : contact.AddressInfo.ChainId;
+            contact.AddressInfo.NetworkImage = ShiftChainHelper.GetChainImage(networkId);
         }
 
         return new PagedResultDto<AddressBookDto>
