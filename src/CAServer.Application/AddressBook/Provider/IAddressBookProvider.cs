@@ -24,7 +24,7 @@ public interface IAddressBookProvider
         int maxResultCount = 10);
 
     Task<AddressBookIndex> GetContactByAddressInfoAsync(Guid userId, string network, string chainId,
-        string address);
+        string address, bool isExchange);
 
     Task<Tuple<long, List<AddressBookIndex>>> GetListAsync(Guid userId, AddressBookListRequestDto input);
 }
@@ -83,13 +83,14 @@ public class AddressBookProvider : IAddressBookProvider, ISingletonDependency
     }
 
     public async Task<AddressBookIndex> GetContactByAddressInfoAsync(Guid userId, string network, string chainId,
-        string address)
+        string address, bool isExchange)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<AddressBookIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.AddressInfo.Network).Value(network)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.AddressInfo.ChainId).Value(chainId)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.AddressInfo.Address).Value(address)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.AddressInfo.IsExchange).Value(isExchange)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
         QueryContainer Filter(QueryContainerDescriptor<AddressBookIndex> f) => f.Bool(b => b.Must(mustQuery));
         var contacts = await _addressBookRepository.GetListAsync(Filter);
@@ -115,32 +116,32 @@ public class AddressBookProvider : IAddressBookProvider, ISingletonDependency
         return await _addressBookRepository.GetListByLucenceAsync(filter, sort,
             input.MaxResultCount, input.SkipCount);
     }
-    
-        private static IEnumerable<SortType> ConvertSortOrder(string sort)
+
+    private static IEnumerable<SortType> ConvertSortOrder(string sort)
+    {
+        var sortList = new List<SortType>();
+        foreach (var sortOrder in sort.Split(","))
         {
-            var sortList = new List<SortType>();
-            foreach (var sortOrder in sort.Split(","))
+            var array = sortOrder.Split(" ");
+            var order = SortOrder.Ascending;
+            if (string.Equals(array.Last(), "asc", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(array.Last(), "ascending", StringComparison.OrdinalIgnoreCase))
             {
-                var array = sortOrder.Split(" ");
-                var order = SortOrder.Ascending;
-                if (string.Equals(array.Last(), "asc", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(array.Last(), "ascending", StringComparison.OrdinalIgnoreCase))
-                {
-                    order = SortOrder.Ascending;
-                }
-                else if (string.Equals(array.Last(), "desc", StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(array.Last(), "descending", StringComparison.OrdinalIgnoreCase))
-                {
-                    order = SortOrder.Descending;
-                }
-    
-                sortList.Add(new SortType
-                {
-                    SortField = array.First(),
-                    SortOrder = order
-                });
+                order = SortOrder.Ascending;
             }
-    
-            return sortList;
+            else if (string.Equals(array.Last(), "desc", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(array.Last(), "descending", StringComparison.OrdinalIgnoreCase))
+            {
+                order = SortOrder.Descending;
+            }
+
+            sortList.Add(new SortType
+            {
+                SortField = array.First(),
+                SortOrder = order
+            });
         }
+
+        return sortList;
+    }
 }
