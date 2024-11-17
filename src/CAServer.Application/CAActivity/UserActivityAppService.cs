@@ -399,6 +399,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         foreach (var item in indexerTransactionDto.TokenTransferInfos)
         {
+            if (!caAddresses.Contains(item.TransferInfo.FromAddress) &&
+                !caAddresses.Contains(item.TransferInfo.ToAddress))
+                continue;
+
             var operationInfo = new OperationItemInfo();
             operationInfo.Amount = item.TransferInfo.Amount.ToString();
 
@@ -435,6 +439,36 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             activityDto.Operations.Add(operationInfo);
         }
+
+        MergeOperations(activityDto);
+    }
+
+    private void MergeOperations(GetActivityDto activityDto)
+    {
+        if (activityDto.Operations.IsNullOrEmpty()) return;
+
+        var operations = activityDto.Operations;
+        var mergedOperations = new List<OperationItemInfo>();
+        var symbols = activityDto.Operations.Select(t => t.Symbol);
+
+        foreach (var symbol in symbols)
+        {
+            var income = operations.FirstOrDefault(t => t.Symbol == symbol && t.IsReceived);
+            var outcome = operations.FirstOrDefault(t => t.Symbol == symbol && !t.IsReceived);
+            if (income != null)
+            {
+                income.Amount = operations.Where(t => t.IsReceived).Sum(t => Convert.ToInt64(t.Amount)).ToString();
+                mergedOperations.Add(income);
+            }
+            
+            if (outcome != null)
+            {
+                outcome.Amount = operations.Where(t => !t.IsReceived).Sum(t => Convert.ToInt64(t.Amount)).ToString();
+                mergedOperations.Add(outcome);
+            }
+        }
+
+        activityDto.Operations = mergedOperations;
     }
 
     public async Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request)
