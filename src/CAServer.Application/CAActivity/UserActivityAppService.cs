@@ -269,6 +269,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
+        var contractConfig =
+            _activityOptions.ContractConfigs.FirstOrDefault(t => t.ContractAddress == toContractAddress);
+
+        if (contractConfig != null && !contractConfig.DappName.IsNullOrEmpty())
+        {
+            activityDto.DappName = contractConfig.DappName;
+            activityDto.DappIcon = contractConfig.DappIcon;
+            return;
+        }
+
         var tokenSpender =
             _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t => t.ContractAddress == toContractAddress);
         if (tokenSpender == null)
@@ -445,7 +455,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (request.ActivityType != CommonConstant.TransferCard)
             {
                 caAddressInfos = request.CaAddressInfos.IsNullOrEmpty()
-                    ? new List<CAAddressInfo>() : request.CaAddressInfos;
+                    ? new List<CAAddressInfo>()
+                    : request.CaAddressInfos;
             }
 
             var indexerTransactions =
@@ -844,6 +855,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
             dto.FromChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.FromChainId);
             dto.ToChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.ToChainId);
+            dto.FromChainIcon = ChainDisplayNameHelper.GetChainUrl(dto.FromChainId);
+            dto.ToChainIcon = ChainDisplayNameHelper.GetChainUrl(dto.ToChainId);
             getActivitiesDto.Add(dto);
         }
 
@@ -957,7 +970,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
         return true;
     }
-    
+
     private void AppendStatusIcon(GetActivityDto activityDto)
     {
         activityDto.StatusIcon = activityDto.TransactionType switch

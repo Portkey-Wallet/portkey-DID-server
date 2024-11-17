@@ -35,6 +35,9 @@ public class TransactionFeeFix
 public class ContractConfig
 {
     public string ContractAddress { get; set; }
+    // display name and icon, maybe not dapp, just contract.
+    public string DappName { get; set; }
+    public string DappIcon { get; set; }
     public Dictionary<string, string> MethodNameMap { get; set; } = new();
 }
 
