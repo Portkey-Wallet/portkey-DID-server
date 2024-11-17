@@ -9,10 +9,8 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.AddressBook;
-using CAServer.Options;
 using CAServer.Transfer.Proxy;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -29,32 +27,25 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IAddressBookProvider _addressBookProvider;
-    private readonly VariablesOptions _variablesOptions;
     private readonly INetworkCacheService _networkCacheService;
 
     public AddressBookAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IAddressBookProvider addressBookProvider, IOptionsSnapshot<VariablesOptions> variablesOptions,
-        INetworkCacheService networkCacheService)
+        IAddressBookProvider addressBookProvider, INetworkCacheService networkCacheService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _addressBookProvider = addressBookProvider;
         _networkCacheService = networkCacheService;
-        _variablesOptions = variablesOptions.Value;
     }
 
     public async Task<AddressBookDto> CreateAsync(AddressBookCreateRequestDto requestDto)
     {
         requestDto.Address = GetAddress(requestDto.Network, requestDto.Address);
         var userId = CurrentUser.GetId();
-        // var existed = await CheckNameExistAsync(userId, requestDto.Name);
-        // if (existed)
-        // {
-        //     throw new UserFriendlyException(ContactMessage.ExistedMessage);
-        // }
 
         // todo: check address valid
-        await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address);
+        await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address,
+            requestDto.IsExchange);
 
         var addressBookDto = await GetAddressBookDtoAsync(requestDto);
         addressBookDto.UserId = userId;
@@ -89,7 +80,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         }
 
         await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address,
-            originAddress: contactResult.Data.AddressInfo.Address, isUpdate: true);
+            requestDto.IsExchange, originAddress: contactResult.Data.AddressInfo.Address, isUpdate: true);
 
         var addressBookDto = await GetAddressBookDtoAsync(requestDto);
         addressBookDto.UserId = userId;
@@ -188,7 +179,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         return await contactNameGrain.IsNameExist(name);
     }
 
-    private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address,
+    private async Task CheckAddressAsync(Guid userId, string network, string chainId, string address, bool isExchange,
         string originAddress = "", bool isUpdate = false)
     {
         if (!ValidateAddress(network, address))
@@ -196,6 +187,22 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             throw new UserFriendlyException("Invalid address.", AddressBookMessage.AddressInvalidCode);
         }
 
+        if (isUpdate && originAddress == address) return;
+
+        if (!isExchange) await CheckSelfAsync(userId, address);
+
+        // check if address already exist
+        var contact =
+            await _addressBookProvider.GetContactByAddressInfoAsync(userId, network, chainId, address, isExchange);
+        if (contact != null)
+        {
+            Logger.LogInformation("### contact:{0}", JsonConvert.SerializeObject(contact));
+            throw new UserFriendlyException("This address has already been taken in other contacts");
+        }
+    }
+
+    private async Task CheckSelfAsync(Guid userId, string address)
+    {
         // check self
         var holder = await _addressBookProvider.GetCaHolderAsync(userId, string.Empty);
         if (holder == null)
@@ -208,24 +215,11 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         {
             throw new UserFriendlyException("Unable to add yourself to your Contacts");
         }
-
-        if (isUpdate && originAddress == address)
-        {
-            return;
-        }
-
-        // check if address already exist
-        var contact = await _addressBookProvider.GetContactByAddressInfoAsync(userId, network, chainId, address);
-        if (contact != null)
-        {
-            Logger.LogInformation("### contact:{0}", JsonConvert.SerializeObject(contact));
-            throw new UserFriendlyException("This address has already been taken in other contacts");
-        }
     }
 
     private bool ValidateAddress(string network, string address)
     {
-        return network == "aelf"
+        return network == CommonConstant.ChainName
             ? AElf.AddressHelper.VerifyFormattedAddress(AddressHelper.ToShortAddress(address))
             : ShiftChainHelper.MatchForAddress(network, network, address);
     }
@@ -251,7 +245,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     private string GetAddress(string network, string address)
     {
-        return network != "aelf" ? address : AddressHelper.ToShortAddress(address);
+        return network != CommonConstant.ChainName ? address : AddressHelper.ToShortAddress(address);
     }
 
     private string GetNetworkName(string network, string chainId)
@@ -276,7 +270,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         var networkId = addressBookDto.AddressInfo.ChainId.IsNullOrEmpty()
             ? addressBookDto.AddressInfo.Network
             : addressBookDto.AddressInfo.ChainId;
-        
+
         addressBookDto.AddressInfo.NetworkImage = ShiftChainHelper.GetChainImage(networkId);
     }
 }
