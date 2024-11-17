@@ -455,13 +455,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             var income = operations.FirstOrDefault(t => t.Symbol == symbol && t.IsReceived);
             var outcome = operations.FirstOrDefault(t => t.Symbol == symbol && !t.IsReceived);
-            if (income != null)
+            if (income != null && !mergedOperations.Exists(t => t.Symbol == symbol && t.IsReceived))
             {
                 income.Amount = operations.Where(t => t.IsReceived).Sum(t => Convert.ToInt64(t.Amount)).ToString();
                 mergedOperations.Add(income);
             }
-            
-            if (outcome != null)
+
+            if (outcome != null && !mergedOperations.Exists(t => t.Symbol == symbol && !t.IsReceived))
             {
                 outcome.Amount = operations.Where(t => !t.IsReceived).Sum(t => Convert.ToInt64(t.Amount)).ToString();
                 mergedOperations.Add(outcome);
