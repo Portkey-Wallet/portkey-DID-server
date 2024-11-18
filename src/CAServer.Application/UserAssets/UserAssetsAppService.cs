@@ -353,7 +353,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return dto;
             }
 
-            var totalItemCount = res.CaHolderNFTCollectionBalanceInfo.Data.SelectMany(item => item.TokenIds).Sum();
+            var totalItemCount = res.CaHolderNFTCollectionBalanceInfo.Data.SelectMany(item => item.TokenIds).Count();
             res.CaHolderNFTCollectionBalanceInfo.Data = res.CaHolderNFTCollectionBalanceInfo.Data
                 .Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
