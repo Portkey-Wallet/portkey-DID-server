@@ -70,7 +70,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             Query = @"
 			    query($caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderNFTCollectionBalanceInfo(dto:{caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{id,chainId,caAddress,tokenIds,nftCollectionInfo{symbol,decimals,tokenName,imageUrl,totalSupply}},totalRecordCount,totalItemCount}
+                        data{id,chainId,caAddress,tokenIds,nftCollectionInfo{symbol,decimals,tokenName,imageUrl,totalSupply}},totalRecordCount}
                 }",
             Variables = new
             {
