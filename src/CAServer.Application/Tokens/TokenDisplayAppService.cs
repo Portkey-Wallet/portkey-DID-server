@@ -70,7 +70,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
         IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
-        )
+    )
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -252,7 +252,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             });
 
             // await filterZeroByConfig(dto);
-            
+
             return dto;
         }
         catch (Exception e)
@@ -261,7 +261,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
     }
-    
+
     private async Task filterZeroByConfig(GetTokenDto dto)
     {
         try
@@ -413,15 +413,15 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         var dto = new SearchUserPackageAssetsDto
         {
             TotalRecordCount = userPackageFtAssetsWithPositiveBalance.Count +
-                               userPackageNftAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
-            FtRecordCount = userPackageFtAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
+                               userPackageNftAssetsWithPositiveBalance.Count,
+            FtRecordCount = userPackageFtAssetsWithPositiveBalance.Count,
             NftRecordCount = userPackageNftAssetsWithPositiveBalance.Count,
             Data = new List<UserPackageAsset>()
         };
 
         dto.Data.AddRange(userPackageFtAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
-        dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
+        //dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
         dto.Data = SortUserPackageAssets(dto.Data);
 
         SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
