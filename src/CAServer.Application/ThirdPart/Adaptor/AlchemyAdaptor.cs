@@ -152,14 +152,15 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
                 .Where(c => request.IsBuy ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0)
                 .GroupBy(c => string.Join(CommonConstant.Underline, c.Crypto, c.Network))
                 .Select(g => g.First());
-        
-            _logger.LogInformation("GetCryptoListAsync alchemyCryptoList cryptoItem {0} request:{1} response:{2}", ThirdPart(),
-                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(alchemyCryptoList));
-            return cryptoItem.Select(item => new RampCurrencyItem()
+            
+            var rest = cryptoItem.Select(item => new RampCurrencyItem()
             {
                 Symbol = MappingFromAchSymbol(item.Crypto),
                 Network = MappingFromAlchemyNetwork(item.Network),
             }).ToList();
+            _logger.LogInformation("GetCryptoListAsync alchemyCryptoList cryptoItem {0} request:{1} response:{2}", ThirdPart(),
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(rest));
+            return rest;
         }
         catch (UserFriendlyException e)
         {
