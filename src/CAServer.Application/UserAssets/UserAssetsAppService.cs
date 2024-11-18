@@ -344,7 +344,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         try
         {
             var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(requestDto.CaAddressInfos,
-                requestDto.SkipCount, requestDto.MaxResultCount);
+                0, LimitedResultRequestDto.MaxMaxResultCount);
 
             var dto = new GetNftCollectionsDto
             {
@@ -359,8 +359,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return dto;
             }
 
-            _logger.LogInformation("[GetNFTCollectionsAsync] get from indexer: {0}",
-                JsonConvert.SerializeObject(res.CaHolderNFTCollectionBalanceInfo));
+            var totalItemCount = res.CaHolderNFTCollectionBalanceInfo.Data.SelectMany(item => item.TokenIds).Sum();
+            res.CaHolderNFTCollectionBalanceInfo.Data = res.CaHolderNFTCollectionBalanceInfo.Data
+                .Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
@@ -388,7 +389,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             DealWithDisplayChainImage(dto);
             //dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
-            dto.TotalRecordCount = res.CaHolderNFTCollectionBalanceInfo.TotalItemCount;
+            dto.TotalRecordCount = totalItemCount;
             return dto;
         }
         catch (Exception e)
