@@ -226,6 +226,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     private async Task<AddressBookDto> GetAddressBookDtoAsync(AddressBookCreateRequestDto input, Guid? contactId = null)
     {
+        var caHolderInfo = input.IsExchange ? null : await GetHolderInfoAsync(input.Address);
         var addressBookDto = new AddressBookDto
         {
             Name = input.Name,
@@ -237,7 +238,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
                 NetworkName = GetNetworkName(input.Network, input.ChainId),
                 IsExchange = input.IsExchange
             },
-            CaHolderInfo = await GetHolderInfoAsync(input.Address)
+            CaHolderInfo = caHolderInfo
         };
 
         return addressBookDto;
