@@ -68,7 +68,7 @@ public class TokenProvider : ITokenProvider, ISingletonDependency
             Query = @"
 			    query($chainId:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderTokenApproved(dto: {chainId:$chainId,caAddresses:$caAddresses,,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,caAddress,spender,symbol,batchApprovedAmount}, totalRecordCount
+                        data{chainId,caAddress,spender,symbol,batchApprovedAmount,updateTime}, totalRecordCount
                     }
                 }",
             Variables = new
