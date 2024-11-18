@@ -379,7 +379,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             SetSeedStatusAndTrimCollectionNameForCollections(dto.Data);
 
             TryUpdateImageUrlForCollections(dto.Data);
-            dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
+            //dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
+            dto.TotalRecordCount = res.CaHolderNFTCollectionBalanceInfo.TotalItemCount;
             return dto;
         }
         catch (Exception e)
