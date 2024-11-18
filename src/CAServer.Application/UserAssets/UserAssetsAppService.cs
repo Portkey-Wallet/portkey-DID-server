@@ -387,7 +387,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             TryUpdateImageUrlForCollections(dto.Data);
 
             DealWithDisplayChainImage(dto);
-            dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
+            //dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
+            dto.TotalRecordCount = res.CaHolderNFTCollectionBalanceInfo.TotalItemCount;
             return dto;
         }
         catch (Exception e)
