@@ -110,6 +110,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                     request.Fiat);
             _logger.LogInformation("GetCryptoListAsync {0} request:{1} response:{2}", ThirdPart(),
                 JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(cryptoList));
+            _logger.LogInformation("GetCryptoListAsync alchemyCryptoList {0} request:{1} response:{2}", ThirdPart(),
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(cryptoList));
             AssertHelper.NotEmpty(cryptoList, "Crypto list empty");
 
             var transakNetwork = MappingToTransakNetwork(request.Network);

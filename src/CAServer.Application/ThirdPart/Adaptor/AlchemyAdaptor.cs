@@ -142,15 +142,19 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
             var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
                 new GetAlchemyCryptoListDto { Fiat = request.Fiat });
+            _logger.LogInformation("GetCryptoListAsync alchemyCryptoList {0} request:{1} response:{2}", ThirdPart(),
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(alchemyCryptoList));
             AssertHelper.IsTrue(alchemyCryptoList.Success, "Crypto list query failed.");
 
             var alchemyNetwork = MappingToAlchemyNetwork(request.Network);
             var cryptoItem = alchemyCryptoList.Data
-                .Where(c => c.Network == alchemyNetwork)
+                .Where(c => string.IsNullOrEmpty(alchemyNetwork) || c.Network == alchemyNetwork)
                 .Where(c => request.IsBuy ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0)
                 .GroupBy(c => string.Join(CommonConstant.Underline, c.Crypto, c.Network))
                 .Select(g => g.First());
         
+            _logger.LogInformation("GetCryptoListAsync alchemyCryptoList cryptoItem {0} request:{1} response:{2}", ThirdPart(),
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(alchemyCryptoList));
             return cryptoItem.Select(item => new RampCurrencyItem()
             {
                 Symbol = MappingFromAchSymbol(item.Crypto),
