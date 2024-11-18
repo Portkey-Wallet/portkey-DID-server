@@ -501,15 +501,15 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         var dto = new SearchUserPackageAssetsDto
         {
             TotalRecordCount = userPackageFtAssetsWithPositiveBalance.Count +
-                               userPackageNftAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
-            FtRecordCount = userPackageFtAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
+                               userPackageNftAssetsWithPositiveBalance.Count,
+            FtRecordCount = userPackageFtAssetsWithPositiveBalance.Count,
             NftRecordCount = userPackageNftAssetsWithPositiveBalance.Count,
             Data = new List<UserPackageAsset>()
         };
 
         dto.Data.AddRange(userPackageFtAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
-        dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
+        //dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
         dto.Data = SortUserPackageAssets(dto.Data);
 
         SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
