@@ -734,7 +734,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                         item.Label = ftInfo.Label;
                         item.NftInfo = null;
                         dto.Data.Add(item);
-                        continue;
+                        //continue;
                     }
 
                     item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
