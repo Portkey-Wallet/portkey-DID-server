@@ -305,10 +305,11 @@ public class AddressBookMigrateService : IAddressBookMigrateService, ISingletonD
 
         foreach (var address in contact.Addresses)
         {
+            var contactName = address.ChainId != CommonConstant.MainChainId ? name + "_dAppChain" : name + "_MainChain";
             var migrateDto = new AddressBookMigrateDto
             {
                 UserId = contact.UserId,
-                Name = name,
+                Name = contactName,
                 Address = address.Address,
                 ChainId = address.ChainId,
                 Network = "aelf",
