@@ -157,7 +157,7 @@ public static class ShiftChainHelper
             return AddressFormat.Dapp;
         }
 
-        if (address.Length == 50)
+        if (IsAelfAddress(address))
         {
             if (fromChain == CommonConstant.MainChainId)
             {
@@ -195,6 +195,18 @@ public static class ShiftChainHelper
         return addressSuffix
             .Split('_')
             .FirstOrDefault(p => p.Length == 50) ?? addressSuffix;
+    }
+    
+    private static bool IsAelfAddress(string address)
+    {
+        try
+        {
+            return AElf.AddressHelper.VerifyFormattedAddress(address);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
 
