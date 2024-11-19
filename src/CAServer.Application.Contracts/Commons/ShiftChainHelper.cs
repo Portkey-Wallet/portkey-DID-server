@@ -104,6 +104,19 @@ public static class ShiftChainHelper
         { "TRX", new ChainInfo("TRX", "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainTron.png", AddressFormat.TRX) },
         { "TON", new ChainInfo("TON", "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/chain/ChainTON.png", AddressFormat.TON) },
     };
+    
+    public static readonly Dictionary<string, string> NetworkPatternMap = new Dictionary<string, string>
+    {
+        { "SETH", "^0x[a-fA-F0-9]{40}$" },
+        { "ETH", "^0x[a-fA-F0-9]{40}$" },
+        { "BSC", "^0x[a-fA-F0-9]{40}$" },
+        { "ARBITRUM", "^0x[a-fA-F0-9]{40}$" },
+        { "MATIC", "^0x[a-fA-F0-9]{40}$" },
+        { "OPTIMISM", "^0x[a-fA-F0-9]{40}$" },
+        { "AVAXC", "^0x[a-fA-F0-9]{40}$" },
+        { "TRX", "^T[1-9A-HJ-NP-Za-km-z]{33}$" },
+        { "Solana", "^[1-9A-HJ-NP-Za-km-z]{32,44}$" },
+    };
 
     public static string GetChainImage(string network)
     {
@@ -195,6 +208,21 @@ public static class ShiftChainHelper
         return addressSuffix
             .Split('_')
             .FirstOrDefault(p => p.Length == 50) ?? addressSuffix;
+    }
+    
+    public static bool VerifyAddress(string chain, string address)
+    {
+        if (!ChainInfoMap.TryGetValue(chain, out var info))
+        {
+            return false;
+        }
+        
+        if(chain is CommonConstant.MainChainId or CommonConstant.TDVVChainId or CommonConstant.TDVWChainId)
+        {
+            return AElf.AddressHelper.VerifyFormattedAddress(address);
+        } 
+        
+        return !NetworkPatternMap.ContainsKey(chain) || Regex.IsMatch(address, NetworkPatternMap[chain]);
     }
 }
 
