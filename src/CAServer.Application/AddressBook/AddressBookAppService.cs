@@ -187,7 +187,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
         if (isUpdate && originAddress == address) return;
 
-        if (!isExchange) await CheckSelfAsync(userId, address);
+        await CheckSelfAsync(userId, address);
 
         // check if address already exist
         var contact =
