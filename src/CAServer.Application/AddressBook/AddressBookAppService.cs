@@ -42,8 +42,6 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     {
         requestDto.Address = GetAddress(requestDto.Network, requestDto.Address);
         var userId = CurrentUser.GetId();
-
-        // todo: check address valid
         await CheckAddressAsync(userId, requestDto.Network, requestDto.ChainId, requestDto.Address,
             requestDto.IsExchange);
 
@@ -221,7 +219,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     {
         return network == CommonConstant.ChainName
             ? AElf.AddressHelper.VerifyFormattedAddress(AddressHelper.ToShortAddress(address))
-            : ShiftChainHelper.MatchForAddress(network, network, address);
+            : ShiftChainHelper.VerifyAddress(network, address);
     }
 
     private async Task<AddressBookDto> GetAddressBookDtoAsync(AddressBookCreateRequestDto input, Guid? contactId = null)
