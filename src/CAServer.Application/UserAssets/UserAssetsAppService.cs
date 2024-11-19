@@ -388,8 +388,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             TryUpdateImageUrlForCollections(dto.Data);
 
             DealWithDisplayChainImage(dto);
-            dto.TotalRecordCount = totalItemCount;
-            dto.TotalNftItemCount = res.CaHolderNFTCollectionBalanceInfo.TotalRecordCount;
+            dto.TotalNftItemCount = totalItemCount;
             return dto;
         }
         catch (Exception e)
