@@ -7,6 +7,7 @@ public class GetNftCollectionsDto
 {
     public List<NftCollection> Data { get; set; }
     public long TotalRecordCount { get; set; }
+    public long TotalNftItemCount { get; set; }
 }
 
 public class NftCollection : ChainDisplayNameDto

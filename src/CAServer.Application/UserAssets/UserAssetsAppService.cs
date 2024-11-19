@@ -380,8 +380,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             SetSeedStatusAndTrimCollectionNameForCollections(dto.Data);
 
             TryUpdateImageUrlForCollections(dto.Data);
-            //dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
-            dto.TotalRecordCount = totalItemCount;
+            dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
+            dto.TotalNftItemCount = res.CaHolderNFTCollectionBalanceInfo.TotalRecordCount;
             return dto;
         }
         catch (Exception e)
@@ -390,8 +390,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
         }
     }
-    
-    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto, SearchUserAssetsDto searchDto)
+
+    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto,
+        SearchUserAssetsDto searchDto)
     {
         var nftRequestDto = _objectMapper.Map<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>(requestDto);
         var collectionsDto = await GetNFTCollectionsAsync(nftRequestDto);
