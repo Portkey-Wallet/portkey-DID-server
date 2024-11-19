@@ -69,7 +69,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
         IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
-        )
+    )
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -212,7 +212,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             });
 
             // await filterZeroByConfig(dto);
-            
+
             return dto;
         }
         catch (Exception e)
@@ -221,7 +221,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
     }
-    
+
     private async Task filterZeroByConfig(GetTokenDto dto)
     {
         try
@@ -374,7 +374,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     }
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(
-        SearchUserPackageAssetsRequestDto requestDto)
+        SearchUserPackageAssetsRequestDto requestDto, string apiVersion = "")
     {
         var userPackageFtAssetsIndex = await GetUserPackageFtAssetsIndexAsync(requestDto);
         var ftTokens = userPackageFtAssetsIndex.Items.ToList();
@@ -400,7 +400,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             UnMatchAndConvertToUserPackageAssets(ftTokens, userPackageFtAssetsWithPositiveBalance);
 
         return MergeAndBuildDto(matchedItems, ConvertToUserPackageAssets(userPackageNftAssetsWithPositiveBalance),
-            unmatchedItems);
+            unmatchedItems, apiVersion);
     }
 
     private List<UserPackageAsset> ConvertToUserPackageAssets(List<UserAsset> userPackageNftAssetsWithPositiveBalance)
@@ -484,20 +484,27 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     private SearchUserPackageAssetsDto MergeAndBuildDto(
         List<UserPackageAsset> userPackageFtAssetsWithPositiveBalance,
         List<UserPackageAsset> userPackageNftAssetsWithPositiveBalance,
-        List<UserPackageAsset> userPackageFtAssetsWithNoBalance)
+        List<UserPackageAsset> userPackageFtAssetsWithNoBalance,
+        string apiVersion)
     {
+        if (apiVersion == CommonConstant.V2ApiVersion)
+        {
+            userPackageFtAssetsWithNoBalance =
+                userPackageFtAssetsWithNoBalance.Where(t => t.Symbol == CommonConstant.V2ApiVersion).ToList();
+        }
+
         var dto = new SearchUserPackageAssetsDto
         {
             TotalRecordCount = userPackageFtAssetsWithPositiveBalance.Count +
-                               userPackageNftAssetsWithPositiveBalance.Count,
-            FtRecordCount = userPackageFtAssetsWithPositiveBalance.Count,
+                               userPackageNftAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
+            FtRecordCount = userPackageFtAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
             NftRecordCount = userPackageNftAssetsWithPositiveBalance.Count,
             Data = new List<UserPackageAsset>()
         };
 
         dto.Data.AddRange(userPackageFtAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
-        //dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
+        dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
         dto.Data = SortUserPackageAssets(dto.Data);
 
         SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
@@ -756,7 +763,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
                 .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
-            
+
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
             SetSeedStatusAndTypeForUserAssets(dto.Data);
 
