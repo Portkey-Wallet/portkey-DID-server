@@ -4,6 +4,7 @@ namespace CAServer.AddressBook.Migrate.Eto;
 
 public class AddressBookMigrateEto
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public Guid OriginalContactId { get; set; }
     public Guid NewContactId { get; set; }
     public Guid UserId { get; set; }
