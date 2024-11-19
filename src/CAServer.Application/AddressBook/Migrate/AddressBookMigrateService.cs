@@ -12,6 +12,7 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.AddressBook;
 using CAServer.Options;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -19,6 +20,7 @@ using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -35,11 +37,13 @@ public class AddressBookMigrateService : IAddressBookMigrateService, ISingletonD
     private readonly IAddressBookProvider _addressBookProvider;
     private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
     private readonly IOptionsMonitor<ContactMigrateOptions> _options;
+    private readonly IDistributedCache<ContactMigrateCache> _distributedCache;
+    private const string MigrateCacheKey = "ContactMigrateCache";
 
     public AddressBookMigrateService(ILogger<AddressBookMigrateService> logger, IObjectMapper objectMapper,
         IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         IAddressBookProvider addressBookProvider, INESTRepository<ContactIndex, Guid> contactRepository,
-        IOptionsMonitor<ContactMigrateOptions> options)
+        IOptionsMonitor<ContactMigrateOptions> options, IDistributedCache<ContactMigrateCache> distributedCache)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -48,13 +52,23 @@ public class AddressBookMigrateService : IAddressBookMigrateService, ISingletonD
         _addressBookProvider = addressBookProvider;
         _contactRepository = contactRepository;
         _options = options;
+        _distributedCache = distributedCache;
     }
 
     public async Task MigrateAsync()
     {
-        // get index
         _logger.LogInformation("[AddressBookMigrate] migrate service start.");
-        var contacts = await GetContactsAsync(Guid.Empty, 0, _options.CurrentValue.MigrateCount);
+
+        var userId = Guid.Empty;
+        if (!_options.CurrentValue.UserId.IsNullOrEmpty())
+        {
+            userId = Guid.Parse(_options.CurrentValue.UserId);
+        }
+
+        var migrateCache = await _distributedCache.GetAsync(MigrateCacheKey);
+        var skip = migrateCache?.MigrateCount ?? 0;
+        var limit = _options.CurrentValue.MigrateCount;
+        var contacts = await GetContactsAsync(userId, skip, limit);
         if (contacts.IsNullOrEmpty())
         {
             _logger.LogInformation("[AddressBookMigrate] contacts empty.");
@@ -79,6 +93,14 @@ public class AddressBookMigrateService : IAddressBookMigrateService, ISingletonD
             }
         }
 
+        var migrateCount = skip + limit;
+        await _distributedCache.SetAsync(MigrateCacheKey, new ContactMigrateCache
+        {
+            MigrateCount = migrateCount
+        }, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+        });
         _logger.LogInformation("[AddressBookMigrate] migrate service end.");
     }
 
