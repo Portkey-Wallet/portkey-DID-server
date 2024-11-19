@@ -198,7 +198,7 @@ public static class ShiftChainHelper
             return AddressFormat.Solana;
         }
 
-        if (address.Length == 48)
+        if (address.Length == 48 && (address.StartsWith("EQ") || address.StartsWith("UQ")))
         {
             return AddressFormat.TON;
         }
