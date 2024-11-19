@@ -457,15 +457,29 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var outcome = operations.FirstOrDefault(t => t.Symbol == symbol && !t.IsReceived);
             if (income != null && !mergedOperations.Exists(t => t.Symbol == symbol && t.IsReceived))
             {
-                income.Amount = operations.Where(t => t.IsReceived).Sum(t => Convert.ToInt64(t.Amount)).ToString();
+                income.Amount = operations.Where(t => t.Symbol == symbol && t.IsReceived)
+                    .Sum(t => Convert.ToInt64(t.Amount)).ToString();
                 mergedOperations.Add(income);
             }
 
             if (outcome != null && !mergedOperations.Exists(t => t.Symbol == symbol && !t.IsReceived))
             {
-                outcome.Amount = operations.Where(t => !t.IsReceived).Sum(t => Convert.ToInt64(t.Amount)).ToString();
+                outcome.Amount = operations.Where(t => t.Symbol == symbol && !t.IsReceived)
+                    .Sum(t => Convert.ToInt64(t.Amount)).ToString();
                 mergedOperations.Add(outcome);
             }
+        }
+
+        if (mergedOperations.Count == 1)
+        {
+            var operation = mergedOperations.First();
+            activityDto.Symbol = operation.Symbol;
+            activityDto.IsReceived = operation.IsReceived;
+            activityDto.Amount = operation.Amount;
+            activityDto.Decimals = operation.Decimals;
+            activityDto.ListIcon = operation.Icon;
+            activityDto.NftInfo = operation.NftInfo;
+            mergedOperations.Clear();
         }
 
         activityDto.Operations = mergedOperations;
