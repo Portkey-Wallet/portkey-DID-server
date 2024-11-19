@@ -173,7 +173,7 @@ public static class ShiftChainHelper
             return AddressFormat.NoSupport;
         }
 
-        if (address.Length == 50)
+        if (IsAelfAddress(address))
         {
             if (fromChain == CommonConstant.MainChainId)
             {
@@ -226,6 +226,18 @@ public static class ShiftChainHelper
         } 
         
         return !NetworkPatternMap.ContainsKey(chain) || Regex.IsMatch(address, NetworkPatternMap[chain]);
+    }
+    
+    private static bool IsAelfAddress(string address)
+    {
+        try
+        {
+            return AElf.AddressHelper.VerifyFormattedAddress(address);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
 
