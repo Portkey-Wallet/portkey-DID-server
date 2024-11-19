@@ -61,7 +61,7 @@ public class AddressBookMigrateService : IAddressBookMigrateService, ISingletonD
             return;
         }
 
-        contacts = contacts.Where(t => t.IsDeleted == false).ToList();
+        contacts = contacts.Where(t => t.IsDeleted == false && !t.Addresses.IsNullOrEmpty()).ToList();
         _logger.LogInformation("[AddressBookMigrate] need handle contact count:{0}.", contacts.Count);
         foreach (var contact in contacts)
         {
