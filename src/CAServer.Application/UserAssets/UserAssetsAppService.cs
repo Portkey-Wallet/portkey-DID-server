@@ -1420,14 +1420,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
         };
         var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
-        // todo del
-        foreach (var info in itemInfos.NftItemInfos)
-        {
-            if (info.Traits.Contains("Background") && info.Traits.Contains("Rocket"))
-            {
-                _logger.LogDebug("NftTraitsProportionCalculateAsync found Background Rocket = {0}",JsonConvert.SerializeObject(info));
-            }
-        }
         var allItemsTraitsListInCollection = itemInfos.NftItemInfos?
             .Where(nftItem =>
                 nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && IsValidJson(nftItem.Traits))
