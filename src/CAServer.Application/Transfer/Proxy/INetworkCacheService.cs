@@ -37,11 +37,33 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
         Dictionary<string, SendNetworkDto> sendEBridgeMap)
     {
         _receiveNetworkMap = receiveNetworkMap;
+        // sore
+        foreach (var receiveNetworkEntry in _receiveNetworkMap)
+        {
+            var destinationMap = receiveNetworkEntry.Value.DestinationMap;
+            var keys = destinationMap.Keys.ToList();
+
+            foreach (var key in keys)
+            {
+                destinationMap[key] = destinationMap[key]
+                    .OrderBy(n => GetSortOrder(n.Network))
+                    .ToList();
+            }
+        }
         _networkMap = networkMap;
         _sendEBridgeMap = sendEBridgeMap;
         _lastCacheTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     }
-
+    private int GetSortOrder(string network)
+    {
+        return network switch
+        {
+            CommonConstant.MainChainId => 1,
+            CommonConstant.TDVVChainId => 0,
+            CommonConstant.TDVWChainId => 0,
+            _ => 2,
+        };
+    }
     public NetworkInfoDto GetNetwork(string network)
     {
         return _networkMap.TryGetValue(network, out var result) ? result : null;
