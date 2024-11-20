@@ -506,7 +506,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         dto.Data.AddRange(userPackageFtAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
-        dto.Data = SortUserPackageAssets(dto.Data);
+        dto.Data = SortUserPackageAssets(dto.Data, apiVersion);
 
         SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
 
@@ -561,13 +561,13 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         }
     }
 
-    private List<UserPackageAsset> SortUserPackageAssets(List<UserPackageAsset> assets)
+    private List<UserPackageAsset> SortUserPackageAssets(List<UserPackageAsset> assets, string apiVersion)
     {
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
 
         return assets.OrderBy(t => t.Symbol != CommonConstant.ELF)
-            .ThenBy(t => !t.IsDisplay)
+            .ThenBy(t => apiVersion == CommonConstant.V2ApiVersion || !t.IsDisplay)
             .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
             .ThenBy(t => sourceSymbols.Contains(t.Symbol))
             .ThenBy(t => t.AssetType == (int)AssetType.NFT)
