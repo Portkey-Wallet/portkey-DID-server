@@ -24,4 +24,6 @@ public class SymbolApprove
     public string Symbol { get; set; }
     public long Amount { get; set; }
     public int Decimals { get; set; }
+    public string ImageUrl { get; set; }
+    public long UpdateTime { get; set; }
 }

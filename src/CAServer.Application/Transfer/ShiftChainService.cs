@@ -203,12 +203,10 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     }
 
 
-    private async Task setReceiveByETransfer(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap,
-        Dictionary<string, NetworkInfoDto> networkMap)
+    private async Task setReceiveByETransfer(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap, Dictionary<string, NetworkInfoDto> networkMap)
     {
         string type = "Deposit";
-        var optionList =
-            await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto { Type = type });
+        var optionList = await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto { Type = type });
         foreach (var token in optionList.Data.TokenList)
         {
             var toToken = token.ToTokenList.FirstOrDefault(p => p.Symbol.Equals(token.Symbol));
@@ -221,8 +219,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
             ReceiveNetworkDto receiveNetwork = initAELFChain(symbol);
             receiveNetworkMap[symbol] = receiveNetwork;
             var price = await _tokenAppService.GetTokenPriceListAsync(new List<string> { symbol });
-            _logger.LogInformation("setReceiveByETransfer symbol = {0} price = {1}", symbol,
-                JsonConvert.SerializeObject(price));
+            _logger.LogInformation("setReceiveByETransfer symbol = {0} price = {1}", symbol, JsonConvert.SerializeObject(price));
             var maxAmount = ShiftChainHelper.GetMaxAmount(price.Items[0].PriceInUsd);
             foreach (var chainId in toToken.ChainIdList)
             {
@@ -312,8 +309,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
         return limiters;
     }
 
-    private void setSendByEBridge(Dictionary<string, SendNetworkDto> sendEBridgeMap,
-        Dictionary<string, NetworkInfoDto> networkMap,
+    private void setSendByEBridge(Dictionary<string, SendNetworkDto> sendEBridgeMap, Dictionary<string, NetworkInfoDto> networkMap,
         EBridgeLimiterDto limiters)
     {
         foreach (var limiter in limiters.Items)
@@ -330,11 +326,11 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                     continue;
                 }
 
-                string key = tokenInfo.Token + ";" + limiter.FromChain;
+                string key = tokenInfo.Token + ";" + ShiftChainHelper.FormatEBridgeChain(limiter.ToChain);
                 if (!sendEBridgeMap.TryGetValue(key, out var sendInfo))
                 {
                     sendInfo = new SendNetworkDto { NetworkList = new List<NetworkInfoDto>() };
-                    sendEBridgeMap[tokenInfo.Token] = sendInfo;
+                    sendEBridgeMap[key] = sendInfo;
                 }
 
                 if (!sendInfo.NetworkList.Any(p => p.Network == limiter.FromChain))
@@ -347,12 +343,15 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
 
     private ReceiveNetworkDto initAELFChain(string symbol)
     {
-        ReceiveNetworkDto receiveNetwork = new ReceiveNetworkDto
-            { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
-        foreach (var chainName in _chainOptions.ChainInfos.Keys)
+        ReceiveNetworkDto receiveNetwork = new ReceiveNetworkDto { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
+        var chainIds = _chainOptions.ChainInfos.Keys;
+        foreach (var chainId in chainIds)
         {
-            receiveNetwork.DestinationMap[chainName] = new List<NetworkInfoDto>
-                { ShiftChainHelper.GetAELFInfo(chainName) };
+            receiveNetwork.DestinationMap[chainId] = new List<NetworkInfoDto>();
+            foreach (var chainInfosKey in chainIds)
+            {
+                receiveNetwork.DestinationMap[chainId].Add(ShiftChainHelper.GetAELFInfo(chainInfosKey));
+            }
         }
 
         return receiveNetwork;

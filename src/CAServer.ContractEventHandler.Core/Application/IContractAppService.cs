@@ -56,8 +56,7 @@ public interface IContractAppService : ISingletonDependency
     // Task InitializeIndexAsync(long blockHeight);
 
     Task<bool> RefundAsync(Guid redPackageId);
-    
-    Task AppendSinglePoseidonHash(ZkSinglePoseidonHashEto eto);
+   
 }
 
 public class ContractAppService : IContractAppService
@@ -1501,30 +1500,6 @@ public class ContractAppService : IContractAppService
                 AbsoluteExpirationRelativeToNow =
                     TimeSpan.FromSeconds(ContractEventConstants.SyncHolderUpdateVersionCacheExpireTime)
             });
-        }
-    }
-
-    public async Task AppendSinglePoseidonHash(ZkSinglePoseidonHashEto eto)
-    {
-        foreach (var chainId in _chainOptions.ChainInfos.Keys)
-        {
-            try
-            {
-                var result = await _contractProvider.AppendSingleGuardianPoseidonAsync(chainId, eto.Type,
-                    new AppendSingleGuardianPoseidonInput()
-                    {
-                        CaHash = Hash.LoadFromHex(eto.CaHash),
-                        IdentifierHash = Hash.LoadFromHex(eto.IdentifierHash),
-                        PoseidonIdentifierHash = eto.PoseidonIdentifierHash
-                    });
-                _logger.LogInformation("AppendSinglePoseidonHash chainId:{0} guardianType:{1} identifierHash:{2} poseidon:{3} trasactionResult:{4}",
-                    chainId, eto.Type, eto.IdentifierHash, eto.PoseidonIdentifierHash, JsonConvert.SerializeObject(result));
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "AppendSinglePoseidonHash error chainId:{0} eto:{1}",
-                    chainId, JsonConvert.SerializeObject(eto));
-            }
         }
     }
 }

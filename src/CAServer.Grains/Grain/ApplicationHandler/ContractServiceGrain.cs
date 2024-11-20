@@ -432,39 +432,6 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
-    public async Task<TransactionResultDto> AppendGuardianPoseidonHashAsync(string chainId, AppendGuardianRequest appendGuardianRequest)
-    {
-        var result = await SendTransactionToChainAsync(chainId, appendGuardianRequest, MethodName.AppendGuardianPoseidonHash);
-        DeactivateOnIdle();
-        return result.TransactionResultDto;
-    }
-
-    public async Task<TransactionResultDto> AppendSingleGuardianPoseidonAsync(string chainId, GuardianIdentifierType guardianIdentifierType,
-        AppendSingleGuardianPoseidonInput input)
-    {
-        TransactionInfoDto result;
-        switch (guardianIdentifierType)
-        {
-            case GuardianIdentifierType.Google:
-                result = await SendTransactionToChainAsync(chainId, input, MethodName.AppendGoogleGuardianPoseidon);
-                break;
-            case GuardianIdentifierType.Apple:
-                result = await SendTransactionToChainAsync(chainId, input, MethodName.AppendAppleGuardianPoseidon);
-                break;
-            case GuardianIdentifierType.Email:
-            case GuardianIdentifierType.Phone:
-            case GuardianIdentifierType.Telegram:
-            case GuardianIdentifierType.Facebook:
-            case GuardianIdentifierType.Twitter:
-            default:
-                DeactivateOnIdle();
-                return null;
-        }
-        DeactivateOnIdle();
-        return result.TransactionResultDto;
-    }
-
-
     public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
         {
             var param = _objectMapper.Map<AssignProjectDelegateeDto, AssignProjectDelegateeInput>(assignProjectDelegateeDto);

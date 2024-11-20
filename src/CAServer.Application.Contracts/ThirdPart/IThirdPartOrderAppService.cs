@@ -39,6 +39,7 @@ public interface IThirdPartOrderAppService
     // ramp
     Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync();
     Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(RampCryptoRequest rampCryptoRequest);
+    Task<(List<TransakCryptoItem>, string)> GetCryptoCurrenciesAsync(RampCryptoRequest request);
     Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(RampFiatRequest request);
     Task<CommonResponseDto<RampLimitDto>> GetRampLimitAsync(RampLimitRequest request);
     Task<CommonResponseDto<RampExchangeDto>> GetRampExchangeAsync(RampExchangeRequest request);

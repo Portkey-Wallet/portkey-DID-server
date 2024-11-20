@@ -752,6 +752,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             var traitsTyperCount = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traitType);
             var traitsTypeValueCount = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traitTypeValue);
+            _logger.LogInformation("CalculateTraitsPercentagesAsync traitsTyperCount key = {0} value = {1} ; traitsTypeValueCount key = {2} value = {3}",
+                TraitsCachePrefix + traitType, traitsTyperCount, TraitsCachePrefix + traitTypeValue, traitsTypeValueCount);
 
             if (traitsTyperCount != null && traitsTypeValueCount != null)
             {
@@ -1389,6 +1391,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             .ToList();
 
         var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
+        _logger.LogInformation("NftTraitsProportionCalculateAsync traitTypeCounts length = {0} json = {1}", traitTypeCounts.Count,
+            JsonConvert.SerializeObject(traitTypeCounts));
         foreach (var traits in traitTypeCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traits, traitTypeCounts[traits].ToString(),
@@ -1401,6 +1405,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
             .ToDictionary(g => g.Key, g => g.Count());
+        _logger.LogInformation("NftTraitsProportionCalculateAsync traitTypeValueCounts length = {0} json = {1}", traitTypeValueCounts.Count,
+            JsonConvert.SerializeObject(traitTypeValueCounts));
         foreach (var traitsValues in traitTypeValueCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
