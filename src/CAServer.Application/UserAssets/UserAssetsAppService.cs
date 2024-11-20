@@ -338,7 +338,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         try
         {
             var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(requestDto.CaAddressInfos,
-                requestDto.SkipCount, requestDto.MaxResultCount);
+                0, LimitedResultRequestDto.MaxMaxResultCount);
 
             var dto = new GetNftCollectionsDto
             {
@@ -353,8 +353,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return dto;
             }
 
-            _logger.LogInformation("[GetNFTCollectionsAsync] get from indexer: {0}",
-                JsonConvert.SerializeObject(res.CaHolderNFTCollectionBalanceInfo));
+            var totalItemCount = res.CaHolderNFTCollectionBalanceInfo.Data.SelectMany(item => item.TokenIds).Count();
+            res.CaHolderNFTCollectionBalanceInfo.Data = res.CaHolderNFTCollectionBalanceInfo.Data
+                .Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
@@ -379,7 +380,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             SetSeedStatusAndTrimCollectionNameForCollections(dto.Data);
 
             TryUpdateImageUrlForCollections(dto.Data);
-            dto.TotalRecordCount = dto.Data.Select(item => item.ItemCount).Sum();
+            dto.TotalNftItemCount = totalItemCount;
             return dto;
         }
         catch (Exception e)
@@ -388,8 +389,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
         }
     }
-    
-    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto, SearchUserAssetsDto searchDto)
+
+    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto,
+        SearchUserAssetsDto searchDto)
     {
         var nftRequestDto = _objectMapper.Map<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>(requestDto);
         var collectionsDto = await GetNFTCollectionsAsync(nftRequestDto);
