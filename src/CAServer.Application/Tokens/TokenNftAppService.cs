@@ -387,7 +387,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     }
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(
-        SearchUserPackageAssetsRequestDto requestDto)
+        SearchUserPackageAssetsRequestDto requestDto, string apiVersion = "")
     {
         var userPackageFtAssetsIndex = await GetUserPackageFtAssetsIndexAsync(requestDto);
         var ftTokens = userPackageFtAssetsIndex.Items.ToList();
@@ -413,7 +413,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             UnMatchAndConvertToUserPackageAssets(ftTokens, userPackageFtAssetsWithPositiveBalance);
 
         return MergeAndBuildDto(matchedItems, ConvertToUserPackageAssets(userPackageNftAssetsWithPositiveBalance),
-            unmatchedItems);
+            unmatchedItems, apiVersion);
     }
 
     private List<UserPackageAsset> ConvertToUserPackageAssets(List<UserAsset> userPackageNftAssetsWithPositiveBalance)
@@ -497,8 +497,15 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     private SearchUserPackageAssetsDto MergeAndBuildDto(
         List<UserPackageAsset> userPackageFtAssetsWithPositiveBalance,
         List<UserPackageAsset> userPackageNftAssetsWithPositiveBalance,
-        List<UserPackageAsset> userPackageFtAssetsWithNoBalance)
+        List<UserPackageAsset> userPackageFtAssetsWithNoBalance,
+        string apiVersion)
     {
+        if (apiVersion == CommonConstant.V2ApiVersion)
+        {
+            userPackageFtAssetsWithNoBalance =
+                userPackageFtAssetsWithNoBalance.Where(t => t.Symbol == CommonConstant.ELF).ToList();
+        }
+
         var dto = new SearchUserPackageAssetsDto
         {
             TotalRecordCount = userPackageFtAssetsWithPositiveBalance.Count +
@@ -750,7 +757,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                         item.Label = ftInfo.Label;
                         item.NftInfo = null;
                         dto.Data.Add(item);
-                        continue;
+                        //continue;
                     }
 
                     item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);

@@ -1,5 +1,3 @@
-using CAServer.Commons.Etos;
-
 namespace CAServer.FreeMint.Dtos;
 
 public class FreeMintCollectionInfo

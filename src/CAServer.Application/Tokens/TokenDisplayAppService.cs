@@ -71,7 +71,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
-        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService)
+        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
+    )
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -262,7 +263,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
     }
-
+    
     private async Task filterZeroByConfig(GetTokenDto dto)
     {
         try
@@ -316,8 +317,6 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
 
         return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
     }
-
-    
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(
         SearchUserPackageAssetsRequestDto requestDto)

@@ -272,6 +272,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
+        var contractConfig =
+            _activityOptions.ContractConfigs.FirstOrDefault(t => t.ContractAddress == toContractAddress);
+
+        if (contractConfig != null && !contractConfig.DappName.IsNullOrEmpty())
+        {
+            activityDto.DappName = contractConfig.DappName;
+            activityDto.DappIcon = contractConfig.DappIcon;
+            return;
+        }
+
         var tokenSpender =
             _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t => t.ContractAddress == toContractAddress);
         if (tokenSpender == null)
@@ -389,6 +399,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         foreach (var item in indexerTransactionDto.TokenTransferInfos)
         {
+            if (!caAddresses.Contains(item.TransferInfo.FromAddress) &&
+                !caAddresses.Contains(item.TransferInfo.ToAddress))
+                continue;
+
             var operationInfo = new OperationItemInfo();
             operationInfo.Amount = item.TransferInfo.Amount.ToString();
 
@@ -425,6 +439,53 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             activityDto.Operations.Add(operationInfo);
         }
+
+        MergeOperations(activityDto);
+    }
+
+    private void MergeOperations(GetActivityDto activityDto)
+    {
+        if (activityDto.Operations.IsNullOrEmpty()) return;
+
+        var operations = activityDto.Operations;
+        var mergedOperations = new List<OperationItemInfo>();
+        var symbols = activityDto.Operations.Select(t => t.Symbol);
+
+        foreach (var symbol in symbols)
+        {
+            var income = operations.FirstOrDefault(t => t.Symbol == symbol && t.IsReceived);
+            var outcome = operations.FirstOrDefault(t => t.Symbol == symbol && !t.IsReceived);
+            if (income != null && !mergedOperations.Exists(t => t.Symbol == symbol && t.IsReceived))
+            {
+                income.Amount = operations.Where(t => t.Symbol == symbol && t.IsReceived)
+                    .Sum(t => Convert.ToInt64(t.Amount)).ToString();
+                mergedOperations.Add(income);
+            }
+
+            if (outcome != null && !mergedOperations.Exists(t => t.Symbol == symbol && !t.IsReceived))
+            {
+                outcome.Amount = operations.Where(t => t.Symbol == symbol && !t.IsReceived)
+                    .Sum(t => Convert.ToInt64(t.Amount)).ToString();
+                mergedOperations.Add(outcome);
+            }
+        }
+
+        if (mergedOperations.Count == 1)
+        {
+            var operation = mergedOperations.First();
+            activityDto.Symbol = operation.Symbol;
+            activityDto.IsReceived = operation.IsReceived;
+            activityDto.Amount = operation.Amount;
+            activityDto.Decimals = operation.Decimals;
+            activityDto.ListIcon = operation.Icon;
+            activityDto.NftInfo = operation.NftInfo;
+            activityDto.ToChainId = activityDto.ToChainId.IsNullOrEmpty()
+                ? activityDto.FromChainId
+                : activityDto.ToChainId;
+            mergedOperations.Clear();
+        }
+
+        activityDto.Operations = mergedOperations;
     }
 
     public async Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request)
@@ -448,7 +509,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (request.ActivityType != CommonConstant.TransferCard)
             {
                 caAddressInfos = request.CaAddressInfos.IsNullOrEmpty()
-                    ? new List<CAAddressInfo>() : request.CaAddressInfos;
+                    ? new List<CAAddressInfo>()
+                    : request.CaAddressInfos;
             }
 
             var indexerTransactions =
@@ -847,6 +909,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
             dto.FromChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.FromChainId);
             dto.ToChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.ToChainId);
+            dto.FromChainIcon = ChainDisplayNameHelper.GetChainUrl(dto.FromChainId);
+            dto.ToChainIcon = ChainDisplayNameHelper.GetChainUrl(dto.ToChainId);
             platformToIcon.TryGetValue(ht.Platform, out var sourceIcon);
             dto.SourceIcon = sourceIcon;
             getActivitiesDto.Add(dto);

@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
+using CAServer.AddressBook.Dtos;
 using CAServer.Transfer.Dtos;
 using Volo.Abp.Application.Dtos;
+using GetNetworkListDto = CAServer.Transfer.Dtos.GetNetworkListDto;
 
 namespace CAServer.Transfer;
 
