@@ -305,7 +305,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             SymbolApproveList = t.Items.Select(s => new SymbolApprove()
             {
                 Symbol = s.Symbol,
-                Amount = allowanceMap.TryGetValue(GetKey(s.Symbol, t.Key.ChainId, t.Key.Spender), out long value) ? value : 0,
+                Amount = allowanceMap.TryGetValue(GetKey(s.Symbol, t.Key.Spender, t.Key.ChainId), out long value) ? value : 0,
                 Decimals = tokenInfoDtos.FirstOrDefault(i => i.Symbol == s.Symbol.Replace("-*", "-1")) == null
                     ? 0
                     : tokenInfoDtos.First(i => i.Symbol == s.Symbol.Replace("-*", "-1")).Decimals,
@@ -339,21 +339,22 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
         var tasks = dtoList.Select(dto => Task.Run(() => GetAllowanceTask(dto)));
-        await Task.WhenAll(tasks);
+        GetAllowanceDTO[] result = await Task.WhenAll(tasks);
         stopwatch.Stop();
-        _logger.LogDebug("GetAllowanceList dtoList count = {0}, spendTime = {1} ms", dtoList.Count, stopwatch.ElapsedMilliseconds);
+        _logger.LogDebug("GetAllowanceList dtoList count = {0}, spendTime = {1} ms dtoList = {2}", dtoList.Count, stopwatch.ElapsedMilliseconds,JsonConvert.SerializeObject(result));
 
-        return dtoList.ToDictionary(
+        return result.ToDictionary(
             dto => GetKey(dto.Symbol, dto.Spender, dto.ChainId),
             dto => dto.Allowance
         );
     }
 
-    private async void GetAllowanceTask(GetAllowanceDTO dto)
+    private async Task<GetAllowanceDTO> GetAllowanceTask(GetAllowanceDTO dto)
     {
         GetAllowanceOutput output = await _contractProvider.GetAllowanceAsync(dto.Symbol, dto.Owner, dto.Spender, dto.ChainId);
         dto.Allowance = output.Allowance;
         _logger.LogDebug("GetAllowanceTask dto = {0}", JsonConvert.SerializeObject(dto));
+        return dto;
     }
 
     private string GetKey(string symbol, string spender, string chainId)
