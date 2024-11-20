@@ -297,7 +297,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             Spender = Address.FromBase58(spender),
         };
 
-        return await CallTransactionAsync<GetAllowanceOutput>(AElfContractMethodName.GetBalance, param,
+        return await CallTransactionAsync<GetAllowanceOutput>(AElfContractMethodName.GetAllowance, param,
             _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
