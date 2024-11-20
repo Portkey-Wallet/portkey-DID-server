@@ -503,7 +503,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         if (apiVersion == CommonConstant.V2ApiVersion)
         {
             userPackageFtAssetsWithNoBalance =
-                userPackageFtAssetsWithNoBalance.Where(t => t.Symbol == CommonConstant.V2ApiVersion).ToList();
+                userPackageFtAssetsWithNoBalance.Where(t => t.Symbol == CommonConstant.ELF).ToList();
         }
 
         var dto = new SearchUserPackageAssetsDto
