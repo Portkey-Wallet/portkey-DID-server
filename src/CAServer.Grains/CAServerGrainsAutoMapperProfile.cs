@@ -5,6 +5,7 @@ using CAServer.Bookmark.Dtos;
 using CAServer.Contacts;
 using CAServer.EnumType;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.AddressBook;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
@@ -21,6 +22,7 @@ using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
+using CAServer.Grains.State.AddressBook;
 using CAServer.Grains.State.Bookmark;
 using CAServer.Grains.State.Chain;
 using CAServer.Grains.State.Contacts;
@@ -260,5 +262,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
         CreateMap<InviteInfo, GrowthGrainDto>().ReverseMap();
         CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
+        CreateMap<AddressBookGrainDto, AddressBookState>().ReverseMap();
     }
 }

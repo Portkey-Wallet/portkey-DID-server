@@ -1,10 +1,12 @@
 using System.Threading.Tasks;
+using CAServer.AddressBook.Dtos;
 using CAServer.Transfer;
 using CAServer.Transfer.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using GetNetworkListDto = CAServer.Transfer.Dtos.GetNetworkListDto;
 
 namespace CAServer.Controllers;
 
@@ -83,5 +85,12 @@ public class TransferController : CAServerController
     public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetOrderRecordRequestDto request)
     {
         return await _transferAppService.GetRecordListAsync(request);
+    }
+    
+        
+    [HttpGet("support"), AllowAnonymous]
+    public async Task<GetSupportNetworkDto> GetSupportNetworkListAsync()
+    {
+        return await _shiftChainService.GetSupportNetworkListAsync();
     }
 }

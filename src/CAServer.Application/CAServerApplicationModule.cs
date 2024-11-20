@@ -97,6 +97,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<HamsterOptions>(configuration.GetSection("Hamster"));
         Configure<AddTokenOptions>(configuration.GetSection("AddToken"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
+        Configure<ContactMigrateOptions>(configuration.GetSection("ContactMigrate"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
