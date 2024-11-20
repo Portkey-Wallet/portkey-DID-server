@@ -18,6 +18,7 @@ using CAServer.UserAssets;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Nito.AsyncEx;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -352,6 +353,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     {
         GetAllowanceOutput output = await _contractProvider.GetAllowanceAsync(dto.Symbol, dto.Owner, dto.Spender, dto.ChainId);
         dto.Allowance = output.Allowance;
+        _logger.LogDebug("GetAllowanceTask dto = {0}", JsonConvert.SerializeObject(dto));
     }
 
     private string GetKey(string symbol, string spender, string chainId)
