@@ -94,13 +94,13 @@ public class AddressBookMigrateService : IAddressBookMigrateService, ISingletonD
         }
 
         var migrateCount = skip + limit;
-        // await _distributedCache.SetAsync(MigrateCacheKey, new ContactMigrateCache
-        // {
-        //     MigrateCount = migrateCount
-        // }, new DistributedCacheEntryOptions
-        // {
-        //     AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
-        // });
+        await _distributedCache.SetAsync(MigrateCacheKey, new ContactMigrateCache
+        {
+            MigrateCount = migrateCount
+        }, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+        });
         _logger.LogInformation("[AddressBookMigrate] migrate service end, migrateCount:{0}", migrateCount);
     }
 
@@ -134,6 +134,7 @@ public class AddressBookMigrateService : IAddressBookMigrateService, ISingletonD
         {
             OriginalContactId = originalId,
             NewContactId = addressBookDto.Id,
+            UserId = addressBookDto.UserId,
             ChainId = addressBookDto.AddressInfo.ChainId,
             Address = addressBookDto.AddressInfo.Address,
             Status = "success",
