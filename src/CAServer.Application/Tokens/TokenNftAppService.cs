@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Awaken;
@@ -662,10 +663,13 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     {
         try
         {
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
             var res = await _userAssetsProvider.SearchUserAssetsAsync(requestDto.CaAddressInfos,
                 requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword,
                 0, LimitedResultRequestDto.MaxMaxResultCount);
-
+            watch.Stop();
+            _logger.LogDebug("SearchUserAssetsAsync spend time = {0} ms", watch.ElapsedMilliseconds);
             var dto = new SearchUserAssetsDto
             {
                 Data = new List<UserAsset>(),
