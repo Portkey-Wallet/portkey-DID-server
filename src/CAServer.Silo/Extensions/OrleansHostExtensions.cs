@@ -28,7 +28,7 @@ public static class OrleansHostExtensions
 
             siloBuilder
                 .ConfigureEndpoints(
-                    advertisedIP: IPAddress.Parse(orleansConfigSection.GetValue<string>("AdvertisedIP")),
+                    advertisedIP: IPAddress.Parse(advertisedIP),
                     siloPort: orleansConfigSection.GetValue<int>("SiloPort"),
                     gatewayPort: orleansConfigSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
                 .UseMongoDBClient(orleansConfigSection.GetValue<string>("MongoDBClient"))
