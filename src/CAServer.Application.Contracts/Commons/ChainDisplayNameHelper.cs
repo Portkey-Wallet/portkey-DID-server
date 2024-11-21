@@ -75,6 +75,13 @@ public static class ChainDisplayNameHelper
             ? displayName 
             : chainId;
     }
+    
+    public static string GetChainUrl(string chainId)
+    {
+        return ChainImageUrlMap.TryGetValue(chainId, out var chainUrl) 
+            ? chainUrl 
+            : string.Empty;
+    }
 
     public static void SetDisplayName<T>(List<T> list)
     {

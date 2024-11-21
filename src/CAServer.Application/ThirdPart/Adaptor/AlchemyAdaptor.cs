@@ -10,6 +10,7 @@ using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Serilog;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -22,12 +23,15 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     private const decimal DefaultAmount = 200;
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
+    private readonly ILogger<AlchemyAdaptor> _logger;
 
     public AlchemyAdaptor(IAlchemyServiceAppService alchemyServiceAppService,
-        IOptionsMonitor<RampOptions> rampOptions)
+        IOptionsMonitor<RampOptions> rampOptions,
+        ILogger<AlchemyAdaptor> logger)
     {
         _alchemyServiceAppService = alchemyServiceAppService;
         _rampOptions = rampOptions;
+        _logger = logger;
     }
 
 
@@ -116,6 +120,11 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             .ToList();
     }
 
+    public async Task<List<TransakCryptoItem>> GetCryptoCurrenciesAsync()
+    {
+        return new List<TransakCryptoItem>();
+    }
+
     public async Task<List<RampCurrencyItem>> GetCryptoListAsync(RampCryptoRequest request)
     {
         try
@@ -124,6 +133,8 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             {
                 var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(
                     new GetAlchemyFiatListDto { Type = request.Type });
+                _logger.LogInformation("GetCryptoListAsync {0} request:{1} response:{2}", ThirdPart(),
+                    JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(alchemyFiatList));
                 AssertHelper.IsTrue(alchemyFiatList.Success, "GetFiatListAsync error {Msg}", alchemyFiatList.Message);
                 var matchFiatList = MatchFiatDto(alchemyFiatList.Data, request.Fiat, request.Country);
                 AssertHelper.NotEmpty(matchFiatList, "Fiat not support {}-{}", request.Fiat, request.Country);
@@ -131,20 +142,25 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
             var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
                 new GetAlchemyCryptoListDto { Fiat = request.Fiat });
+            _logger.LogInformation("GetCryptoListAsync alchemyCryptoList {0} request:{1} response:{2}", ThirdPart(),
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(alchemyCryptoList));
             AssertHelper.IsTrue(alchemyCryptoList.Success, "Crypto list query failed.");
 
             var alchemyNetwork = MappingToAlchemyNetwork(request.Network);
             var cryptoItem = alchemyCryptoList.Data
-                .Where(c => c.Network == alchemyNetwork)
+                .Where(c => string.IsNullOrEmpty(alchemyNetwork) || c.Network == alchemyNetwork)
                 .Where(c => request.IsBuy ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0)
                 .GroupBy(c => string.Join(CommonConstant.Underline, c.Crypto, c.Network))
                 .Select(g => g.First());
-        
-            return cryptoItem.Select(item => new RampCurrencyItem()
+            
+            var rest = cryptoItem.Select(item => new RampCurrencyItem()
             {
                 Symbol = MappingFromAchSymbol(item.Crypto),
                 Network = MappingFromAlchemyNetwork(item.Network),
             }).ToList();
+            _logger.LogInformation("GetCryptoListAsync alchemyCryptoList cryptoItem {0} request:{1} response:{2}", ThirdPart(),
+                JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(rest));
+            return rest;
         }
         catch (UserFriendlyException e)
         {

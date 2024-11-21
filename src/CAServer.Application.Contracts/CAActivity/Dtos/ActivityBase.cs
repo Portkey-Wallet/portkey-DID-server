@@ -20,13 +20,17 @@ public class ActivityBase
     public string ToAddress { get; set; }
     public string FromChainId { get; set; }
     public string FromChainIdUpdated { get; set; }
+    public string FromChainIcon { get; set; }
     public string ToChainId { get; set; }
     public string ToChainIdUpdated { get; set; }
+    public string ToChainIcon { get; set; }
     public List<TransactionFee> TransactionFees { get; set; }
     public string PriceInUsd { get; set; }
     public bool IsDelegated { get; set; }
     public bool IsSystem { get; set; }
     public string StatusIcon { get; set; }
+    
+    public string SourceIcon { get; set; }
 }
 
 public class TransactionFee

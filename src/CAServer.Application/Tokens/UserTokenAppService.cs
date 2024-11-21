@@ -195,7 +195,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             .ThenBy(t => sourceSymbols.Contains(t.Symbol))
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
+            .ThenByDescending(t => t.ChainId)
             .ToList();
 
         return new PagedResultDto<GetUserTokenDto>(tokens.Count,

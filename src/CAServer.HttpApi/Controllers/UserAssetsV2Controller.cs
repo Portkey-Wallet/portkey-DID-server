@@ -54,4 +54,13 @@ public class UserAssetsV2Controller
             : await _userAssetsAppService.SearchUserAssetsAsync(requestDto);
         return await _userAssetsAppService.SearchUserAssetsAsyncV2(requestDto, searchDto);
     }
+
+    [HttpPost("searchUserPackageAssets")]
+    public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(
+        SearchUserPackageAssetsRequestDto requestDto)
+    {
+        var userPackageAssets =
+            await _tokenNftAppService.SearchUserPackageAssetsAsync(requestDto, CommonConstant.V2ApiVersion);
+        return VersionContentHelper.FilterUserPackageAssets(userPackageAssets);
+    }
 }

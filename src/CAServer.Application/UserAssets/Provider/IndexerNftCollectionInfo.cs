@@ -11,6 +11,7 @@ public class CaHolderNFTCollectionBalanceInfo
 {
     public List<IndexerNftCollectionInfo> Data { get; set; }
     public long TotalRecordCount { get; set; }
+    public long TotalItemCount { get; set; }
 }
 
 public class IndexerNftCollectionInfo
