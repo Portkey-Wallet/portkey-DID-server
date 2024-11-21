@@ -21,6 +21,11 @@ public static class OrleansHostExtensions
         {
             //Configure OrleansSnapshot
             var orleansConfigSection = context.Configuration.GetSection("Orleans");
+            var isRunningInKubernetes = orleansConfigSection.GetValue<bool>("isRunningInKubernetes");
+            var advertisedIP = isRunningInKubernetes ?  Environment.GetEnvironmentVariable("POD_IP") :orleansConfigSection.GetValue<string>("AdvertisedIP");
+            var clusterId = isRunningInKubernetes ? Environment.GetEnvironmentVariable("ORLEANS_CLUSTER_ID") : orleansConfigSection.GetValue<string>("ClusterId");
+            var serviceId = isRunningInKubernetes ? Environment.GetEnvironmentVariable("ORLEANS_SERVICE_ID") : orleansConfigSection.GetValue<string>("ServiceId");
+
             siloBuilder
                 .ConfigureEndpoints(
                     advertisedIP: IPAddress.Parse(orleansConfigSection.GetValue<string>("AdvertisedIP")),
@@ -52,8 +57,8 @@ public static class OrleansHostExtensions
                 })
                 .Configure<ClusterOptions>(options =>
                 {
-                    options.ClusterId = orleansConfigSection.GetValue<string>("ClusterId");
-                    options.ServiceId = orleansConfigSection.GetValue<string>("ServiceId");
+                    options.ClusterId = clusterId;
+                    options.ServiceId = serviceId;
                 })
                 .Configure<SiloMessagingOptions>(options =>
                 {
