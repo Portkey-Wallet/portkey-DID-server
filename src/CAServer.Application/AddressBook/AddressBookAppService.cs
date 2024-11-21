@@ -159,7 +159,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
             {
                 Network = AddressHelper.GetNetwork(networkInfo.Network),
                 Name = AddressHelper.GetNetworkName(networkInfo.Network),
-                ImageUrl = networkInfo.ImageUrl,
+                ImageUrl = ShiftChainHelper.GetChainImage(networkInfo.Network),
                 ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
             };
 
