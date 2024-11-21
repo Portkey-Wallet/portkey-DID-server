@@ -131,6 +131,19 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
     }
 
+    public async Task<(List<AlchemyFiatDto>, string)> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
+    {
+        try
+        {
+            return (await _alchemyProvider.GetAlchemyFiatListAsync(input), "succeed");
+        }
+        catch (Exception e)
+        {
+            _logger.LogInformation("GetAlchemyFiatListAsync Error:{0}", e.Message);
+            return (new List<AlchemyFiatDto>(), e.Message);
+        }
+    }
+    
     /// NFT FiatList
     public async Task<List<AlchemyFiatDto>> GetAlchemyNftFiatListAsync()
     {
@@ -157,6 +170,9 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(AlchemyOptions().CryptoListExpirationMinutes)
                 }
             );
+
+            var r =  await _alchemyProvider.GetAlchemyCryptoListAsync(input);
+            _logger.LogDebug("GetAlchemyCryptoListAsync input = {0} resp = {1}",JsonConvert.SerializeObject(input), JsonConvert.SerializeObject(r));
             return new CommonResponseDto<List<AlchemyCryptoDto>>(resp);
         }
         catch (Exception e)

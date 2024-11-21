@@ -41,6 +41,13 @@ public class NickNameController : CAServerController
         return await _nickNameService.UpdateHolderInfoAsync(holderInfo);
     }
     
+    [HttpGet("defaultAvatars")]
+    [AllowAnonymous]
+    public DefaultAvatarResponse GetDefaultAvatars()
+    {
+        return _nickNameService.GetDefaultAvatars();
+    }
+    
     [HttpGet("poppedUp")]
     public async Task<bool> GetPoppedUpAccountAsync()
     {

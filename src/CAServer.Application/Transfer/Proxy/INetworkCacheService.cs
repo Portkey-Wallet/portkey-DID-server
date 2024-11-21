@@ -17,6 +17,8 @@ public interface INetworkCacheService
     NetworkInfoDto GetNetwork(string network);
     ReceiveNetworkDto GetReceiveNetworkList(GetReceiveNetworkListRequestDto request);
     List<NetworkInfoDto> GetSendNetworkList(GetSendNetworkListRequestDto request);
+    Dictionary<string, NetworkInfoDto> GetNetworkMap();
+    Dictionary<string, ReceiveNetworkDto> GetReceiveNetworkMap();
 }
 
 public class NetworkCacheService : INetworkCacheService, ISingletonDependency
@@ -104,4 +106,7 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
 
         return null;
     }
+
+    public Dictionary<string, NetworkInfoDto> GetNetworkMap() => _networkMap;
+    public Dictionary<string, ReceiveNetworkDto> GetReceiveNetworkMap() => _receiveNetworkMap;
 }

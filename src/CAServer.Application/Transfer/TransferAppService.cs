@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.AddressBook.Dtos;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Transfer.Dtos;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
+using GetNetworkListDto = CAServer.Transfer.Dtos.GetNetworkListDto;
 
 namespace CAServer.Transfer;
 

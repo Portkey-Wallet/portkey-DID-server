@@ -20,6 +20,10 @@ namespace Portkey.Contracts.CA {
     {
       return new List<ManagerApproved>
       {
+      new ManagerApproved
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -96,6 +100,10 @@ namespace Portkey.Contracts.CA {
       {
         DailyLimit = DailyLimit
       },
+      new TransferLimitChanged
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -103,6 +111,41 @@ namespace Portkey.Contracts.CA {
     {
       return new TransferLimitChanged
       {
+      };
+    }
+  }
+
+  public partial class ManagerTransferred : aelf::IEvent<ManagerTransferred>
+  {
+    public global::System.Collections.Generic.IEnumerable<ManagerTransferred> GetIndexed()
+    {
+      return new List<ManagerTransferred>
+      {
+      new ManagerTransferred
+      {
+        CaHash = CaHash
+      },
+      new ManagerTransferred
+      {
+        To = To
+      },
+      new ManagerTransferred
+      {
+        Symbol = Symbol
+      },
+      new ManagerTransferred
+      {
+        Platform = Platform
+      },
+      };
+    }
+
+    public ManagerTransferred GetNonIndexed()
+    {
+      return new ManagerTransferred
+      {
+        Amount = Amount,
+        Memo = Memo,
       };
     }
   }
@@ -343,6 +386,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddManagerInfoInput> __Marshaller_ca_AddManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddManagerInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveManagerInfoInput> __Marshaller_ca_RemoveManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveManagerInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveOtherManagerInfoInput> __Marshaller_ca_RemoveOtherManagerInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveOtherManagerInfoInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.RemoveOtherManagerInfosInput> __Marshaller_ca_RemoveOtherManagerInfosInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.RemoveOtherManagerInfosInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.UpdateManagerInfosInput> __Marshaller_ca_UpdateManagerInfosInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.UpdateManagerInfosInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoInput> __Marshaller_ca_GetHolderInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoOutput> __Marshaller_ca_GetHolderInfoOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoOutput.Parser.ParseFrom);
@@ -539,6 +583,13 @@ namespace Portkey.Contracts.CA {
         __ServiceName,
         "RemoveOtherManagerInfo",
         __Marshaller_ca_RemoveOtherManagerInfoInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Portkey.Contracts.CA.RemoveOtherManagerInfosInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveOtherManagerInfos = new aelf::Method<global::Portkey.Contracts.CA.RemoveOtherManagerInfosInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "RemoveOtherManagerInfos",
+        __Marshaller_ca_RemoveOtherManagerInfosInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::Portkey.Contracts.CA.UpdateManagerInfosInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_UpdateManagerInfos = new aelf::Method<global::Portkey.Contracts.CA.UpdateManagerInfosInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -1176,6 +1227,11 @@ namespace Portkey.Contracts.CA {
         throw new global::System.NotImplementedException();
       }
 
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveOtherManagerInfos(global::Portkey.Contracts.CA.RemoveOtherManagerInfosInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
       public virtual global::Google.Protobuf.WellKnownTypes.Empty UpdateManagerInfos(global::Portkey.Contracts.CA.UpdateManagerInfosInput input)
       {
         throw new global::System.NotImplementedException();
@@ -1570,6 +1626,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_AddManagerInfo, serviceImpl.AddManagerInfo)
           .AddMethod(__Method_RemoveManagerInfo, serviceImpl.RemoveManagerInfo)
           .AddMethod(__Method_RemoveOtherManagerInfo, serviceImpl.RemoveOtherManagerInfo)
+          .AddMethod(__Method_RemoveOtherManagerInfos, serviceImpl.RemoveOtherManagerInfos)
           .AddMethod(__Method_UpdateManagerInfos, serviceImpl.UpdateManagerInfos)
           .AddMethod(__Method_GetHolderInfo, serviceImpl.GetHolderInfo)
           .AddMethod(__Method_ValidateCAHolderInfoWithManagerInfosExists, serviceImpl.ValidateCAHolderInfoWithManagerInfosExists)

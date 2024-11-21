@@ -38,11 +38,13 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly INicknameProvider _nicknameProvider;
     private readonly IGuardianAppService _guardianAppService;
+    private readonly IUserProfilePictureProvider _userProfilePictureProvider;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         INESTRepository<CAHolderIndex, Guid> holderRepository, IImRequestProvider imRequestProvider,
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor,
-        INicknameProvider nicknameProvider, IGuardianAppService guardianAppService)
+        INicknameProvider nicknameProvider, IGuardianAppService guardianAppService,
+        IUserProfilePictureProvider userProfilePictureProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -52,6 +54,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         _httpContextAccessor = httpContextAccessor;
         _nicknameProvider = nicknameProvider;
         _guardianAppService = guardianAppService;
+        _userProfilePictureProvider = userProfilePictureProvider;
     }
 
     public async Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto)
@@ -202,5 +205,13 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
             }
             await _nicknameProvider.ModifyNicknameHandler(guardianResultDto, userId, caHolderGrainDto);
         }
+    }
+
+    public DefaultAvatarResponse GetDefaultAvatars()
+    {
+        return new DefaultAvatarResponse()
+        {
+            DefaultAvatars = _userProfilePictureProvider.GetDefaultUserPictures()
+        };
     }
 }
