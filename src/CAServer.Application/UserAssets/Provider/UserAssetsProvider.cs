@@ -115,6 +115,25 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             }
         });
     }
+    
+    public async Task<IndexerNftItemWithTraitsInfos> GetNftItemWithTraitsInfos(string symbol, int skipCount,
+        int maxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerNftItemWithTraitsInfos>(new GraphQLRequest
+        {
+            Query = @"
+			    query($symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    nftItemWithTraitsInfos(dto: {symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        symbol,supply,traits}
+                }",
+            Variables = new
+            {
+                symbol = symbol,
+                skipCount = skipCount,
+                maxResultCount = maxResultCount
+            }
+        });
+    }
 
     public async Task<IndexerNftItemInfos> GetNftItemInfosAsync(GetNftItemInfosDto getNftItemInfosDto,
         int inputSkipCount, int inputMaxResultCount)

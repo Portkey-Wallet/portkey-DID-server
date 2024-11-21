@@ -40,6 +40,7 @@ public interface IUserAssetsProvider
 
     Task<IndexerNftInfos> GetUserNftInfoBySymbolAsync(List<CAAddressInfo> caAddressInfos, string symbol,
         int inputSkipCount, int inputMaxResultCount);
-    
-    
+
+    Task<IndexerNftItemWithTraitsInfos> GetNftItemWithTraitsInfos(string symbol, int skipCount,
+        int maxResultCount);
 }
