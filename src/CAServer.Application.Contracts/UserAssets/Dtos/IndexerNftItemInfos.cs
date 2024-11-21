@@ -7,6 +7,11 @@ public class IndexerNftItemInfos
     public List<NftItemInfo> NftItemInfos { get; set; }
 }
 
+public class IndexerNftItemWithTraitsInfos
+{
+    public List<NftItemInfo> NftItemWithTraitsInfos { get; set; }
+}
+
 public class NftItemInfo
 {
     public string Symbol { get; set; }
