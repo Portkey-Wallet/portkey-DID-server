@@ -34,6 +34,7 @@ public interface IContractProvider
     public Task<BoolValue> VerifyZkLogin(string chainId, GuardianInfo guardianInfo, Hash caHash);
     public Task<BoolValue> VerifySignature(string chainId, GuardianInfo guardianInfo, string methodName, Hash caHash, string operationDetails);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
+    public Task<GetAllowanceOutput> GetAllowanceAsync(string symbol, string owner, string spender, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
 
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId,
@@ -106,6 +107,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         {
             return null;
         }
+
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
@@ -278,6 +280,24 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         };
 
         return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance, getBalanceParam,
+            _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
+    }
+
+    public async Task<GetAllowanceOutput> GetAllowanceAsync(string symbol, string owner, string spender, string chainId)
+    {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
+        {
+            return null;
+        }
+
+        var param = new GetAllowanceOutput
+        {
+            Symbol = symbol,
+            Owner = Address.FromBase58(owner),
+            Spender = Address.FromBase58(spender),
+        };
+
+        return await CallTransactionAsync<GetAllowanceOutput>(AElfContractMethodName.GetAllowance, param,
             _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
