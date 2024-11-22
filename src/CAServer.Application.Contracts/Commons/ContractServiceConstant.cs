@@ -171,4 +171,6 @@ public static class CommonConstant
     public const string TooManyRetries = "Too many retries. Please request a new verification code to continue.";
     public const string IncorrectCode = "Incorrect code, please try again.";
     public const string V2ApiVersion = "v2";
+    public const string BaseNetwork = "BASE";
+    public const string BaseNetworkName = "Base";
 }
