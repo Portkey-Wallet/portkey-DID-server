@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.AddressBook.Dtos;
 using Volo.Abp.Application.Dtos;
@@ -12,4 +13,5 @@ public interface IAddressBookAppService
     Task<AddressBookExistDto> ExistAsync(string name);
     Task<PagedResultDto<AddressBookDto>> GetListAsync(AddressBookListRequestDto requestDto);
     Task<GetNetworkListDto> GetNetworkListAsync();
+    Task<AddressBookDto> MigrateAsync(Guid contactId);
 }

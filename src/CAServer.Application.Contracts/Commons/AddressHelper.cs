@@ -73,7 +73,7 @@ public static class AddressHelper
 
     public static string GetAelfChainId(string network)
     {
-        return network is CommonConstant.MainChainId or CommonConstant.TDVWChainId or CommonConstant.TDVWChainId
+        return network is CommonConstant.MainChainId or CommonConstant.TDVWChainId or CommonConstant.TDVVChainId
             ? network
             : null;
     }

@@ -155,12 +155,14 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         foreach (var item in networkMap)
         {
             var networkInfo = item.Value;
-            var networkFormatted = AddressHelper.GetNetwork(networkInfo.Network);
+            var networkImageId = networkInfo.Network == CommonConstant.BaseNetwork
+                ? CommonConstant.BaseNetworkName
+                : networkInfo.Network;
             var network = new AddressBookNetwork()
             {
-                Network = networkFormatted,
+                Network = AddressHelper.GetNetwork(networkInfo.Network),
                 Name = AddressHelper.GetNetworkName(networkInfo.Network),
-                ImageUrl = ShiftChainHelper.GetChainImage(networkFormatted),
+                ImageUrl = ShiftChainHelper.GetChainImage(networkImageId),
                 ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
             };
 
@@ -173,6 +175,25 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         {
             NetworkList = networkList
         };
+    }
+
+    public async Task<AddressBookDto> MigrateAsync(Guid contactId)
+    {
+        var addressBookGrain = _clusterClient.GetGrain<IAddressBookGrain>(contactId);
+        var result = await addressBookGrain.GetContactAsync();
+
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message,
+                code: result.Message == AddressBookMessage.ExistedMessage ? AddressBookMessage.NameExistedCode : null);
+        }
+
+        var eto = ObjectMapper.Map<AddressBookGrainDto, AddressBookEto>(result.Data);
+        await _distributedEventBus.PublishAsync(eto);
+
+        var resultDto = ObjectMapper.Map<AddressBookGrainDto, AddressBookDto>(result.Data);
+        SetNetworkImage(resultDto);
+        return resultDto;
     }
 
     private Dictionary<string, NetworkInfoDto> GetNetworkInfoMap()
