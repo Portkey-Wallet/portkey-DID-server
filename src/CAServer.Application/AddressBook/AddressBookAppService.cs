@@ -155,11 +155,12 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         foreach (var item in networkMap)
         {
             var networkInfo = item.Value;
+            var networkFormatted = AddressHelper.GetNetwork(networkInfo.Network);
             var network = new AddressBookNetwork()
             {
-                Network = AddressHelper.GetNetwork(networkInfo.Network),
+                Network = networkFormatted,
                 Name = AddressHelper.GetNetworkName(networkInfo.Network),
-                ImageUrl = ShiftChainHelper.GetChainImage(networkInfo.Network),
+                ImageUrl = ShiftChainHelper.GetChainImage(networkFormatted),
                 ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
             };
 
