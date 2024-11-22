@@ -479,12 +479,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             activityDto.Decimals = operation.Decimals;
             activityDto.ListIcon = operation.Icon;
             activityDto.NftInfo = operation.NftInfo;
-            activityDto.ToChainId = activityDto.ToChainId.IsNullOrEmpty()
-                ? activityDto.FromChainId
-                : activityDto.ToChainId;
             mergedOperations.Clear();
         }
 
+        activityDto.ToChainId = activityDto.ToChainId.IsNullOrEmpty()
+            ? activityDto.FromChainId
+            : activityDto.ToChainId;
         activityDto.Operations = mergedOperations;
     }
 
