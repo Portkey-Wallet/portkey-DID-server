@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.AddressBook;
 using CAServer.AddressBook.Dtos;
@@ -57,5 +58,11 @@ public class AddressBookController : CAServerController
     public async Task<GetNetworkListDto> GetNetworkListAsync()
     {
         return await _addressBookAppService.GetNetworkListAsync();
+    }
+
+    [HttpPost("migrate"), AllowAnonymous]
+    public async Task<AddressBookDto> MigrateAsync([FromForm] Guid contactId)
+    {
+        return await _addressBookAppService.MigrateAsync(contactId);
     }
 }

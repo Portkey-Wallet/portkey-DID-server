@@ -175,6 +175,25 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
         };
     }
 
+    public async Task<AddressBookDto> MigrateAsync(Guid contactId)
+    {
+        var addressBookGrain = _clusterClient.GetGrain<IAddressBookGrain>(contactId);
+        var result = await addressBookGrain.GetContactAsync();
+
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message,
+                code: result.Message == AddressBookMessage.ExistedMessage ? AddressBookMessage.NameExistedCode : null);
+        }
+
+        var eto = ObjectMapper.Map<AddressBookGrainDto, AddressBookEto>(result.Data);
+        await _distributedEventBus.PublishAsync(eto);
+
+        var resultDto = ObjectMapper.Map<AddressBookGrainDto, AddressBookDto>(result.Data);
+        SetNetworkImage(resultDto);
+        return resultDto;
+    }
+
     private Dictionary<string, NetworkInfoDto> GetNetworkInfoMap()
     {
         var networkMap = _networkCacheService.GetReceiveNetworkMap();
