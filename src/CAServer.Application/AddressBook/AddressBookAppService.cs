@@ -9,6 +9,7 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.AddressBook;
+using CAServer.Transfer.Dtos;
 using CAServer.Transfer.Proxy;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -18,6 +19,7 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
+using GetNetworkListDto = CAServer.AddressBook.Dtos.GetNetworkListDto;
 
 namespace CAServer.AddressBook;
 
@@ -147,25 +149,45 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
 
     public async Task<GetNetworkListDto> GetNetworkListAsync()
     {
-        var networkMap = _networkCacheService.GetNetworkMap();
+        //var networkMap = _networkCacheService.GetNetworkMap();
+        var networkMap = GetNetworkInfoMap();
         var networkList = new List<AddressBookNetwork>();
         foreach (var item in networkMap)
         {
             var networkInfo = item.Value;
-            var ad = new AddressBookNetwork()
+            var networkFormatted = AddressHelper.GetNetwork(networkInfo.Network);
+            var network = new AddressBookNetwork()
             {
-                Network = AddressHelper.GetNetwork(networkInfo.Network),
+                Network = networkFormatted,
                 Name = AddressHelper.GetNetworkName(networkInfo.Network),
-                ImageUrl = networkInfo.ImageUrl,
+                ImageUrl = ShiftChainHelper.GetChainImage(networkFormatted),
                 ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
             };
-            networkList.Add(ad);
+
+            if (network.Name.IsNullOrEmpty() || networkList.Select(t => t.Network)
+                    .Contains(network.Name, StringComparer.OrdinalIgnoreCase)) continue;
+            networkList.Add(network);
         }
 
         return new GetNetworkListDto
         {
             NetworkList = networkList
         };
+    }
+
+    private Dictionary<string, NetworkInfoDto> GetNetworkInfoMap()
+    {
+        var networkMap = _networkCacheService.GetReceiveNetworkMap();
+        var networkInfoMap = new Dictionary<string, NetworkInfoDto>();
+        foreach (var item in networkMap.Select(networkItem => networkItem.Value.DestinationMap).SelectMany(
+                     destinationMap => destinationMap.SelectMany(destNetworkItem =>
+                         destNetworkItem.Value.Where(item =>
+                             !networkInfoMap.ContainsKey(item.Network) && !item.Network.IsNullOrEmpty()))))
+        {
+            networkInfoMap.Add(item.Network, item);
+        }
+
+        return networkInfoMap;
     }
 
     private async Task<bool> CheckNameExistAsync(Guid userId, string name)

@@ -63,6 +63,7 @@ public static class TokenHelper
 
         foreach (var tokenWithoutChain in generatedTokens.Where(tokenWithoutChain => tokenWithoutChain.Value?.tokens?.Count == 2))
         {
+            if (tokenWithoutChain.Value.tokens[0].ChainId != CommonConstant.MainChainId) continue;
             (tokenWithoutChain.Value.tokens[0], tokenWithoutChain.Value.tokens[1]) = (tokenWithoutChain.Value.tokens[1], tokenWithoutChain.Value.tokens[0]);
         }
 
