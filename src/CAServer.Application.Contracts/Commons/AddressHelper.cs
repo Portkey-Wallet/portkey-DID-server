@@ -56,9 +56,19 @@ public static class AddressHelper
 
     public static string GetNetwork(string network)
     {
-        return network is CommonConstant.MainChainId or CommonConstant.TDVWChainId or CommonConstant.TDVWChainId
-            ? "aelf"
-            : network;
+        switch (network)
+        {
+            case CommonConstant.MainChainId:
+            case CommonConstant.TDVWChainId:
+            case CommonConstant.TDVVChainId:
+                network = CommonConstant.ChainName;
+                break;
+            case CommonConstant.BaseNetwork:
+                network = CommonConstant.BaseNetworkName;
+                break;
+        }
+
+        return network;
     }
 
     public static string GetAelfChainId(string network)
