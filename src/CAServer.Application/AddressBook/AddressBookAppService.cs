@@ -163,7 +163,8 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
                 ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
             };
 
-            if (network.Name.IsNullOrEmpty()) continue;
+            if (network.Name.IsNullOrEmpty() || networkList.Select(t => t.Network)
+                    .Contains(network.Name, StringComparer.OrdinalIgnoreCase)) continue;
             networkList.Add(network);
         }
 
