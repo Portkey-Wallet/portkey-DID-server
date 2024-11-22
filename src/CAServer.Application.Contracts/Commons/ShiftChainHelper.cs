@@ -69,7 +69,8 @@ public static class ShiftChainHelper
         { "Ethereum", "ETH" },
         { "Sepolia", "ETH" },
         { "BSCTest", "BSC" },
-        { "BaseSepolia", "Base" }
+        { "BaseSepolia", "Base" },
+        { "BASE", "Base" }
     };
 
     public static string FormatEBridgeChain(string chain)
@@ -114,7 +115,7 @@ public static class ShiftChainHelper
         { "MATIC", "^0x[a-fA-F0-9]{40}$" },
         { "OPTIMISM", "^0x[a-fA-F0-9]{40}$" },
         { "AVAXC", "^0x[a-fA-F0-9]{40}$" },
-        { "BASE", "^0x[a-fA-F0-9]{40}$" },
+        { "Base", "^0x[a-fA-F0-9]{40}$" },
         { "TRX", "^T[1-9A-HJ-NP-Za-km-z]{33}$" },
         { "Solana", "^[1-9A-HJ-NP-Za-km-z]{32,44}$" },
         { "TON", "^[EU]Q[a-zA-Z0-9_-]{46}$" },
