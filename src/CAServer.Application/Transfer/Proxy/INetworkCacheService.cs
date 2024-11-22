@@ -77,7 +77,7 @@ public class NetworkCacheService : INetworkCacheService, ISingletonDependency
         {
             if (!_receiveNetworkMap.TryGetValue(request.Symbol, out ReceiveNetworkDto result))
             {
-                result = new ReceiveNetworkDto { DestinationMap = new Dictionary<string, List<NetworkInfoDto>>() };
+                result = new ReceiveNetworkDto();
 
                 var chainIds = _chainOptions.ChainInfos.Keys;
                 foreach (var chainId in chainIds)
