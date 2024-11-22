@@ -166,4 +166,6 @@ public static class CommonConstant
     public const string SyncStateUri = "apps/sync-state";
     public const string ReplaceUri = "app/graphql";
     public const string V2ApiVersion = "v2";
+    public const string BaseNetwork = "BASE";
+    public const string BaseNetworkName = "Base";
 }

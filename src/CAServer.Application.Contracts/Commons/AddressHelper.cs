@@ -36,7 +36,8 @@ public static class AddressHelper
         [CommonConstant.TDVVChainId] = "aelf dAppChain",
         ["ARBITRUM"] = "Arbitrum One",
         ["AVAXC"] = "AVAX C-Chain",
-        ["Base"] = "Base", // need to confirm
+        ["Base"] = "Base",
+        ["BASE"] = "Base",
         ["BSC"] = "BNB Smart Chain",
         ["TBSC"] = "BNB Smart Chain",
         ["ETH"] = "Ethereum",

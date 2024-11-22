@@ -69,8 +69,7 @@ public static class ShiftChainHelper
         { "Ethereum", "ETH" },
         { "Sepolia", "ETH" },
         { "BSCTest", "BSC" },
-        { "BaseSepolia", "Base" },
-        { "BASE", "Base" }
+        { "BaseSepolia", "Base" }
     };
 
     public static string FormatEBridgeChain(string chain)
