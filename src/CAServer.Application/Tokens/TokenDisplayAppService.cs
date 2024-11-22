@@ -242,7 +242,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 token.BalanceInUsd = token.Price == 0 ? DefaultSymbolBalance : balanceInUsd.ToString();
             }
 
-            dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
+            dto.TotalBalanceInUsd = PrecisionDisplayHelper.FormatNumber(CalculateTotalBalanceInUsd(dto.Data));
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             dto.Data.ForEach(t =>
