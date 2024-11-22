@@ -551,7 +551,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetActivityAsync Error {request}", request);
+            _logger.LogError(e, "GetActivityAsync Error {request}, message:{message}, stack:{stack}",
+                JsonConvert.SerializeObject(request), e.Message, e.StackTrace ?? "-");
             return new GetActivityDto();
         }
     }
