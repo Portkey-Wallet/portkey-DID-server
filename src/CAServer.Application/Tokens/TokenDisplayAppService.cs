@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Awaken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -17,6 +18,7 @@ using CAServer.UserAssets.Provider;
 using CAServer.ZeroHoldings;
 using CAServer.ZeroHoldings.constant;
 using CAServer.ZeroHoldings.Dtos;
+using MassTransit.Util;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -252,7 +254,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             });
 
             // await filterZeroByConfig(dto);
-
+            
             return dto;
         }
         catch (Exception e)
@@ -261,7 +263,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
     }
-
+    
     private async Task filterZeroByConfig(GetTokenDto dto)
     {
         try

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AElf.Types;
 using CAServer.Account;
+using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Commons;
@@ -29,6 +30,8 @@ public class RegisterRequestDto : IValidatableObject
     public ZkLoginInfoRequestDto ZkLoginInfo { get; set; }
     
     public Dictionary<string, object> ExtraInfo { get; set; } = new();
+    
+    public RequestSource Source { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)

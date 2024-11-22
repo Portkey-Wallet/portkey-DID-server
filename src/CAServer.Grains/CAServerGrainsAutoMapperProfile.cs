@@ -69,6 +69,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GuardianState, GuardianGrainDto>();
 
         CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.Platform, opt => opt.MapFrom(m => m.Platform))
             .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
             {
                 ChainId = e.ProjectDelegateInfo.ChainId,
@@ -149,7 +150,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
                 Address = e.ManagerInfo.Address,
-                ExtraData = e.ManagerInfo.ExtraData
+                ExtraData = e.ManagerInfo.ExtraData,
+                Platform = e.Platform
             }))
             .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
 

@@ -14,4 +14,6 @@ public interface INickNameAppService
     Task<bool> GetPoppedUpAccountAsync();
     Task<bool> GetBubblingAccountAsync();
     Task ReplaceUserNicknameAsync(ReplaceNicknameDto replaceNicknameDto);
+
+    DefaultAvatarResponse GetDefaultAvatars();
 }

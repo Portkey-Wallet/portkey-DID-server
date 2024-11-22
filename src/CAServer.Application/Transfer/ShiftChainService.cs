@@ -120,6 +120,15 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
 
         await setSendByEBridge(result, request);
 
+        if (result.NetworkList.Count == 0)
+        {
+            return new ResponseWrapDto<SendNetworkDto>
+            {
+                Code = ETransferConstant.InvalidAddressCode,
+                Message = ETransferConstant.InvalidAddressMessage
+            };
+        }
+        
         return new ResponseWrapDto<SendNetworkDto>
         {
             Code = ETransferConstant.SuccessCode,

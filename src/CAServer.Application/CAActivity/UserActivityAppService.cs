@@ -57,6 +57,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly ActivitiesStatusIconOptions _activitiesStatus;
+    private readonly ActivitiesSourceIconOptions _activitiesSource;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -67,7 +68,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
-        IOptionsSnapshot<ActivitiesStatusIconOptions> activitiesStatus)
+        IOptions<ActivitiesStatusIconOptions> activitiesStatus,
+        IOptions<ActivitiesSourceIconOptions> activitiesSource)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -87,6 +89,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
         _redPackageIndexRepository = redPackageIndexRepository;
         _activitiesStatus = activitiesStatus.Value;
+        _activitiesSource = activitiesSource.Value;
     }
 
 
@@ -789,7 +792,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
         }
-
+        var platformToIcon = _activitiesSource.IconInfos.ToDictionary(s => s.Platform, s => s.Icon);
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
             HandleTokenTransferInfos(ht, caAddresses.First());
@@ -909,6 +912,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             dto.ToChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.ToChainId);
             dto.FromChainIcon = ChainDisplayNameHelper.GetChainUrl(dto.FromChainId);
             dto.ToChainIcon = ChainDisplayNameHelper.GetChainUrl(dto.ToChainId);
+            platformToIcon.TryGetValue(ht.Platform, out var sourceIcon);
+            dto.SourceIcon = sourceIcon;
             getActivitiesDto.Add(dto);
         }
 
@@ -1022,7 +1027,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
         return true;
     }
-
+    
     private void AppendStatusIcon(GetActivityDto activityDto)
     {
         activityDto.StatusIcon = activityDto.TransactionType switch

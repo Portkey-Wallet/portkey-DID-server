@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Contracts.MultiToken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -16,6 +18,7 @@ using CAServer.UserAssets;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Nito.AsyncEx;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -37,6 +40,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly ITokenPriceService _tokenPriceService;
     private readonly IOptionsMonitor<TokenSpenderOptions> _tokenSpenderOptions;
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
+    private readonly IContractProvider _contractProvider;
+    private readonly ILogger<TokenAppService> _logger;
 
     public TokenAppService(IOptions<ContractAddressOptions> contractAddressesOptions,
         ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
@@ -45,7 +50,9 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         ITokenCacheProvider tokenCacheProvider,
         ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions,
-        IAssetsLibraryProvider assetsLibraryProvider)
+        IAssetsLibraryProvider assetsLibraryProvider,
+        IContractProvider contractProvider,
+        ILogger<TokenAppService> logger)
     {
         _tokenProvider = tokenProvider;
         _latestExchange = latestExchange;
@@ -55,6 +62,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         _tokenCacheProvider = tokenCacheProvider;
         _tokenSpenderOptions = tokenSpenderOptions;
         _assetsLibraryProvider = assetsLibraryProvider;
+        _contractProvider = contractProvider;
+        _logger = logger;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -256,7 +265,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
     public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
     {
-        var tokenApproved = await _tokenProvider.GetTokenApprovedAsync("", 
+        var tokenApproved = await _tokenProvider.GetTokenApprovedAsync("",
             input.CaAddressInfos.Select(t => t.CaAddress).ToList());
         var tokenApprovedList = tokenApproved.CaHolderTokenApproved.Data.Where(t
             => !t.Symbol.IsNullOrWhiteSpace()).ToList();
@@ -264,6 +273,17 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         {
             return new GetTokenAllowancesDto();
         }
+
+        List<GetAllowanceDTO> getAllowanceDtos = tokenApprovedList
+            .Select(caHolderTokenApprovedDto => new GetAllowanceDTO
+            {
+                ChainId = caHolderTokenApprovedDto.ChainId,
+                Symbol = caHolderTokenApprovedDto.Symbol,
+                Owner = input.CaAddressInfos[0].CaAddress,
+                Spender = caHolderTokenApprovedDto.Spender
+            })
+            .ToList();
+        var allowanceMap = await GetAllowanceList(getAllowanceDtos);
 
         var symbolList = tokenApprovedList.Select(t
             => t.Symbol.Replace("-*", "-1")).Distinct().ToList();
@@ -285,14 +305,15 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             SymbolApproveList = t.Items.Select(s => new SymbolApprove()
             {
                 Symbol = s.Symbol,
-                Amount = s.BatchApprovedAmount,
-                Decimals = tokenInfoDtos.FirstOrDefault(i => i.Symbol == s.Symbol.Replace("-*", "-1")) == null ? 0 : 
-                    tokenInfoDtos.First(i => i.Symbol == s.Symbol.Replace("-*", "-1")).Decimals,
+                Amount = allowanceMap.TryGetValue(GetKey(s.Symbol, t.Key.Spender, t.Key.ChainId), out long value) ? value : 0,
+                Decimals = tokenInfoDtos.FirstOrDefault(i => i.Symbol == s.Symbol.Replace("-*", "-1")) == null
+                    ? 0
+                    : tokenInfoDtos.First(i => i.Symbol == s.Symbol.Replace("-*", "-1")).Decimals,
                 UpdateTime = s.UpdateTime,
                 ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(s.Symbol),
             }).ToList()
         }).ToList();
-        
+
         foreach (var tokenAllowance in tokenAllowanceList)
         {
             var tokenSpender = _tokenSpenderOptions.CurrentValue.TokenSpenderList.FirstOrDefault(t
@@ -302,7 +323,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
                 ObjectMapper.Map(tokenSpender, tokenAllowance);
             }
         }
-        tokenAllowanceList.Sort((t1, t2) => 
+
+        tokenAllowanceList.Sort((t1, t2) =>
             (t1.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t1.Name).CompareTo(t2.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t2.Name));
 
         return new GetTokenAllowancesDto
@@ -310,5 +332,33 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             Data = tokenAllowanceList,
             TotalRecordCount = tokenAllowanceList.Count
         };
+    }
+
+    private async Task<Dictionary<string, long>> GetAllowanceList(List<GetAllowanceDTO> dtoList)
+    {
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var tasks = dtoList.Select(dto => Task.Run(() => GetAllowanceTask(dto)));
+        GetAllowanceDTO[] result = await Task.WhenAll(tasks);
+        stopwatch.Stop();
+        _logger.LogDebug("GetAllowanceList dtoList count = {0}, spendTime = {1} ms dtoList = {2}", dtoList.Count, stopwatch.ElapsedMilliseconds,JsonConvert.SerializeObject(result));
+
+        return result.ToDictionary(
+            dto => GetKey(dto.Symbol, dto.Spender, dto.ChainId),
+            dto => dto.Allowance
+        );
+    }
+
+    private async Task<GetAllowanceDTO> GetAllowanceTask(GetAllowanceDTO dto)
+    {
+        GetAllowanceOutput output = await _contractProvider.GetAllowanceAsync(dto.Symbol, dto.Owner, dto.Spender, dto.ChainId);
+        dto.Allowance = output.Allowance;
+        _logger.LogDebug("GetAllowanceTask dto = {0}", JsonConvert.SerializeObject(dto));
+        return dto;
+    }
+
+    private string GetKey(string symbol, string spender, string chainId)
+    {
+        return $"{symbol}-{spender}-{chainId}";
     }
 }

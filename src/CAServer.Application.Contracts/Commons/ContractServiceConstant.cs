@@ -8,6 +8,7 @@ public static class AElfContractMethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string GetVerifierServers = "GetVerifierServers";
     public const string GetBalance = "GetBalance";
+    public const string GetAllowance = "GetAllowance";
     public const string GetTokenInfo = "GetTokenInfo";
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
@@ -165,6 +166,10 @@ public static class CommonConstant
     public const string TokenInfoCachePrefix = "TokenInfo";
     public const string SyncStateUri = "apps/sync-state";
     public const string ReplaceUri = "app/graphql";
+
+    public const string VerificationCodeExpired = "Verification code expired. Please request a new one to continue.";
+    public const string TooManyRetries = "Too many retries. Please request a new verification code to continue.";
+    public const string IncorrectCode = "Incorrect code, please try again.";
     public const string V2ApiVersion = "v2";
     public const string BaseNetwork = "BASE";
     public const string BaseNetworkName = "Base";

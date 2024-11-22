@@ -77,6 +77,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<MarketCacheOptions>(configuration.GetSection("MarketCache"));
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
         Configure<LoginCacheOptions>(configuration.GetSection("LoginCache"));
+        Configure<AwakenOptions>(configuration.GetSection("AwakenConfig"));
         Configure<SecondaryEmailOptions>(configuration.GetSection("SecondaryEmail"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
@@ -157,6 +158,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
         Configure<ActivitiesStatusIconOptions>(configuration.GetSection("ActivitiesStatusIcon"));
+        Configure<ActivitiesSourceIconOptions>(configuration.GetSection("ActivitiesSourceIcon"));
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));

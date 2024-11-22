@@ -32,6 +32,8 @@ public class NftItem : ChainDisplayNameDto
     public bool IsSeed { get; set; }
     public int SeedType { get; set; }
     public int RecommendedRefreshSeconds { get; set; }
+    
+    public string Description { get; set; }
 }
 
 public enum SeedType

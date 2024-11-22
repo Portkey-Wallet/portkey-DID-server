@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Awaken;
 using CAServer.Commons;
 using CAServer.Tokens;
 using CAServer.UserAssets;
@@ -39,6 +40,16 @@ public class UserAssetsController
         return VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion)
             ? await _tokenNftAppService.GetTokenAsync(requestDto)
             : await _tokenDisplayAppService.GetTokenAsync(requestDto);
+    }
+
+    [HttpGet("awaken/token")]
+    public async Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount,
+        int page, string chainId, string caAddress)
+    {
+        skipCount = skipCount <= 0 ? 0 : skipCount;
+        maxResultCount = maxResultCount <= 0 ? 100 : maxResultCount;
+        page = page <= 1 ? 1 : page;
+        return await _tokenNftAppService.ListAwakenSupportedTokensAsync(skipCount, maxResultCount, page, chainId, caAddress);
     }
 
     [HttpPost("nftCollections")]

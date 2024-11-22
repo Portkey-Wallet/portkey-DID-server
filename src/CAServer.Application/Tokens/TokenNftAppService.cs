@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Awaken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -57,6 +58,9 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     private readonly IContractProvider _contractProvider;
     private readonly NftToFtOptions _nftToFtOptions;
     private readonly IZeroHoldingsConfigAppService _zeroHoldingsConfigAppService;
+    private readonly IHttpClientService _httpClientService;
+    private readonly HostInfoOptions _hostInfoOptions;
+    private readonly AwakenOptions _awakenOptions;
 
     public TokenNftAppService(
         ILogger<TokenDisplayAppService> logger, IUserAssetsProvider userAssetsProvider,
@@ -69,8 +73,8 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
-        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
-    )
+        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService, IHttpClientService httpClientService,
+        IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IOptionsSnapshot<AwakenOptions> awakenOptions)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -90,6 +94,9 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         _tokenListOptions = tokenListOptions.Value;
         _nftToFtOptions = nftToFtOptions.Value;
         _zeroHoldingsConfigAppService = zeroHoldingsConfigAppService;
+        _httpClientService = httpClientService;
+        _hostInfoOptions = hostInfoOptions.Value;
+        _awakenOptions = awakenOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -110,6 +117,11 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             _logger.LogError(e, "send UserLoginEto fail,user {id}", CurrentUser.GetId());
         }
 
+        return await DoGetTokenDtos(requestDto);
+    }
+
+    private async Task<GetTokenDto> DoGetTokenDtos(GetTokenRequestDto requestDto)
+    {
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -213,7 +225,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             });
 
             // await filterZeroByConfig(dto);
-
+            
             return dto;
         }
         catch (Exception e)
@@ -756,6 +768,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                         await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
                             requestDto.Height, ImageResizeType.Forest);
                     item.NftInfo.TokenName = searchItem.NftInfo.TokenName;
+                    item.NftInfo.Symbol = searchItem.NftInfo.Symbol;
                 }
 
                 dto.Data.Add(item);
@@ -767,7 +780,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
                 .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
-
+            
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
             SetSeedStatusAndTypeForUserAssets(dto.Data);
 
@@ -978,13 +991,21 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
     {
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
 
-        return tokens.OrderBy(t => decimal.Parse(t.Balance) == 0)
-            .ThenBy(t => t.Symbol != CommonConstant.ELF)
-            .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
-            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
-            .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
-            .ToList();
+        try
+        {
+            return tokens.OrderBy(t => decimal.Parse(t.Balance) == 0)
+                .ThenBy(t => t.Symbol != CommonConstant.ELF)
+                .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
+                .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
+                .ThenBy(t => t.Symbol)
+                .ThenBy(t => t.ChainId)
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "illegal tokens:{0}", JsonConvert.SerializeObject(tokens.Where(t => t.Balance.IsNullOrEmpty()).ToList()));
+            return tokens;
+        }
     }
 
     private async Task<Dictionary<string, decimal>> GetSymbolPrice(List<string> symbols)
@@ -1039,5 +1060,86 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
         return result;
+    }
+    
+    public async Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount, int page, string chainId, string caAddress)
+    {
+        if (chainId.IsNullOrEmpty())
+        {
+            chainId = _hostInfoOptions.Environment == Options.Environment.Development
+                ? CommonConstant.TDVWChainId
+                : CommonConstant.TDVVChainId;
+        }
+        var awakenUrl = _awakenOptions.Domain + $"/api/app/trade-pairs?skipCount={skipCount}&maxResultCount={maxResultCount}&page={page}&chainId={chainId}";
+        var response = await _httpClientService.GetAsync<CommonResponseDto<TradePairsDto>>(awakenUrl);
+        if (!response.Success || response.Data == null || response.Data.Items.IsNullOrEmpty())
+        {
+            return new AwakenSupportedTokenResponse()
+            {
+                Total = 0,
+                Data = new List<Token>()
+            };
+        }
+
+        var tokens0 = response.Data.Items.Select(item => item.Token0).Distinct(new TokenComparer()).ToList();
+        var tokens1 = response.Data.Items.Select(item => item.Token1).Distinct(new TokenComparer()).ToList();
+        tokens0.AddRange(tokens1);
+        var tokens = tokens0.Distinct(new TokenComparer()).ToList();
+        var result = ObjectMapper.Map<List<TradePairsItemToken>, List<CAServer.UserAssets.Dtos.Token>>(tokens);
+        var symbolToToken = await ListSideChainUserTokens(chainId, caAddress, tokens);
+        foreach (var token in result)
+        {
+            ChainDisplayNameHelper.SetDisplayName(token);
+            if (!symbolToToken.TryGetValue(token.Symbol, out var userToken))
+            {
+                token.Balance = token.Balance.IsNullOrEmpty() ? "0" : token.Balance;
+                token.BalanceInUsd = token.BalanceInUsd.IsNullOrEmpty() ? "0" : token.BalanceInUsd;
+                continue;
+            }
+
+            token.Decimals = userToken.Decimals;
+            token.ImageUrl = userToken.ImageUrl;
+            token.Balance = userToken.Balance;
+            token.Balance = token.Balance.IsNullOrEmpty() ? "0" : token.Balance;
+            token.BalanceInUsd = userToken.BalanceInUsd;
+            token.BalanceInUsd = token.BalanceInUsd.IsNullOrEmpty() ? "0" : token.BalanceInUsd;
+            token.Price = userToken.Price;
+            token.Label = userToken.Label;
+        }
+        result = SortTokens(result);
+        result = result.Skip(skipCount).Take(maxResultCount).ToList();
+        return new AwakenSupportedTokenResponse()
+        {
+            Total = result.Count,
+            Data = result
+        };
+    }
+    
+    private async Task<Dictionary<string, Token>> ListSideChainUserTokens(string chainId, string caAddress, List<TradePairsItemToken> tokens)
+    {
+        var userTokens = await DoGetTokenDtos(new GetTokenRequestDto()
+        {
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    ChainId = chainId,
+                    CaAddress = caAddress
+                }
+            },
+            SkipCount = 0,
+            MaxResultCount = 200
+        });
+        var symbols = tokens.Select(t => t.Symbol).Distinct().ToList();
+        var sideChainUserTokens = userTokens.Data.Where(t => chainId.Equals(t.ChainId) && symbols.Contains(t.Symbol)).ToList();
+        try
+        {
+            return sideChainUserTokens.ToDictionary(token => token.Symbol, token => token);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "sideChainUserTokens.ToDictionary error");
+            return new Dictionary<string, Token>();
+        }
     }
 }
