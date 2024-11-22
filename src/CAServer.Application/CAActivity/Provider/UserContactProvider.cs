@@ -13,7 +13,8 @@ namespace CAServer.CAActivity.Provider;
 public interface IUserContactProvider
 {
     [ItemCanBeNull]
-    Task<List<Tuple<ContactAddress, string, string>>> BatchGetUserNameAsync(IEnumerable<string> usersAddresses, Guid userId,
+    Task<List<Tuple<ContactAddress, string, string>>> BatchGetUserNameAsync(IEnumerable<string> usersAddresses,
+        Guid userId,
         string chainId = null);
 
     Task<List<ContactAddress>> GetContactByUserNameAsync(string name, Guid userId);
@@ -41,7 +42,7 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
         }
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
         var contactList = await _contactIndexRepository.GetListAsync(Filter);
@@ -53,7 +54,7 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
 
         foreach (var contact in contactList.Item2)
         {
-            if (contact?.Addresses == null)
+            if (contact?.Addresses == null || contact.IsDeleted)
             {
                 continue;
             }
