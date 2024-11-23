@@ -349,7 +349,7 @@ public class ContractAppService : IContractAppService
         }
         var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");
-        if (!TransactionState.IsStateSuccessful(resultSocialRecovery.Status) && !managerInfoExisted)
+        if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)
         {
             recoveryResult.RecoveryMessage = "Transaction status: " + resultSocialRecovery.Status + ". Error: " +
                                              resultSocialRecovery.Error;
