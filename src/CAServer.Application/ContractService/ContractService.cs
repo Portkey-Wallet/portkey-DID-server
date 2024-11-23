@@ -63,8 +63,8 @@ public class ContractService : IContractService, ISingletonDependency
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
-            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
-                ownAddress, chainInfo.ContractAddress);
+            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress}, methodName: {methodName}",
+                ownAddress, chainInfo.ContractAddress, methodName);
             var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.GenerateTransactionAsync.ToString());
 
