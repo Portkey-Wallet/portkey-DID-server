@@ -88,7 +88,7 @@ public class MintNftItemService : IMintNftItemService, ISingletonDependency
                 ErrorMessage = transactionInfo.TransactionResultDto.Error
             });
 
-            var status = transactionInfo.TransactionResultDto.Status == TransactionState.Mined
+            var status = TransactionState.IsStateSuccessful(transactionInfo.TransactionResultDto.Status)
                 ? FreeMintStatus.SUCCESS
                 : FreeMintStatus.FAIL;
             var grain = _clusterClient.GetGrain<IFreeMintGrain>(eventData.UserId);
