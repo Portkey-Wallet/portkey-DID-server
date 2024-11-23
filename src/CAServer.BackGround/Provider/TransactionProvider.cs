@@ -66,12 +66,12 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
                 transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
             }
 
-            var status = transactionResult.Status == TransactionState.Mined
+            var status = TransactionState.IsStateSuccessful(transactionResult.Status)
                 ? OrderStatusType.Transferred
                 : OrderStatusType.TransferFailed;
 
             var dicExt = new Dictionary<string, object>();
-            if (transactionResult.Status != TransactionState.Mined)
+            if (! TransactionState.IsStateSuccessful(transactionResult.Status))
             {
                 dicExt.Add("transactionError", transactionResult.Error);
             }
@@ -86,7 +86,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 
             await _orderStatusProvider.UpdateOrderStatusAsync(orderStatusUpdateDto);
 
-            if (transactionResult.Status != TransactionState.Mined)
+            if (! TransactionState.IsStateSuccessful(transactionResult.Status))
             {
                 _logger.LogWarning(
                     "Transaction handle fail, orderId:{orderId}, transactionId:{transactionId}, status:{status}",

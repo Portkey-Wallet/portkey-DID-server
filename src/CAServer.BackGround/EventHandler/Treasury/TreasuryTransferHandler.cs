@@ -83,7 +83,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
             var txResult = await WaitTransactionResultAsync(CommonConstant.MainChainId, orderDto.TransactionId);
             if (txResult == null) return;
 
-            orderDto.Status = txResult.Status == TransactionState.Mined
+            orderDto.Status = TransactionState.IsStateSuccessful(txResult.Status)
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
 
@@ -91,7 +91,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
                 .Add(ExtensionKey.TxStatus, txResult.Status)
                 .Add(ExtensionKey.TxBlockHeight, txResult.BlockNumber.ToString());
 
-            if (txResult.Status != TransactionState.Mined)
+            if (! TransactionState.IsStateSuccessful(txResult.Status))
                 resExtensionBuilder.Add(ExtensionKey.TxResult,
                     JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
 

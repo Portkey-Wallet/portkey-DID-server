@@ -284,7 +284,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                 orderId, transactionResult.TransactionId, transactionResult.BlockNumber);
 
             // update order status
-            var newStatus = transactionResult.Status == TransactionState.Mined
+            var newStatus = TransactionState.IsStateSuccessful(transactionResult.Status)
                 ? transactionResult.BlockNumber <= confirmedHeight || chainHeight >=
                 transactionResult.BlockNumber + _thirdPartOptions.CurrentValue.Timer.TransactionConfirmHeight
                     ? OrderStatusType.Finish.ToString()

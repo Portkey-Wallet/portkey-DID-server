@@ -26,4 +26,9 @@ public static class TransactionState
     public const string NotExisted = "NOTEXISTED";
     public const string Failed = "FAILED";
     public const string NodeValidationFailed = "NODEVALIDATIONFAILED";
+
+    public static bool IsStateSuccessful(string state)
+    {
+        return Mined.Equals(state) && NodeValidationFailed.Equals(state);
+    }
 }

@@ -165,7 +165,7 @@ public class PayRedPackageService : IPayRedPackageService
             var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
             _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
                 JsonConvert.SerializeObject(res));
-            if (res.TransactionResultDto.Status != TransactionState.Mined)
+            if (! TransactionState.IsStateSuccessful(res.TransactionResultDto.Status))
             {
                 _logger.LogError("PayRedPackageAsync fail: " + "\n{res}",
                     JsonConvert.SerializeObject(res, Formatting.Indented));

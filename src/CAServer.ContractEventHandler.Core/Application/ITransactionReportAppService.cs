@@ -64,7 +64,7 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
                 return;
             }
 
-            if (transactionResult.Status == TransactionState.Mined)
+            if (TransactionState.IsStateSuccessful(transactionResult.Status))
             {
                 return;
             }
@@ -177,7 +177,7 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
             return;
         }
 
-        if (transactionResult.Status == TransactionState.Mined)
+        if (TransactionState.IsStateSuccessful(transactionResult.Status))
         {
             await _transactionRepository.DeleteAsync(transaction);
             _logger.LogInformation(

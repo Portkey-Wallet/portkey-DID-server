@@ -302,14 +302,14 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // update main-order
             orderGrainDto.TransactionId = sendResult.TransactionId;
-            orderGrainDto.Status = txResult.Status == TransactionState.Mined
+            orderGrainDto.Status = TransactionState.IsStateSuccessful(txResult.Status)
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
 
             var resExtensionBuilder = OrderStatusExtensionBuilder.Create()
                 .Add(ExtensionKey.TxStatus, txResult.Status)
                 .Add(ExtensionKey.TxBlockHeight, txResult.BlockNumber.ToString());
-            if (txResult.Status != TransactionState.Mined)
+            if (! TransactionState.IsStateSuccessful(txResult.Status))
                 resExtensionBuilder.Add(ExtensionKey.TxResult,
                     JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
 
@@ -410,7 +410,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
-            var newStatus = rawTxResult.Status == TransactionState.Mined
+            var newStatus = TransactionState.IsStateSuccessful(rawTxResult.Status)
                 ? rawTxResult.BlockNumber <= confirmedHeight || chainHeight >=
                 rawTxResult.BlockNumber + _thirdPartOptions.CurrentValue.Timer.TransactionConfirmHeight
                     ? OrderStatusType.Finish.ToString()

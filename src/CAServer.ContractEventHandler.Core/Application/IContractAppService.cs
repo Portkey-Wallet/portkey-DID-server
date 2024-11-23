@@ -127,7 +127,7 @@ public class ContractAppService : IContractAppService
                 JsonConvert.SerializeObject(result, Formatting.Indented));
             eto.TransactionResult = result.Status;
             eto.TransactionId = result.TransactionId;
-            if (result.Status != TransactionState.Mined)
+            if (! TransactionState.IsStateSuccessful(result.Status))
             {
                 eto.Message = "Transaction status: " + result.Status + ". Error: " +
                               result.Error;
@@ -224,7 +224,7 @@ public class ContractAppService : IContractAppService
 
         var resultCreateCaHolder = await _contractProvider.CreateHolderInfoAsync(createHolderDto);
 
-        if (resultCreateCaHolder.Status != TransactionState.Mined)
+        if (! TransactionState.IsStateSuccessful(resultCreateCaHolder.Status))
         {
             registerResult.RegisterMessage = "Transaction status: " + resultCreateCaHolder.Status + ". Error: " +
                                              resultCreateCaHolder.Error;
@@ -349,7 +349,7 @@ public class ContractAppService : IContractAppService
         }
         var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");
-        if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)
+        if (!TransactionState.IsStateSuccessful(resultSocialRecovery.Status) && !managerInfoExisted)
         {
             recoveryResult.RecoveryMessage = "Transaction status: " + resultSocialRecovery.Status + ". Error: " +
                                              resultSocialRecovery.Error;
@@ -548,7 +548,7 @@ public class ContractAppService : IContractAppService
                 var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetailDto,
                     payRedPackageFrom);
                 _logger.Info($"redPackageId:{redPackageId} refunding transaction status:{res.TransactionResultDto.Status}");
-                if (res.TransactionResultDto.Status == TransactionState.Mined)
+                if (TransactionState.IsStateSuccessful(res.TransactionResultDto.Status))
                 {
                     await grain.UpdateRedPackageExpire();
                     await UpdateRefundRedPackageTransactionInfo(redPackageDetailDto.SessionId, res.TransactionResultDto,true);
@@ -641,7 +641,7 @@ public class ContractAppService : IContractAppService
                 }
 
                 var resultDto = await _contractProvider.SyncTransactionAsync(sideChain.ChainId, syncHolderInfoInput);
-                syncSucceed = syncSucceed && resultDto.Status == TransactionState.Mined;
+                syncSucceed = syncSucceed && TransactionState.IsStateSuccessful(resultDto.Status);
                 if (syncSucceed)
                 {
                     await UpdateSyncHolderVersionAsync(sideChain.ChainId, result.CaHash.ToHex(), validateHeight);
@@ -679,7 +679,7 @@ public class ContractAppService : IContractAppService
             //
             // syncSucceed =
             //     await ValidateTransactionAndSyncAsync(ContractAppServiceConstant.MainChainId, result, chainId);
-            syncSucceed = syncResult.Status == TransactionState.Mined;
+            syncSucceed = TransactionState.IsStateSuccessful(syncResult.Status);
             if (syncSucceed)
             {
                 await UpdateSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, result.CaHash.ToHex(),
@@ -843,7 +843,7 @@ public class ContractAppService : IContractAppService
             RegisterSuccess = true
         };
 
-        if (transactionResultDto.Status != TransactionState.Mined)
+        if (!TransactionState.IsStateSuccessful(transactionResultDto.Status))
         {
             registerResult.RegisterMessage = "Transaction status: " + transactionResultDto.Status + ". Error: " +
                                              transactionResultDto.Error;
@@ -938,7 +938,7 @@ public class ContractAppService : IContractAppService
             RecoverySuccess = true
         };
 
-        if (transactionResultDto.Status != TransactionState.Mined)
+        if (!TransactionState.IsStateSuccessful(transactionResultDto.Status))
         {
             recoveryResult.RecoveryMessage = "Transaction status: " + transactionResultDto.Status + ". Error: " +
                                              transactionResultDto.Error;
@@ -1038,7 +1038,7 @@ public class ContractAppService : IContractAppService
                         var result = await _contractProvider.SyncTransactionAsync(info.ChainId, syncHolderInfoInput);
 
                         records.Remove(record);
-                        if (result.Status != TransactionState.Mined)
+                        if (! TransactionState.IsStateSuccessful(result.Status))
                         {
                             _logger.LogError(
                                 "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
@@ -1107,7 +1107,7 @@ public class ContractAppService : IContractAppService
 
                     records.Remove(record);
 
-                    if (result.Status != TransactionState.Mined)
+                    if (! TransactionState.IsStateSuccessful(result.Status))
                     {
                         _logger.LogError(
                             "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
@@ -1310,7 +1310,7 @@ public class ContractAppService : IContractAppService
                     await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
                         unsetLoginGuardians);
 
-                if (transactionDto.TransactionResultDto?.Status != TransactionState.Mined)
+                if (TransactionState.IsStateSuccessful(transactionDto.TransactionResultDto?.Status))
                 {
                     _logger.LogError("ValidateQueryEventsAsync on chain: {id} of account: {hash} failed",
                         chainId, record.CaHash);
