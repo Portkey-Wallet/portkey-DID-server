@@ -744,7 +744,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         var nameList =
             await _userContactProvider.BatchGetUserNameAsync(anotherAddresses, CurrentUser.GetId(),
-                chainId);
+                _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString(), chainId);
         if (!curUserIsFrom && !curUserIsTo)
         {
             anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
@@ -792,6 +792,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
         }
+
         var platformToIcon = _activitiesSource.IconInfos.ToDictionary(s => s.Platform, s => s.Icon);
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
@@ -1027,7 +1028,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         dto.TransactionName = CryptoGiftConstants.RefundTransactionName;
         return true;
     }
-    
+
     private void AppendStatusIcon(GetActivityDto activityDto)
     {
         activityDto.StatusIcon = activityDto.TransactionType switch
