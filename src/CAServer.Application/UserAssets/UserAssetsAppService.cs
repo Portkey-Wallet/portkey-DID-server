@@ -401,7 +401,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private static void DealWithDisplayChainImage(GetNftCollectionsDto dto)
     {
         var symbolToCount = dto.Data.GroupBy(nft => nft.Symbol)
-            .Select(g => new {GroupId = g.Key, Count = g.Count()})
+            .Select(g => new { GroupId = g.Key, Count = g.Count() })
             .ToDictionary(g => g.GroupId, g => g.Count);
         foreach (var nftCollection in dto.Data)
         {
@@ -410,7 +410,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
-    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto, SearchUserAssetsDto searchDto)
+    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto,
+        SearchUserAssetsDto searchDto)
     {
         var nftRequestDto = _objectMapper.Map<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>(requestDto);
         var collectionsDto = await GetNFTCollectionsAsync(nftRequestDto);
@@ -458,7 +459,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 return dto;
             }
-            
+
             var symbolToDescription = await ExtractDescription(res);
             foreach (var nftInfo in res.CaHolderNFTBalanceInfo.Data.Where(n => n.NftInfo != null))
             {
@@ -497,6 +498,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 {
                     nftItem.Description = description;
                 }
+
                 dto.Data.Add(nftItem);
             }
 
@@ -538,7 +540,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task<Dictionary<string, string>> ExtractDescription(IndexerNftInfos res)
     {
         var nftItemSymbols = res.CaHolderNFTBalanceInfo.Data
-            .Where(nftInfo => nftInfo.NftInfo != null && _freeMintOptions.CollectionInfo.CollectionName.Equals(nftInfo.NftInfo.CollectionName))
+            .Where(nftInfo => nftInfo.NftInfo != null &&
+                              _freeMintOptions.CollectionInfo.CollectionName.Equals(nftInfo.NftInfo.CollectionName))
             .Select(d => d.NftInfo.Symbol).ToList();
         var freeMintIndices = await _freeMintProvider.ListFreeMintItemsAsync(nftItemSymbols);
         try
@@ -764,17 +767,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var skipCount = 0;
         const int resultCount = 2000;
         var symbol = string.Empty;
+        var collectionSymbol = CommonConstant.SgrCollectionSymbol;
         while (true)
         {
             var nftItemInfos =
-                await _userAssetsProvider.GetNftItemWithTraitsInfos(symbol, skipCount, resultCount);
+                await _userAssetsProvider.GetNftItemWithTraitsInfos(symbol, collectionSymbol, skipCount, resultCount);
             if (nftItemInfos?.NftItemWithTraitsInfos?.Count == 0 || nftItemInfos?.NftItemWithTraitsInfos == null)
             {
                 break;
             }
 
             skipCount += resultCount;
-
             symbol = nftItemInfos.NftItemWithTraitsInfos.LastOrDefault()?.Symbol;
             _logger.LogInformation("[GetNftItemTraitsInfoAsync] Next symbol: {symbol}", symbol);
             var list = nftItemInfos.NftItemWithTraitsInfos;
@@ -784,7 +787,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
         }
 
-        _logger.LogInformation("[GetNftItemTraitsInfoAsync] TotalCount of NftItems is {count}", skipCount);
+        _logger.LogInformation("[GetNftItemTraitsInfoAsync] TotalCount of NftItems is {count}",
+            itemInfos.NftItemInfos.Count);
         return itemInfos;
     }
 
@@ -1430,7 +1434,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             .ToList();
 
         var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
-        _logger.LogInformation("[GetNftItemTraitsInfoAsync] NftTraitsProportionCalculateAsync traitTypeCounts length = {0}", traitTypeCounts.Count);
+        _logger.LogInformation(
+            "[GetNftItemTraitsInfoAsync] NftTraitsProportionCalculateAsync traitTypeCounts length = {0}",
+            traitTypeCounts.Count);
         foreach (var traits in traitTypeCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traits, traitTypeCounts[traits].ToString(),
@@ -1443,7 +1449,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
             .ToDictionary(g => g.Key, g => g.Count());
-        _logger.LogInformation("[GetNftItemTraitsInfoAsync] NftTraitsProportionCalculateAsync traitTypeValueCounts length = {0}", traitTypeValueCounts.Count);
+        _logger.LogInformation(
+            "[GetNftItemTraitsInfoAsync] NftTraitsProportionCalculateAsync traitTypeValueCounts length = {0}",
+            traitTypeValueCounts.Count);
         foreach (var traitsValues in traitTypeValueCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
