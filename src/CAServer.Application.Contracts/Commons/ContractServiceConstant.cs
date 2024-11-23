@@ -91,6 +91,7 @@ public static class CommonConstant
     public const string SgrCoingeckoId = "schrodinger-2";
     public const string SgrSymbol = "SGR";
     public const string SgrSymbolName = "SGR-1";
+    public const string SgrCollectionSymbol = "SGR-0";
 
     public const string CryptoGiftProjectCode = "20000";
 
