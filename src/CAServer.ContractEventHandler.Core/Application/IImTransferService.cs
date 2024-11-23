@@ -102,7 +102,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
 
             transferGrainDto.TransactionResult = result.Status;
             transferGrainDto.BlockHash = result.BlockHash;
-            if (result.Status != TransactionState.Mined)
+            if (! TransactionState.IsStateSuccessful(result.Status))
             {
                 transferGrainDto.ErrorMessage = $"Transaction status: {result.Status}. Error: {result.Error}";
                 transferGrainDto.TransactionStatus = TransferTransactionStatus.Fail;
