@@ -18,6 +18,7 @@ using CAServer.Tokens.Provider;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -71,6 +72,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IObjectMapper _objectMapper;
     private readonly FreeMintOptions _freeMintOptions;
     private readonly IFreeMintProvider _freeMintProvider;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -87,7 +89,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IDistributedCache<string> userNftTraitsCountCache, IActivityProvider activityProvider,
         IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
         IObjectMapper objectMapper, IOptionsSnapshot<FreeMintOptions> freeMintOptions,
-        IFreeMintProvider freeMintProvider)
+        IFreeMintProvider freeMintProvider, IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -116,6 +118,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _objectMapper = objectMapper;
         _freeMintOptions = freeMintOptions.Value;
         _freeMintProvider = freeMintProvider;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -849,7 +852,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 dto.Data.Add(ObjectMapper.Map<CAHolderTransactionAddress, RecentTransactionUser>(info));
             }
 
-            var contactList = await _userContactProvider.BatchGetUserNameAsync(userCaAddresses, CurrentUser.GetId());
+            var contactList = await _userContactProvider.BatchGetUserNameAsync(userCaAddresses, CurrentUser.GetId(),
+                _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString());
             if (contactList == null)
             {
                 return dto;
@@ -891,7 +895,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task AssembleAddressesAsync(RecentTransactionUser user)
     {
         var contactAddresses =
-            await _userContactProvider.GetContactByUserNameAsync(user.Name, CurrentUser.GetId());
+            await _userContactProvider.GetContactByUserNameAsync(user.Name, CurrentUser.GetId(),
+                _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString());
         user.Addresses = ObjectMapper.Map<List<ContactAddress>, List<UserContactAddressDto>>(contactAddresses);
         user.Addresses?.ForEach(t =>
         {
