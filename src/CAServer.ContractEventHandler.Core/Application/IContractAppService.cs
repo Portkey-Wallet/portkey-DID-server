@@ -1041,8 +1041,8 @@ public class ContractAppService : IContractAppService
                         if (! TransactionState.IsStateSuccessful(result.Status))
                         {
                             _logger.LogError(
-                                "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
-                                record.ChangeType, chainId, record.CaHash, result.Error,
+                                "SyncQueryEventsAsync {type} SyncToSide failed on chain: {id} of account: {hash}, status: {status}, error: {error}, data:{data}",
+                                record.ChangeType, chainId, record.CaHash,result.Status, result.Error,
                                 JsonConvert.SerializeObject(syncHolderInfoInput));
                         
                             record.RetryTimes++;
@@ -1110,8 +1110,8 @@ public class ContractAppService : IContractAppService
                     if (! TransactionState.IsStateSuccessful(result.Status))
                     {
                         _logger.LogError(
-                            "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
-                            record.ChangeType, chainId, record.CaHash, result.Error,
+                            "SyncQueryEventsAsync {type} SyncToMain failed on chain: {id} of account: {hash},status: {status}, error: {error}, data{data}",
+                            record.ChangeType, chainId, record.CaHash,result.Status, result.Error,
                             JsonConvert.SerializeObject(syncHolderInfoInput));
                     
                         record.RetryTimes++;
