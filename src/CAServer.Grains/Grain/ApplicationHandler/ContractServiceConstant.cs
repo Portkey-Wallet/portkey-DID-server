@@ -29,6 +29,6 @@ public static class TransactionState
 
     public static bool IsStateSuccessful(string state)
     {
-        return Mined.Equals(state) && NodeValidationFailed.Equals(state);
+        return Mined.Equals(state) || NodeValidationFailed.Equals(state);
     }
 }
