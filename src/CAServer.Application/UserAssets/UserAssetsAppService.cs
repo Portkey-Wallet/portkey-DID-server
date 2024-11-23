@@ -1055,8 +1055,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
 
             dto.Data = dto.Data.Where(t => t.TokenInfo != null).OrderBy(t => t.Symbol != CommonConstant.DefaultSymbol)
-                .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
-                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
+                .ThenBy(t => t.Symbol).ThenByDescending(t => t.ChainId)
+                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenByDescending(t => t.ChainId)).ToList();
 
             SetSeedStatusAndTypeForUserAssets(dto.Data);
 
