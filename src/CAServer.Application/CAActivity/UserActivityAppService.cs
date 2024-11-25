@@ -58,7 +58,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly ActivitiesStatusIconOptions _activitiesStatus;
     private readonly ActivitiesSourceIconOptions _activitiesSource;
-
+    private readonly NftToFtOptions _nftToFtOptions;
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptionsSnapshot<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
@@ -69,7 +69,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IOptions<ActivitiesStatusIconOptions> activitiesStatus,
-        IOptions<ActivitiesSourceIconOptions> activitiesSource)
+        IOptions<ActivitiesSourceIconOptions> activitiesSource,
+        IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -90,6 +91,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _redPackageIndexRepository = redPackageIndexRepository;
         _activitiesStatus = activitiesStatus.Value;
         _activitiesSource = activitiesSource.Value;
+        _nftToFtOptions = nftToFtOptions.Value;
     }
 
 
@@ -909,6 +911,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress, ht.MethodName);
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
+            SetNftDisplay(dto);
             dto.FromChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.FromChainId);
             dto.ToChainIdUpdated = ChainDisplayNameHelper.GetDisplayName(dto.ToChainId);
             dto.FromChainIcon = ChainDisplayNameHelper.GetChainUrl(dto.FromChainId);
@@ -1264,5 +1267,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, chainId,
             null, null, 0, 20);
         return transactions;
+    }
+
+    private void SetNftDisplay(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo == null || !_nftToFtOptions.NftToFtInfos.Keys.Contains(activityDto.Symbol))
+        {
+            return;
+        }
+
+        activityDto.NftInfo = null;
+        var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(activityDto.Symbol);
+        activityDto.Symbol = nftToFtInfo.Label;
+        if ((activityDto.TransactionName.StartsWith(ActivityConstants.ReceiveName) ||
+             activityDto.TransactionName.StartsWith(ActivityConstants.SendName)) &&
+            activityDto.TransactionName.EndsWith("NFT"))
+        {
+            activityDto.TransactionName = activityDto.TransactionName.Replace("NFT", "").Trim();
+        }
     }
 }
