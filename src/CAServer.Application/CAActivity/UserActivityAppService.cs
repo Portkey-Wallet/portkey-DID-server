@@ -1279,6 +1279,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.NftInfo = null;
         var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(activityDto.Symbol);
         activityDto.Symbol = nftToFtInfo.Label;
+        activityDto.ListIcon = nftToFtInfo.ImageUrl;
         if ((activityDto.TransactionName.StartsWith(ActivityConstants.ReceiveName) ||
              activityDto.TransactionName.StartsWith(ActivityConstants.SendName)) &&
             activityDto.TransactionName.EndsWith("NFT"))
