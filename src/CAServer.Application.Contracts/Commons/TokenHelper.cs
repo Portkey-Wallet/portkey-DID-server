@@ -91,7 +91,7 @@ public static class TokenHelper
         var decimalValue = ParseDecimal(number);
         if (number.Contains('.'))
         {
-            return ((decimal)0.01).CompareTo(decimalValue) > 0 ? "<0.01" : decimalValue.ToString("F2");
+            return ((decimal)0.01).CompareTo(decimalValue) > 0 ? decimalValue.ToString("F4") : decimalValue.ToString("F2");
         }
         return number;
     }
