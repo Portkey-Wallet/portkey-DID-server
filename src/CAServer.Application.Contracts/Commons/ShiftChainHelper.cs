@@ -107,6 +107,7 @@ public static class ShiftChainHelper
     
     public static readonly Dictionary<string, string> NetworkPatternMap = new Dictionary<string, string>
     {
+        { "AELF", "^[a-zA-Z0-9]{48,52}$" },
         { "SETH", "^0x[a-fA-F0-9]{40}$" },
         { "ETH", "^0x[a-fA-F0-9]{40}$" },
         { "BSC", "^0x[a-fA-F0-9]{40}$" },
@@ -114,7 +115,7 @@ public static class ShiftChainHelper
         { "MATIC", "^0x[a-fA-F0-9]{40}$" },
         { "OPTIMISM", "^0x[a-fA-F0-9]{40}$" },
         { "AVAXC", "^0x[a-fA-F0-9]{40}$" },
-        { "BASE", "^0x[a-fA-F0-9]{40}$" },
+        { "Base", "^0x[a-fA-F0-9]{40}$" },
         { "TRX", "^T[1-9A-HJ-NP-Za-km-z]{33}$" },
         { "Solana", "^[1-9A-HJ-NP-Za-km-z]{32,44}$" },
         { "TON", "^[EU]Q[a-zA-Z0-9_-]{46}$" },
@@ -219,7 +220,7 @@ public static class ShiftChainHelper
     {
         try
         {
-            return AElf.AddressHelper.VerifyFormattedAddress(address);
+            return AElf.AddressHelper.VerifyFormattedAddress(address) && Regex.IsMatch(address, NetworkPatternMap[CommonConstant.MainChainId]);
         }
         catch
         {

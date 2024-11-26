@@ -63,6 +63,7 @@ public static class TokenHelper
 
         foreach (var tokenWithoutChain in generatedTokens.Where(tokenWithoutChain => tokenWithoutChain.Value?.tokens?.Count == 2))
         {
+            if (tokenWithoutChain.Value.tokens[0].ChainId != CommonConstant.MainChainId) continue;
             (tokenWithoutChain.Value.tokens[0], tokenWithoutChain.Value.tokens[1]) = (tokenWithoutChain.Value.tokens[1], tokenWithoutChain.Value.tokens[0]);
         }
 
@@ -90,7 +91,7 @@ public static class TokenHelper
         var decimalValue = ParseDecimal(number);
         if (number.Contains('.'))
         {
-            return ((decimal)0.01).CompareTo(decimalValue) > 0 ? "<0.01" : decimalValue.ToString("F2");
+            return ((decimal)0.01).CompareTo(decimalValue) > 0 ? decimalValue.ToString("F4") : decimalValue.ToString("F2");
         }
         return number;
     }

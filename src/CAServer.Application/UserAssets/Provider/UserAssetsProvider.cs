@@ -97,7 +97,8 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         });
     }
 
-    public async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto, int inputSkipCount,
+    public async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto,
+        int inputSkipCount,
         int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<IndexerNftItemInfos>(new GraphQLRequest
@@ -112,6 +113,26 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
                 getNftItemInfos = getNftItemInfosDto.GetNftItemInfos,
                 skipCount = inputSkipCount,
                 maxResultCount = inputMaxResultCount
+            }
+        });
+    }
+
+    public async Task<IndexerNftItemWithTraitsInfos> GetNftItemWithTraitsInfos(string symbol, string collectionSymbol,
+        int skipCount, int maxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerNftItemWithTraitsInfos>(new GraphQLRequest
+        {
+            Query = @"
+			    query($symbol:String,$collectionSymbol:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    nftItemWithTraitsInfos(dto: {symbol:$symbol,collectionSymbol:$collectionSymbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        symbol,supply,traits}
+                }",
+            Variables = new
+            {
+                symbol = symbol,
+                collectionSymbol = collectionSymbol,
+                skipCount = skipCount,
+                maxResultCount = maxResultCount
             }
         });
     }

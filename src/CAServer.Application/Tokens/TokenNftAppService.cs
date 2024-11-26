@@ -213,7 +213,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 token.BalanceInUsd = token.Price == 0 ? string.Empty : balanceInUsd.ToString();
             }
 
-            dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
+            dto.TotalBalanceInUsd = PrecisionDisplayHelper.FormatNumber(CalculateTotalBalanceInUsd(dto.Data));
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             dto.Data.ForEach(t =>
@@ -585,7 +585,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             .ThenBy(t => t.AssetType == (int)AssetType.NFT)
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
+            .ThenByDescending(t => t.ChainId)
             .ToList();
     }
 
@@ -778,8 +778,8 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             dto.Data = dto.Data.Where(t => t.TokenInfo != null).OrderBy(t => t.Symbol != CommonConstant.DefaultSymbol)
                 .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
                 .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
-                .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
-                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
+                .ThenBy(t => t.Symbol).ThenByDescending(t => t.ChainId)
+                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenByDescending(t => t.ChainId)).ToList();
             
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
             SetSeedStatusAndTypeForUserAssets(dto.Data);

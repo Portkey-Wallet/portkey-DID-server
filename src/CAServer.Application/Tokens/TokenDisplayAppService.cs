@@ -242,7 +242,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 token.BalanceInUsd = token.Price == 0 ? DefaultSymbolBalance : balanceInUsd.ToString();
             }
 
-            dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
+            dto.TotalBalanceInUsd = PrecisionDisplayHelper.FormatNumber(CalculateTotalBalanceInUsd(dto.Data));
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             dto.Data.ForEach(t =>
@@ -493,7 +493,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             .ThenBy(t => t.AssetType == (int)AssetType.NFT)
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
+            .ThenByDescending(t => t.ChainId)
             .ToList();
     }
 

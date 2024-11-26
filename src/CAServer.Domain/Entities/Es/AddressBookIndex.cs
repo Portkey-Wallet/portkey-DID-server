@@ -13,8 +13,8 @@ public class AddressBookIndex : CAServerEsEntity<Guid>, IIndexBuild
     public ContactCaHolderInfo CaHolderInfo { get; set; }
     [Keyword] public Guid UserId { get; set; }
     public bool IsDeleted { get; set; }
-    [Keyword] public DateTime CreateTime { get; set; }
-    [Keyword] public DateTime ModificationTime { get; set; }
+    public DateTime CreateTime { get; set; }
+    public DateTime ModificationTime { get; set; }
 }
 
 public class AddressInfo
