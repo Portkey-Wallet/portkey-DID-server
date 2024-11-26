@@ -771,12 +771,12 @@ public class ContractAppService : IContractAppService
         try
         {
             var list = new List<GuardianInfo> { createHolderDto.GuardianInfo };
-            if (!EnableAcceleration(list))
-            {
-                _logger.LogWarning("CreateHolderInfo, OperationDetails is not signed in，caHash = {0}",
-                    outputGetHolderInfo.CaHash?.ToHex());
-                return;
-            }
+            // if (!EnableAcceleration(list))
+            // {
+            //     _logger.LogWarning("CreateHolderInfo, OperationDetails is not signed in，caHash = {0}",
+            //         outputGetHolderInfo.CaHash?.ToHex());
+            //     return;
+            // }
 
             var createChainId = createHolderDto.ChainId;
             var chainInfos = _chainOptions.ChainInfos.Values.Where(
@@ -872,12 +872,12 @@ public class ContractAppService : IContractAppService
         var watcher = Stopwatch.StartNew();
         try
         {
-            if (!EnableAcceleration(socialRecoveryDto.GuardianApproved))
-            {
-                _logger.LogWarning("SocialRecovery, OperationDetails is not signed in，identifierHash = {0}",
-                    socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex());
-                return;
-            }
+            // if (!EnableAcceleration(socialRecoveryDto.GuardianApproved))
+            // {
+            //     _logger.LogWarning("SocialRecovery, OperationDetails is not signed in，identifierHash = {0}",
+            //         socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex());
+            //     return;
+            // }
 
             var chainId = socialRecoveryDto.ChainId;
             var chainInfos = _chainOptions.ChainInfos.Values.Where(c => c.ChainId != chainId);
