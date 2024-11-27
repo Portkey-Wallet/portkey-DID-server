@@ -581,6 +581,7 @@ public class ContractAppService : IContractAppService
     private async Task<bool> ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
         string optionChainId)
     {
+        _logger.LogInformation("begin ValidateTransactionAndSync, caHash:{caHash}",result.CaHash.ToHex());
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var unsetLoginGuardians = new RepeatedField<string>();
         foreach (var guardian in result.GuardianList.Guardians)
@@ -620,10 +621,14 @@ public class ContractAppService : IContractAppService
 
                 if (syncHolderInfoInput.VerificationTransactionInfo == null)
                 {
+                    _logger.LogInformation("syncHolderInfoInput.VerificationTransactionInfo is null, caHash:{caHash}",result.CaHash.ToHex());
                     return false;
                 }
 
                 var resultDto = await _contractProvider.SyncTransactionAsync(sideChain.ChainId, syncHolderInfoInput);
+                _logger.LogInformation("SyncTransaction status:{status}, transactionId:{transactionId}, " +
+                                       "errorMessage:{errorMessage}, caHash:{caHash}",resultDto.Status,
+                    resultDto.TransactionId, resultDto.Error ?? "-", result.CaHash.ToHex());
                 syncSucceed = syncSucceed && resultDto.Status == TransactionState.Mined;
                 if (syncSucceed)
                 {
@@ -651,6 +656,7 @@ public class ContractAppService : IContractAppService
 
             if (syncHolderInfoInput.VerificationTransactionInfo == null)
             {
+                _logger.LogInformation("syncHolderInfoInput.VerificationTransactionInfo is null, caHash:{caHash}",result.CaHash.ToHex());
                 return false;
             }
 
@@ -662,6 +668,9 @@ public class ContractAppService : IContractAppService
             //
             // syncSucceed =
             //     await ValidateTransactionAndSyncAsync(ContractAppServiceConstant.MainChainId, result, chainId);
+            _logger.LogInformation("SyncTransaction status:{status}, transactionId:{transactionId}, " +
+                                   "errorMessage:{errorMessage}, caHash:{caHash}",syncResult.Status,
+                syncResult.TransactionId, syncResult.Error ?? "-", result.CaHash.ToHex());
             syncSucceed = syncResult.Status == TransactionState.Mined;
             if (syncSucceed)
             {
