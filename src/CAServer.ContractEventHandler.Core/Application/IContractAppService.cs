@@ -870,8 +870,9 @@ public class ContractAppService : IContractAppService
                 {
                     socialRecoveryDto.ChainId = chain.ChainId;
                     var transactionResultDto = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
-                    _logger.LogInformation("accelerate recovery: {0}, transactionId:{1}",
-                        JsonConvert.SerializeObject(socialRecoveryDto), transactionResultDto.TransactionId);
+                    _logger.LogInformation("accelerate recovery: {0}, transactionId:{1}, BlockNumber: {2}, Status: {3}, ErrorInfo: {4}",
+                        JsonConvert.SerializeObject(socialRecoveryDto), transactionResultDto.TransactionId,
+                        transactionResultDto.BlockNumber, transactionResultDto.Status, transactionResultDto.Error);
 
                     await SendSocialRecoveryOnNonCreateChainMessageAsync(chain, socialRecoveryDto,
                         transactionResultDto);
