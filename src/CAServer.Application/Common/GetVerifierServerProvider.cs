@@ -9,6 +9,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using NUglify.Helpers;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -144,14 +145,18 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
 
     private async Task<GuardianVerifierServerCacheItem> GetVerifierServerAsync(string chainId)
     {
-        return await _distributedCache.GetOrAddAsync(
-            string.Join(":", VerifierServerListCacheKey, chainId),
-            async () => await GetVerifierServerListAsync(chainId),
-            () => new DistributedCacheEntryOptions
-            {
-                AbsoluteExpiration = DateTimeOffset.Now.AddDays(_adaptableVariableOptions.VerifierServerExpireTime)
-            }
-        );
+        var r = await _distributedCache.GetAsync(string.Join(":", VerifierServerListCacheKey, chainId));
+        _logger.LogInformation("GetVerifierServerAsync key = {0} value = {1}", string.Join(":", VerifierServerListCacheKey, chainId),
+            JsonConvert.SerializeObject(r));
+        return await GetVerifierServerListAsync(chainId);
+        // return await _distributedCache.GetOrAddAsync(
+        //     string.Join(":", VerifierServerListCacheKey, chainId),
+        //     async () => await GetVerifierServerListAsync(chainId),
+        //     () => new DistributedCacheEntryOptions
+        //     {
+        //         AbsoluteExpiration = DateTimeOffset.Now.AddDays(_adaptableVariableOptions.VerifierServerExpireTime)
+        //     }
+        // );
     }
     
     public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId)
