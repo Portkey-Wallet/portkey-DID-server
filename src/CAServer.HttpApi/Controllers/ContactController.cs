@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.Options;
 using Microsoft.AspNetCore.Authorization;
@@ -142,5 +143,11 @@ public class ContactController : CAServerController
     public async Task<ContactResultDto> GetContactsByPortkeyId(Guid userId, Guid portKeyId)
     {
         return await _contactAppService.GetContactsByPortkeyIdAsync(userId, portKeyId);
+    }
+
+    [HttpGet("websiteValild")]
+    public async Task<bool> WebsiteValild(WebsiteInfoDto input)
+    {
+        return WebsiteInfoHelper.WebsiteValild(input);
     }
 }
