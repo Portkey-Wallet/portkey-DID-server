@@ -36,7 +36,7 @@ public class ReportHandler : IDistributedEventHandler<AccountReportEto>, ITransi
                 index.CreateTime = DateTime.UtcNow;
             }
 
-            await _repository.AddOrUpdateAsync(index);
+            _ =  _repository.AddOrUpdateAsync(index);
             _logger.LogInformation("[AccountReport] account report info handle success, caHash:{caHash}",
                 eventData.CaHash);
         }

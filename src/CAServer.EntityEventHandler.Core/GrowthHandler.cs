@@ -29,7 +29,7 @@ public class GrowthHandler : IDistributedEventHandler<CreateGrowthEto>, ITransie
     {
         try
         {
-            await _growthRepository.AddAsync(_objectMapper.Map<CreateGrowthEto, GrowthIndex>(eventData));
+            _ =  _growthRepository.AddAsync(_objectMapper.Map<CreateGrowthEto, GrowthIndex>(eventData));
             _logger.LogInformation(
                 "growth info add success, id:{id}, userId:{userId}, caHash:{caHash}, inviteCode:{inviteCode}, referralCode:{referralCode}, projectCode:{projectCode}, shortLinkCode{shortLinkCode}",
                 eventData.Id, eventData.UserId, eventData.CaHash, eventData.InviteCode ?? string.Empty,

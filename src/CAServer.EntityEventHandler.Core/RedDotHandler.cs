@@ -30,7 +30,7 @@ public class RedDotHandler : IDistributedEventHandler<RedDotEto>, ITransientDepe
     {
         try
         {
-            await _redDotRepository.AddAsync(_objectMapper.Map<RedDotEto, RedDotIndex>(eventData));
+            _ =  _redDotRepository.AddAsync(_objectMapper.Map<RedDotEto, RedDotIndex>(eventData));
             _logger.LogInformation(
                 "red dot info add or update success, redDotInfo:{redDotInfo}", JsonConvert.SerializeObject(eventData));
         }

@@ -31,7 +31,7 @@ public class UserSecurityHandler : IDistributedEventHandler<UserTransferLimitHis
             var userTransferLimitHistoryIndex =
                 _objectMapper.Map<UserTransferLimitHistoryEto, UserTransferLimitHistoryIndex>(eventData);
 
-            await _userTransferLimitHistoryRepository.AddOrUpdateAsync(userTransferLimitHistoryIndex);
+            _= _userTransferLimitHistoryRepository.AddOrUpdateAsync(userTransferLimitHistoryIndex);
 
             _logger.LogInformation("Order {eventDataId} add or update success orderId.",eventData.Id);
         }
