@@ -80,7 +80,7 @@ public class SecondaryEmailHandler : IDistributedEventHandler<AccountEmailEto>, 
             guardianIndex.SecondaryEmail = eventData.SecondaryEmail;
             try
             {
-                await _guardianRepository.AddOrUpdateAsync(guardianIndex);
+                _ =  _guardianRepository.AddOrUpdateAsync(guardianIndex);
             }
             catch (Exception e)
             {

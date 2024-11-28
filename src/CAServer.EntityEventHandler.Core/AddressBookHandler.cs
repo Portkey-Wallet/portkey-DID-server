@@ -31,7 +31,7 @@ public class AddressBookHandler : IDistributedEventHandler<AddressBookEto>, ITra
         try
         {
             var addressBook = _objectMapper.Map<AddressBookEto, AddressBookIndex>(eventData);
-            await _addressBookRepository.AddOrUpdateAsync(addressBook);
+            _ =  _addressBookRepository.AddOrUpdateAsync(addressBook);
             _logger.LogInformation(
                 "address book add or update success, userId:{userId}, address:{address}, name:{name}, isDeleted:{isDeleted}",
                 eventData.UserId.ToString(), eventData.AddressInfo.Address, eventData.Name, eventData.IsDeleted);

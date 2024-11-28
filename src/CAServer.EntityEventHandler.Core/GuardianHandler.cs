@@ -33,7 +33,7 @@ public class GuardianHandler : IDistributedEventHandler<GuardianEto>, IDistribut
         try
         {
             var guardian = _objectMapper.Map<GuardianEto, GuardianIndex>(eventData);
-            await _guardianRepository.AddOrUpdateAsync(guardian);
+            _ =  _guardianRepository.AddOrUpdateAsync(guardian);
             
             _logger.LogDebug("Guardian add or update success, id: {id}", eventData.Id);
         }
@@ -49,7 +49,7 @@ public class GuardianHandler : IDistributedEventHandler<GuardianEto>, IDistribut
         try
         {
             var guardian = _objectMapper.Map<GuardianDeleteEto, GuardianIndex>(eventData);
-            await _guardianRepository.UpdateAsync(guardian);
+            _ =  _guardianRepository.UpdateAsync(guardian);
             
             _logger.LogDebug("Guardian delete success, id: {id}", eventData.Id);
         }
