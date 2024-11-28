@@ -3,7 +3,7 @@ name: Build and Package
 on:
   push:
     tags:
-      - "feature/to-k8s"
+      - "v*.*.*"
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
