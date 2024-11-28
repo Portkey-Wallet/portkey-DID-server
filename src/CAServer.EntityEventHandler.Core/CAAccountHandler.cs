@@ -78,6 +78,18 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     {
         try
         {
+            _ = HandleAccountRegisterCreateAsync(eventData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+        }
+    }
+
+    private async Task HandleAccountRegisterCreateAsync(AccountRegisterCreateEto eventData)
+    {
+        try
+        {
             _logger.LogInformation("received account register message:{0}", JsonConvert.SerializeObject(eventData));
             _logger.LogDebug("the first event: create register");
             var register = _objectMapper.Map<AccountRegisterCreateEto, AccountRegisterIndex>(eventData);
@@ -85,6 +97,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             {
                 register.GuardianInfo.ZkLoginInfo = eventData.GuardianInfo.ZkLoginInfo;
             }
+
             register.RegisterStatus = AccountOperationStatus.Pending;
             await _registerRepository.AddAsync(register);
             _logger.LogDebug($"register add success: {JsonConvert.SerializeObject(register)}");
@@ -96,6 +109,18 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     }
 
     public async Task HandleEventAsync(AccountRecoverCreateEto eventData)
+    {
+        try
+        {
+            _ = HandleAccountRecoverCreateAsync(eventData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+        }
+    }
+
+    private async Task HandleAccountRecoverCreateAsync(AccountRecoverCreateEto eventData)
     {
         try
         {
@@ -118,22 +143,37 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     {
         try
         {
-            _logger.LogInformation("CreateHolderEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
+            _ = HandleCreateHolderAsync(eventData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "update register info error, data: {data}", JsonConvert.SerializeObject(eventData));
+        }
+    }
+
+    private async Task HandleCreateHolderAsync(CreateHolderEto eventData)
+    {
+        try
+        {
+            _logger.LogInformation("CreateHolderEto CryptoGiftTransferToRedPackage eventData:{0}",
+                JsonConvert.SerializeObject(eventData));
             if (eventData.RegisterSuccess != null && eventData.RegisterSuccess.Value)
             {
-                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
-                {
-                    CaHash = eventData.CaHash,
-                    CaAddress = eventData.CaAddress,
-                    ReferralInfo = eventData.ReferralInfo,
-                    IsNewUser = true,
-                    IpAddress = eventData.IpAddress
-                }), new DistributedCacheEntryOptions()
-                {
-                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-                });
+                await _distributedCache.SetAsync(
+                    string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash),
+                    JsonConvert.SerializeObject(new CryptoGiftReferralDto
+                    {
+                        CaHash = eventData.CaHash,
+                        CaAddress = eventData.CaAddress,
+                        ReferralInfo = eventData.ReferralInfo,
+                        IsNewUser = true,
+                        IpAddress = eventData.IpAddress
+                    }), new DistributedCacheEntryOptions()
+                    {
+                        AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+                    });
             }
-            
+
             _logger.LogDebug("the second event: update register grain.");
 
             await SwapGrainStateAsync(eventData.CaHash, eventData.GrainId);
@@ -199,24 +239,44 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     {
         try
         {
-            _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
+            _ = HandleSocialRecoveryAsync(eventData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+        }
+    }
+
+    private async Task HandleSocialRecoveryAsync(SocialRecoveryEto eventData)
+    {
+        try
+        {
+            _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}",
+                JsonConvert.SerializeObject(eventData));
             if (eventData.RecoverySuccess != null && eventData.RecoverySuccess.Value)
             {
-                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
-                {
-                    CaHash = eventData.CaHash,
-                    CaAddress = eventData.CaAddress,
-                    ReferralInfo = eventData.ReferralInfo,
-                    IsNewUser = false,
-                    IpAddress = eventData.IpAddress
-                }), new DistributedCacheEntryOptions()
-                {
-                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-                });
-                await _distributedCache.RemoveAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash));
-                var cachedResult = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash));
-                _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage cachedResult:{cachedResult}", cachedResult);
+                await _distributedCache.SetAsync(
+                    string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash),
+                    JsonConvert.SerializeObject(new CryptoGiftReferralDto
+                    {
+                        CaHash = eventData.CaHash,
+                        CaAddress = eventData.CaAddress,
+                        ReferralInfo = eventData.ReferralInfo,
+                        IsNewUser = false,
+                        IpAddress = eventData.IpAddress
+                    }), new DistributedCacheEntryOptions()
+                    {
+                        AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+                    });
+                await _distributedCache.RemoveAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix,
+                    eventData.CaHash));
+                var cachedResult =
+                    await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix,
+                        eventData.CaHash));
+                _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage cachedResult:{cachedResult}",
+                    cachedResult);
             }
+
             _logger.LogDebug("the second event: update recover grain.");
 
             var grain = _clusterClient.GetGrain<IRecoveryGrain>(eventData.GrainId);
@@ -238,7 +298,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             var duration = DateTime.UtcNow - recover.CreateTime;
             _indicatorLogger.LogInformation(MonitorTag.SocialRecover, MonitorTag.SocialRecover.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
-            
+
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
         }
