@@ -402,7 +402,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
     private Transaction GetInlineCrossChainTransferTransaction(TransactionResultDto txResult)
     {
-        var indexed = txResult.Logs.Last().Indexed[0];
+        var indexed = txResult.Logs.First(p => p.Name.Equals(InlineTransactionCreated.Descriptor.Name)).Indexed[0];
         var inlineTransactionCreated = InlineTransactionCreated.Parser.ParseFrom(ByteString.FromBase64(indexed));
         return inlineTransactionCreated.Transaction;
     }
