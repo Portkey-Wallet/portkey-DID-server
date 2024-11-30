@@ -21,7 +21,6 @@ public interface IContactAppService
     Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input);
     Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId);
     Task<ImInfoDto> GetImInfoAsync(string relationId);
-    Task ImRemarkAsync(string relationId, Guid userId, string name);
     Task<ContactResultDto> GetContactsByRelationIdAsync(Guid userId, string relationId);
     Task<ContactResultDto> GetContactsByPortkeyIdAsync(Guid userId, Guid portKeyId);
 }
