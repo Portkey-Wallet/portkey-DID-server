@@ -115,16 +115,14 @@ public class ContractAppService : IContractAppService
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
     {
-        _logger.LogInformation("CreateRedPackage message: " + "{message}",
-            JsonConvert.SerializeObject(eventData, Formatting.Indented));
+        _logger.LogInformation("CreateRedPackage message: {message}", JsonConvert.SerializeObject(eventData));
 
         var eto = new RedPackageCreateResultEto();
         eto.SessionId = eventData.SessionId;
         try
         {
             var result = await _contractProvider.ForwardTransactionAsync(eventData.ChainId, eventData.RawTransaction);
-            _logger.LogInformation("RedPackageCreate result: " + "{result}",
-                JsonConvert.SerializeObject(result, Formatting.Indented));
+            _logger.LogInformation("RedPackageCreate result: {result}", JsonConvert.SerializeObject(result));
             eto.TransactionResult = result.Status;
             eto.TransactionId = result.TransactionId;
             if (result.Status != TransactionState.Mined)
@@ -133,8 +131,7 @@ public class ContractAppService : IContractAppService
                               result.Error;
                 eto.Success = false;
 
-                _logger.LogInformation("RedPackageCreate pushed: " + "{result}",
-                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+                _logger.LogInformation("RedPackageCreate pushed: {result}", JsonConvert.SerializeObject(eto));
 
                 _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
                 return;
@@ -145,8 +142,7 @@ public class ContractAppService : IContractAppService
                 eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
                 eto.Success = false;
 
-                _logger.LogInformation("RedPackageCreate pushed: " + "{result}",
-                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+                _logger.LogInformation("RedPackageCreate pushed: {result}", JsonConvert.SerializeObject(eto));
 
                 _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
                 return;
@@ -169,8 +165,7 @@ public class ContractAppService : IContractAppService
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
     {
-        _logger.LogInformation("CreateHolder message: " + "{message}",
-            JsonConvert.SerializeObject(message, Formatting.Indented));
+        _logger.LogInformation("CreateHolder message: {message}", JsonConvert.SerializeObject(message));
 
         var registerResult = new CreateHolderEto
         {
@@ -193,15 +188,13 @@ public class ContractAppService : IContractAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "CreateHolderInfo AutoMapper error: {message}",
-                JsonConvert.SerializeObject(message, Formatting.Indented));
+            _logger.LogError(e, "CreateHolderInfo AutoMapper error: {message}", JsonConvert.SerializeObject(message));
 
             registerResult.RegisterMessage = e.Message;
             registerResult.RegisterSuccess = false;
 
             await _distributedEventBus.PublishAsync(registerResult);
-            _logger.LogInformation("Register state pushed: " + "{result}",
-                JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+            _logger.LogInformation("Register state pushed: {result}", JsonConvert.SerializeObject(registerResult));
 
             return;
         }
@@ -216,8 +209,7 @@ public class ContractAppService : IContractAppService
 
             await _distributedEventBus.PublishAsync(registerResult);
 
-            _logger.LogInformation("Register state pushed: " + "{result}",
-                JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+            _logger.LogInformation("Register state pushed: {result}", JsonConvert.SerializeObject(registerResult));
 
             return;
         }
@@ -230,8 +222,7 @@ public class ContractAppService : IContractAppService
                                              resultCreateCaHolder.Error;
             registerResult.RegisterSuccess = false;
 
-            _logger.LogInformation("Register state pushed: " + "{result}",
-                JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+            _logger.LogInformation("Register state pushed: {result}", JsonConvert.SerializeObject(registerResult));
 
             await _distributedEventBus.PublishAsync(registerResult);
 
@@ -273,8 +264,7 @@ public class ContractAppService : IContractAppService
             registerResult.RegisterMessage = "No account found";
             registerResult.RegisterSuccess = false;
 
-            _logger.LogInformation("Register state pushed: " + "{result}",
-                JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+            _logger.LogInformation("Register state pushed: {result}", JsonConvert.SerializeObject(registerResult));
             await _distributedEventBus.PublishAsync(registerResult);
 
             return;
@@ -289,8 +279,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(registerResult);
 
-        _logger.LogInformation("Register state pushed: " + "{result}",
-            JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+        _logger.LogInformation("Register state pushed: {result}", JsonConvert.SerializeObject(registerResult));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
         _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "", MonitorTag.Register);
@@ -298,8 +287,7 @@ public class ContractAppService : IContractAppService
 
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)
     {
-        _logger.LogInformation("SocialRecovery message: " + "{message}",
-            JsonConvert.SerializeObject(message, Formatting.Indented));
+        _logger.LogInformation("SocialRecovery message: {message}", JsonConvert.SerializeObject(message));
 
         var recoveryResult = new SocialRecoveryEto
         {
@@ -328,8 +316,7 @@ public class ContractAppService : IContractAppService
             recoveryResult.RecoverySuccess = false;
 
             await _distributedEventBus.PublishAsync(recoveryResult);
-            _logger.LogInformation("Recovery state pushed: " + "{result}",
-                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+            _logger.LogInformation("Recovery state pushed: {result}", JsonConvert.SerializeObject(recoveryResult));
 
             return;
         }
@@ -340,8 +327,7 @@ public class ContractAppService : IContractAppService
             recoveryResult.RecoveryMessage = "Transaction result: null";
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("Recovery state pushed: " + "{result}",
-                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+            _logger.LogInformation("Recovery state pushed: {result}", JsonConvert.SerializeObject(recoveryResult));
 
             await _distributedEventBus.PublishAsync(recoveryResult);
 
@@ -355,8 +341,7 @@ public class ContractAppService : IContractAppService
                                              resultSocialRecovery.Error;
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("Recovery state pushed: " + "{result}",
-                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+            _logger.LogInformation("Recovery state pushed: {result}", JsonConvert.SerializeObject(recoveryResult));
 
             await _distributedEventBus.PublishAsync(recoveryResult);
 
@@ -385,8 +370,7 @@ public class ContractAppService : IContractAppService
             recoveryResult.RecoveryMessage = "No account found";
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("Recovery state pushed: " + "{result}",
-                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+            _logger.LogInformation("Recovery state pushed: {result}", JsonConvert.SerializeObject(recoveryResult));
             await _distributedEventBus.PublishAsync(recoveryResult);
             return;
         }
@@ -400,8 +384,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(recoveryResult);
 
-        _logger.LogInformation("Recovery state pushed: " + "{result}",
-            JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+        _logger.LogInformation("Recovery state pushed: {result}", JsonConvert.SerializeObject(recoveryResult));
 
         // _logger.LogInformation("ValidateTransactionAndSyncAsync, holderInfo: {holderInfo}",
         //     JsonConvert.SerializeObject(outputGetHolderInfo));
@@ -770,13 +753,13 @@ public class ContractAppService : IContractAppService
         var watcher = Stopwatch.StartNew();
         try
         {
-            var list = new List<GuardianInfo> { createHolderDto.GuardianInfo };
-            if (!EnableAcceleration(list))
-            {
-                _logger.LogWarning("CreateHolderInfo, OperationDetails is not signed in，caHash = {0}",
-                    outputGetHolderInfo.CaHash?.ToHex());
-                return;
-            }
+            //var list = new List<GuardianInfo> { createHolderDto.GuardianInfo };
+            // if (!EnableAcceleration(list))
+            // {
+            //     _logger.LogWarning("CreateHolderInfo, OperationDetails is not signed in，caHash = {0}",
+            //         outputGetHolderInfo.CaHash?.ToHex());
+            //     return;
+            // }
 
             var createChainId = createHolderDto.ChainId;
             var chainInfos = _chainOptions.ChainInfos.Values.Where(
@@ -849,8 +832,7 @@ public class ContractAppService : IContractAppService
                                              transactionResultDto.Error;
             registerResult.RegisterSuccess = false;
 
-            _logger.LogInformation("accelerated registration state: " + "{result}",
-                JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+            _logger.LogInformation("accelerated registration state: {result}", JsonConvert.SerializeObject(registerResult));
         }
         else if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.NonCreateChainCAHolderCreated))
         {
@@ -863,8 +845,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(registerResult);
 
-        _logger.LogInformation("accelerated registration state: " + "{result}",
-            JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+        _logger.LogInformation("accelerated registration state: {result}", JsonConvert.SerializeObject(registerResult));
     }
 
     private async Task SocialRecoveryOnNonCreateChainAsync(SocialRecoveryDto socialRecoveryDto)
@@ -872,12 +853,12 @@ public class ContractAppService : IContractAppService
         var watcher = Stopwatch.StartNew();
         try
         {
-            if (!EnableAcceleration(socialRecoveryDto.GuardianApproved))
-            {
-                _logger.LogWarning("SocialRecovery, OperationDetails is not signed in，identifierHash = {0}",
-                    socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex());
-                return;
-            }
+            // if (!EnableAcceleration(socialRecoveryDto.GuardianApproved))
+            // {
+            //     _logger.LogWarning("SocialRecovery, OperationDetails is not signed in，identifierHash = {0}",
+            //         socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex());
+            //     return;
+            // }
 
             var chainId = socialRecoveryDto.ChainId;
             var chainInfos = _chainOptions.ChainInfos.Values.Where(c => c.ChainId != chainId);
@@ -889,8 +870,9 @@ public class ContractAppService : IContractAppService
                 {
                     socialRecoveryDto.ChainId = chain.ChainId;
                     var transactionResultDto = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
-                    _logger.LogInformation("accelerate recovery: {0}, transactionId:{1}",
-                        JsonConvert.SerializeObject(socialRecoveryDto), transactionResultDto.TransactionId);
+                    _logger.LogInformation("accelerate recovery: {0}, transactionId:{1}, BlockNumber: {2}, Status: {3}, ErrorInfo: {4}",
+                        JsonConvert.SerializeObject(socialRecoveryDto), transactionResultDto.TransactionId,
+                        transactionResultDto.BlockNumber, transactionResultDto.Status, transactionResultDto.Error);
 
                     await SendSocialRecoveryOnNonCreateChainMessageAsync(chain, socialRecoveryDto,
                         transactionResultDto);
@@ -944,8 +926,7 @@ public class ContractAppService : IContractAppService
                                              transactionResultDto.Error;
             recoveryResult.RecoverySuccess = false;
 
-            _logger.LogInformation("accelerated social recover state: " + "{result}",
-                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+            _logger.LogInformation("accelerated social recover state: {result}", JsonConvert.SerializeObject(recoveryResult));
         }
         else if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
         {
@@ -958,8 +939,7 @@ public class ContractAppService : IContractAppService
 
         await _distributedEventBus.PublishAsync(recoveryResult);
 
-        _logger.LogInformation("accelerated social recover state: " + "{result}",
-            JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+        _logger.LogInformation("accelerated social recover state: {result}", JsonConvert.SerializeObject(recoveryResult));
     }
 
     public async Task QueryAndSyncAsync()

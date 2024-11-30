@@ -27,7 +27,7 @@ public class TonGiftsValidateWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogDebug("TonGiftsValidateAsync DoWorkAsync starting....");
         try
         {
-            //await _growthStatisticAppService.TonGiftsValidateAsync();
+            // await _growthStatisticAppService.TonGiftsValidateAsync();
         }
         catch (Exception e)
         {

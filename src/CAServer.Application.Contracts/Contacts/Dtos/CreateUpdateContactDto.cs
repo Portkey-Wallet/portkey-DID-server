@@ -27,12 +27,16 @@ public class CreateUpdateContactDto : IValidatableObject
                 yield return new ValidationResult("Invalid input.");
             }
         }
-        else
+
+        if (Addresses.IsNullOrEmpty() || Addresses.Count > 2)
         {
-            if (Addresses?.Count != 1)
-            {
-                yield return new ValidationResult("Invalid input.");
-            }
+            yield return new ValidationResult("Invalid input.");
+        }
+
+        if (Addresses.Count == 2 && (Addresses[0].Address != Addresses[1].Address ||
+                                     Addresses[0].ChainId == Addresses[1].ChainId))
+        {
+            yield return new ValidationResult("Invalid input.");
         }
     }
 }
