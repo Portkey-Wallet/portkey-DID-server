@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Amazon.S3.Model;
 using CAServer.Amazon;
 using CAServer.Signature.Options;
 using CAServer.Signature.Provider;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Threading;
@@ -25,22 +27,33 @@ public class AwsS3Client : IAwsS3Client, ISingletonDependency
     private readonly ISecretProvider _secretProvider;
     private readonly IOptionsMonitor<SignatureServerOptions> _signatureOptions;
     private AmazonS3Client _amazonS3Client;
+    private readonly ILogger<AwsS3Client> _logger;
 
     public AwsS3Client(IOptionsMonitor<AwsS3Option> awsS3Option, ISecretProvider secretProvider,
-        IOptionsMonitor<SignatureServerOptions> signatureOptions)
+        IOptionsMonitor<SignatureServerOptions> signatureOptions,ILogger<AwsS3Client> logger)
     {
         _awsS3Option = awsS3Option;
         _secretProvider = secretProvider;
         _signatureOptions = signatureOptions;
+        _logger = logger;
         InitAmazonS3Client();
     }
 
     private void InitAmazonS3Client()
     {
-        var identityPoolId = AsyncHelper.RunSync(() =>
-            _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.AwsS3IdentityPool));
-        var cognitoCredentials = new CognitoAWSCredentials(identityPoolId, RegionEndpoint.APNortheast1);
-        _amazonS3Client = new AmazonS3Client(cognitoCredentials, RegionEndpoint.APNortheast1);
+        try
+        {
+            var identityPoolId = AsyncHelper.RunSync(() =>
+                _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.AwsS3IdentityPool));
+            var cognitoCredentials = new CognitoAWSCredentials(identityPoolId, RegionEndpoint.APNortheast1);
+            _amazonS3Client = new AmazonS3Client(cognitoCredentials, RegionEndpoint.APNortheast1);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Could not initialize AWS S3 client");
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
 
