@@ -73,7 +73,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
-        
+
         await CheckContactAsync(contactDto);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
@@ -127,13 +127,20 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var contact = contactResult.Data;
-        if (contact.Addresses != null && contact.Addresses.Count > 1 && input.Addresses != null &&
-            input.Addresses.Count == 1)
+        var isUpdate = false;
+        if (contact.Addresses != null && contact.Addresses.Count > 1 && input.Addresses != null)
         {
-            throw new UserFriendlyException("can not modify address");
+            if (input.Addresses.Count == 1)
+                throw new UserFriendlyException("can not modify address");
+
+            if (!input.Addresses.Select(t => t.Address).Distinct()
+                    .Except(contact.Addresses.Select(t => t.Address).Distinct()).Any()
+               )
+            {
+                isUpdate = true;
+            }
         }
 
-        var isUpdate = false;
         if (contact.Addresses != null && contact.Addresses.Count == 1 && input.Addresses != null &&
             input.Addresses.Count == 1)
         {
