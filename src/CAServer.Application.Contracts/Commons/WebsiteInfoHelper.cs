@@ -11,7 +11,7 @@ public class WebsiteInfoHelper
         {
             if (website.logo.Equals(info.logo))
             {
-                return website.website.Contains(info.website);
+                return info.website.Contains(website.website);
             }
         }
 
