@@ -144,10 +144,4 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.GetContactsByPortkeyIdAsync(userId, portKeyId);
     }
-
-    [HttpGet("websiteValild")]
-    public async Task<bool> WebsiteValild(WebsiteInfoDto input)
-    {
-        return WebsiteInfoHelper.WebsiteValild(input);
-    }
 }
