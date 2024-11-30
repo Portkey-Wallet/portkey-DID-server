@@ -172,7 +172,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             await _contactRepository.AddOrUpdateAsync(botContact);
             _logger.LogDebug("new register account add chatBot.register is {register},ChatBot is {chatBot}",
                 JsonConvert.SerializeObject(eventData), JsonConvert.SerializeObject(botContact));
-            await _contactAppService.ImRemarkAsync(_chatBotOptions.RelationId, eventData.UserId, _chatBotOptions.Name);
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
         }
         catch (Exception ex)
