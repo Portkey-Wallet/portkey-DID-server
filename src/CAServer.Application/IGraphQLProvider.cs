@@ -36,7 +36,7 @@ public interface IGraphQLProvider
         long endHeight);
 
     Task<IndexerTransaction> GetReceiveTransactionAsync(string chainId, string transferTxId, long endHeight);
-    
+
     Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId,
         long startBlockHeight, long endBlockHeight);
 
@@ -60,7 +60,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         _graphQLOptions = graphQLOptions.Value;
         _graphQLClient = new GraphQLHttpClient(_graphQLOptions.Configuration, new NewtonsoftJsonSerializer());
     }
-    
+
     public async Task<long> GetIndexBlockHeightAsync(string chainId)
     {
         try
@@ -229,7 +229,8 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
                 chainId = chainId,
                 startBlockHeight = startHeight,
                 endBlockHeight = endHeight,
-                methodNames = new List<string> { "CrossChainTransfer" },
+                methodNames = new List<string>
+                    { CommonConstant.CrossChainTransferMethodName, CommonConstant.InlineCrossChainTransferMethodName },
                 skipCount = 0,
                 maxResultCount = 10000
             }
@@ -270,7 +271,8 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         return txs.Data.CaHolderTransactionInfo.Data.FirstOrDefault();
     }
 
-    public async Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId, long startBlockHeight, long endBlockHeight)
+    public async Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId, long startBlockHeight,
+        long endBlockHeight)
     {
         try
         {
@@ -319,7 +321,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             return new List<QueryEventDto>();
         }
     }
-    
+
     public async Task<CaHolderQueryDto> GetCaHolderInfoAsync(string caHash, int skipCount = 0, int maxResultCount = 1)
     {
         var response = await _graphQLClient.SendQueryAsync<CaHolderQueryDto>(new GraphQLRequest
