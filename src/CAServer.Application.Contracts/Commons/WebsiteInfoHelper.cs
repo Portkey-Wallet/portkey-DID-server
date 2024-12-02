@@ -31,5 +31,6 @@ public class WebsiteInfoHelper
         new WebsiteInfoDto { website = "tmrwdao.com", logo = "https://icon.horse/icon/tmrwdao.com/50" },
         new WebsiteInfoDto { website = "ewell.finance", logo = "https://icon.horse/icon/ewell.finance/50" },
         new WebsiteInfoDto { website = "hamster.beangotown11", logo = "https://icon.horse/icon/hamster.beangotown.com/50" },
+        new WebsiteInfoDto { website = "hamster.beangotown11", logo = "https://icon.horse/icon/hamster.beangotown.xyz/50" },
     };
 }

@@ -91,7 +91,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             objectMapper: null,
             nftToFtOptions: null,
             freeMintOptions:null,
-            freeMintProvider:null
+            freeMintProvider:null,
+            httpContextAccessor: null
             );
         return userAssetsAppService;
     }
