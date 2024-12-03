@@ -228,7 +228,7 @@ public class AccountRecoverySearchService : SearchService<AccountRecoverIndex, G
     private readonly IBusinessAlertProvider _businessAlertProvider;
     public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.accountrecoverindex";
 
-    public AccountRecoverySearchService(INESTRepository<AccountRecoverIndex, Guid> nestRepository,IBusinessAlertProvider businessAlertProvider,
+    public AccountRecoverySearchService(INESTRepository<AccountRecoverIndex, Guid> nestRepository, IBusinessAlertProvider businessAlertProvider,
         IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
     {
         _indexSettingOptions = indexSettingOptions.Value;
@@ -238,10 +238,16 @@ public class AccountRecoverySearchService : SearchService<AccountRecoverIndex, G
     public async override Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
         string result = await base.GetListByLucenceAsync(indexName, input);
-        var index = JsonConvert.DeserializeObject<AccountRegisterIndex>(result);
-        if (index.RegisterSuccess.HasValue && index.RegisterSuccess.Value)
+        var indexList = JsonConvert.DeserializeObject<PagedResultDto<AccountRecoverIndex>>(result);
+        if (indexList.TotalCount > 0)
         {
-            _businessAlertProvider.LoginRegisterFailureAlert(indexName, input);
+            foreach (var index in indexList.Items)
+            {
+                if (index.RecoverySuccess == true)
+                {
+                    _businessAlertProvider.LoginRegisterFailureAlert(indexName, input);
+                }
+            }
         }
         
         return result;
@@ -254,7 +260,7 @@ public class AccountRegisterSearchService : SearchService<AccountRegisterIndex, 
     private readonly IBusinessAlertProvider _businessAlertProvider;
     public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.accountregisterindex";
 
-    public AccountRegisterSearchService(INESTRepository<AccountRegisterIndex, Guid> nestRepository,IBusinessAlertProvider businessAlertProvider,
+    public AccountRegisterSearchService(INESTRepository<AccountRegisterIndex, Guid> nestRepository, IBusinessAlertProvider businessAlertProvider,
         IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
     {
         _indexSettingOptions = indexSettingOptions.Value;
@@ -264,10 +270,16 @@ public class AccountRegisterSearchService : SearchService<AccountRegisterIndex, 
     public async override Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
         string result = await base.GetListByLucenceAsync(indexName, input);
-        var index = JsonConvert.DeserializeObject<AccountRegisterIndex>(result);
-        if (index.RegisterSuccess.HasValue && index.RegisterSuccess.Value)
+        var indexList = JsonConvert.DeserializeObject<PagedResultDto<AccountRegisterIndex>>(result);
+        if (indexList.TotalCount > 0)
         {
-            _businessAlertProvider.LoginRegisterFailureAlert(indexName, input);
+            foreach (var index in indexList.Items)
+            {
+                if (index.RegisterSuccess == true)
+                {
+                    _businessAlertProvider.LoginRegisterFailureAlert(indexName, input);
+                }
+            }
         }
         
         return result;
