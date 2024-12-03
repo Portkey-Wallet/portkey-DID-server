@@ -99,6 +99,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AddTokenOptions>(configuration.GetSection("AddToken"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         Configure<ContactMigrateOptions>(configuration.GetSection("ContactMigrate"));
+        Configure<BusinessAlertOptions>(configuration.GetSection("BusinessAlert"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
