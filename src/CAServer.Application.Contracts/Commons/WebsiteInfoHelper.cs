@@ -13,13 +13,17 @@ public class WebsiteInfoHelper
             {
                 return info.logo.Equals(website.logo);
             }
+        }
+
+        foreach (var website in WebsiteInfoes)
+        {
             if (info.website.Contains(website.website))
             {
                 return info.logo.Contains(info.website);
             }
             
         }
-
+        
         return true;
     }
 
