@@ -27,9 +27,11 @@ public class WebsiteInfoHelper
     private static List<WebsiteInfoDto> WebsiteInfoes = new List<WebsiteInfoDto>
     {
         new WebsiteInfoDto { website = "etransfer.exchange", logo = "https://icon.horse/icon/app.etransfer.exchange/50" },
+        new WebsiteInfoDto { website = "test.etransfer.exchange", logo = "https://icon.horse/icon/test.etransfer.exchange/501" },
         new WebsiteInfoDto { website = "ebridge.exchange", logo = "https://icon.horse/icon/ebridge.exchange/50" },
-        new WebsiteInfoDto { website = "test.ebridge.exchange", logo = "https://icon.horse/icon/test.ebridge.exchange/50" },
+        new WebsiteInfoDto { website = "test.ebridge.exchange11", logo = "https://icon.horse/icon/test.ebridge.exchange/50" },
         new WebsiteInfoDto { website = "awaken.finance", logo = "https://icon.horse/icon/app.awaken.finance/50" },
+        new WebsiteInfoDto { website = "test-app.awaken.finance", logo = "https://icon.horse/icon/test-app.awaken.finance/501" },
         new WebsiteInfoDto { website = "aefinder.io", logo = "https://icon.horse/icon/aefinder.io/50" },
         new WebsiteInfoDto { website = "schrodingernft.ai", logo = "https://icon.horse/icon/cat.schrodingernft.ai/50" },
         new WebsiteInfoDto { website = "eforest.finance", logo = "https://icon.horse/icon/www.eforest.finance/50" },
