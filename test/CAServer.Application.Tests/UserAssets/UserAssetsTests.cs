@@ -89,7 +89,10 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             tokenPriceService: tokenPriceServiceMock.Object,
             activityProvider: activityProviderMock.Object,
             objectMapper: null,
-            nftToFtOptions: null
+            nftToFtOptions: null,
+            freeMintOptions:null,
+            freeMintProvider:null,
+            httpContextAccessor: null
             );
         return userAssetsAppService;
     }

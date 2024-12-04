@@ -4,6 +4,9 @@ using System.Linq;
 using AElf;
 using AElf.Types;
 using AutoMapper;
+using CAServer.Awaken;
+using CAServer.AddressBook.Dtos;
+using CAServer.AddressBook.Etos;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
@@ -24,6 +27,7 @@ using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.AddressBook;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
@@ -142,7 +146,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactIndex, ContactDto>().ForMember(c => c.ModificationTime,
             d => d.MapFrom(s => new DateTimeOffset(s.ModificationTime).ToUnixTimeMilliseconds()));
         CreateMap<Entities.Es.ContactAddress, ContactAddressDto>().ReverseMap();
-
+        CreateMap<TradePairsItemToken, CAServer.UserAssets.Dtos.Token>()
+            .ForMember(d => d.Symbol, f => f.MapFrom(s => s.Symbol))
+            .ForMember(d => d.Decimals, f => f.MapFrom(s => s.Decimals))
+            .ForMember(d => d.ChainId, f => f.MapFrom(s => s.ChainId))
+            .ForMember(d => d.ImageUrl, f => f.MapFrom(s => s.ImageUri))
+            ;
         CreateMap<HubRequestContextDto, HubRequestContext>();
         CreateMap<RegisterDto, RegisterGrainDto>();
         CreateMap<CreateHolderEto, CreateHolderResultGrainDto>();
@@ -203,6 +212,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     }
                 }));
         CreateMap<AccountRegisterCreateEto, CreateHolderDto>()
+            .ForMember(d => d.Platform,
+                opt => opt.MapFrom(e => Enum.IsDefined(typeof(Platform), (int)e.Source) ? (Platform)(int)e.Source : Platform.Undefined))
             .ForMember(d => d.GuardianInfo, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
             {
                 Type = (Portkey.Contracts.CA.GuardianType)(int)e.GuardianInfo.Type,
@@ -478,7 +489,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.ReferralCode,
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
             .ForMember(t => t.ProjectCode,
-                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode))
+            .ForMember(t => t.Platform, f => f.MapFrom(m => m.Platform));
 
         CreateMap<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>()
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
@@ -526,7 +538,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
                 Address = e.ManagerInfo.Address,
-                ExtraData = e.ManagerInfo.ExtraData
+                ExtraData = e.ManagerInfo.ExtraData,
+                Platform = e.Platform
             }))
             .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
 
@@ -1088,6 +1101,17 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TokenInfoDto, TokenInfoV2Dto>();
         CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
         CreateMap<ChainsInfoIndex, ChainResultDto>();
-        CreateMap< CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
+        CreateMap<CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
+        CreateMap<FreeMintCollectionInfo, FreeMintCollectionInfoDto>();
+        CreateMap<CAHolderIndex, AddressBook.Dtos.ContactCaHolderInfo>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
+        CreateMap<AddressBookDto, AddressBookGrainDto>().ReverseMap();
+        CreateMap<AddressBookGrainDto, AddressBookEto>();
+        CreateMap<AddressBookIndex, AddressBookDto>();
+        CreateMap<AddressInfo, ContactAddressInfoDto>().ReverseMap();
+        CreateMap<ContactAddressInfoDto, ContactAddressInfo>().ReverseMap();
+        CreateMap<AddressInfo, ContactAddressInfo>().ReverseMap();
+        CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, CAServer.AddressBook.Dtos.ContactCaHolderInfo>().ReverseMap();
+        CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, ContactAddressInfoDto>().ReverseMap();
     }
 }

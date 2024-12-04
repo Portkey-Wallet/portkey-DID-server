@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Commons;
 using CAServer.Commons.Etos;
 using JetBrains.Annotations;
 
@@ -11,7 +12,8 @@ public class GetNetworkListDto : ChainDisplayNameDto
 
 public class ReceiveNetworkDto
 {
-    public Dictionary<string, List<NetworkInfoDto>> DestinationMap { get; set; }
+    public SortedDictionary<string, List<NetworkInfoDto>> DestinationMap { get; set; }
+        = new SortedDictionary<string, List<NetworkInfoDto>>(new ChainComparer());
 }
 
 public class SendNetworkDto

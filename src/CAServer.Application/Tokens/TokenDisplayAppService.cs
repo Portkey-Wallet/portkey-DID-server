@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Awaken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -17,6 +18,7 @@ using CAServer.UserAssets.Provider;
 using CAServer.ZeroHoldings;
 using CAServer.ZeroHoldings.constant;
 using CAServer.ZeroHoldings.Dtos;
+using MassTransit.Util;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -70,7 +72,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
         IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
-        )
+    )
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -240,7 +242,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 token.BalanceInUsd = token.Price == 0 ? DefaultSymbolBalance : balanceInUsd.ToString();
             }
 
-            dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
+            dto.TotalBalanceInUsd = PrecisionDisplayHelper.FormatNumber(CalculateTotalBalanceInUsd(dto.Data));
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             dto.Data.ForEach(t =>
@@ -491,7 +493,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             .ThenBy(t => t.AssetType == (int)AssetType.NFT)
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
+            .ThenByDescending(t => t.ChainId)
             .ToList();
     }
 

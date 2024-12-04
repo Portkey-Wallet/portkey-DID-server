@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.Options;
 using Microsoft.AspNetCore.Authorization;

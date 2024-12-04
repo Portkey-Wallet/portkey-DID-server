@@ -25,7 +25,6 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
-using Environment = CAServer.Options.Environment;
 
 namespace CAServer.Contacts;
 
@@ -36,46 +35,29 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IContactProvider _contactProvider;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ImServerOptions _imServerOptions;
-    private readonly IHttpClientService _httpClientService;
     private readonly VariablesOptions _variablesOptions;
-    private readonly HostInfoOptions _hostInfoOptions;
-    private readonly IImRequestProvider _imRequestProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ChainOptions _chainOptions;
-    private readonly ChatBotOptions _chatBotOptions;
     private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
     private readonly ILogger<ContactAppService> _logger;
 
 
     public ContactAppService(IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
-        IHttpContextAccessor httpContextAccessor,
         IContactProvider contactProvider,
-        IOptionsSnapshot<ImServerOptions> imServerOptions,
-        IHttpClientService httpClientService,
         IOptions<VariablesOptions> variablesOptions,
-        IOptionsSnapshot<HostInfoOptions> hostInfoOptions,
-        IImRequestProvider imRequestProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IContractProvider contractProvider,
-        IOptionsSnapshot<ChatBotOptions> chatBotOptions, INESTRepository<ContactIndex, Guid> contactRepository,
+        INESTRepository<ContactIndex, Guid> contactRepository,
         ILogger<ContactAppService> logger)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _contactProvider = contactProvider;
         _variablesOptions = variablesOptions.Value;
-        _httpContextAccessor = httpContextAccessor;
-        _imServerOptions = imServerOptions.Value;
-        _hostInfoOptions = hostInfoOptions.Value;
-        _httpClientService = httpClientService;
-        _imRequestProvider = imRequestProvider;
         _contractProvider = contractProvider;
         _contactRepository = contactRepository;
         _logger = logger;
-        _chatBotOptions = chatBotOptions.Value;
         _chainOptions = chainOptions.Value;
     }
 
@@ -91,7 +73,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
-        
+
         await CheckContactAsync(contactDto);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
@@ -104,11 +86,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var dto = ObjectMapper.Map<ContactGrainDto, ContactCreateEto>(result.Data);
-        if (input.RelationId == _chatBotOptions.RelationId)
-        {
-            dto.ContactType = 1;
-        }
-        // follow
+
         await _distributedEventBus.PublishAsync(dto);
         var contactResultDto = ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
         var imageMap = _variablesOptions.ImageMap;
@@ -121,10 +99,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
-
-        _ = FollowAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId);
-        _ = ImRemarkAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId, input.Name);
-
         return contactResultDto;
     }
 
@@ -142,7 +116,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
             await _contactRepository.UpdateAsync(contactIndex);
 
             _logger.LogDebug("Update contact is {contact}", JsonConvert.SerializeObject(contactIndex));
-            await ImRemarkAsync(contactIndex?.ImInfo?.RelationId, userId, input.Name);
             return ObjectMapper.Map<ContactIndex, ContactResultDto>(contactIndex);
         }
 
@@ -154,13 +127,20 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var contact = contactResult.Data;
-        if (contact.Addresses != null && contact.Addresses.Count > 1 && input.Addresses != null &&
-            input.Addresses.Count == 1)
+        var isUpdate = false;
+        if (contact.Addresses != null && contact.Addresses.Count > 1 && input.Addresses != null)
         {
-            throw new UserFriendlyException("can not modify address");
+            if (input.Addresses.Count == 1)
+                throw new UserFriendlyException("can not modify address");
+
+            if (!input.Addresses.Select(t => t.Address).Distinct()
+                    .Except(contact.Addresses.Select(t => t.Address).Distinct()).Any()
+               )
+            {
+                isUpdate = true;
+            }
         }
 
-        var isUpdate = false;
         if (contact.Addresses != null && contact.Addresses.Count == 1 && input.Addresses != null &&
             input.Addresses.Count == 1)
         {
@@ -197,12 +177,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
-
-        if (contact.Name != input.Name)
-        {
-            await ImRemarkAsync(contactResultDto?.ImInfo?.RelationId, userId, input.Name);
-        }
-
+        
         return contactResultDto;
     }
 
@@ -217,11 +192,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contact.IsDeleted = true;
             contact.ModificationTime = DateTime.UtcNow;
             await _contactRepository.AddOrUpdateAsync(contact);
-            await ImRemarkAsync(contact.ImInfo.RelationId, userId, "");
             var updatedContact = await _contactProvider.GetContactByIdAsync(id);
             _logger.LogDebug("After Delete contact is {contact}", JsonConvert.SerializeObject(updatedContact));
             return;
-            // _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
         }
 
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
@@ -233,9 +206,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
-
-        await ImRemarkAsync(result?.Data?.ImInfo?.RelationId, userId, "");
-        _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
     }
 
     public async Task<ContractExistDto> GetExistAsync(string name)
@@ -254,14 +224,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
     [Monitor]
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
-        // var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
-        //
-        // var result = await contactGrain.GetContactAsync();
-        // if (!result.Success)
-        // {
-        //     throw new UserFriendlyException(result.Message);
-        // }
-
         var result = await _contactProvider.GetContactByIdAsync(id);
         return ObjectMapper.Map<ContactIndex, ContactResultDto>(result);
     }
@@ -518,81 +480,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return ObjectMapper.Map<CAHolderIndex, HolderInfoWithAvatar>(caHolder);
     }
 
-    public async Task<ImInfoDto> GetImInfoAsync(string relationId)
-    {
-        if (relationId.IsNullOrWhiteSpace()) return null;
-        if (_hostInfoOptions.Environment == Environment.Development) return null;
+    public async Task<ImInfoDto> GetImInfoAsync(string relationId) => null;
 
-        var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
-            out var authToken);
-        var header = new Dictionary<string, string>();
-        if (hasAuthToken)
-        {
-            header.Add(CommonConstant.AuthHeader, authToken);
-        }
-
-        var url = _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}";
-        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfoDto>>(url, header);
-        if (!responseDto.Success)
-        {
-            throw new UserFriendlyException(responseDto.Message);
-        }
-
-        return responseDto.Data;
-    }
-
-    private async Task<ImInfo> GetImUserAsync(string address)
-    {
-        if (address.IsNullOrWhiteSpace()) return null;
-
-        if (_hostInfoOptions.Environment == Environment.Development) return null;
-
-        var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
-            out var authToken);
-
-        var header = new Dictionary<string, string>();
-        if (hasAuthToken)
-        {
-            header.Add(CommonConstant.AuthHeader, authToken);
-        }
-
-        var url = _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}";
-        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(url, header);
-        if (!responseDto.Success)
-        {
-            throw new UserFriendlyException(responseDto.Message);
-        }
-
-        return responseDto.Data;
-    }
-
-
-    public async Task ImRemarkAsync(string relationId, Guid userId, string name)
-    {
-        if (_hostInfoOptions.Environment == Environment.Development)
-        {
-            return;
-        }
-
-        var imRemarkDto = new ImRemarkDto
-        {
-            Remark = name,
-            RelationId = relationId
-        };
-
-        try
-        {
-            await _imRequestProvider.PostAsync<object>(ImConstant.ImRemarkUrl, imRemarkDto);
-            Logger.LogInformation("{userId} remark : {relationId}, {name}", userId.ToString(), relationId, name);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e,
-                ImConstant.ImServerErrorPrefix + " remark fail : {userId}, {relationId}, {name}, {imToken}",
-                userId.ToString(), relationId, name,
-                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
-        }
-    }
+    private async Task<ImInfo> GetImUserAsync(string address) => null;
 
     public async Task<ContactResultDto> GetContactsByRelationIdAsync(Guid userId, string relationId)
     {
@@ -605,79 +495,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         var index = await _contactProvider.GetContactByPortKeyIdAsync(userId, portKeyId.ToString());
         return ObjectMapper.Map<ContactIndex, ContactResultDto>(index);
-    }
-
-    private async Task FollowAsync(string address, Guid userId)
-    {
-        try
-        {
-            if (address.IsNullOrWhiteSpace()) return;
-
-            var followDto = new FollowRequestDto()
-            {
-                Address = address
-            };
-
-            await ImPostAsync(_imServerOptions.BaseUrl + CommonConstant.ImFollowUrl, followDto);
-            Logger.LogInformation("{userId} follow address: {address}", address, userId.ToString());
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " follow fail : {userId}, {address}, {imToken}",
-                userId.ToString(), address,
-                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
-        }
-    }
-
-    private async Task UnFollowAsync(string address, Guid userId)
-    {
-        try
-        {
-            if (address.IsNullOrWhiteSpace()) return;
-
-            var followDto = new FollowRequestDto()
-            {
-                Address = address
-            };
-
-            await ImPostAsync(_imServerOptions.BaseUrl + CommonConstant.ImUnFollowUrl, followDto);
-            Logger.LogInformation("{userId} unfollow address: {address}", address, userId.ToString());
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " unfollow fail : {userId}, {address}, {imToken}",
-                userId.ToString(), address,
-                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
-        }
-    }
-
-    private async Task ImPostAsync(string url, object param)
-    {
-        if (_hostInfoOptions.Environment == Environment.Development) return;
-
-        if (!_httpContextAccessor.HttpContext.Request.Headers.Keys.Contains(CommonConstant.ImAuthHeader,
-                StringComparer.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        var header = new Dictionary<string, string>();
-        header.Add(CommonConstant.ImAuthHeader,
-            _httpContextAccessor.HttpContext.Request.Headers[CommonConstant.ImAuthHeader]);
-
-        var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
-            out var authToken);
-
-        if (hasAuthToken)
-        {
-            header.Add(CommonConstant.AuthHeader, authToken);
-        }
-
-        var responseDto = await _httpClientService.PostAsync<CommonResponseDto<object>>(url, param, header);
-        if (!responseDto.Success)
-        {
-            Logger.LogError("request im error, url:{url}", url);
-        }
     }
 
 

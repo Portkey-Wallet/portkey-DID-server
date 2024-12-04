@@ -32,6 +32,7 @@ public class IndexerTransaction
     public long BlockHeight { get; set; }
     public string TransactionId { get; set; }
     public string MethodName { get; set; }
+    public int Platform { get; set; }
     public TokenInfo TokenInfo { get; set; }
     public NftInfo NftInfo { get; set; }
     public string Status { get; set; }

@@ -31,8 +31,7 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "RegisterMessage Error: {eventData}",
-                JsonConvert.SerializeObject(eventData, Formatting.Indented));
+            _logger.LogError(e, "RegisterMessage Error: {eventData}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -45,8 +44,7 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "RecoveryMessage Error: {eventData}",
-                JsonConvert.SerializeObject(eventData, Formatting.Indented));
+            _logger.LogError(e, "RecoveryMessage Error: {eventData}", JsonConvert.SerializeObject(eventData));
         }
     }
 }

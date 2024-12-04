@@ -50,6 +50,7 @@ public class NftInfoDto : ChainDisplayNameDto
     public string DisplayChainName { get; set; }
     public string ChainImageUrl { get; set; }
     public string Label { get; set; }
+    public string Symbol { get; set; }
 }
 
 public class TokenInfoV2Dto : TokenInfoDto

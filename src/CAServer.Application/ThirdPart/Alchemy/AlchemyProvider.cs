@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -103,18 +104,30 @@ public class AlchemyProvider
     /// get Alchemy fiat list
     public async Task<List<AlchemyFiatDto>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
-        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(
-            AlchemyOptions().BaseUrl,
-            AlchemyApi.QueryFiatList,
-            header: await GetRampAlchemyRequestHeaderAsync(),
-            param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
-                JsonConvert.SerializeObject(input, JsonSerializerSettings)),
-            withInfoLog: false
-        );
-        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
-            "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
-        return result.Data.Where(f =>
-            f.PayMax.SafeToDecimal() == 0 || f.PayMax.SafeToDecimal() - f.PayMin.SafeToDecimal() > 0).ToList();
+        try
+        {
+            var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(
+                AlchemyOptions().BaseUrl,
+                AlchemyApi.QueryFiatList,
+                header: await GetRampAlchemyRequestHeaderAsync(),
+                param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
+                    JsonConvert.SerializeObject(input, JsonSerializerSettings)),
+                withInfoLog: false
+            );
+            _logger.LogDebug("GetAlchemyFiatListAsync input = {0}, result = {1}",
+                JsonConvert.SerializeObject(input,JsonSerializerSettings),
+                JsonConvert.SerializeObject(result, JsonSerializerSettings));
+            AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+                "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+            return result.Data.Where(f =>
+                f.PayMax.SafeToDecimal() == 0 || f.PayMax.SafeToDecimal() - f.PayMin.SafeToDecimal() > 0).ToList();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetAlchemyFiatListAsync has error {0}", e.Message);
+            _logger.LogError(e, "GetAlchemyFiatListAsync has error {0}", e);
+            return new List<AlchemyFiatDto>();
+        }
     }
 
     /// query Alchemy order info

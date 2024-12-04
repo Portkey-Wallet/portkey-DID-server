@@ -8,6 +8,7 @@ public static class AElfContractMethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string GetVerifierServers = "GetVerifierServers";
     public const string GetBalance = "GetBalance";
+    public const string GetAllowance = "GetAllowance";
     public const string GetTokenInfo = "GetTokenInfo";
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
@@ -90,6 +91,7 @@ public static class CommonConstant
     public const string SgrCoingeckoId = "schrodinger-2";
     public const string SgrSymbol = "SGR";
     public const string SgrSymbolName = "SGR-1";
+    public const string SgrCollectionSymbol = "SGR-0";
 
     public const string CryptoGiftProjectCode = "20000";
 
@@ -138,6 +140,7 @@ public static class CommonConstant
     
     public const string ActivitiesStartVersion = "1.17.0";
     public const string NftToFtStartVersion = "1.18.0";
+    public const string RevampVersion = "3.0.0";
 
     public const string ReferralKey = "Portkey:ReferralBank";
     public const string HamsterRankKey = "Portkey:HamsterBank";
@@ -165,4 +168,11 @@ public static class CommonConstant
     public const string TokenInfoCachePrefix = "TokenInfo";
     public const string SyncStateUri = "apps/sync-state";
     public const string ReplaceUri = "app/graphql";
+
+    public const string VerificationCodeExpired = "Verification code expired. Please request a new one to continue.";
+    public const string TooManyRetries = "Too many retries. Please request a new verification code to continue.";
+    public const string IncorrectCode = "Incorrect code, please try again.";
+    public const string V2ApiVersion = "v2";
+    public const string BaseNetwork = "BASE";
+    public const string BaseNetworkName = "Base";
 }

@@ -190,12 +190,12 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
-            .ThenBy(t => !t.IsDisplay)
+            //.ThenBy(t => !t.IsDisplay)
             .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
             .ThenBy(t => sourceSymbols.Contains(t.Symbol))
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
+            .ThenByDescending(t => t.ChainId)
             .ToList();
 
         return new PagedResultDto<GetUserTokenDto>(tokens.Count,

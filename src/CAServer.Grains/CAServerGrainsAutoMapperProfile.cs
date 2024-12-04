@@ -5,6 +5,7 @@ using CAServer.Bookmark.Dtos;
 using CAServer.Contacts;
 using CAServer.EnumType;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.AddressBook;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
@@ -21,6 +22,7 @@ using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
+using CAServer.Grains.State.AddressBook;
 using CAServer.Grains.State.Bookmark;
 using CAServer.Grains.State.Chain;
 using CAServer.Grains.State.Contacts;
@@ -67,6 +69,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GuardianState, GuardianGrainDto>();
 
         CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.Platform, opt => opt.MapFrom(m => m.Platform))
             .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
             {
                 ChainId = e.ProjectDelegateInfo.ChainId,
@@ -147,7 +150,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
                 Address = e.ManagerInfo.Address,
-                ExtraData = e.ManagerInfo.ExtraData
+                ExtraData = e.ManagerInfo.ExtraData,
+                Platform = e.Platform
             }))
             .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
 
@@ -262,5 +266,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
         CreateMap<InviteInfo, GrowthGrainDto>().ReverseMap();
         CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
+        CreateMap<AddressBookGrainDto, AddressBookState>().ReverseMap();
     }
 }
