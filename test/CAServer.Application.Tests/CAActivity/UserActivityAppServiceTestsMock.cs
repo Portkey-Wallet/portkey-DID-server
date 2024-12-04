@@ -236,7 +236,7 @@ public partial class UserActivityAppServiceTests
         var mockUserContactProvider = new Mock<IUserContactProvider>();
 
         mockUserContactProvider.Setup(m =>
-                m.BatchGetUserNameAsync(It.IsAny<List<string>>(), It.IsAny<Guid>(), It.IsAny<string>()))
+                m.BatchGetUserNameAsync(It.IsAny<List<string>>(), It.IsAny<Guid>(), It.IsAny<string>(),It.IsAny<string>()))
             .ReturnsAsync(new List<Tuple<ContactAddress, string, string>>
             {
                 new(new ContactAddress
