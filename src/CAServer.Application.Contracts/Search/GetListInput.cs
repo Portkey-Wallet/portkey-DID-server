@@ -7,6 +7,7 @@ public class GetListInput : PagedResultRequestDto
 {
     public string Filter { get; set; }
     public string Sort {get; set; }
+    public string DappName {get; set; }
     
 }
 
