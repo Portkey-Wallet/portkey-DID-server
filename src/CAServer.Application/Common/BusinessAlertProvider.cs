@@ -13,7 +13,7 @@ namespace CAServer.Common;
 
 public interface IBusinessAlertProvider
 {
-    public Task<bool> LoginRegisterFailureAlert(string indexName, GetListInput input);
+    public Task<bool> LoginRegisterFailureAlert(string sessionId, string dappName, string content);
 }
 
 public class BusinessAlertProvider : IBusinessAlertProvider, ISingletonDependency
@@ -38,21 +38,16 @@ public class BusinessAlertProvider : IBusinessAlertProvider, ISingletonDependenc
 
     private int loginRegisterTimeoutSeconds = 60;
     private int loginRegisterNumber = 10;
-    private string title = "Login or registration failed.";
 
-    public async Task<bool> LoginRegisterFailureAlert(string indexName, GetListInput input)
+    public async Task<bool> LoginRegisterFailureAlert(string sessionId, string dappName, string content)
     {
         try
         {
-            string key = $"{indexName};{input.Filter};{input.DappName ?? "default"}";
-            string value = await _distributedCache.GetOrAddAsync(
-                key,
-                async () => "1",
-                () => new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpiration = DateTimeOffset.Now.AddSeconds(loginRegisterTimeoutSeconds)
-                }
-            );
+            string key = $"{sessionId};{dappName ?? "default"}";
+            string value = await _distributedCache.GetAsync(key) ?? "0";
+            value = (int.Parse(value) + 1).ToString();
+            await _distributedCache.SetAsync(key, value, new DistributedCacheEntryOptions { AbsoluteExpiration = DateTimeOffset.Now.AddSeconds(loginRegisterTimeoutSeconds) });
+
             int number = int.Parse(value);
             if (number < loginRegisterNumber)
             {
@@ -60,12 +55,13 @@ public class BusinessAlertProvider : IBusinessAlertProvider, ISingletonDependenc
             }
 
             await _distributedCache.RemoveAsync(key);
+            await SendWebhook(sessionId, content, dappName);
 
             return true;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "LoginRegisterFailureAlert error, indexName = {0}, input = {1}", indexName, JsonConvert.SerializeObject(input));
+            _logger.LogError(e, "LoginRegisterFailureAlert error, sessionId = {0}, content = {1}", sessionId, content);
         }
 
         return false;
@@ -73,8 +69,8 @@ public class BusinessAlertProvider : IBusinessAlertProvider, ISingletonDependenc
 
     private long sendIntervalSeconds = 10;
     private long lastSendTime = DateTimeOffset.Now.ToUnixTimeSeconds();
-
-    private async Task SendWebhook(string title, string indexName, string filter, string dappName)
+    private string title = "Login or registration failed.";
+    private async Task SendWebhook(string sessionId, string content, string dappName)
     {
         if (DateTimeOffset.Now.ToUnixTimeSeconds() - lastSendTime < sendIntervalSeconds)
         {
@@ -85,7 +81,7 @@ public class BusinessAlertProvider : IBusinessAlertProvider, ISingletonDependenc
         {
             msg_type = "text",
             content = new
-                { text = $" title : {title}\n indexName : {indexName} \n filter : {filter}\n dapp : {dappName}" }
+                { text = $" title : {title}\n sessionId : {sessionId} \n dappName : {dappName} \n content : {content}" }
         };
         await _httpClientService.PostAsync<object>(_businessAlertOptions.Webhook, msg);
         lastSendTime = DateTimeOffset.Now.ToUnixTimeSeconds();

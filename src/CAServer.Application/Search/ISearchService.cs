@@ -243,9 +243,9 @@ public class AccountRecoverySearchService : SearchService<AccountRecoverIndex, G
         {
             foreach (var index in indexList.Items)
             {
-                if (index.RecoverySuccess == true)
+                if (index.RecoverySuccess != true)
                 {
-                    _businessAlertProvider.LoginRegisterFailureAlert(indexName, input);
+                    _businessAlertProvider.LoginRegisterFailureAlert(input.Filter,input.DappName, JsonConvert.SerializeObject(index));
                 }
             }
         }
@@ -275,9 +275,9 @@ public class AccountRegisterSearchService : SearchService<AccountRegisterIndex, 
         {
             foreach (var index in indexList.Items)
             {
-                if (index.RegisterSuccess == true)
+                if (index.RegisterSuccess != true)
                 {
-                    _businessAlertProvider.LoginRegisterFailureAlert(indexName, input);
+                    _businessAlertProvider.LoginRegisterFailureAlert(input.Filter, input.DappName,JsonConvert.SerializeObject(index));
                 }
             }
         }
