@@ -15,6 +15,7 @@ using CAServer.IpInfo;
 using CAServer.Market;
 using CAServer.Options;
 using CAServer.RedPackage;
+using CAServer.ScheduledTask;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
@@ -180,6 +181,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         Configure<ETransferOptions>(configuration.GetSection("ETransfer"));
         Configure<ActivityDateRangeOptions>(configuration.GetSection("ETransfer"));
+        Configure<ScheduledTaskOptions>(configuration.GetSection("ScheduledTask"));
         
         AddMessagePushService(context, configuration);
     }

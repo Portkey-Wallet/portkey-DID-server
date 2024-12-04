@@ -11,6 +11,7 @@ using CAServer.MongoDB;
 using CAServer.Monitor;
 using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
+using CAServer.ScheduledTask;
 using CAServer.Signature;
 using Hangfire;
 using Hangfire.Dashboard;
@@ -136,13 +137,21 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        //StartOrleans(context.ServiceProvider);
-        context.AddBackgroundWorkerAsync<ContractSyncWorker>();
-        context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
-        context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
-        context.AddBackgroundWorkerAsync<ChainHeightWorker>();
-        // context.AddBackgroundWorkerAsync<SendingTransactionInfoByEmailAfterApprovalWorker>();
+        // context.AddBackgroundWorkerAsync<ContractSyncWorker>();
+        // context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
+        // context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
+        // context.AddBackgroundWorkerAsync<ChainHeightWorker>();
+        //context.AddBackgroundWorkerAsync<SendingTransactionInfoByEmailAfterApprovalWorker>();
+        context.AddWorker<ChainHeightWorker>();
+        
+        InitRecurringJob(context.ServiceProvider);
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
+    }
+
+    private static void InitRecurringJob(IServiceProvider serviceProvider)
+    {
+        var jobsService = serviceProvider.GetRequiredService<IInitWorkersService>();
+        jobsService.InitRecurringWorkers();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
