@@ -137,11 +137,10 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        // context.AddBackgroundWorkerAsync<ContractSyncWorker>();
-        // context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
-        // context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
-        // context.AddBackgroundWorkerAsync<ChainHeightWorker>();
         //context.AddBackgroundWorkerAsync<SendingTransactionInfoByEmailAfterApprovalWorker>();
+        context.AddWorker<ContractSyncWorker>();
+        context.AddWorker<TransferAutoReceiveWorker>();
+        context.AddWorker<NftTraitsProportionCalculateWorker>();
         context.AddWorker<ChainHeightWorker>();
         
         InitRecurringJob(context.ServiceProvider);
