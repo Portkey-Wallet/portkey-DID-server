@@ -58,7 +58,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ILogger<ContractProvider> _logger;
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
     private readonly ISignatureProvider _signatureProvider;
-    private readonly ContractOptions _contractOptions;
     private readonly IClusterClient _clusterClient;
     private readonly IIndicatorScope _indicatorScope;
     private readonly ContractServiceProxy _contractServiceProxy;
@@ -67,7 +66,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public ContractProvider(IOptionsMonitor<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope,
+        IIndicatorScope indicatorScope,
         ContractServiceProxy contractServiceProxy)
     {
         _chainOptions = chainOptions.CurrentValue;
@@ -77,7 +76,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         _indicatorScope = indicatorScope;
         _contractServiceProxy = contractServiceProxy;
         _clusterClient = clusterClient;
-        _contractOptions = contractOptions.Value;
     }
 
     public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
@@ -111,7 +109,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
-        string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
+        string addressFromPrivateKey = client.GetAddressFromPrivateKey(SignatureKeyHelp.CommonPrivateKeyForCallTx);
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction =
@@ -120,7 +118,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
 
-        var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
+        var txWithSign = client.SignTransaction(SignatureKeyHelp.CommonPrivateKeyForCallTx, transaction);
 
         var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.ExecuteTransactionAsync.ToString());
