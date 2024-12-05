@@ -232,6 +232,7 @@ public class AccountRecoverySearchService : SearchService<AccountRecoverIndex, G
         IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
     {
         _indexSettingOptions = indexSettingOptions.Value;
+        _businessAlertProvider = businessAlertProvider;
     }
     
 
