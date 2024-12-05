@@ -147,7 +147,6 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
                 {
                     ClientId = "test",
                     KeyId = "test",
-                    PrivateKey = pkcs8PrivateKey,
                     TeamId = "test"
                 }
             });
