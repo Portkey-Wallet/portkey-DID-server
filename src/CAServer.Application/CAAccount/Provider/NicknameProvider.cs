@@ -27,21 +27,17 @@ public class NicknameProvider : INicknameProvider, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
-    private readonly IImRequestProvider _imRequestProvider;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<GuardianAppService> _logger;
-    // private readonly HostInfoOptions _hostInfoOptions;
-    
+
     public NicknameProvider(IObjectMapper objectMapper, INESTRepository<CAHolderIndex, Guid> caHolderRepository,
-        IImRequestProvider imRequestProvider, IClusterClient clusterClient, ILogger<GuardianAppService> logger
-        /*, IOptionsSnapshot<HostInfoOptions> hostInfoOptions*/)
+        IClusterClient clusterClient, ILogger<GuardianAppService> logger
+        )
     {
         _objectMapper = objectMapper;
         _caHolderRepository = caHolderRepository;
-        _imRequestProvider = imRequestProvider;
         _clusterClient = clusterClient;
         _logger = logger;
-        // _hostInfoOptions = hostInfoOptions.Value;
     }
     
     public async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId, CAHolderGrainDto caHolder)
@@ -93,44 +89,10 @@ public class NicknameProvider : INicknameProvider, ISingletonDependency
         {
             _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update es caholder failed, userid={1}, nickname={0}", userId, changedNickname);
         }
-        //update im user
-        try
-        {
-            await UpdateImUserAsync(userId, changedNickname, caHolder.Avatar);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update im user failed, userid={1}, nickname={0}", userId, changedNickname);
-        }
 
         return true;
     }
-    
-    private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
-    {
-        // if (_hostInfoOptions.Environment == Options.Environment.Development)
-        // {
-        //     return;
-        // }
-    
-        var imUserUpdateDto = new ImUserUpdateDto
-        {
-            Name = nickName,
-            Avatar = avatar
-        };
-    
-        try
-        {
-            await _imRequestProvider.PostAsync<object>(ImConstant.UpdateImUserUrl, imUserUpdateDto);
-            _logger.LogInformation("{userId} update im user : {name}", userId.ToString(), nickName);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}",
-                userId.ToString(), nickName);
-        }
-    }
-    
+
     private string GetFirstNameFormat(string nickname, string firstName, string address)
     {
         if (firstName.IsNullOrEmpty() && address.IsNullOrEmpty())
