@@ -38,7 +38,6 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     private readonly ContractServiceOptions _contractServiceOptions;
     private readonly PayRedPackageAccount _packageAccount;
     private readonly ILogger<SyncTokenService> _logger;
-    private readonly ContractOptions _contractOptions;
     private readonly INESTRepository<FreeMintNftSyncIndex, string> _freeMintNftSyncRepository;
     private readonly IDistributedCache<ChainHeightCache> _distributedCache;
     private readonly IndexOptions _indexOptions;
@@ -46,7 +45,6 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
     public SyncTokenService(ISignatureProvider signatureProvider,
         IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<ContractServiceOptions> contractGrainOptions,
-        IOptionsSnapshot<ContractOptions> contractOptions,
         IOptionsSnapshot<IndexOptions> indexOptions,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount, ILogger<SyncTokenService> logger,
         INESTRepository<FreeMintNftSyncIndex, string> freeMintNftSyncRepository,
@@ -59,7 +57,6 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         _chainOptions = chainOptions.Value;
         _contractServiceOptions = contractGrainOptions.Value;
         _packageAccount = packageAccount.Value;
-        _contractOptions = contractOptions.Value;
         _indexOptions = indexOptions.Value;
     }
 
@@ -258,14 +255,14 @@ public class SyncTokenService : ISyncTokenService, ISingletonDependency
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
-        string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
+        string addressFromPrivateKey = client.GetAddressFromPrivateKey(SignatureKeyHelp.CommonPrivateKeyForCallTx);
 
         var transaction =
             await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
         _logger.LogDebug("[SyncToken] Call tx methodName is: {methodName} param is: {transaction}", methodName,
             transaction);
 
-        var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
+        var txWithSign = client.SignTransaction(SignatureKeyHelp.CommonPrivateKeyForCallTx, transaction);
 
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {

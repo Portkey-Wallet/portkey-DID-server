@@ -45,7 +45,6 @@ public class ChainInfoTest : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockChainOptions());
-        services.AddSingleton(GetContractOption());
         services.AddSingleton(GetSignatureServerOptions());
     }
 
@@ -121,17 +120,6 @@ public class ChainInfoTest : CAServerApplicationTestBase
                 }
             });
         return mockOptions.Object;
-    }
-
-    private IOptionsSnapshot<ContractOptions> GetContractOption()
-    {
-        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<ContractOptions>>();
-        mockOptionsSnapshot.Setup(t => t.Value).Returns(new ContractOptions()
-        {
-            CommonPrivateKeyForCallTx = "aee9944b684505b51c2eefc54b6735453160a74f27c158df65d2783fafa81e57"
-        });
-
-        return mockOptionsSnapshot.Object;
     }
 
     private IOptionsSnapshot<SignatureServerOptions> GetSignatureServerOptions()

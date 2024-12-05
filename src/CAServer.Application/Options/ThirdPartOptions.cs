@@ -114,6 +114,5 @@ public class MerchantOptions
 public class MerchantItem
 {
     public string PublicKey { get; set; }
-    public string DidPrivateKey { get; set; }
     public string ReceivingAddress { get; set; }
 }
