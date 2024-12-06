@@ -1,36 +1,32 @@
 using System;
 using System.Threading.Tasks;
 using CAServer.PrivacyPermission;
-using Microsoft.Extensions.DependencyInjection;
+using CAServer.ScheduledTask;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Volo.Abp.BackgroundWorkers;
-using Volo.Abp.Threading;
 
 namespace CAServer.EntityEventHandler.Core.Worker;
 
-public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWorkerBase
+public class LoginGuardianChangeRecordReceiveWorker : ScheduledTaskBase
 {
     private readonly IGraphQLProvider _graphQlProvider;
     private readonly Options.ChainOptions _chainOptions;
     private readonly IPrivacyPermissionAppService _privacyPermissionAppService;
     private readonly ILogger<LoginGuardianChangeRecordReceiveWorker> _logger;
 
-    public LoginGuardianChangeRecordReceiveWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+    public LoginGuardianChangeRecordReceiveWorker(
         IGraphQLProvider graphQlProvider, IOptions<Options.ChainOptions> chainOptions,
         IPrivacyPermissionAppService privacyPermissionAppService,
-        ILogger<LoginGuardianChangeRecordReceiveWorker> logger) : base(
-        timer,
-        serviceScopeFactory)
+        ILogger<LoginGuardianChangeRecordReceiveWorker> logger)
     {
         _chainOptions = chainOptions.Value;
         _graphQlProvider = graphQlProvider;
         _privacyPermissionAppService = privacyPermissionAppService;
         _logger = logger;
-        Timer.Period = WorkerConst.TimePeriod;
+        Period = WorkerConst.TimePeriod;
     }
 
-    protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
+    protected override async Task DoWorkAsync()
     {
         foreach (var chainOptionsChainInfo in _chainOptions.ChainInfos)
         {

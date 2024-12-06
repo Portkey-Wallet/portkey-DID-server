@@ -13,6 +13,7 @@ using CAServer.MongoDB;
 using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Redis;
+using CAServer.ScheduledTask;
 using CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -190,20 +191,25 @@ public class CAServerEntityEventHandlerModule : AbpModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TokenPriceBackgroundWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftPreGrabQuotaExpiredWorker>());
-        // backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CryptoGiftStatisticsWorker>());
-        //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitReferralRankWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ReferralRankWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitAddChatBotContactsWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterActivityWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterDataRepairWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TonGiftsValidateWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ContactMigrateWorker>());
+        //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitAddChatBotContactsWorker>());
+        //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterActivityWorker>());
+        //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HamsterDataRepairWorker>());
+        //backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TonGiftsValidateWorker>());
+
+        context.AddWorker<LoginGuardianChangeRecordReceiveWorker>();
+        context.AddWorker<TokenPriceBackgroundWorker>();
+        context.AddWorker<CryptoGiftPreGrabQuotaExpiredWorker>();
+        context.AddWorker<ContactMigrateWorker>();
+        //context.AddWorker<ReferralRankWorker>();
         
-        
+        InitRecurringJob(context.ServiceProvider);
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
+    }
+    
+    private static void InitRecurringJob(IServiceProvider serviceProvider)
+    {
+        var jobsService = serviceProvider.GetRequiredService<IInitWorkersService>();
+        jobsService.InitRecurringWorkers();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
