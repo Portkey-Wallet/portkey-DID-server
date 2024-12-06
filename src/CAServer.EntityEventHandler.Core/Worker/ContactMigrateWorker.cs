@@ -1,38 +1,33 @@
 using System.Threading.Tasks;
 using CAServer.AddressBook.Migrate;
 using CAServer.Options;
-using Microsoft.Extensions.DependencyInjection;
+using CAServer.ScheduledTask;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Volo.Abp.BackgroundWorkers;
-using Volo.Abp.Threading;
 
 namespace CAServer.EntityEventHandler.Core.Worker;
 
-public class ContactMigrateWorker : AsyncPeriodicBackgroundWorkerBase
+public class ContactMigrateWorker : ScheduledTaskBase
 {
     private readonly IOptionsMonitor<ContactMigrateOptions> _options;
     private readonly IAddressBookMigrateService _service;
     private readonly ILogger<ContactMigrateWorker> _logger;
 
-    public ContactMigrateWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+    public ContactMigrateWorker(
         IOptionsMonitor<ContactMigrateOptions> options, IAddressBookMigrateService service,
-        ILogger<ContactMigrateWorker> logger) : base(timer,
-        serviceScopeFactory)
+        ILogger<ContactMigrateWorker> logger)
     {
         _options = options;
         _service = service;
         _logger = logger;
-        timer.RunOnStart = true;
-        timer.Period = options.CurrentValue.Period * 1000;
+        Period = options.CurrentValue.Period * 1000;
     }
 
-    protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
+    protected override async Task DoWorkAsync()
     {
         _logger.LogInformation("[AddressBookMigrate] ContactMigrateWorker start.");
         if (!_options.CurrentValue.Open)
         {
-            //lob
             _logger.LogInformation("[AddressBookMigrate] migrate not open.");
             return;
         }
