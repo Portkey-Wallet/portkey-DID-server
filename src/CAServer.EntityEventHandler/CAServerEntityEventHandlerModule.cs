@@ -18,6 +18,11 @@ using CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Hangfire;
+using Hangfire.Mongo;
+using Hangfire.Mongo.CosmosDB;
+using Hangfire.Mongo.Migration.Strategies;
+using Hangfire.Mongo.Migration.Strategies.Backup;
 using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
@@ -26,6 +31,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -77,6 +83,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureDistributedLocking(context, configuration);
         ConfigureMassTransit(context, configuration);
         ConfigureRedisCacheProvider(context, configuration);
+        ConfigureHangfire(context, configuration);
         context.Services.AddSingleton<IClusterClient>(o =>
         {
             return new ClientBuilder()
@@ -106,17 +113,17 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .Build();
         });
     }
-    
+
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
-    {        
+    {
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
 
-    
+
     private void ConfigureDistributedLocking(
         ServiceConfigurationContext context,
         IConfiguration configuration)
@@ -128,7 +135,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
             return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
         });
     }
-    
+
     private void ConfigureRedisCacheProvider(
         ServiceConfigurationContext context,
         IConfiguration configuration)
@@ -136,10 +143,10 @@ public class CAServerEntityEventHandlerModule : AbpModule
         var multiplexer = ConnectionMultiplexer
             .Connect(configuration["Redis:Configuration"]);
         context.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
-        context.Services.AddSingleton<ICacheProvider,RedisCacheProvider>();
+        context.Services.AddSingleton<ICacheProvider, RedisCacheProvider>();
     }
 
-    
+
     private void ConfigureCache(IConfiguration configuration)
     {
         var cacheOptions = configuration.GetSection("Cache").Get<CacheOptions>();
@@ -154,7 +161,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
             };
         });
     }
-    
+
     private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
     {
         context.Services.AddMassTransit(x =>
@@ -163,7 +170,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
             // x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
-                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port,
                     "/", h =>
                     {
                         h.Username(rabbitMqConfig.Connections.Default.UserName);
@@ -187,7 +194,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
         AsyncHelper.RunSync(async () => await client.Connect());
     }
-    
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
@@ -201,11 +208,11 @@ public class CAServerEntityEventHandlerModule : AbpModule
         context.AddWorker<CryptoGiftPreGrabQuotaExpiredWorker>();
         context.AddWorker<ContactMigrateWorker>();
         //context.AddWorker<ReferralRankWorker>();
-        
+
         InitRecurringJob(context.ServiceProvider);
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
-    
+
     private static void InitRecurringJob(IServiceProvider serviceProvider)
     {
         var jobsService = serviceProvider.GetRequiredService<IInitWorkersService>();
@@ -228,5 +235,54 @@ public class CAServerEntityEventHandlerModule : AbpModule
     private void ConfigureTokenCleanupService()
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+
+    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var mongoType = configuration["Hangfire:MongoType"];
+        var connectionString = configuration["Hangfire:ConnectionString"];
+        if (connectionString.IsNullOrEmpty()) return;
+
+        if (mongoType.IsNullOrEmpty() ||
+            mongoType.Equals(MongoType.MongoDb.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            context.Services.AddHangfire(x =>
+            {
+                x.UseMongoStorage(connectionString, new MongoStorageOptions
+                {
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        MigrationStrategy = new MigrateMongoMigrationStrategy(),
+                        BackupStrategy = new CollectionMongoBackupStrategy()
+                    },
+                    CheckConnection = true,
+                    CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
+                });
+            });
+        }
+        else if (mongoType.Equals(MongoType.DocumentDb.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            context.Services.AddHangfire(config =>
+            {
+                var mongoUrlBuilder = new MongoUrlBuilder(connectionString);
+                var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
+                var opt = new CosmosStorageOptions
+                {
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        BackupStrategy = new NoneMongoBackupStrategy(),
+                        MigrationStrategy = new DropMongoMigrationStrategy(),
+                    }
+                };
+                config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
+            });
+        }
+
+        context.Services.AddHangfireServer(opt =>
+        {
+            opt.SchedulePollingInterval = TimeSpan.FromMilliseconds(3000);
+            opt.HeartbeatInterval = TimeSpan.FromMilliseconds(3000);
+            opt.Queues = new[] { "default", "notDefault" };
+        });
     }
 }
