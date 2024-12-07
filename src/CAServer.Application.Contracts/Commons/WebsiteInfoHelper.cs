@@ -126,6 +126,15 @@ public class WebsiteInfoHelper
 
     private static void SetWebsite(WebsiteInfoParamDto param)
     {
+        //sb
+        if (param.Website.StartsWith("https://testv2.beangotown.com/") || 
+            param.Website.StartsWith("https://test.beangotown.com/") ||
+            param.Website.StartsWith("https://beangotown.com/"))
+        {
+            param.Website = "beangotown.com";
+            return;
+        }
+
         foreach (var pixiepoint in Pixiepoints)
         {
             if (param.Website.Contains(pixiepoint.Key))
@@ -217,15 +226,6 @@ public class WebsiteInfoHelper
         },
         new WebsiteInfoDto
         {
-            Website = "hamster.beangotown",
-            Logo = "https://icon.horse/icon/hamster.beangotown.com/50",
-            Spenders = new List<string>
-            {
-                "2Mt11RFsR9TEt1kDpod6yPPTNjKMcb5vuuoRwJ4A8VCV7GuBzi", "m39bMdjpA74Pv7pyA4zn8w6mhz182KpcrtFAnwWCiFmcihNYE"
-            }
-        },
-        new WebsiteInfoDto
-        {
             Website = "beangotown.com",
             Logo = "https://icon.horse/icon/beangotown.com/50",
             Spenders = new List<string>
@@ -240,8 +240,8 @@ public class WebsiteInfoHelper
     {
         { "schrodingerai.com", "schrodingernft.ai" },
         { "awakenswap.xyz", "awaken.finance" },
-        { "beangotown.xyz", "beangotown.com" },
         { "schrodingernft.ai", "schrodingernft.ai" },
-        { "beangotown.com", "beangotown.com" },
+        { "beangotown.xyz", "hamster.beangotown" },
+        { "beangotown.com", "hamster.beangotown" },
     };
 }
