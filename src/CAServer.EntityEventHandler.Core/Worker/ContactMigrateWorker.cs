@@ -20,7 +20,7 @@ public class ContactMigrateWorker : ScheduledTaskBase
         _options = options;
         _service = service;
         _logger = logger;
-        Period = options.CurrentValue.Period * 1000;
+        Period = options.CurrentValue.Period;
     }
 
     protected override async Task DoWorkAsync()

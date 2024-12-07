@@ -22,7 +22,7 @@ public class TokenPriceBackgroundWorker : ScheduledTaskBase
         _logger = logger;
         _tokenPriceService = tokenPriceService;
         _tokenPriceWorkerOption = tokenPriceWorkerOption.CurrentValue;
-        Period = _tokenPriceWorkerOption.Period * 1000;
+        Period = _tokenPriceWorkerOption.Period;
     }
 
     protected override async Task DoWorkAsync()
