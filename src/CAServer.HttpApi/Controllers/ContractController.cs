@@ -34,7 +34,7 @@ public class ContractController : CAServerController
         return await WebsiteInfoHelper.WebsiteAvailable(input);
     }
 
-    [HttpGet("spenderValild")]
+    [HttpGet("spenderValid")]
     public async Task<bool> SpenderValild(WebsiteInfoParamDto input)
     {
         return await WebsiteInfoHelper.WebsiteAvailable(input);
