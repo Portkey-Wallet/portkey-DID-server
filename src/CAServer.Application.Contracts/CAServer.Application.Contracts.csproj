@@ -32,6 +32,7 @@
         <PackageReference Include="Orleans.Providers.MongoDB" Version="3.8.0" />
         <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
         <PackageReference Include="SkiaSharp" Version="2.88.8" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.0" />
         <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
         <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
