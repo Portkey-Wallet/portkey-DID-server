@@ -257,7 +257,7 @@ public class WebsiteInfoHelper
             Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/hamster.beangotown.com.png",
             Spenders = new List<string>
             {
-                "2Mt11RFsR9TEt1kDpod6yPPTNjKMcb5vuuoRwJ4A8VCV7GuBzi", "m39bMdjpA74Pv7pyA4zn8w6mhz182KpcrtFAnwWCiFmcihNYE"
+                "2Mt11RFsR9TEt1kDpod6yPPTNjKMcb5vuuoRwJ4A8VCV7GuBzi------", "m39bMdjpA74Pv7pyA4zn8w6mhz182KpcrtFAnwWCiFmcihNYE------"
             }
         },
         new WebsiteInfoDto
