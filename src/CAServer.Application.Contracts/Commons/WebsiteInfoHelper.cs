@@ -103,7 +103,7 @@ public class WebsiteInfoHelper
         {
             foreach (var info in WebsiteInfoes)
             {
-                if (param.Website.Contains(info.Website))
+                if (IsWebSite(param, info))
                 {
                     return IsSpenderAvailable(param.Spender, info.Spenders);
                 }
@@ -111,7 +111,7 @@ public class WebsiteInfoHelper
 
             return false;
         }
-        
+
 
         bool saveResult = await ImageSharpHelper.SaveLogo(param.Logo);
         if (!saveResult)
@@ -126,7 +126,7 @@ public class WebsiteInfoHelper
             if (same)
             {
                 CacheLogoMap.Add(param.Logo, info);
-                return param.Website.Contains(info.Website) && param.Website.EndsWith(info.Website)  && IsSpenderAvailable(param.Spender, info.Spenders);
+                return IsWebSite(param, info) && IsSpenderAvailable(param.Spender, info.Spenders);
             }
         }
 
@@ -139,14 +139,19 @@ public class WebsiteInfoHelper
         if (null == spender)
         {
             return true;
-
         }
+
         if (null != spenders && spenders.Count > 0)
         {
             return spenders.Contains(spender);
         }
 
         return true;
+    }
+
+    private static bool IsWebSite(WebsiteInfoParamDto param, WebsiteInfoDto info)
+    {
+        return param.Website.Contains(info.Website) && param.Website.EndsWith(info.Website);
     }
 
     public static string GetLogoUrlMd5(string logoUrl)
@@ -178,7 +183,7 @@ public class WebsiteInfoHelper
 
         foreach (var pixiepoint in Pixiepoints)
         {
-            if (param.Website.Contains(pixiepoint.Key))
+            if (param.Website.EndsWith(pixiepoint.Key))
             {
                 foreach (var websiteInfoDto in WebsiteInfoes)
                 {
