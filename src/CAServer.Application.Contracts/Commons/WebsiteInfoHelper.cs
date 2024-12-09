@@ -41,11 +41,11 @@ public class WebsiteInfoHelper
     {
         InitializeAsync();
 
-        bool? formatAvailable = IsFormat(param);
-        if (null != formatAvailable)
-        {
-            return Task.FromResult(formatAvailable.Value);
-        }
+        // bool? formatAvailable = IsFormat(param);
+        // if (null != formatAvailable)
+        // {
+        //     return Task.FromResult(formatAvailable.Value);
+        // }
 
         SetWebsite(param);
         bool? cacheAvailable = IsCacheAvailable(param);
@@ -99,13 +99,19 @@ public class WebsiteInfoHelper
 
     private static async Task<bool> IsKeeperAvailable(WebsiteInfoParamDto param)
     {
-        foreach (var info in WebsiteInfoes)
+        if (param.Logo.StartsWith("https://icon.horse/icon/") && param.Logo.EndsWith("/50"))
         {
-            if (info.Logo.Equals(param.Logo))
+            foreach (var info in WebsiteInfoes)
             {
-                return info.Website.Equals(param.Website) && IsSpenderAvailable(param.Spender, info.Spenders);
+                if (param.Website.Contains(info.Website))
+                {
+                    return IsSpenderAvailable(param.Spender, info.Spenders);
+                }
             }
+
+            return false;
         }
+        
 
         bool saveResult = await ImageSharpHelper.SaveLogo(param.Logo);
         if (!saveResult)
