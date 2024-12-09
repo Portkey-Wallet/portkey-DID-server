@@ -126,7 +126,7 @@ public class WebsiteInfoHelper
             if (same)
             {
                 CacheLogoMap.Add(param.Logo, info);
-                return param.Website.Contains(info.Website) && IsSpenderAvailable(param.Spender, info.Spenders);
+                return param.Website.Contains(info.Website) && param.Website.EndsWith(info.Website)  && IsSpenderAvailable(param.Spender, info.Spenders);
             }
         }
 
