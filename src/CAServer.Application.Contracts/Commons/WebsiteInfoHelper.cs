@@ -31,7 +31,7 @@ public class WebsiteInfoHelper
 
             foreach (var info in WebsiteInfoes)
             {
-                await LogoProcessor.SaveLogo(info.Logo);
+                await ImageSharpHelper.SaveLogo(info.Logo);
             }
         }
     }
@@ -40,6 +40,12 @@ public class WebsiteInfoHelper
     public static Task<bool> WebsiteAvailable(WebsiteInfoParamDto param)
     {
         InitializeAsync();
+
+        bool? formatAvailable = IsFormat(param);
+        if (null != formatAvailable)
+        {
+            return Task.FromResult(formatAvailable.Value);
+        }
 
         SetWebsite(param);
         bool? cacheAvailable = IsCacheAvailable(param);
@@ -67,6 +73,30 @@ public class WebsiteInfoHelper
         return null;
     }
 
+    private static bool? IsFormat(WebsiteInfoParamDto param)
+    {
+        if (param.Logo.StartsWith("https://icon.horse/icon/"))
+        {
+            if (param.Logo.Contains(param.Website.Replace("https://", "")))
+            {
+                foreach (var info in WebsiteInfoes)
+                {
+                    if (param.Website.Contains(info.Website))
+                    {
+                        return IsSpenderAvailable(param.Spender, info.Spenders);
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
+        return null;
+    }
+
     private static async Task<bool> IsKeeperAvailable(WebsiteInfoParamDto param)
     {
         foreach (var info in WebsiteInfoes)
@@ -77,7 +107,7 @@ public class WebsiteInfoHelper
             }
         }
 
-        bool saveResult = await LogoProcessor.SaveLogo(param.Logo);
+        bool saveResult = await ImageSharpHelper.SaveLogo(param.Logo);
         if (!saveResult)
         {
             return false;
@@ -85,9 +115,9 @@ public class WebsiteInfoHelper
 
         foreach (var info in WebsiteInfoes)
         {
-            var same = LogoProcessor.CalculateGrayImageSimilarity(GetLogoUrlMd5(info.Logo), GetLogoUrlMd5(param.Logo));
+            var same = ImageSharpHelper.CalculateGrayImageSimilarity(GetLogoUrlMd5(info.Logo), GetLogoUrlMd5(param.Logo));
             Console.WriteLine($"IsKeeperAvailable {same} - {param.Logo} - {info.Logo}");
-            if (same > 0.95)
+            if (same)
             {
                 CacheLogoMap.Add(param.Logo, info);
                 return param.Website.Contains(info.Website) && IsSpenderAvailable(param.Spender, info.Spenders);
@@ -120,14 +150,14 @@ public class WebsiteInfoHelper
                 sb.Append(b.ToString("x2"));
             }
 
-            return sb.ToString() + ".jpg";
+            return sb.ToString() + ".png";
         }
     }
 
     private static void SetWebsite(WebsiteInfoParamDto param)
     {
         //sb
-        if (param.Website.StartsWith("https://testv2.beangotown.com/") || 
+        if (param.Website.StartsWith("https://testv2.beangotown.com/") ||
             param.Website.StartsWith("https://test.beangotown.com/") ||
             param.Website.StartsWith("https://beangotown.com/"))
         {
@@ -155,7 +185,7 @@ public class WebsiteInfoHelper
         new WebsiteInfoDto
         {
             Website = "etransfer.exchange",
-            Logo = "https://icon.horse/icon/app.etransfer.exchange/50",
+            Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/app.etransfer.exchange.png",
             Spenders = new List<string>
             {
                 "2w13DqbuuiadvaSY2ZyKi2UoXg354zfHLM3kwRKKy85cViw4ZF", "x4CTSuM8typUbpdfxRZDTqYVa42RdxrwwPkXX7WUJHeRmzE6k",
@@ -165,7 +195,7 @@ public class WebsiteInfoHelper
         new WebsiteInfoDto
         {
             Website = "ebridge.exchange",
-            Logo = "https://icon.horse/icon/ebridge.exchange/50",
+            Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/ebridge.exchange.png",
             Spenders = new List<string>
             {
                 "2dKF3svqDXrYtA5mYwKfADiHajo37mLZHPHVVuGbEDoD9jSgE8", "GZs6wyPDfz3vdEmgVd3FyrQfaWSXo9uRvc7Fbp5KSLKwMAANd",
@@ -175,7 +205,7 @@ public class WebsiteInfoHelper
         new WebsiteInfoDto
         {
             Website = "awaken.finance",
-            Logo = "https://icon.horse/icon/app.awaken.finance/50",
+            Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/app.awaken.finance.png",
             Spenders = new List<string>
             {
                 "JKjoabe2wyrdP1P8TvNyD4GZP6z1PuMvU2y5yJ4JTeBjTMAoX", "JvDB3rguLJtpFsovre8udJeXJLhsV1EPScGz2u1FFneahjBQm",
@@ -188,12 +218,12 @@ public class WebsiteInfoHelper
                 "2BC4BosozC1x27izqrSFJ51gYYtyVByjKGZvmitY7EBFDDPYHN"
             }
         },
-        new WebsiteInfoDto { Website = "aefinder.io", Logo = "https://icon.horse/icon/aefinder.io/50" },
-        new WebsiteInfoDto { Website = "schrodingernft.ai", Logo = "https://icon.horse/icon/cat.schrodingernft.ai/50" },
+        new WebsiteInfoDto { Website = "aefinder.io", Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/aefinder.io.png" },
+        new WebsiteInfoDto { Website = "schrodingernft.ai", Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/cat.schrodingernft.ai.png" },
         new WebsiteInfoDto
         {
             Website = "eforest.finance",
-            Logo = "https://icon.horse/icon/www.eforest.finance/50",
+            Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/www.eforest.finance.png",
             Spenders = new List<string>
             {
                 "2cGT3RZZy6UJJ3eJPZdWMmuoH2TZBihvMtAtKvLJUaBnvskK2x", "iupiTuL2cshxB9UNauXNXe9iyCcqka7jCotodcEHGpNXeLzqG",
@@ -204,12 +234,12 @@ public class WebsiteInfoHelper
                 "yEMwBeheRq6iiw6VN9TgUt2eASBNcgxsEUUwFFsgXedySgnp2"
             }
         },
-        new WebsiteInfoDto { Website = "pixiepoints.io", Logo = "https://icon.horse/icon/pixiepoints.io/50" },
-        new WebsiteInfoDto { Website = "tmrwdao.com", Logo = "https://icon.horse/icon/tmrwdao.com/50" },
+        new WebsiteInfoDto { Website = "pixiepoints.io", Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/pixiepoints.io.png" },
+        new WebsiteInfoDto { Website = "tmrwdao.com", Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/tmrwdao.com.png" },
         new WebsiteInfoDto
         {
             Website = "ewell.finance",
-            Logo = "https://icon.horse/icon/ewell.finance/50",
+            Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/ewell.finance.png",
             Spenders = new List<string>
             {
                 "2WCTWEdrVgqgJyoYbuVEDn2RQrfiptUtMUtKvP7TiZp94gUgwJ", "2EbbUpZLds58keVZPJDLPRbPpxzUYCcjooq6LBiBoRXVTFZTiQ"
@@ -218,7 +248,7 @@ public class WebsiteInfoHelper
         new WebsiteInfoDto
         {
             Website = "hamster.beangotown",
-            Logo = "https://icon.horse/icon/hamster.beangotown.com/50",
+            Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/hamster.beangotown.com.png",
             Spenders = new List<string>
             {
                 "2Mt11RFsR9TEt1kDpod6yPPTNjKMcb5vuuoRwJ4A8VCV7GuBzi", "m39bMdjpA74Pv7pyA4zn8w6mhz182KpcrtFAnwWCiFmcihNYE"
@@ -227,7 +257,7 @@ public class WebsiteInfoHelper
         new WebsiteInfoDto
         {
             Website = "beangotown.com",
-            Logo = "https://icon.horse/icon/beangotown.com/50",
+            Logo = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/dappLogos/beangotown.com.png",
             Spenders = new List<string>
             {
                 "oZHKLeudXJpZeKi55hA5KHgyv7eWBwPL4nCiCChNqPBc6Hb3F", "C7ZUPUHDwG2q3jR5Mw38YoBHch2XiZdiK6pBYkdhXdGrYcXsb"

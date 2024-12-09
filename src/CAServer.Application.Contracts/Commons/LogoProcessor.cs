@@ -11,7 +11,7 @@ public class LogoProcessor
     private const int TargetWidth = 50;
     private const int TargetHeight = 50;
 
-    public static double CalculateGrayImageSimilarity(string imagePath1, string imagePath2)
+    public static bool CalculateGrayImageSimilarity(string imagePath1, string imagePath2)
     {
         using var bitmap1 = SKBitmap.Decode(imagePath1);
         using var bitmap2 = SKBitmap.Decode(imagePath2);
@@ -58,7 +58,7 @@ public class LogoProcessor
         // Normalize to obtain similarity
         double similarity = 1.0 - avgDifference;
 
-        return similarity;
+        return similarity > 0.95;
     }
 
 
