@@ -111,6 +111,13 @@ public class WebsiteInfoHelper
 
             return false;
         }
+        foreach (var info in WebsiteInfoes)
+        {
+            if (param.Logo.Equals(info.Logo))
+            {
+                return IsWebSite(param, info) && IsSpenderAvailable(param.Spender, info.Spenders);
+            }
+        }
 
 
         bool saveResult = await ImageSharpHelper.SaveLogo(param.Logo);
