@@ -32,6 +32,7 @@ public class ImageSharpHelper
             Image<Rgba32> image = Image.Load<Rgba32>(outputPath);
             image.Mutate(x => x.Resize(TargetWidth, TargetHeight));
             image.Save(outputPath);
+            return true;
         }
         catch (Exception e)
         {
@@ -39,8 +40,6 @@ public class ImageSharpHelper
             Console.WriteLine(e);
             return false;
         }
-
-        return true;
     }
     
 
@@ -73,7 +72,7 @@ public class ImageSharpHelper
 
             double averageDifference = totalDifference / (image1.Width * image1.Height);
             Console.WriteLine("Average Color Difference: " + averageDifference);
-            return averageDifference < 5;
+            return averageDifference < 50;
         }
     }
 }
