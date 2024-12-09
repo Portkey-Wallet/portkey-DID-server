@@ -136,6 +136,11 @@ public class WebsiteInfoHelper
 
     private static bool IsSpenderAvailable(string spender, List<string> spenders)
     {
+        if (null == spender)
+        {
+            return true;
+
+        }
         if (null != spenders && spenders.Count > 0)
         {
             return spenders.Contains(spender);
