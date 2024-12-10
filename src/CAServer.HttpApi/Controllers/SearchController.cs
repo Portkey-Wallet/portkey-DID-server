@@ -16,9 +16,10 @@ namespace CAServer.Controllers
         private readonly ISearchAppService _searchAppService;
         private readonly ITestOrleansAppService _testOrleansAppService;
 
-        public SearchController(ISearchAppService searchAppService)
+        public SearchController(ISearchAppService searchAppService, ITestOrleansAppService testOrleansAppService)
         {
             _searchAppService = searchAppService;
+            _testOrleansAppService = testOrleansAppService;
         }
 
         [HttpGet("{indexName}")]
