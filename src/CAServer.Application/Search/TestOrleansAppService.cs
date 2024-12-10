@@ -15,7 +15,7 @@ namespace CAServer.Search;
 
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
-public class TestOrleansAppService : ITestOrleansAppService
+public class TestOrleansAppService : CAServerAppService, ITestOrleansAppService
 {
     private readonly IClusterClient _clusterClient;
 
