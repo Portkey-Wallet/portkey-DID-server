@@ -36,6 +36,7 @@ public class TempCacheProvider : ITempCacheProvider, ISingletonDependency
 
     public async Task<Dictionary<string, string>> GetCacheByModuleAsync(string module)
     {
+        _logger.LogDebug("TempCacheProvider GetCacheByModuleAsync module = {0} ", module);
         Dictionary<string, string> convertedDictionary = new Dictionary<string, string>();
 
         try
@@ -65,6 +66,7 @@ public class TempCacheProvider : ITempCacheProvider, ISingletonDependency
 
     public async Task<bool> SetCacheAsync(string module, string key, string value)
     {
+        _logger.LogDebug("TempCacheProvider SetCacheAsync module = {0} key = {1} value = {2} has error", module, key, value);
         try
         {
             string fullKey = GetCacheKey(module, key);
@@ -82,6 +84,7 @@ public class TempCacheProvider : ITempCacheProvider, ISingletonDependency
 
     public async Task<bool> RemoveCacheAsync(string module, string key, string value)
     {
+        _logger.LogDebug("TempCacheProvider RemoveCacheAsync module = {0} key = {1} value = {2}", module, key, value);
         try
         {
             string fullKey = GetCacheKey(module, key);
@@ -97,6 +100,7 @@ public class TempCacheProvider : ITempCacheProvider, ISingletonDependency
 
     public async Task<bool> RemoveCacheByFullKeyAsync(string module, string fullKey, string value)
     {
+        _logger.LogDebug("TempCacheProvider RemoveCacheByFullKeyAsync module = {0} key = {1} value = {2}", module, fullKey, value);
         try
         {
             await _cacheProvider.SetRemoveAsync(GetCacheKey(module), new List<string> { fullKey });
