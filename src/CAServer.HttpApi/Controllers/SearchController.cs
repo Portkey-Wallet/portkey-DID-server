@@ -14,6 +14,7 @@ namespace CAServer.Controllers
     public class SearchController : CAServerController
     {
         private readonly ISearchAppService _searchAppService;
+        private readonly ITestOrleansAppService _testOrleansAppService;
 
         public SearchController(ISearchAppService searchAppService)
         {
@@ -24,6 +25,12 @@ namespace CAServer.Controllers
         public async Task<string> GetList(GetListInput input, string indexName)
         {
             return await _searchAppService.GetListByLucenceAsync(indexName, input);
+        }
+        
+        [HttpGet("test-orleans")]
+        public async Task<string> TestOrleans(string grainName, string grainKey)
+        {
+            return await _testOrleansAppService.TestOrleansAsync(grainName, grainKey);
         }
     }
 }
