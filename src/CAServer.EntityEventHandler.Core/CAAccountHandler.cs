@@ -8,6 +8,7 @@ using CAServer.ContractEventHandler;
 using CAServer.CryptoGift;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
+using CAServer.EntityHandler;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
@@ -47,6 +48,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     private readonly IGrowthAppService _growthAppService;
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
     private readonly IDistributedCache<string> _distributedCache;
+    private readonly ITempCacheProvider _tempCacheProvider;
 
     public CaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
         INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
@@ -58,7 +60,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         INESTRepository<AccelerateRegisterIndex, string> accelerateRegisterRepository,
         INESTRepository<AccelerateRecoverIndex, string> accelerateRecoverRepository,
         ICryptoGiftAppService cryptoGiftAppService,
-        IDistributedCache<string> distributedCache)
+        IDistributedCache<string> distributedCache, ITempCacheProvider tempCacheProvider)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -72,9 +74,19 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _accelerateRecoverRepository = accelerateRecoverRepository;
         _cryptoGiftAppService = cryptoGiftAppService;
         _distributedCache = distributedCache;
+        _tempCacheProvider = tempCacheProvider;
     }
 
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
+    {
+        string key = Guid.NewGuid().ToString();
+        string value = JsonConvert.SerializeObject(eventData);
+        await _tempCacheProvider.SetCacheAsync(accountRegisterCreateModule, key, value);
+        HandleEvent(eventData, accountRegisterCreateModule, key, value);
+    }
+
+    private string accountRegisterCreateModule = "AccountRegisterCreate";
+    public async Task HandleEvent(AccountRegisterCreateEto eventData, string module, string key, string value)
     {
         try
         {
@@ -85,6 +97,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             {
                 register.GuardianInfo.ZkLoginInfo = eventData.GuardianInfo.ZkLoginInfo;
             }
+
             register.RegisterStatus = AccountOperationStatus.Pending;
             await _registerRepository.AddAsync(register);
             _logger.LogDebug($"register add success: {JsonConvert.SerializeObject(register)}");
@@ -93,9 +106,20 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         {
             _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
         }
+
+        await _tempCacheProvider.RemoveCacheAsync(module, key, value);
     }
 
     public async Task HandleEventAsync(AccountRecoverCreateEto eventData)
+    {
+        string key = Guid.NewGuid().ToString();
+        string value = JsonConvert.SerializeObject(eventData);
+        await _tempCacheProvider.SetCacheAsync(accountRecoverCreateModule, key, value);
+        HandleEvent(eventData, accountRecoverCreateModule, key, value);
+    }
+
+    private string accountRecoverCreateModule = "AccountRecoverCreate";
+    public async Task HandleEvent(AccountRecoverCreateEto eventData, string module, string key, string value)
     {
         try
         {
@@ -112,6 +136,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         {
             _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
         }
+
+        await _tempCacheProvider.RemoveCacheAsync(module, key, value);
     }
 
     public async Task HandleEventAsync(CreateHolderEto eventData)
@@ -121,19 +147,20 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             _logger.LogInformation("CreateHolderEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
             if (eventData.RegisterSuccess != null && eventData.RegisterSuccess.Value)
             {
-                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
-                {
-                    CaHash = eventData.CaHash,
-                    CaAddress = eventData.CaAddress,
-                    ReferralInfo = eventData.ReferralInfo,
-                    IsNewUser = true,
-                    IpAddress = eventData.IpAddress
-                }), new DistributedCacheEntryOptions()
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.RegisterCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(
+                    new CryptoGiftReferralDto
+                    {
+                        CaHash = eventData.CaHash,
+                        CaAddress = eventData.CaAddress,
+                        ReferralInfo = eventData.ReferralInfo,
+                        IsNewUser = true,
+                        IpAddress = eventData.IpAddress
+                    }), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
                 });
             }
-            
+
             _logger.LogDebug("the second event: update register grain.");
 
             await SwapGrainStateAsync(eventData.CaHash, eventData.GrainId);
@@ -202,14 +229,15 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
             if (eventData.RecoverySuccess != null && eventData.RecoverySuccess.Value)
             {
-                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(new CryptoGiftReferralDto
-                {
-                    CaHash = eventData.CaHash,
-                    CaAddress = eventData.CaAddress,
-                    ReferralInfo = eventData.ReferralInfo,
-                    IsNewUser = false,
-                    IpAddress = eventData.IpAddress
-                }), new DistributedCacheEntryOptions()
+                await _distributedCache.SetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash), JsonConvert.SerializeObject(
+                    new CryptoGiftReferralDto
+                    {
+                        CaHash = eventData.CaHash,
+                        CaAddress = eventData.CaAddress,
+                        ReferralInfo = eventData.ReferralInfo,
+                        IsNewUser = false,
+                        IpAddress = eventData.IpAddress
+                    }), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
                 });
@@ -217,6 +245,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
                 var cachedResult = await _distributedCache.GetAsync(string.Format(CryptoGiftConstant.SocialRecoveryCachePrefix, eventData.CaHash));
                 _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage cachedResult:{cachedResult}", cachedResult);
             }
+
             _logger.LogDebug("the second event: update recover grain.");
 
             var grain = _clusterClient.GetGrain<IRecoveryGrain>(eventData.GrainId);
@@ -238,7 +267,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             var duration = DateTime.UtcNow - recover.CreateTime;
             _indicatorLogger.LogInformation(MonitorTag.SocialRecover, MonitorTag.SocialRecover.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
-            
+
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
         }

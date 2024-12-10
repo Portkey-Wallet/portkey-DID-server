@@ -8,6 +8,7 @@ using CAServer.CAAccount.Provider;
 using CAServer.Contacts;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
+using CAServer.EntityHandler;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Guardian;
@@ -49,6 +50,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly Random _random;
     private readonly ChatBotOptions _chatBotOptions;
     private readonly IContactAppService _contactAppService;
+    private readonly ITempCacheProvider _tempCacheProvider;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -62,7 +64,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         INESTRepository<GuardianIndex, string> guardianRepository,
         IGuardianAppService guardianAppService,
         IUserProfilePictureProvider userProfilePictureProvider, IOptionsSnapshot<ChatBotOptions> chatBotOptions,
-        IContactAppService contactAppService)
+        IContactAppService contactAppService, ITempCacheProvider tempCacheProvider)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -79,9 +81,30 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _contactAppService = contactAppService;
         _chatBotOptions = chatBotOptions.Value;
         _random = new Random();
+        _tempCacheProvider = tempCacheProvider;
     }
 
+
+    public async Task Init()
+    {
+        var pares = await _tempCacheProvider.GetCacheByModuleAsync(createUserModule);
+        foreach (var keyValuePair in pares)
+        {
+            CreateUserEto eventData = JsonConvert.DeserializeObject<CreateUserEto>(keyValuePair.Value);
+            HandleEvent(eventData, createUserModule, keyValuePair.Key, keyValuePair.Value);
+        }
+    }
+
+    private string createUserModule = "CreateUser";
     public async Task HandleEventAsync(CreateUserEto eventData)
+    {
+        string key = Guid.NewGuid().ToString();
+        string value = JsonConvert.SerializeObject(eventData);
+        await _tempCacheProvider.SetCacheAsync(createUserModule, key, value);
+        HandleEvent(eventData, createUserModule, key, value);
+    }
+
+    public async Task HandleEvent(CreateUserEto eventData, string module, string key, string value)
     {
         string changedNickname = string.Empty;
         string identifierHash = string.Empty;
@@ -178,6 +201,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             _logger.LogError(ex, "{Message}: {Data}", "Create CA holder fail", JsonConvert.SerializeObject(eventData));
         }
+
+        await _tempCacheProvider.RemoveCacheAsync(module, key, value);
     }
 
     private async Task<GuardianInfoBase> GetLoginAccountInfo(string caHash)
