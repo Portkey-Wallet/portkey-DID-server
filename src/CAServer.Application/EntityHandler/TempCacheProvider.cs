@@ -40,7 +40,7 @@ public class TempCacheProvider : ITempCacheProvider, ISingletonDependency
 
         try
         {
-            var keys = await _cacheProvider.SetMembersAsync(GetCacheKey(modulePrefix, module));
+            var keys = await _cacheProvider.SetMembersAsync(GetCacheKey(module));
             if (keys == null || keys.Length == 0)
             {
                 return convertedDictionary;
@@ -67,7 +67,7 @@ public class TempCacheProvider : ITempCacheProvider, ISingletonDependency
     {
         try
         {
-            string fullKey = GetCacheKey(modulePrefix, module, key);
+            string fullKey = GetCacheKey(module, key);
             await _cacheProvider.SetAddAsync(GetCacheKey(module), new List<string> { fullKey }, expire);
             await _cacheProvider.Set(fullKey, value, expire);
             return true;
@@ -116,8 +116,9 @@ public class TempCacheProvider : ITempCacheProvider, ISingletonDependency
 
     private string GetCacheKey(params string[] keys)
     {
-        return string.Join(":", modulePrefix, keys);
+        return string.Join(":", modulePrefix, string.Join(":", keys));
     }
+
     private string GetKey(string fullKey)
     {
         return fullKey.Split(":")[2];

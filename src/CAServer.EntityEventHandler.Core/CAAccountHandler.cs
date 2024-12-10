@@ -77,12 +77,54 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _tempCacheProvider = tempCacheProvider;
     }
 
+    
+    public async Task Init()
+    {
+        {
+            string module = accountRegisterCreateModule;
+            var pares = await _tempCacheProvider.GetCacheByModuleAsync(module);
+            foreach (var keyValuePair in pares)
+            {
+                AccountRegisterCreateEto eventData = JsonConvert.DeserializeObject<AccountRegisterCreateEto>(keyValuePair.Value);
+                HandleEvent(eventData, module, keyValuePair.Key, keyValuePair.Value);
+            }
+        }
+        {
+            string module = accountRecoverCreateModule;
+            var pares = await _tempCacheProvider.GetCacheByModuleAsync(module);
+            foreach (var keyValuePair in pares)
+            {
+                AccountRecoverCreateEto eventData = JsonConvert.DeserializeObject<AccountRecoverCreateEto>(keyValuePair.Value);
+                HandleEvent(eventData, module, keyValuePair.Key, keyValuePair.Value);
+            }
+        }
+        {
+            string module = createHolderModule;
+            var pares = await _tempCacheProvider.GetCacheByModuleAsync(module);
+            foreach (var keyValuePair in pares)
+            {
+                CreateHolderEto eventData = JsonConvert.DeserializeObject<CreateHolderEto>(keyValuePair.Value);
+                HandleEvent(eventData, module, keyValuePair.Key, keyValuePair.Value);
+            }
+        }
+        {
+            string module = socialRecoveryModule;
+            var pares = await _tempCacheProvider.GetCacheByModuleAsync(module);
+            foreach (var keyValuePair in pares)
+            {
+                SocialRecoveryEto eventData = JsonConvert.DeserializeObject<SocialRecoveryEto>(keyValuePair.Value);
+                HandleEvent(eventData, module, keyValuePair.Key, keyValuePair.Value);
+            }
+        }
+    }
+    
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
     {
+        string module = accountRegisterCreateModule;
         string key = Guid.NewGuid().ToString();
         string value = JsonConvert.SerializeObject(eventData);
-        await _tempCacheProvider.SetCacheAsync(accountRegisterCreateModule, key, value);
-        HandleEvent(eventData, accountRegisterCreateModule, key, value);
+        await _tempCacheProvider.SetCacheAsync(module, key, value);
+        HandleEvent(eventData, module, key, value);
     }
 
     private string accountRegisterCreateModule = "AccountRegisterCreate";
@@ -112,10 +154,11 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
     public async Task HandleEventAsync(AccountRecoverCreateEto eventData)
     {
+        string module = accountRecoverCreateModule;
         string key = Guid.NewGuid().ToString();
         string value = JsonConvert.SerializeObject(eventData);
-        await _tempCacheProvider.SetCacheAsync(accountRecoverCreateModule, key, value);
-        HandleEvent(eventData, accountRecoverCreateModule, key, value);
+        await _tempCacheProvider.SetCacheAsync(module, key, value);
+        HandleEvent(eventData, module, key, value);
     }
 
     private string accountRecoverCreateModule = "AccountRecoverCreate";
@@ -141,6 +184,16 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     }
 
     public async Task HandleEventAsync(CreateHolderEto eventData)
+    {
+        string module = createHolderModule;
+        string key = Guid.NewGuid().ToString();
+        string value = JsonConvert.SerializeObject(eventData);
+        await _tempCacheProvider.SetCacheAsync(module, key, value);
+        HandleEvent(eventData, module, key, value);
+    }
+
+    private string createHolderModule = "CreateHolder";
+    public async Task HandleEvent(CreateHolderEto eventData, string module, string key, string value)
     {
         try
         {
@@ -197,6 +250,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         {
             _logger.LogError(ex, "update register info error, data: {data}", JsonConvert.SerializeObject(eventData));
         }
+        
+        await _tempCacheProvider.RemoveCacheAsync(module, key, value);
     }
 
     private async Task PublicRegisterMessageAsync(RegisterGrainDto register, HubRequestContext Context)
@@ -223,6 +278,16 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     }
 
     public async Task HandleEventAsync(SocialRecoveryEto eventData)
+    {
+        string module = socialRecoveryModule;
+        string key = Guid.NewGuid().ToString();
+        string value = JsonConvert.SerializeObject(eventData);
+        await _tempCacheProvider.SetCacheAsync(module, key, value);
+        HandleEvent(eventData, module, key, value);
+    }
+
+    private string socialRecoveryModule = "SocialRecovery";
+    public async Task HandleEvent(SocialRecoveryEto eventData, string module, string key, string value)
     {
         try
         {
@@ -275,6 +340,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         {
             _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
         }
+        await _tempCacheProvider.RemoveCacheAsync(module, key, value);
     }
 
     private async Task PublicRecoverMessageAsync(RecoveryGrainDto recover, HubRequestContext context)

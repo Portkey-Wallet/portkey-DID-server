@@ -87,21 +87,25 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
     public async Task Init()
     {
-        var pares = await _tempCacheProvider.GetCacheByModuleAsync(createUserModule);
-        foreach (var keyValuePair in pares)
         {
-            CreateUserEto eventData = JsonConvert.DeserializeObject<CreateUserEto>(keyValuePair.Value);
-            HandleEvent(eventData, createUserModule, keyValuePair.Key, keyValuePair.Value);
+            string module = createUserModule;
+            var pares = await _tempCacheProvider.GetCacheByModuleAsync(module);
+            foreach (var keyValuePair in pares)
+            {
+                CreateUserEto eventData = JsonConvert.DeserializeObject<CreateUserEto>(keyValuePair.Value);
+                HandleEvent(eventData, module, keyValuePair.Key, keyValuePair.Value);
+            }
         }
     }
 
     private string createUserModule = "CreateUser";
     public async Task HandleEventAsync(CreateUserEto eventData)
     {
+        string module = createUserModule;
         string key = Guid.NewGuid().ToString();
         string value = JsonConvert.SerializeObject(eventData);
-        await _tempCacheProvider.SetCacheAsync(createUserModule, key, value);
-        HandleEvent(eventData, createUserModule, key, value);
+        await _tempCacheProvider.SetCacheAsync(module, key, value);
+        HandleEvent(eventData, module, key, value);
     }
 
     public async Task HandleEvent(CreateUserEto eventData, string module, string key, string value)

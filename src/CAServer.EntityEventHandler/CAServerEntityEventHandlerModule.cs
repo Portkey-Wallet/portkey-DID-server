@@ -204,6 +204,8 @@ public class CAServerEntityEventHandlerModule : AbpModule
         
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
+        context.ServiceProvider.GetService<CaAccountHandler>().Init();
+        context.ServiceProvider.GetService<CAHolderHandler>().Init();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
