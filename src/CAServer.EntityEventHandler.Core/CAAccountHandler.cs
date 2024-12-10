@@ -189,7 +189,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         string key = Guid.NewGuid().ToString();
         string value = JsonConvert.SerializeObject(eventData);
         await _tempCacheProvider.SetCacheAsync(module, key, value);
-        HandleEvent(eventData, module, key, value);
+        await HandleEvent(eventData, module, key, value);
     }
 
     private string createHolderModule = "CreateHolder";
