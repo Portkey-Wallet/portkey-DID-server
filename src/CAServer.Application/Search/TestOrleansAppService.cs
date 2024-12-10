@@ -30,7 +30,8 @@ public class TestOrleansAppService : CAServerAppService, ITestOrleansAppService
         switch (grainName)
         {
             case nameof(GuardianGrain):
-                resultMsg = JsonConvert.SerializeObject(await _clusterClient.GetGrain<IGuardianGrain>(grainKey).GetGuardianAsync(""));
+                var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(grainKey);
+                resultMsg = JsonConvert.SerializeObject(await guardianGrain.GetGuardianAsync(""));
                 break;
             case nameof(UserExtraInfoGrain):
                 resultMsg = JsonConvert.SerializeObject(await _clusterClient.GetGrain<IUserExtraInfoGrain>(grainKey).GetAsync());
