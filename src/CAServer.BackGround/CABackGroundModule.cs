@@ -1,4 +1,5 @@
-﻿using CAServer.CAActivity.Provider;
+﻿using AElf.OpenTelemetry;
+using CAServer.CAActivity.Provider;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
@@ -59,6 +60,7 @@ namespace CAServer.BackGround;
     typeof(AbpAutoMapperModule),
     typeof(AbpBackgroundJobsHangfireModule),
     typeof(AbpEventBusRabbitMqModule)
+    // typeof(OpenTelemetryModule)
 )]
 public class CABackGroundModule : AbpModule
 {
@@ -67,7 +69,6 @@ public class CABackGroundModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
 
         var configuration = context.Services.GetConfiguration();
-        ConfigureOrleans(context, configuration);
         ConfigureHangfire(context, configuration);
         ConfigureGraphQl(context, configuration);
 
@@ -162,29 +163,29 @@ public class CABackGroundModule : AbpModule
     {
     }
 
-    private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        context.Services.AddSingleton<IClusterClient>(o =>
-        {
-            return new ClientBuilder()
-                .ConfigureDefaults()
-                .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-                .UseMongoDBClustering(options =>
-                {
-                    options.DatabaseName = configuration["Orleans:DataBase"];
-                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = configuration["Orleans:ClusterId"];
-                    options.ServiceId = configuration["Orleans:ServiceId"];
-                })
-                .ConfigureApplicationParts(parts =>
-                    parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
-                .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .Build();
-        });
-    }
+    // private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
+    // {
+    //     context.Services.AddSingleton<IClusterClient>(o =>
+    //     {
+    //         return new ClientBuilder()
+    //             .ConfigureDefaults()
+    //             .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
+    //             .UseMongoDBClustering(options =>
+    //             {
+    //                 options.DatabaseName = configuration["Orleans:DataBase"];
+    //                 options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+    //             })
+    //             .Configure<ClusterOptions>(options =>
+    //             {
+    //                 options.ClusterId = configuration["Orleans:ClusterId"];
+    //                 options.ServiceId = configuration["Orleans:ServiceId"];
+    //             })
+    //             .ConfigureApplicationParts(parts =>
+    //                 parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
+    //             .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+    //             .Build();
+    //     });
+    // }
 
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
@@ -207,25 +208,25 @@ public class CABackGroundModule : AbpModule
             // IsReadOnlyFunc = (DashboardContext context) => true
         });
 
-        StartOrleans(context.ServiceProvider);
+        // StartOrleans(context.ServiceProvider);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        StopOrleans(context.ServiceProvider);
+        // StopOrleans(context.ServiceProvider);
     }
 
-    private static void StartOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async () => await client.Connect());
-    }
-
-    private static void StopOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(client.Close);
-    }
+    // private static void StartOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(async () => await client.Connect());
+    // }
+    //
+    // private static void StopOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(client.Close);
+    // }
 
     private void ConfigureTokenCleanupService()
     {

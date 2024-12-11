@@ -5,10 +5,10 @@ namespace CAServer.Grains.Grain.AddressBook;
 
 public class AddressBookNameGrain : Grain<AddressBookNameState>, IAddressBookNameGrain
 {
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
     public async Task<bool> AddContactNameAsync(Guid userId, string name)

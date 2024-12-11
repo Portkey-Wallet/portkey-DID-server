@@ -33,6 +33,7 @@ public class Program
                 .UseApolloForConfigureHostBuilder()
                 .UseNightingaleMonitoring()
                 .UseAutofac()
+                .UseOrleansClient()
                 .UseSerilog();
 
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
