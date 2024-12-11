@@ -39,6 +39,10 @@ public class WebsiteInfoHelper
 
     public static Task<bool> WebsiteAvailable(WebsiteInfoParamDto param)
     {
+        if (null == param.Website || null == param.Logo)
+        {
+            return Task.FromResult(false);
+        }
         InitializeAsync();
 
         // bool? formatAvailable = IsFormat(param);
