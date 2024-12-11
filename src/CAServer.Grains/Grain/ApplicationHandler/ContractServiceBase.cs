@@ -9,7 +9,7 @@ using ProjectDelegateInfo = CAServer.Dtos.ProjectDelegateInfo;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
-[GenerateSerializer]
+// [GenerateSerializer]
 public class TransactionInfoDto
 {
     [Id(0)]
@@ -44,7 +44,7 @@ public class ChainInfo
     public bool IsMainChain { get; set; }
 }
 
-[GenerateSerializer]
+// [GenerateSerializer]
 public class CreateHolderDto : ContractDtoBase
 {
     [Id(0)]
@@ -54,7 +54,7 @@ public class CreateHolderDto : ContractDtoBase
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
 }
 
-[GenerateSerializer]
+// [GenerateSerializer]
 public class SocialRecoveryDto : ContractDtoBase
 {
     [Id(0)]
@@ -64,7 +64,7 @@ public class SocialRecoveryDto : ContractDtoBase
     public Hash LoginGuardianIdentifierHash { get; set; }
 }
 
-[GenerateSerializer]
+// [GenerateSerializer]
 public class ContractDtoBase
 {
     [Id(0)]
