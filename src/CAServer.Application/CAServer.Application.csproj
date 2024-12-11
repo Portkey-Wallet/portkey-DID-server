@@ -36,6 +36,7 @@
     <PackageReference Include="MassTransit" Version="8.1.0" />
     <PackageReference Include="MassTransit.Abstractions" Version="8.1.0" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.1.0" />
+    <PackageReference Include="Hangfire.Core" Version="1.8.3" />
 
   </ItemGroup>
 
