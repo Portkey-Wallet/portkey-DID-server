@@ -27,10 +27,16 @@ public class ContractController : CAServerController
         _logger = logger;
         _botOptions = botOptions.Value;
     }
-    
+
     [HttpGet("websiteValild")]
-    public async Task<bool> WebsiteValild(WebsiteInfoDto input)
+    public async Task<bool> WebsiteValild(WebsiteInfoParamDto input)
     {
-        return WebsiteInfoHelper.WebsiteValild(input);
+        return await WebsiteInfoHelper.WebsiteAvailable(input);
+    }
+
+    [HttpGet("spenderValid")]
+    public async Task<bool> SpenderValild(WebsiteInfoParamDto input)
+    {
+        return await WebsiteInfoHelper.WebsiteAvailable(input);
     }
 }
