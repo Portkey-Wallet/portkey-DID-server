@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.UserGuide;
 using CAServer.UserGuide.Dtos;
 using Microsoft.AspNetCore.Authorization;

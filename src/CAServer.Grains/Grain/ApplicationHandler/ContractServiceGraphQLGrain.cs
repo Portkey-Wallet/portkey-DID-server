@@ -5,7 +5,7 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 
 public class ContractServiceGraphQLGrain : Grain<GraphQlState>, IContractServiceGraphQLGrain
 {
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
     }
