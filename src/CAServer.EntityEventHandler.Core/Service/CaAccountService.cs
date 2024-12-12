@@ -25,7 +25,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
-namespace CAServer.CAAccount;
+namespace CAServer.EntityEventHandler.Core.Service;
 
 public interface ICaAccountService
 {

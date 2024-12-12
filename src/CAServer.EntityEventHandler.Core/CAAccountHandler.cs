@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
-using CAServer.CAAccount;
 using CAServer.ContractEventHandler;
 using CAServer.Entities.Es;
+using CAServer.EntityEventHandler.Core.Service;
 using CAServer.Etos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
