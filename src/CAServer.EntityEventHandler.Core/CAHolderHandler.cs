@@ -169,10 +169,10 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 ModificationTime = DateTime.UtcNow,
                 ContactType = 1
             };
-            _ =  _contactRepository.AddOrUpdateAsync(botContact);
+            await _contactRepository.AddOrUpdateAsync(botContact);
             _logger.LogDebug("new register account add chatBot.register is {register},ChatBot is {chatBot}",
                 JsonConvert.SerializeObject(eventData), JsonConvert.SerializeObject(botContact));
-            _ =  _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
+            await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
         }
         catch (Exception ex)
         {
@@ -436,7 +436,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     {
         try
         {
-            _ =  _caHolderRepository.UpdateAsync(_objectMapper.Map<DeleteCAHolderEto, CAHolderIndex>(eventData));
+            await _caHolderRepository.UpdateAsync(_objectMapper.Map<DeleteCAHolderEto, CAHolderIndex>(eventData));
         }
         catch (Exception ex)
         {

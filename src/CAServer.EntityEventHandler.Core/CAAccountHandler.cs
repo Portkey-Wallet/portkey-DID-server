@@ -3,25 +3,11 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.CAAccount;
-using CAServer.CAAccount.Dtos;
-using CAServer.Commons;
 using CAServer.ContractEventHandler;
-using CAServer.CryptoGift;
-using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
-using CAServer.Grains;
-using CAServer.Grains.Grain.Account;
-using CAServer.Grains.Grain.Device;
-using CAServer.Growth;
-using CAServer.Hubs;
-using CAServer.Monitor;
-using CAServer.Monitor.Logger;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Orleans;
-using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -64,7 +50,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "handle AccountRegisterCreateEto error, {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -77,7 +63,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "handle AccountRecoverCreateEto error, {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -89,7 +75,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "update register info error, data: {data}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "handle CreateHolderEto error, {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -102,7 +88,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "handle SocialRecoveryEto error, {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 

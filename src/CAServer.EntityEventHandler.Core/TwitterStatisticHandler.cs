@@ -42,8 +42,9 @@ public class TwitterStatisticHandler : IDistributedEventHandler<TwitterStatistic
                 {
                     item.CallCount += 1;
                 }
+
                 item.UpdateTime = eventData.UpdateTime;
-                _ =  _twitterStatisticRepository.UpdateAsync(item);
+                await _twitterStatisticRepository.UpdateAsync(item);
 
                 _logger.LogInformation("statistic twitter call api count, userId:{userId}, count:{count}", eventData.Id,
                     item.CallCount);
@@ -57,7 +58,7 @@ public class TwitterStatisticHandler : IDistributedEventHandler<TwitterStatistic
                 return;
             }
 
-            _ =  _twitterStatisticRepository.AddOrUpdateAsync(
+            await _twitterStatisticRepository.AddOrUpdateAsync(
                 _objectMapper.Map<TwitterStatisticEto, TwitterStatisticIndex>(eventData));
             _logger.LogInformation("statistic twitter call api count, userId:{userId}", eventData.Id);
         }

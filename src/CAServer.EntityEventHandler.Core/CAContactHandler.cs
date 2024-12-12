@@ -34,7 +34,7 @@ public class CAContactHandler : IDistributedEventHandler<ContactCreateEto>,
         {
             var contact = _objectMapper.Map<ContactCreateEto, ContactIndex>(eventData);
             
-            _ =  _contactRepository.AddAsync(contact);
+            await _contactRepository.AddAsync(contact);
             _logger.LogDebug("add success");
         }
         catch (Exception ex)
@@ -49,7 +49,7 @@ public class CAContactHandler : IDistributedEventHandler<ContactCreateEto>,
         {
             var contact = _objectMapper.Map<ContactUpdateEto, ContactIndex>(eventData);
 
-            _ =  _contactRepository.UpdateAsync(contact);
+            await _contactRepository.UpdateAsync(contact);
             _logger.LogDebug("update success");
         }
         catch (Exception ex)

@@ -30,7 +30,7 @@ public class UserTokenEntityHandler : EntityHandlerBase,
         var index = ObjectMapper.Map<UserTokenEto, UserTokenIndex>(eventData);
         try
         {
-            _ = _userTokenIndexRepository.AddOrUpdateAsync(index);
+            await _userTokenIndexRepository.AddOrUpdateAsync(index);
             _logger.LogInformation("user token add success.{userId}-{chainId}-{symbol}", eventData.UserId,
                 eventData.Token.ChainId, eventData.Token.Symbol);
         }
@@ -46,7 +46,7 @@ public class UserTokenEntityHandler : EntityHandlerBase,
             eventData.Token.ChainId, eventData.Token.Symbol);
         try
         {
-            _ =  _userTokenIndexRepository.DeleteAsync(eventData.Id);
+            await _userTokenIndexRepository.DeleteAsync(eventData.Id);
             _logger.LogInformation("user token delete success.{userId}-{chainId}-{symbol}", eventData.UserId,
                 eventData.Token.ChainId, eventData.Token.Symbol);
         }

@@ -25,6 +25,7 @@ public class ReportHandler : IDistributedEventHandler<AccountReportEto>, ITransi
         _logger = logger;
     }
 
+    // todo: need to sync
     public async Task HandleEventAsync(AccountReportEto eventData)
     {
         try
@@ -36,7 +37,7 @@ public class ReportHandler : IDistributedEventHandler<AccountReportEto>, ITransi
                 index.CreateTime = DateTime.UtcNow;
             }
 
-            _ =  _repository.AddOrUpdateAsync(index);
+            await _repository.AddOrUpdateAsync(index);
             _logger.LogInformation("[AccountReport] account report info handle success, caHash:{caHash}",
                 eventData.CaHash);
         }

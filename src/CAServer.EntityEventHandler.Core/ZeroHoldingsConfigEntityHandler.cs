@@ -28,7 +28,7 @@ public class ZeroHoldingsConfigEntityHandler : EntityHandlerBase,
         {
             _logger.LogInformation($"[ZeroHoldingsConfig] HandleEventAsync eventData : {JsonConvert.SerializeObject(eventData)} ");
             var index = ObjectMapper.Map<ZeroHoldingsConfigEto, ZeroHoldingsConfigIndex>(eventData);
-            _ =  _repository.AddOrUpdateAsync(index);
+            await _repository.AddOrUpdateAsync(index);
             _logger.LogInformation($"[ZeroHoldingsConfig] HandleEventAsync eventData : {JsonConvert.SerializeObject(eventData)} done");
         }
         catch (Exception ex)

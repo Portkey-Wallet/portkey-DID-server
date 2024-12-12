@@ -81,7 +81,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
         try
         {
             _logger.LogInformation("received account register message:{0}", JsonConvert.SerializeObject(eventData));
-            _logger.LogDebug("the first event: create register");
+            _logger.LogInformation("the first event: create register");
             var register = _objectMapper.Map<AccountRegisterCreateEto, AccountRegisterIndex>(eventData);
             if (eventData.GuardianInfo.ZkLoginInfo != null)
             {
@@ -90,11 +90,11 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
 
             register.RegisterStatus = AccountOperationStatus.Pending;
             await _registerRepository.AddAsync(register);
-            _logger.LogDebug($"register add success: {JsonConvert.SerializeObject(register)}");
+            _logger.LogInformation("register add success: {data}", JsonConvert.SerializeObject(register));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "register add error: {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -103,13 +103,13 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
         try
         {
             _logger.LogInformation("received account recover message:{0}", JsonConvert.SerializeObject(eventData));
-            _logger.LogDebug("the first event: create recover");
+            _logger.LogInformation("the first event: create recover");
 
             var recover = _objectMapper.Map<AccountRecoverCreateEto, AccountRecoverIndex>(eventData);
 
             recover.RecoveryStatus = AccountOperationStatus.Pending;
             await _recoverRepository.AddAsync(recover);
-            _logger.LogDebug($"recovery add success: {JsonConvert.SerializeObject(recover)}");
+            _logger.LogInformation("recovery add success: {data}", JsonConvert.SerializeObject(recover));
         }
         catch (Exception ex)
         {
@@ -216,10 +216,10 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
 
             if (!updateResult.Success)
             {
-                _logger.LogError("{Message}", updateResult.Message);
+                _logger.LogError("update recovery grain fail, {message}", updateResult.Message);
             }
 
-            _logger.LogDebug("the third event: update register in es");
+            _logger.LogDebug("the third event: update recover in es");
             var recover = _objectMapper.Map<RecoveryGrainDto, AccountRecoverIndex>(updateResult.Data);
             recover.RecoveryStatus = GetAccountStatus(eventData.RecoverySuccess);
             await _recoverRepository.UpdateAsync(recover);
@@ -230,7 +230,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             _indicatorLogger.LogInformation(MonitorTag.SocialRecover, MonitorTag.SocialRecover.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
 
-            _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
+            _logger.LogDebug("recover update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
         }
         catch (Exception ex)
@@ -238,7 +238,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
         }
     }
-    
+
     private async Task PublicRecoverMessageAsync(RecoveryGrainDto recover, HubRequestContext context)
     {
         await _distributedEventBus.PublishAsync(new AccountRecoverCompletedEto
@@ -281,7 +281,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             "create growth info success, caHash:{caHash}, referralCode:{referralCode}, projectCode:{projectCode}",
             caHash, referralInfo.ReferralCode, referralInfo.ProjectCode ?? string.Empty);
     }
-    
+
     private async Task PublicRegisterMessageAsync(RegisterGrainDto register, HubRequestContext Context)
     {
         await _distributedEventBus.PublishAsync(new AccountRegisterCompletedEto
