@@ -99,6 +99,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
+
         return contactResultDto;
     }
 
@@ -177,7 +178,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
-        
+
         return contactResultDto;
     }
 
@@ -210,10 +211,14 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<ContractExistDto> GetExistAsync(string name)
     {
+        _logger.LogInformation("[ContactNameExist] start, name:{0}", name);
         var userId = CurrentUser.GetId();
+        _logger.LogInformation("[ContactNameExist] start, name:{0}, userId:{1}", name, userId);
         var contactNameGrain =
             _clusterClient.GetGrain<IContactNameGrain>(GrainIdHelper.GenerateGrainId(userId.ToString("N"), name));
+        _logger.LogInformation("[ContactNameExist] GetGrain, name:{0}", name);
         var existed = await contactNameGrain.IsNameExist(name);
+        _logger.LogInformation("[ContactNameExist] contactNameGrain.IsNameExist, name:{0}, existed:{1}", name, existed);
 
         return new ContractExistDto
         {

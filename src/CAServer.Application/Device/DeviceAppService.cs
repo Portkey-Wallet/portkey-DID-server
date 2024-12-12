@@ -51,7 +51,7 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
         try
         {
             var salt = await GetSaltAsync(str);
-            
+
             var data = JsonConvert.DeserializeObject<ExtraDataType>(extraData);
 
             if (data.DeviceInfo.IsNullOrWhiteSpace())
@@ -121,9 +121,12 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
     private async Task<DeviceServiceResultDto> ProcessDeviceInfoAsync(DeviceServiceDto serviceDto,
         DeviceDelegation delegation)
     {
+        _logger.LogInformation("[ProcessDeviceInfo] start. userId:{0}", CurrentUser.GetId());
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(CurrentUser.GetId());
+        _logger.LogInformation("[ProcessDeviceInfo] GetGrain. userId:{0}", CurrentUser.GetId());
         var str = grain.GetCAHashAsync().Result;
-
+        _logger.LogInformation("[ProcessDeviceInfo] grain.GetCAHashAsync. userId:{0}, str:{str}", CurrentUser.GetId(),
+            str);
         var salt = await GetSaltAsync(str);
 
         var result = new List<string>();
@@ -146,6 +149,7 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
 
         serviceDto.Data = result;
 
+        _logger.LogInformation("[ProcessDeviceInfo] end. userId:{0}", CurrentUser.GetId());
         return new DeviceServiceResultDto
         {
             Result = serviceDto.Data
