@@ -10,8 +10,8 @@ public class PayRedPackageAccount
 
     public string getOneAccountRandom()
     {
-        Debug.Assert(RedPackagePayAccounts.IsNullOrEmpty(),
-            "we can not find pay red package from account");
+        // Debug.Assert(RedPackagePayAccounts.IsNullOrEmpty(),
+        //     "we can not find pay red package from account");
         Random rd = new Random();
         int path = rd.Next();
         return RedPackagePayAccounts[path % RedPackagePayAccounts.Count];

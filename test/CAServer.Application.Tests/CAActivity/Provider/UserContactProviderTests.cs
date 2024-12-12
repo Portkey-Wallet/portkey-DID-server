@@ -26,7 +26,7 @@ public class UserContactProviderTests : CAServerApplicationTestBase
     [Fact]
     public async void GetUserContactListAsyncTest()
     {
-        var result = await _userContactProvider.GetContactByUserNameAsync("123", Guid.NewGuid());
+        var result = await _userContactProvider.GetContactByUserNameAsync("123", Guid.NewGuid(),"");
     }
     
 }

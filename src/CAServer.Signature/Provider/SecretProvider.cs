@@ -67,6 +67,7 @@ public class SecretProvider : ISecretProvider, ITransientDependency
                 ["key"] = key
             },
             header: SecurityServerHeader(key));
+        _logger.LogError("GetSecretAsync key = {0} resp = {2}", key, JsonConvert.SerializeObject(resp));
         AssertHelper.NotEmpty(resp?.Data, "Secret response data empty");
         AssertHelper.IsTrue(resp!.Success, "Secret response failed {}", resp.Message);
         return EncryptionHelper.DecryptFromHex(resp.Data, _signatureOption.CurrentValue.AppSecret);

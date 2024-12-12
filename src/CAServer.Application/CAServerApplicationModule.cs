@@ -99,6 +99,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AddTokenOptions>(configuration.GetSection("AddToken"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         Configure<ContactMigrateOptions>(configuration.GetSection("ContactMigrate"));
+        Configure<BusinessAlertOptions>(configuration.GetSection("BusinessAlert"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -153,7 +154,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
-        Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));

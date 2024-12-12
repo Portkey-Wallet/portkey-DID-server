@@ -140,7 +140,6 @@ public partial class AppleAuthTest : CAServerApplicationTestBase
                 UnifyRedirectUrl = string.Empty,
                 ExtensionConfig = new ExtensionConfig
                 {
-                    PrivateKey = string.Empty,
                     TeamId = string.Empty,
                     ClientId = string.Empty,
                     KeyId = string.Empty
@@ -205,7 +204,6 @@ public partial class AppleAuthTest : CAServerApplicationTestBase
                 {
                     ClientId = "test",
                     KeyId = "test",
-                    PrivateKey = pkcs8PrivateKey,
                     TeamId = "test"
                 }
             });

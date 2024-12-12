@@ -28,16 +28,13 @@ public class ChainHeightService : IChainHeightService, ISingletonDependency
     private readonly ILogger<ChainHeightService> _logger;
     private readonly IDistributedCache<ChainHeightCache> _distributedCache;
     private readonly ChainOptions _chainOptions;
-    private readonly ContractOptions _contractOptions;
 
     public ChainHeightService(ILogger<ChainHeightService> logger, IDistributedCache<ChainHeightCache> distributedCache,
-        IOptions<ChainOptions> chainOptions,
-        IOptions<ContractOptions> contractOptions)
+        IOptions<ChainOptions> chainOptions)
     {
         _logger = logger;
         _distributedCache = distributedCache;
         _chainOptions = chainOptions.Value;
-        _contractOptions = contractOptions.Value;
     }
 
     public async Task SetChainHeightAsync()
@@ -98,11 +95,11 @@ public class ChainHeightService : IChainHeightService, ISingletonDependency
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
-        var addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
+        var addressFromPrivateKey = client.GetAddressFromPrivateKey(SignatureKeyHelp.CommonPrivateKeyForCallTx);
         var transaction =
             await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
 
-        var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
+        var txWithSign = client.SignTransaction(SignatureKeyHelp.CommonPrivateKeyForCallTx, transaction);
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()

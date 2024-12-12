@@ -33,7 +33,6 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly INESTRepository<CAHolderIndex, Guid> _holderRepository;
-    private readonly IImRequestProvider _imRequestProvider;
     private readonly HostInfoOptions _hostInfoOptions;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly INicknameProvider _nicknameProvider;
@@ -41,7 +40,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly IUserProfilePictureProvider _userProfilePictureProvider;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
-        INESTRepository<CAHolderIndex, Guid> holderRepository, IImRequestProvider imRequestProvider,
+        INESTRepository<CAHolderIndex, Guid> holderRepository,
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor,
         INicknameProvider nicknameProvider, IGuardianAppService guardianAppService,
         IUserProfilePictureProvider userProfilePictureProvider)
@@ -49,7 +48,6 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _holderRepository = holderRepository;
-        _imRequestProvider = imRequestProvider;
         _hostInfoOptions = hostInfoOptions.Value;
         _httpContextAccessor = httpContextAccessor;
         _nicknameProvider = nicknameProvider;
@@ -69,36 +67,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
-
-        await UpdateImUserAsync(userId, nickNameDto.NickName);
-
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
-    }
-
-    private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
-    {
-        if (_hostInfoOptions.Environment == Options.Environment.Development)
-        {
-            return;
-        }
-
-        var imUserUpdateDto = new ImUserUpdateDto
-        {
-            Name = nickName,
-            Avatar = avatar
-        };
-
-        try
-        {
-            await _imRequestProvider.PostAsync<object>(ImConstant.UpdateImUserUrl, imUserUpdateDto);
-            Logger.LogInformation("{userId} update im user : {name}", userId.ToString(), nickName);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}, {imToken}",
-                userId.ToString(), nickName,
-                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
-        }
     }
 
     public async Task<CAHolderResultDto> GetCaHolderAsync()
@@ -142,8 +111,6 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
-        await UpdateImUserAsync(userId, holderInfo.NickName, holderInfo.Avatar);
-        
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
 
