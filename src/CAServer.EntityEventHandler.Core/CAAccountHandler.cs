@@ -54,7 +54,6 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         }
     }
 
-
     public async Task HandleEventAsync(AccountRecoverCreateEto eventData)
     {
         try
