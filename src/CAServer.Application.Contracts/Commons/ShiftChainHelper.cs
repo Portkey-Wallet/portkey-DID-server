@@ -163,7 +163,7 @@ public static class ShiftChainHelper
 
     public static AddressFormat GetAddressFormat(string fromChain, string address)
     {
-        if (address.Contains(CommonConstant.Hyphen) && address.StartsWith(CommonConstant.ELF))
+        if (address.Contains(CommonConstant.Underline) && address.StartsWith(CommonConstant.ELF))
         {
             if (!IsAelfAddress(AddressHelper.ToShortAddress(address)))
             {
