@@ -163,12 +163,17 @@ public static class ShiftChainHelper
 
     public static AddressFormat GetAddressFormat(string fromChain, string address)
     {
-        if (address.Split("_").Length == 3 && address.Split("_")[1].Length == 50)
+        if (address.Contains(CommonConstant.Hyphen) && address.StartsWith(CommonConstant.ELF))
         {
+            if (!IsAelfAddress(AddressHelper.ToShortAddress(address)))
+            {
+                return AddressFormat.NoSupport;
+            }
             if (address.EndsWith(CommonConstant.MainChainId))
             {
                 return AddressFormat.Main;
-            }else if (address.EndsWith(CommonConstant.TDVWChainId) || address.EndsWith(CommonConstant.TDVVChainId))
+            }
+            if (address.EndsWith(CommonConstant.TDVWChainId) || address.EndsWith(CommonConstant.TDVVChainId))
             {
                 return AddressFormat.Dapp;
             }
@@ -178,12 +183,7 @@ public static class ShiftChainHelper
 
         if (IsAelfAddress(address))
         {
-            if (fromChain == CommonConstant.MainChainId)
-            {
-                return AddressFormat.Main;
-            }
-
-            return AddressFormat.Dapp;
+            return fromChain == CommonConstant.MainChainId ? AddressFormat.Main : AddressFormat.Dapp;
         }
 
         if (address.Length == 42)
@@ -242,6 +242,8 @@ public static class ShiftChainHelper
         
         return !NetworkPatternMap.ContainsKey(chain) || Regex.IsMatch(address, NetworkPatternMap[chain]);
     }
+    
+    
 }
 
 public class ChainInfo
