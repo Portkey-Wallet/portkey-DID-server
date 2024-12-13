@@ -14,7 +14,7 @@ public class UserBehaviorHandler : IDistributedEventHandler<UserBehaviorEto>, IT
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<UserBehaviorHandler> _logger;
     private readonly IUserBehaviorAppService _userBehaviorAppService;
-    
+
     public UserBehaviorHandler(
         IObjectMapper objectMapper,
         ILogger<UserBehaviorHandler> logger,
@@ -29,7 +29,7 @@ public class UserBehaviorHandler : IDistributedEventHandler<UserBehaviorEto>, IT
     {
         try
         {
-            await _userBehaviorAppService.AddUserBehaviorAsync(eventData);
+            _ = _userBehaviorAppService.AddUserBehaviorAsync(eventData);
         }
         catch (Exception e)
         {
