@@ -111,7 +111,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
             };
         }
 
-        if (request.ToAddress.Contains(CommonConstant.Hyphen) && request.ToAddress.StartsWith(CommonConstant.ELF))
+        if (request.ToAddress.Contains(CommonConstant.Underline) && request.ToAddress.StartsWith(CommonConstant.ELF))
         {
             return new ResponseWrapDto<SendNetworkDto>
             {
