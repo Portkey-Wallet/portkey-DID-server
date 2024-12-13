@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.ContractEventHandler;
 using CAServer.CryptoGift;
@@ -19,6 +20,7 @@ using CAServer.Monitor.Logger;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Ocsp;
 using Orleans;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
@@ -49,6 +51,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
     private readonly IGrowthAppService _growthAppService;
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
     private readonly IDistributedCache<string> _distributedCache;
+    private readonly IBusinessAlertProvider _businessAlertProvider;
 
     public CaAccountService(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
         INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
@@ -60,7 +63,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
         INESTRepository<AccelerateRegisterIndex, string> accelerateRegisterRepository,
         INESTRepository<AccelerateRecoverIndex, string> accelerateRecoverRepository,
         ICryptoGiftAppService cryptoGiftAppService,
-        IDistributedCache<string> distributedCache)
+        IDistributedCache<string> distributedCache, IBusinessAlertProvider businessAlertProvider)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -74,6 +77,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
         _accelerateRecoverRepository = accelerateRecoverRepository;
         _cryptoGiftAppService = cryptoGiftAppService;
         _distributedCache = distributedCache;
+        _businessAlertProvider = businessAlertProvider;
     }
 
     public async Task HandleAccountRegisterCreateAsync(AccountRegisterCreateEto eventData)
@@ -163,6 +167,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             register.RegisterStatus = GetAccountStatus(eventData.RegisterSuccess);
             await _registerRepository.UpdateAsync(register);
 
+            await RegisterAlertAsync(register);
             await PublicRegisterMessageAsync(result.Data, eventData.Context);
 
             var duration = DateTime.UtcNow - register.CreateTime;
@@ -227,6 +232,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             recover.RecoveryStatus = GetAccountStatus(eventData.RecoverySuccess);
             await _recoverRepository.UpdateAsync(recover);
 
+            await RecoverAlertAsync(recover);
             await PublicRecoverMessageAsync(updateResult.Data, eventData.Context);
 
             var duration = DateTime.UtcNow - recover.CreateTime;
@@ -307,5 +313,25 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             CaHash = register.CaHash,
             GrainId = register.GrainId
         });
+    }
+
+    private async Task RegisterAlertAsync(AccountRegisterIndex registerIndex)
+    {
+        if (!registerIndex.RegisterSuccess == false) return;
+
+        var title = "Register Error";
+        _ = _businessAlertProvider.SendWebhookAsync(registerIndex.Id.ToString(), title,
+            registerIndex.RegisterMessage ?? "-",
+            JsonConvert.SerializeObject(registerIndex));
+    }
+
+    private async Task RecoverAlertAsync(AccountRecoverIndex recoverIndex)
+    {
+        if (!recoverIndex.RecoverySuccess == false) return;
+
+        var title = "Register Error";
+        _ = _businessAlertProvider.SendWebhookAsync(recoverIndex.Id.ToString(), title,
+            recoverIndex.RecoveryMessage ?? "-",
+            JsonConvert.SerializeObject(recoverIndex));
     }
 }
