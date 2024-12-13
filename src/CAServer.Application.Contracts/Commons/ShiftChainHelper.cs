@@ -186,22 +186,22 @@ public static class ShiftChainHelper
             return fromChain == CommonConstant.MainChainId ? AddressFormat.Main : AddressFormat.Dapp;
         }
 
-        if (address.Length == 42)
+        if (IsEthAddress(address))
         {
             return AddressFormat.ETH;
         }
 
-        if (address.Length == 34)
+        if (IsTrxAddress(address))
         {
             return AddressFormat.TRX;
         }
 
-        if (address.Length == 43 || address.Length == 44)
+        if (IsSolanaAddress(address))
         {
             return AddressFormat.Solana;
         }
 
-        if (address.Length == 48 && (address.StartsWith("EQ") || address.StartsWith("UQ")))
+        if (IsTonAddress(address))
         {
             return AddressFormat.TON;
         }
@@ -227,6 +227,11 @@ public static class ShiftChainHelper
             return false;
         }
     }
+
+    private static bool IsEthAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["ETH"]);
+    private static bool IsTrxAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["TRX"]);
+    private static bool IsSolanaAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["Solana"]);
+    private static bool IsTonAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["TON"]);
     
     public static bool VerifyAddress(string chain, string address)
     {
