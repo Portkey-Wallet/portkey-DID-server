@@ -85,8 +85,8 @@ public class HolderStatisticService : IHolderStatisticService, ISingletonDepende
         }
         catch (Exception e)
         {
-            _logger.LogError(
-                e, "save HolderExtraInfo data = {0} error {1}", JsonConvert.SerializeObject(eventData), e.ToString());
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 
@@ -109,9 +109,8 @@ public class HolderStatisticService : IHolderStatisticService, ISingletonDepende
         }
         catch (Exception e)
         {
-            _logger.LogError(
-                e, "save completed HolderExtraInfo data = {0} error {1}", JsonConvert.SerializeObject(eventData),
-                e.ToString());
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 

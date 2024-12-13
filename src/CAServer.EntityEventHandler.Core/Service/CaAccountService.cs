@@ -92,9 +92,10 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             await _registerRepository.AddAsync(register);
             _logger.LogInformation("register add success: {data}", JsonConvert.SerializeObject(register));
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "register add error: {data}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 
@@ -111,9 +112,10 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             await _recoverRepository.AddAsync(recover);
             _logger.LogInformation("recovery add success: {data}", JsonConvert.SerializeObject(recover));
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 
@@ -172,9 +174,10 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
 
             await AddGrowthInfoAsync(eventData.CaHash, eventData.ReferralInfo);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "update register info error, data: {data}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 
@@ -233,9 +236,10 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
             _logger.LogDebug("recover update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 

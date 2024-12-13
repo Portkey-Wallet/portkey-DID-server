@@ -42,7 +42,8 @@ public class GuardianService : IGuardianService, ISingletonDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Guardian add error, {data}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), ex.StackTrace ?? "-");
         }
     }
 
@@ -57,7 +58,8 @@ public class GuardianService : IGuardianService, ISingletonDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Guardian delete error, id: {id}", eventData.Id);
+            _logger.LogError(ex, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), ex.StackTrace ?? "-");
         }
     }
 }

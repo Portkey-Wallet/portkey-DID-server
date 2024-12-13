@@ -41,9 +41,10 @@ public class UserTokenService : IUserTokenService, ISingletonDependency
             _logger.LogInformation("user token add success.{userId}-{chainId}-{symbol}", eventData.UserId,
                 eventData.Token.ChainId, eventData.Token.Symbol);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 
@@ -57,9 +58,10 @@ public class UserTokenService : IUserTokenService, ISingletonDependency
             _logger.LogInformation("user token delete success.{userId}-{chainId}-{symbol}", eventData.UserId,
                 eventData.Token.ChainId, eventData.Token.Symbol);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 }

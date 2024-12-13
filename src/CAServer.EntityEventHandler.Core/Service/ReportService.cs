@@ -46,8 +46,8 @@ public class ReportService : IReportService, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[AccountReport] handle report account data error, data:{data}",
-                JsonConvert.SerializeObject(eventData));
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 }

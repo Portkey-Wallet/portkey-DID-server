@@ -152,7 +152,8 @@ public class CaHolderService : ICaHolderService, ISingletonDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}: {Data}", "Create CA holder fail", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), ex.StackTrace ?? "-");
         }
     }
 
@@ -190,8 +191,8 @@ public class CaHolderService : ICaHolderService, ISingletonDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "update nick name error, id:{id}, nickName:{nickName}, userId:{userId}",
-                eventData.Id.ToString(), eventData.Nickname, eventData.UserId.ToString());
+            _logger.LogError(ex, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), ex.StackTrace ?? "-");
         }
     }
 
@@ -203,7 +204,8 @@ public class CaHolderService : ICaHolderService, ISingletonDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Delete holder error, userId: {userId}", eventData.UserId.ToString());
+            _logger.LogError(ex, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), ex.StackTrace ?? "-");
         }
     }
 

@@ -96,8 +96,8 @@ public class SecondaryEmailService : ISecondaryEmailService, ISingletonDependenc
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "HandleEventAsync AddOrUpdateAsync failed identifierHash:{0} caHash:{1} email:{2}",
-                    guardian.IdentifierHash, eventData.CaHash, eventData.SecondaryEmail);
+                _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                    eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
             }
         }
     }

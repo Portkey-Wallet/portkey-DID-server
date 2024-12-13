@@ -5,6 +5,7 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.TwitterAuth.Etos;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -68,7 +69,8 @@ public class TwitterStatisticService : ITwitterStatisticService, ISingletonDepen
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "statistic twitter call api count error, userId:{userId}", eventData.Id);
+            _logger.LogError(e, "[HandleMessageError] type:{type}, data:{data}, errMsg:{errMsg}",
+                eventData.GetType().Name, JsonConvert.SerializeObject(eventData), e.StackTrace ?? "-");
         }
     }
 }
