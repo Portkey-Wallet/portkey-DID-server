@@ -225,33 +225,12 @@ public class ChainsInfoSearchService : SearchService<ChainsInfoIndex, string>
 public class AccountRecoverySearchService : SearchService<AccountRecoverIndex, Guid>
 {
     private readonly IndexSettingOptions _indexSettingOptions;
-    private readonly IBusinessAlertProvider _businessAlertProvider;
     public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.accountrecoverindex";
 
-    public AccountRecoverySearchService(INESTRepository<AccountRecoverIndex, Guid> nestRepository, IBusinessAlertProvider businessAlertProvider,
+    public AccountRecoverySearchService(INESTRepository<AccountRecoverIndex, Guid> nestRepository, 
         IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
     {
         _indexSettingOptions = indexSettingOptions.Value;
-        _businessAlertProvider = businessAlertProvider;
-    }
-    
-
-    public async override Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
-    {
-        string result = await base.GetListByLucenceAsync(indexName, input);
-        var indexList = JsonConvert.DeserializeObject<PagedResultDto<AccountRecoverIndex>>(result);
-        if (indexList.TotalCount > 0)
-        {
-            foreach (var index in indexList.Items)
-            {
-                if (index.RecoverySuccess != true)
-                {
-                    _businessAlertProvider.LoginRegisterFailureAlert(input.Filter,input.DappName, JsonConvert.SerializeObject(index));
-                }
-            }
-        }
-        
-        return result;
     }
 }
 
@@ -266,24 +245,6 @@ public class AccountRegisterSearchService : SearchService<AccountRegisterIndex, 
     {
         _indexSettingOptions = indexSettingOptions.Value;
         _businessAlertProvider = businessAlertProvider;
-    }
-
-    public async override Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
-    {
-        string result = await base.GetListByLucenceAsync(indexName, input);
-        var indexList = JsonConvert.DeserializeObject<PagedResultDto<AccountRegisterIndex>>(result);
-        if (indexList.TotalCount > 0)
-        {
-            foreach (var index in indexList.Items)
-            {
-                if (index.RegisterSuccess != true)
-                {
-                    _businessAlertProvider.LoginRegisterFailureAlert(input.Filter, input.DappName,JsonConvert.SerializeObject(index));
-                }
-            }
-        }
-        
-        return result;
     }
 }
 public class OrderSearchService : SearchService<RampOrderIndex, Guid>
