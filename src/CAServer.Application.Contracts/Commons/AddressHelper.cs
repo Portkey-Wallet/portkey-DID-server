@@ -77,4 +77,12 @@ public static class AddressHelper
             ? network
             : null;
     }
+
+    public static bool IsFullAelfAddress(string address)
+    {
+        return address.StartsWith($"{CommonConstant.ELF}{CommonConstant.Underline}") &&
+               (address.EndsWith($"{CommonConstant.Underline}{CommonConstant.MainChainId}") ||
+                address.EndsWith($"{CommonConstant.Underline}{CommonConstant.TDVVChainId}") ||
+                address.EndsWith($"{CommonConstant.Underline}{CommonConstant.TDVWChainId}"));
+    }
 }
