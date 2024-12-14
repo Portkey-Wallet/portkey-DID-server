@@ -190,7 +190,6 @@ public class ChainInfoTest : CAServerApplicationTestBase
 
             var newChainName = "ChangedName";
             chainInfo.ChainName = newChainName;
-
             var result = await _chainsService.UpdateAsync("newChainId", chainInfo);
         }
         catch (Exception e)
