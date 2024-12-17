@@ -240,10 +240,15 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         else
         {
             var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
-            var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
+            var holderInfo = guardians?.CaHolderInfo?.FirstOrDefault(t =>
+                t.GuardianList != null && !t.GuardianList.Guardians.IsNullOrEmpty() &&
+                !string.IsNullOrWhiteSpace(t.OriginChainId));
+            var guardian = holderInfo?.GuardianList?.Guardians?.FirstOrDefault(t =>
+                t.IdentifierHash == guardianIdentifierHash && t.IsLoginGuardian == true);
+            
             originChainId = guardian == null
                 ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
-                : guardian.OriginChainId;
+                : holderInfo.OriginChainId;
         }
 
         return new RegisterInfoResultDto { OriginChainId = originChainId };
@@ -345,7 +350,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private async Task<string> GetOriginalChainIdParallelMode(string guardianIdentifierHash, string caHash)
     {
         var holderInfoTasks = new List<Task<string>>();
-        holderInfoTasks.Add(BuildTaskByScan(guardianIdentifierHash, caHash));
         foreach (var (chainId, chainInfo) in _chainOptions.ChainInfos)
         {
             holderInfoTasks.Add(BuildTaskByContract(guardianIdentifierHash, caHash, chainId));
@@ -358,12 +362,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
 
         return originalChainIds.FirstOrDefault(item => !item.IsNullOrEmpty());
-    }
-
-    private async Task<string> BuildTaskByScan(string guardianIdentifierHash, string caHash)
-    {
-        var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, caHash);
-        return guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId))?.OriginChainId;
     }
 
     private async Task<string> BuildTaskByContract(string guardianIdentifierHash, string caHash, string chainId)
