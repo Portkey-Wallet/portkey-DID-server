@@ -114,9 +114,11 @@ public class ContractService : IContractService, ISingletonDependency
                 var retryGetIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                     MonitorAelfClientType.GetTransactionResultAsync.ToString());
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-
+                _logger.LogInformation("[client.GetTransactionResultAsync] {0}, methodName:{1}", result.TransactionId,
+                    methodName);
                 _indicatorScope.End(retryGetIndicator);
             }
+
             return new TransactionInfoDto
             {
                 Transaction = transaction,
@@ -125,7 +127,9 @@ public class ContractService : IContractService, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, methodName + " error: {param}", param);
+            _logger.LogError(e, "[SendTransactionToChainAsyncError] methodName:{0}, msg:{1}, trace:{2}", methodName,
+                e.Message,
+                e.StackTrace ?? "-");
             return new TransactionInfoDto();
         }
     }
@@ -150,7 +154,7 @@ public class ContractService : IContractService, ISingletonDependency
             await Task.Delay(_contractServiceOptions.Delay);
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-            
+
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -160,7 +164,7 @@ public class ContractService : IContractService, ISingletonDependency
                 await Task.Delay(_contractServiceOptions.CryptoBoxRetryDelay);
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             }
-            
+
             return new TransactionInfoDto
             {
                 TransactionResultDto = transactionResult
@@ -401,7 +405,7 @@ public class ContractService : IContractService, ISingletonDependency
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}",
                 JsonConvert.SerializeObject(transactionResult));
-            
+
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
