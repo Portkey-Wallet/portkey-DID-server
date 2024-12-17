@@ -53,7 +53,7 @@ public interface IContractAppService : ISingletonDependency
 
     // Task UpdateOriginChainIdAsync(string originChainId, string syncChainId ,UserLoginEto userLoginEto);
     // Task InitializeQueryRecordIndexAsync();
-    // Task InitializeIndexAsync(long blockHeight);
+    // Task InitializeIndexAsync(long blockHeight); 
 
     Task<bool> RefundAsync(Guid redPackageId);
    
