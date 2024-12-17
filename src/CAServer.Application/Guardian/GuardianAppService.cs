@@ -373,7 +373,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 var guardianResultDto =
                     await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash: guardianIdentifierHash,
                         chainId: chainId, needCache: true);
-                return guardianResultDto.CreateChainId.IsNullOrEmpty() || guardianResultDto.ChainId != chainId
+                return guardianResultDto.CreateChainId.IsNullOrEmpty() || guardianResultDto.CreateChainId != chainId
                     ? null
                     : guardianResultDto.CreateChainId;
             }
