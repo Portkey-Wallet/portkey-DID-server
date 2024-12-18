@@ -150,7 +150,9 @@ public class ContractProvider : IContractProvider
         {
             if (methodName != MethodName.GetHolderInfo)
             {
-                _logger.LogError(e, methodName + " error: {param}", param);
+                _logger.LogError(e,
+                    "CallTransactionAsync error, chainId:{chainId}, methodName:{methodName}, param:{param}, msg:{msg}",
+                    chainId, methodName, param, e.Message);
             }
 
             return new T();
@@ -256,7 +258,8 @@ public class ContractProvider : IContractProvider
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetTransactionResult on chain {chainId} with txId: {txId} error", chainId, txId);
+            _logger.LogError(e, "GetTransactionResult on chain {chainId} with txId: {txId} error, msg:{msg}", chainId,
+                txId, e.Message);
             return new TransactionResultDto();
         }
     }
@@ -298,8 +301,7 @@ public class ContractProvider : IContractProvider
             var result = await _contractServiceProxy.CreateHolderInfoAsync(createHolderDto);
 
             _logger.LogInformation(
-                "CreateHolderInfo to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "CreateHolderInfo to chain: {id} result: TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 createHolderDto.ChainId,
                 result.TransactionId, result.BlockNumber, result.Status, result.Error);
 
@@ -308,7 +310,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "CreateHolderInfo error: {message}",
-                JsonConvert.SerializeObject(createHolderDto.ToString()));
+                JsonConvert.SerializeObject(createHolderDto));
             return new TransactionResultDto
             {
                 Status = TransactionState.Failed,
