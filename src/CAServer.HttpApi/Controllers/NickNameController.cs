@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -39,6 +40,13 @@ public class NickNameController : CAServerController
     public async Task<CAHolderResultDto> HolderInfoAsync(HolderInfoDto holderInfo)
     {
         return await _nickNameService.UpdateHolderInfoAsync(holderInfo);
+    }
+    
+    [HttpGet("queryHolderInfos")]
+    [AllowAnonymous]
+    public async Task<List<CAHolderResultDto>> QueryHolderInfosAsync(List<string> addressList)
+    {
+        return await _nickNameService.QueryHolderInfosAsync(addressList);
     }
     
     [HttpGet("defaultAvatars")]
