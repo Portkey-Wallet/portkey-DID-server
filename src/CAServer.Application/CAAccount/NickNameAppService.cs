@@ -187,15 +187,15 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         };
     }
 
-    public async Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(List<string> addressList)
+    public async Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(QueryUserInfosInput input)
     {
         var result = new List<CAHolderWithAddressResultDto>();
-        if (addressList.IsNullOrEmpty())
+        if (input.AddressList.IsNullOrEmpty())
         {
             return result;
         }
 
-        var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(addressList, "");
+        var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(input.AddressList, "");
         var caHashList = guardiansDto.CaHolderInfo.Select(t => t.CaHash).Distinct().ToList();
         if (caHashList.Count == 0)
         {
