@@ -44,7 +44,7 @@ public class NickNameController : CAServerController
     
     [HttpGet("queryHolderInfos")]
     [AllowAnonymous]
-    public async Task<List<CAHolderResultDto>> QueryHolderInfosAsync(List<string> addressList)
+    public async Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(List<string> addressList)
     {
         return await _nickNameService.QueryHolderInfosAsync(addressList);
     }

@@ -804,6 +804,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty))
             .ReverseMap();
         CreateMap<CAHolderIndex, CAHolderResultDto>();
+        CreateMap<CAHolderIndex, CAHolderWithAddressResultDto>();
         CreateMap<ContactAddress, ContactAddressDto>();
         CreateMap<CreateUpdateContactDto, ContactDto>();
         CreateMap<ContactDto, ContactGrainDto>();

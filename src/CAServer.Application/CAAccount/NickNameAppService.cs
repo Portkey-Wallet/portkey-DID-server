@@ -187,18 +187,30 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         };
     }
 
-    public async Task<List<CAHolderResultDto>> QueryHolderInfosAsync(List<string> addressList)
+    public async Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(List<string> addressList)
     {
+        var result = new List<CAHolderWithAddressResultDto>();
+        if (addressList.IsNullOrEmpty())
+        {
+            return result;
+        }
+
         var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(addressList, "");
         var caHashList = guardiansDto.CaHolderInfo.Select(t => t.CaHash).Distinct().ToList();
-        
-        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>
+        if (caHashList.Count == 0)
         {
-            q => q.Terms(i => i.Field(f => f.CaHash).Terms(caHashList))
-        };
-        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+            return result;
+        }
+        
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> q) =>
+            q.Terms(i => i.Field(f => f.CaHash).Terms(caHashList));
+        var holders = await _holderRepository.GetListAsync(Filter, limit: caHashList.Count, skip: 0);
+        foreach (var caHolderIndex in holders.Item2)
+        {
+            var caHolderWithAddressResultDto = ObjectMapper.Map<CAHolderIndex, CAHolderWithAddressResultDto>(caHolderIndex);
+            caHolderWithAddressResultDto.CaAddress = guardiansDto.CaHolderInfo.First(t => t.CaHash == caHolderIndex.CaHash).CaAddress;
+        }
 
-        var holders = await _holderRepository.GetListAsync(Filter);
-        return ObjectMapper.Map<List<CAHolderIndex>, List<CAHolderResultDto>>(holders.Item2);
+        return result;
     }
 }
