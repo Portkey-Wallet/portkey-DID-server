@@ -209,6 +209,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         {
             var caHolderWithAddressResultDto = ObjectMapper.Map<CAHolderIndex, CAHolderWithAddressResultDto>(caHolderIndex);
             caHolderWithAddressResultDto.CaAddress = guardiansDto.CaHolderInfo.First(t => t.CaHash == caHolderIndex.CaHash).CaAddress;
+            result.Add(caHolderWithAddressResultDto);
         }
 
         return result;
