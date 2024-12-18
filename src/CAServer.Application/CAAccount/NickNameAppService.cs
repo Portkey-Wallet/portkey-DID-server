@@ -208,7 +208,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         foreach (var caHolderIndex in holders.Item2)
         {
             var caHolderWithAddressResultDto = ObjectMapper.Map<CAHolderIndex, CAHolderWithAddressResultDto>(caHolderIndex);
-            caHolderWithAddressResultDto.CaAddress = guardiansDto.CaHolderInfo.First(t => t.CaHash == caHolderIndex.CaHash).CaAddress;
+            caHolderWithAddressResultDto.Address = guardiansDto.CaHolderInfo.First(t => t.CaHash == caHolderIndex.CaHash).CaAddress;
             result.Add(caHolderWithAddressResultDto);
         }
 

@@ -4,5 +4,5 @@ namespace CAServer.CAAccount.Dtos;
 
 public class CAHolderWithAddressResultDto : CAHolderDto
 {
-    public string CaAddress { get; set; }
+    public string Address { get; set; }
 }
