@@ -111,6 +111,15 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
             };
         }
 
+        if (request.ToAddress.Contains(CommonConstant.Underline) && request.ToAddress.StartsWith(CommonConstant.ELF))
+        {
+            return new ResponseWrapDto<SendNetworkDto>
+            {
+                Code = ETransferConstant.SuccessCode,
+                Data = result
+            };
+        }
+
         if (addressFormat is AddressFormat.Main or AddressFormat.Dapp)
         {
             result.NetworkList.Add(_networkCacheService.GetNetwork(request.ChainId));
@@ -128,7 +137,7 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                 Message = ETransferConstant.InvalidAddressMessage
             };
         }
-        
+
         return new ResponseWrapDto<SendNetworkDto>
         {
             Code = ETransferConstant.SuccessCode,
@@ -212,10 +221,12 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
     }
 
 
-    private async Task setReceiveByETransfer(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap, Dictionary<string, NetworkInfoDto> networkMap)
+    private async Task setReceiveByETransfer(Dictionary<string, ReceiveNetworkDto> receiveNetworkMap,
+        Dictionary<string, NetworkInfoDto> networkMap)
     {
         string type = "Deposit";
-        var optionList = await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto { Type = type });
+        var optionList =
+            await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto { Type = type });
         foreach (var token in optionList.Data.TokenList)
         {
             var toToken = token.ToTokenList.FirstOrDefault(p => p.Symbol.Equals(token.Symbol));
@@ -228,7 +239,8 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
             ReceiveNetworkDto receiveNetwork = initAELFChain(symbol);
             receiveNetworkMap[symbol] = receiveNetwork;
             var price = await _tokenAppService.GetTokenPriceListAsync(new List<string> { symbol });
-            _logger.LogInformation("setReceiveByETransfer symbol = {0} price = {1}", symbol, JsonConvert.SerializeObject(price));
+            _logger.LogInformation("setReceiveByETransfer symbol = {0} price = {1}", symbol,
+                JsonConvert.SerializeObject(price));
             var maxAmount = ShiftChainHelper.GetMaxAmount(price.Items[0].PriceInUsd);
             foreach (var chainId in toToken.ChainIdList)
             {
@@ -318,7 +330,8 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
         return limiters;
     }
 
-    private void setSendByEBridge(Dictionary<string, SendNetworkDto> sendEBridgeMap, Dictionary<string, NetworkInfoDto> networkMap,
+    private void setSendByEBridge(Dictionary<string, SendNetworkDto> sendEBridgeMap,
+        Dictionary<string, NetworkInfoDto> networkMap,
         EBridgeLimiterDto limiters)
     {
         foreach (var limiter in limiters.Items)
@@ -397,7 +410,9 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                         continue;
                     supportedNetworkList.Add(new NetworkBasicInfo()
                     {
-                        Network = item.Network == CommonConstant.BaseNetwork ? CommonConstant.BaseNetworkName : item.Network,
+                        Network = item.Network == CommonConstant.BaseNetwork
+                            ? CommonConstant.BaseNetworkName
+                            : item.Network,
                         Name = AddressHelper.GetNetworkName(item.Network)
                     });
                 }
