@@ -27,6 +27,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Orleans;
 using Orleans.Configuration;
@@ -97,6 +99,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureDistributedLocking(context, configuration);
         ConfigureHangfire(context, configuration);
         // ConfigureOpenTelemetry(context);
+
+        AddAelfClient(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -247,5 +251,28 @@ public class CAServerContractEventHandlerModule : AbpModule
             opt.HeartbeatInterval = TimeSpan.FromMilliseconds(3000);
             opt.Queues = new[] { "default", "notDefault" };
         });
+    }
+    
+    private void AddAelfClient(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var chainInfos = context.Services.BuildServiceProvider().GetRequiredService<IOptions<ChainOptions>>();
+        if (chainInfos == null || chainInfos.Value.ChainInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        foreach (var chainInfo in chainInfos.Value.ChainInfos)
+        {
+            var clientName = chainInfo.Key == CommonConstant.MainChainId
+                ? AelfClientConstant.MainChainClient
+                : AelfClientConstant.SideChainClient;
+
+            context.Services.AddHttpClient(clientName,
+                httpClient =>
+                {
+                    httpClient.BaseAddress = new Uri(chainInfo.Value.BaseUrl);
+                    httpClient.Timeout = TimeSpan.FromSeconds(60);
+                });
+        }
     }
 }
