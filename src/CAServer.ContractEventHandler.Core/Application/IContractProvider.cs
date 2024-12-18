@@ -7,6 +7,7 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common.AelfClient;
 using CAServer.Grains.Grain;
 using CAServer.Commons;
 using CAServer.ContractService;
@@ -86,12 +87,14 @@ public class ContractProvider : IContractProvider
     private readonly IDistributedCache<BlockDto> _distributedCache;
     private readonly BlockInfoOptions _blockInfoOptions;
     private readonly ContractServiceProxy _contractServiceProxy;
+    private readonly IContractClientSelector _contractClientSelector;
 
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
         IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope, IDistributedCache<BlockDto> distributedCache,
-        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, ContractServiceProxy contractServiceProxy)
+        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, ContractServiceProxy contractServiceProxy,
+        IContractClientSelector contractClientSelector)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
@@ -102,6 +105,7 @@ public class ContractProvider : IContractProvider
         _indicatorScope = indicatorScope;
         _distributedCache = distributedCache;
         _contractServiceProxy = contractServiceProxy;
+        _contractClientSelector = contractClientSelector;
         _blockInfoOptions = blockInfoOptions.Value;
     }
 
@@ -112,9 +116,10 @@ public class ContractProvider : IContractProvider
         {
             var chainInfo = _chainOptions.ChainInfos[chainId];
 
-            var client = new AElfClient(chainInfo.BaseUrl);
-            await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            //var client = new AElfClient(chainInfo.BaseUrl);
+            var client = _contractClientSelector.GetContractClient(chainId);
+            var ownAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(chainInfo.PublicKey))
+                .ToBase58();
             var contractAddress = isCrossChain ? chainInfo.CrossChainContractAddress : chainInfo.ContractAddress;
 
             var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,

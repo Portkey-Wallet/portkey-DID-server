@@ -7,6 +7,8 @@ using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
+using CAServer.Common.AelfClient;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
@@ -36,10 +38,11 @@ public class ContractService : IContractService, ISingletonDependency
     private readonly ISignatureProvider _signatureProvider;
     private readonly IIndicatorScope _indicatorScope;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IContractClientSelector _contractClientSelector;
 
     public ContractService(IOptions<ChainOptions> chainOptions, IOptions<ContractServiceOptions> contractGrainOptions,
         IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractService> logger,
-        IIndicatorScope indicatorScope, IDistributedEventBus distributedEventBus)
+        IIndicatorScope indicatorScope, IDistributedEventBus distributedEventBus, IContractClientSelector contractClientSelector)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -48,6 +51,7 @@ public class ContractService : IContractService, ISingletonDependency
         _chainOptions = chainOptions.Value;
         _signatureProvider = signatureProvider;
         _distributedEventBus = distributedEventBus;
+        _contractClientSelector = contractClientSelector;
     }
 
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
@@ -60,9 +64,11 @@ public class ContractService : IContractService, ISingletonDependency
                 return null;
             }
 
-            var client = new AElfClient(chainInfo.BaseUrl);
-            await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            //var client = new AElfClient(chainInfo.BaseUrl);
+            var client = _contractClientSelector.GetContractClient(chainId);
+            //var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            var ownAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(chainInfo.PublicKey))
+                .ToBase58();
             _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
             var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
