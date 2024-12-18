@@ -74,15 +74,13 @@ public class MainChainContractClient : IContractClient
                 input.RawTransaction
             }
         };
-        var result = await PostAsync<SendTransactionOutput>(uri, param);
-        return result;
+        return await PostAsync<SendTransactionOutput>(uri, param);
     }
 
     public async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
     {
         var url = "api/blockChain/transactionResult?transactionId=" + transactionId;
-        var res = await GetAsync<TransactionResultDto>(url);
-        return res;
+        return await GetAsync<TransactionResultDto>(url);
     }
 
     public async Task<string> ExecuteTransactionAsync(ExecuteTransactionDto input)
@@ -95,8 +93,7 @@ public class MainChainContractClient : IContractClient
                 input.RawTransaction
             }
         };
-        var res = await PostAsync(url, param);
-        return res;
+        return await PostAsync(url, param);
     }
 
     public Transaction SignTransaction(string privateKeyHex, Transaction transaction)
@@ -116,26 +113,23 @@ public class MainChainContractClient : IContractClient
 
     public async Task<T> GetAsync<T>(string url)
     {
-        _logger.LogInformation("[MainChainContractClient] GetAsync begin:{url}", url);
         var client = _httpClientFactory.CreateClient(AelfClientConstant.MainChainClient);
         var response = await client.GetAsync(url);
         var content = await response.Content.ReadAsStringAsync();
         if (!ResponseSuccess(response.StatusCode))
         {
             _logger.LogError(
-                "[ContractClientError] GetError Response not success, url:{url}, code:{code}, message: {message}",
+                "[ContractClientError] MainChainContractClient GetError Response not success, url:{url}, code:{code}, message: {message}",
                 url, response.StatusCode, content);
 
             throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
         }
-
-        _logger.LogInformation("[MainChainContractClient] GetAsync end:{url}", url);
+        
         return JsonConvert.DeserializeObject<T>(content);
     }
 
     public async Task<T> PostAsync<T>(string url, object paramObj)
     {
-        _logger.LogInformation("[MainChainContractClient] PostAsync<T> begin:{url}", url);
         var requestInput = paramObj == null ? string.Empty : JsonConvert.SerializeObject(paramObj, Formatting.None);
 
         var requestContent = new StringContent(
@@ -151,19 +145,17 @@ public class MainChainContractClient : IContractClient
         if (!ResponseSuccess(response.StatusCode))
         {
             _logger.LogError(
-                "[ContractClientError] PostError Response not success, url:{url}, code:{code}, message: {message}, params:{param}",
+                "[ContractClientError] MainChainContractClient PostError Response not success, url:{url}, code:{code}, message: {message}, params:{param}",
                 url, response.StatusCode, content, JsonConvert.SerializeObject(paramObj));
 
             throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
         }
-
-        _logger.LogInformation("[MainChainContractClient] PostAsync<T> end:{url}", url);
+        
         return JsonConvert.DeserializeObject<T>(content);
     }
 
     public async Task<string> PostAsync(string url, object paramObj)
     {
-        _logger.LogInformation("[MainChainContractClient] PostAsync<T> begin:{url}", url);
         var requestInput = paramObj == null ? string.Empty : JsonConvert.SerializeObject(paramObj, Formatting.None);
 
         var requestContent = new StringContent(
@@ -179,13 +171,12 @@ public class MainChainContractClient : IContractClient
         if (!ResponseSuccess(response.StatusCode))
         {
             _logger.LogError(
-                "[ContractClientError] PostError Response not success, url:{url}, code:{code}, message: {message}, params:{param}",
+                "[ContractClientError] MainChainContractClient PostError Response not success, url:{url}, code:{code}, message: {message}, params:{param}",
                 url, response.StatusCode, content, JsonConvert.SerializeObject(paramObj));
 
             throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
         }
-
-        _logger.LogInformation("[MainChainContractClient] PostAsync<T> end:{url}", url);
+        
         return content;
     }
 
