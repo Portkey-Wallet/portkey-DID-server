@@ -16,7 +16,7 @@ public interface INickNameAppService
     Task<bool> GetBubblingAccountAsync();
     Task ReplaceUserNicknameAsync(ReplaceNicknameDto replaceNicknameDto);
     
-    Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(List<string> addressList);
+    Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(QueryUserInfosInput input);
 
     DefaultAvatarResponse GetDefaultAvatars();
 }
