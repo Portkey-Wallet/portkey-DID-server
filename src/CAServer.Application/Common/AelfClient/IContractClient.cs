@@ -5,10 +5,6 @@ using System.Threading.Tasks;
 using AElf.Client.Dto;
 using AElf.Types;
 using Google.Protobuf;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using ChainOptions = CAServer.Options.ChainOptions;
 
 namespace CAServer.Common.AelfClient;
 
@@ -26,5 +22,7 @@ public interface IContractClient
 
     Task<TransactionResultDto> GetTransactionResultAsync(string transactionId);
     Task<string> ExecuteTransactionAsync(ExecuteTransactionDto input);
+
+    Transaction SignTransaction(string privateKeyHex, Transaction transaction);
 }
 

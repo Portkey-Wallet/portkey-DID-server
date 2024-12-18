@@ -6,7 +6,9 @@ using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Client.Dto;
+using AElf.Cryptography;
 using AElf.Types;
 using CAServer.Commons;
 using Google.Protobuf;
@@ -93,8 +95,17 @@ public class MainChainContractClient : IContractClient
                 input.RawTransaction
             }
         };
-        var res = await PostAsync(url,param);
+        var res = await PostAsync(url, param);
         return res;
+    }
+
+    public Transaction SignTransaction(string privateKeyHex, Transaction transaction)
+    {
+        byte[] byteArray = transaction.GetHash().ToByteArray();
+        byte[] numArray =
+            CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKeyHex), byteArray);
+        transaction.Signature = ByteString.CopyFrom(numArray);
+        return transaction;
     }
 
     public async Task<ChainStatusDto> GetChainStatusAsync()
