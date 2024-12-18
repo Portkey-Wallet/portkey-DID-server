@@ -38,31 +38,6 @@ public class CAServerContractEventHandlerCoreModule : AbpModule
         context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
-
-        AddAelfClient(context, configuration);
-    }
-
-    private void AddAelfClient(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        var chainInfos = configuration.GetValue<ChainOptions>("Chains");
-        if (chainInfos == null || chainInfos.ChainInfos.IsNullOrEmpty())
-        {
-            return;
-        }
-
-        foreach (var chainInfo in chainInfos.ChainInfos)
-        {
-            var clientName = chainInfo.Key == CommonConstant.MainChainId
-                ? AelfClientConstant.MainChainClient
-                : AelfClientConstant.SideChainClient;
-
-            context.Services.AddHttpClient(clientName,
-                httpClient =>
-                {
-                    httpClient.BaseAddress = new Uri(chainInfo.Value.BaseUrl);
-                    httpClient.Timeout = TimeSpan.FromSeconds(60);
-                });
-        }
     }
 
     public override void OnPostApplicationInitialization(ApplicationInitializationContext context)
