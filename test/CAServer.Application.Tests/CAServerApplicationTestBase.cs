@@ -36,6 +36,7 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
 
     protected CAServerApplicationTestBase()
     {
+        
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
