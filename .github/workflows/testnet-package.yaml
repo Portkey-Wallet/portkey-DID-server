@@ -13,7 +13,12 @@ jobs:
     strategy:
       matrix:
         servicename: [
-          CAServer.HttpApi.Host
+          CAServer.Silo,
+          CAServer.AuthServer,
+          CAServer.EntityEventHandler,
+          CAServer.ContractEventHandler,
+          CAServer.HttpApi.Host,
+          CAServer.BackGround
         ]
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +38,12 @@ jobs:
     strategy:
       matrix:
         servicename: [
-          CAServer.HttpApi.Host
+          CAServer.Silo,
+          CAServer.AuthServer,
+          CAServer.EntityEventHandler,
+          CAServer.ContractEventHandler,
+          CAServer.HttpApi.Host,
+          CAServer.BackGround
         ]
     permissions:
       contents: read
