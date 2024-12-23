@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CAServer.Dtos;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
@@ -8,6 +9,7 @@ using CAServer.CAAccount.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain;
@@ -38,12 +40,14 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly INicknameProvider _nicknameProvider;
     private readonly IGuardianAppService _guardianAppService;
     private readonly IUserProfilePictureProvider _userProfilePictureProvider;
+    private readonly IContactProvider _contactProvider;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         INESTRepository<CAHolderIndex, Guid> holderRepository,
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor,
         INicknameProvider nicknameProvider, IGuardianAppService guardianAppService,
-        IUserProfilePictureProvider userProfilePictureProvider)
+        IUserProfilePictureProvider userProfilePictureProvider,
+        IContactProvider contactProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -53,6 +57,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         _nicknameProvider = nicknameProvider;
         _guardianAppService = guardianAppService;
         _userProfilePictureProvider = userProfilePictureProvider;
+        _contactProvider = contactProvider;
     }
 
     public async Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto)
@@ -180,5 +185,33 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         {
             DefaultAvatars = _userProfilePictureProvider.GetDefaultUserPictures()
         };
+    }
+
+    public async Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(QueryUserInfosInput input)
+    {
+        var result = new List<CAHolderWithAddressResultDto>();
+        if (input.AddressList.IsNullOrEmpty())
+        {
+            return result;
+        }
+
+        var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(input.AddressList, "");
+        var caHashList = guardiansDto.CaHolderInfo.Select(t => t.CaHash).Distinct().ToList();
+        if (caHashList.Count == 0)
+        {
+            return result;
+        }
+        
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> q) =>
+            q.Terms(i => i.Field(f => f.CaHash).Terms(caHashList));
+        var holders = await _holderRepository.GetListAsync(Filter, limit: caHashList.Count, skip: 0);
+        foreach (var caHolderIndex in holders.Item2)
+        {
+            var caHolderWithAddressResultDto = ObjectMapper.Map<CAHolderIndex, CAHolderWithAddressResultDto>(caHolderIndex);
+            caHolderWithAddressResultDto.Address = guardiansDto.CaHolderInfo.First(t => t.CaHash == caHolderIndex.CaHash).CaAddress;
+            result.Add(caHolderWithAddressResultDto);
+        }
+
+        return result;
     }
 }
