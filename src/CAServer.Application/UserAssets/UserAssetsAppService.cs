@@ -1056,7 +1056,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             dto.Data = dto.Data.Where(t => t.TokenInfo != null).OrderBy(t => t.Symbol != CommonConstant.DefaultSymbol)
                 .ThenBy(t => t.Symbol).ThenByDescending(t => t.ChainId)
-                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenByDescending(t => t.ChainId)).ToList();
+                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenByDescending(t => t.ChainId))
+                .ToList();
 
             SetSeedStatusAndTypeForUserAssets(dto.Data);
 
@@ -1508,10 +1509,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 break;
             }
-            default:
-                return false;
         }
-
+        
+        var output = await _contractProvider.GetTokenInfoAsync(request.ChainId, request.Symbol);
+        if (output != null && !output.Symbol.IsNullOrEmpty())
+        {
+            return true;
+        }
+        
         return false;
     }
 
