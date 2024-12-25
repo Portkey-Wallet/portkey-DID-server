@@ -373,7 +373,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         tokenInfoList = tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
         foreach (var token in tokenInfoList)
         {
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
         }
 
         foreach (var nffItem in tokenInfoList.Where(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)))
@@ -726,7 +726,10 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
 
-                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
+                    if (tokenInfo.ImageUrl.IsNullOrEmpty())
+                    {
+                        tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
+                    }
 
                     item.TokenInfo = tokenInfo;
                 }

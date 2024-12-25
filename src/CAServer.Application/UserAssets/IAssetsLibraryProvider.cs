@@ -7,7 +7,7 @@ namespace CAServer.UserAssets;
 
 public interface IAssetsLibraryProvider
 {
-    string buildSymbolImageUrl(string symbol);
+    string buildSymbolImageUrl(string symbol, string imageUrl = null);
 }
 
 public class AssetsLibraryProvider : IAssetsLibraryProvider, ISingletonDependency
@@ -22,19 +22,21 @@ public class AssetsLibraryProvider : IAssetsLibraryProvider, ISingletonDependenc
         _assetsInfoOptions = assetsInfoOptions.Value;
     }
 
-    public string buildSymbolImageUrl(string symbol)
+    public string buildSymbolImageUrl(string symbol, string imageUrl = null)
     {
+        if (!imageUrl.IsNullOrEmpty()) return imageUrl;
         if (symbol.IsNullOrWhiteSpace() || _tokenInfoOptions?.TokenInfos == null)
         {
             return string.Empty;
         }
-        
+
         if (_tokenInfoOptions.TokenInfos.ContainsKey(symbol))
         {
             return _tokenInfoOptions.TokenInfos[symbol].ImageUrl;
         }
 
-        if (_assetsInfoOptions.ImageUrlPrefix.IsNullOrWhiteSpace() || _assetsInfoOptions.ImageUrlSuffix.IsNullOrWhiteSpace())
+        if (_assetsInfoOptions.ImageUrlPrefix.IsNullOrWhiteSpace() ||
+            _assetsInfoOptions.ImageUrlSuffix.IsNullOrWhiteSpace())
         {
             return string.Empty;
         }
