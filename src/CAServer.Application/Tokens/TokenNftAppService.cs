@@ -284,7 +284,8 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                     {
                         Decimals = symbol.Token.Decimals,
                         Symbol = symbol.Token.Symbol,
-                        TokenContractAddress = symbol.Token.Address
+                        TokenContractAddress = symbol.Token.Address,
+                        ImageUrl = symbol.Token.ImageUrl
                     }
                 };
             }
@@ -294,7 +295,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             }
 
             var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, symbol.Token?.ImageUrl);
 
             tokenList.Add(token);
         }
