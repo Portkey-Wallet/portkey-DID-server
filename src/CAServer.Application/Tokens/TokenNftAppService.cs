@@ -174,7 +174,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                     continue;
                 }
 
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
                 tokenList.Add(token);
             }
 
@@ -294,7 +294,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             }
 
             var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
 
             tokenList.Add(token);
         }
@@ -725,12 +725,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
 
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
-
-                    if (tokenInfo.ImageUrl.IsNullOrEmpty())
-                    {
-                        tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
-                    }
-
+                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol, tokenInfo.ImageUrl);
                     item.TokenInfo = tokenInfo;
                 }
 

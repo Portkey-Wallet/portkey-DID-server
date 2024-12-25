@@ -324,7 +324,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f =>
                     f.TokenInfo == null || f.TokenInfo.TokenContractAddress.IsNullOrEmpty()
                         ? null
-                        : f.TokenInfo.TokenContractAddress));
+                        : f.TokenInfo.TokenContractAddress))
+            .ForMember(t => t.ImageUrl, m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.ImageUrl));
         CreateMap<IndexerNftCollectionInfo, NftCollection>()
             .ForMember(t => t.ItemCount, m => m.MapFrom(f => f.TokenIds == null ? 0 : f.TokenIds.Count))
             .ForMember(t => t.ImageUrl,
