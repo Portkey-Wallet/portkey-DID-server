@@ -52,7 +52,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             Query = @"
 			    query($symbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderTokenBalanceInfo(dto: {symbol:$symbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,balance,caAddress,tokenIds,tokenInfo{id,chainId,symbol,tokenContractAddress,decimals,tokenName,totalSupply}},totalRecordCount}
+                        data{chainId,balance,caAddress,tokenIds,tokenInfo{id,chainId,symbol,tokenContractAddress,decimals,tokenName,totalSupply,imageUrl}},totalRecordCount}
                 }",
             Variables = new
             {
@@ -199,7 +199,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             Query = @"
 			    query($searchWord:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderSearchTokenNFT(dto: {searchWord:$searchWord,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,balance,caAddress,tokenId,tokenInfo{type,symbol,tokenContractAddress,decimals,tokenName,totalSupply},nftInfo{symbol,decimals,imageUrl,collectionSymbol,collectionName,tokenName,totalSupply,tokenContractAddress}},totalRecordCount}
+                        data{chainId,balance,caAddress,tokenId,tokenInfo{type,symbol,tokenContractAddress,decimals,tokenName,totalSupply,imageUrl},nftInfo{symbol,decimals,imageUrl,collectionSymbol,collectionName,tokenName,totalSupply,tokenContractAddress}},totalRecordCount}
                 }",
             Variables = new
             {

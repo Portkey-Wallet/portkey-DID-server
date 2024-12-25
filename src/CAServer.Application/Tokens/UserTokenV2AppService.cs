@@ -33,6 +33,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
     private readonly IDistributedCache<IndexerToken> _tokenInfoCache;
     private readonly AddTokenOptions _addTokenOptions;
     private readonly ILogger<UserTokenV2AppService> _logger;
+
     public UserTokenV2AppService(IOptionsSnapshot<TokenListOptions> tokenListOptions,
         IUserTokenAppService tokenAppService, ITokenProvider tokenProvider,
         IOptionsSnapshot<NftToFtOptions> nftToFtOptions, IAssetsLibraryProvider assetsLibraryProvider,
@@ -66,7 +67,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         var userId = CurrentUser.GetId();
         var userTokens =
             await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
-        
+
         var tokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetUserTokenDto>>(userTokens);
         foreach (var item in _tokenListOptions.UserToken)
         {
@@ -132,7 +133,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
             {
                 continue;
             }
-            
+
             var tokenItem = group.First();
             var tokenList = await CheckTokenAsync(group.ToList());
             SetTokenInfo(tokenList);
@@ -194,7 +195,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
                 return;
             }
 
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
         }
     }
 
@@ -238,7 +239,7 @@ public class UserTokenV2AppService : CAServerAppService, IUserTokenV2AppService
         {
             userTokens.Add(ObjectMapper.Map<IndexerToken, GetUserTokenDto>(tokenInfo));
         }
-        
+
         return userTokens.OrderBy(t => t.ChainId).ToList();
     }
 
