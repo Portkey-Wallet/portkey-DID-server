@@ -359,7 +359,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Decimals,
                 m => m.MapFrom(f => f.TokenInfo == null ? new decimal() : f.TokenInfo.Decimals))
             .ForMember(t => t.TokenContractAddress,
-                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.TokenContractAddress));
+                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.TokenContractAddress))
+            .ForMember(t => t.ImageUrl,
+                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.ImageUrl));
 
         CreateMap<IndexerSearchTokenNft, NftInfoDto>()
             .ForMember(t => t.ImageUrl,
