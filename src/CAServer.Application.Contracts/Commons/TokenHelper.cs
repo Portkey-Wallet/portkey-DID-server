@@ -76,14 +76,7 @@ public static class TokenHelper
     private static decimal ParseDecimal(string number)
     {
         decimal result;
-        if (decimal.TryParse(number, out result))
-        {
-            return result;
-        }
-        else
-        {
-            return 0;
-        }
+        return decimal.TryParse(number, out result) ? result : 0;
     }
     
     private static string ConvertTwoDecimal(string number)
