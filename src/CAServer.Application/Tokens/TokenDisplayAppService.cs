@@ -183,7 +183,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 }
 
                 var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
 
                 tokenList.Add(token);
             }
@@ -200,7 +200,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                     continue;
                 }
 
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
                 tokenList.Add(token);
             }
 
@@ -254,7 +254,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             });
 
             // await filterZeroByConfig(dto);
-            
+
             return dto;
         }
         catch (Exception e)
@@ -263,7 +263,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
     }
-    
+
     private async Task filterZeroByConfig(GetTokenDto dto)
     {
         try
@@ -621,7 +621,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
 
-                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
+                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol, tokenInfo.ImageUrl);
 
                     item.TokenInfo = tokenInfo;
                 }

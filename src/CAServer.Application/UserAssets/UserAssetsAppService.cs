@@ -209,7 +209,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
 
                 var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
 
                 tokenList.Add(token);
             }
@@ -227,7 +227,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     continue;
                 }
 
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
                 tokenList.Add(token);
             }
 
