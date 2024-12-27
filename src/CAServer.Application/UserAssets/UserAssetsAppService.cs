@@ -1509,10 +1509,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 break;
             }
-            default:
-                return false;
         }
-
+        
+        var output = await _contractProvider.GetTokenInfoAsync(request.ChainId, request.Symbol);
+        if (output != null && !output.Symbol.IsNullOrEmpty())
+        {
+            return true;
+        }
+        
         return false;
     }
 
