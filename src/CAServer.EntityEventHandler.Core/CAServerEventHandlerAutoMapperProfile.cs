@@ -55,14 +55,16 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(u => u.Token.ChainId))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
-            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
+            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(u => u.Token.ImageUrl));
 
         CreateMap<UserTokenDeleteEto, UserTokenIndex>()
             .ForPath(t => t.Token.Id, m => m.MapFrom(u => u.Token.Id))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(u => u.Token.ChainId))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
-            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
+            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(u => u.Token.ImageUrl));
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
         CreateMap<UpdateCAHolderEto, CAHolderIndex>();
         CreateMap<DefaultToken, DefaultTokenInfo>();

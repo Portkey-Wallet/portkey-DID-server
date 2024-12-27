@@ -59,6 +59,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly ActivitiesStatusIconOptions _activitiesStatus;
     private readonly ActivitiesSourceIconOptions _activitiesSource;
     private readonly NftToFtOptions _nftToFtOptions;
+
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptionsSnapshot<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
@@ -422,7 +423,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 operationInfo.Decimals = item.TokenInfo.Decimals.ToString();
                 operationInfo.Symbol = item.TokenInfo.Symbol;
-                operationInfo.Icon = _assetsLibraryProvider.buildSymbolImageUrl(item.TokenInfo.Symbol);
+                operationInfo.Icon =
+                    _assetsLibraryProvider.buildSymbolImageUrl(item.TokenInfo.Symbol, item.TokenInfo.ImageUrl);
             }
 
             if (item.NftInfo != null && !item.NftInfo.Symbol.IsNullOrWhiteSpace())
@@ -890,7 +892,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             }
             else
             {
-                dto.ListIcon = GetIcon(dto);
+                dto.ListIcon = GetIcon(dto, ht.TokenInfo?.ImageUrl);
             }
 
             if (!_activityTypeOptions.ShowPriceTypes.Contains(dto.TransactionType))
@@ -1151,7 +1153,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         };
     }
 
-    private string GetIcon(GetActivityDto activityDto)
+    private string GetIcon(GetActivityDto activityDto, string imageUrl)
     {
         var icon = string.Empty;
         if (_activityTypeOptions.SystemTypes.Contains(activityDto.TransactionType))
@@ -1160,7 +1162,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         else if (IsTransferType(activityDto))
         {
-            icon = _assetsLibraryProvider.buildSymbolImageUrl(activityDto.Symbol);
+            icon = _assetsLibraryProvider.buildSymbolImageUrl(activityDto.Symbol, imageUrl);
         }
 
         // compatible with front-end changes

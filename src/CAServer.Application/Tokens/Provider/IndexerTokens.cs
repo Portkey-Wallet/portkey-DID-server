@@ -22,4 +22,5 @@ public class IndexerToken
     public string Issuer { get; set; }
     public bool IsBurnable { get; set; }
     public long IssueChainId { get; set; }
+    public string ImageUrl { get; set; }
 }

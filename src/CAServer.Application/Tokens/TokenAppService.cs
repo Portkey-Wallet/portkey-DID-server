@@ -149,8 +149,12 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
 
         // Check and adjust SkipCount and MaxResultCount
-        var skipCount = input.SkipCount < TokensConstants.SkipCountDefault ? TokensConstants.SkipCountDefault : input.SkipCount;
-        var maxResultCount = input.MaxResultCount <= TokensConstants.MaxResultCountInvalid ? TokensConstants.MaxResultCountDefault : input.MaxResultCount;
+        var skipCount = input.SkipCount < TokensConstants.SkipCountDefault
+            ? TokensConstants.SkipCountDefault
+            : input.SkipCount;
+        var maxResultCount = input.MaxResultCount <= TokensConstants.MaxResultCountInvalid
+            ? TokensConstants.MaxResultCountDefault
+            : input.MaxResultCount;
 
         return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
     }
@@ -305,12 +309,15 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             SymbolApproveList = t.Items.Select(s => new SymbolApprove()
             {
                 Symbol = s.Symbol,
-                Amount = allowanceMap.TryGetValue(GetKey(s.Symbol, t.Key.Spender, t.Key.ChainId), out long value) ? value : 0,
+                Amount = allowanceMap.TryGetValue(GetKey(s.Symbol, t.Key.Spender, t.Key.ChainId), out long value)
+                    ? value
+                    : 0,
                 Decimals = tokenInfoDtos.FirstOrDefault(i => i.Symbol == s.Symbol.Replace("-*", "-1")) == null
                     ? 0
                     : tokenInfoDtos.First(i => i.Symbol == s.Symbol.Replace("-*", "-1")).Decimals,
                 UpdateTime = s.UpdateTime,
-                ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(s.Symbol),
+                ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(s.Symbol,
+                    tokenInfoDtos.FirstOrDefault(i => i.Symbol == s.Symbol)?.ImageUrl),
             }).ToList()
         }).ToList();
 
@@ -325,7 +332,9 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         }
 
         tokenAllowanceList.Sort((t1, t2) =>
-            (t1.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t1.Name).CompareTo(t2.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t2.Name));
+            (t1.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t1.Name).CompareTo(t2.Name.IsNullOrWhiteSpace()
+                ? CommonConstant.UpperZ
+                : t2.Name));
 
         return new GetTokenAllowancesDto
         {
@@ -341,7 +350,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var tasks = dtoList.Select(dto => Task.Run(() => GetAllowanceTask(dto)));
         GetAllowanceDTO[] result = await Task.WhenAll(tasks);
         stopwatch.Stop();
-        _logger.LogDebug("GetAllowanceList dtoList count = {0}, spendTime = {1} ms dtoList = {2}", dtoList.Count, stopwatch.ElapsedMilliseconds,JsonConvert.SerializeObject(result));
+        _logger.LogDebug("GetAllowanceList dtoList count = {0}, spendTime = {1} ms dtoList = {2}", dtoList.Count,
+            stopwatch.ElapsedMilliseconds, JsonConvert.SerializeObject(result));
 
         return result.ToDictionary(
             dto => GetKey(dto.Symbol, dto.Spender, dto.ChainId),
@@ -351,7 +361,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
     private async Task<GetAllowanceDTO> GetAllowanceTask(GetAllowanceDTO dto)
     {
-        GetAllowanceOutput output = await _contractProvider.GetAllowanceAsync(dto.Symbol, dto.Owner, dto.Spender, dto.ChainId);
+        GetAllowanceOutput output =
+            await _contractProvider.GetAllowanceAsync(dto.Symbol, dto.Owner, dto.Spender, dto.ChainId);
         dto.Allowance = output.Allowance;
         _logger.LogDebug("GetAllowanceTask dto = {0}", JsonConvert.SerializeObject(dto));
         return dto;

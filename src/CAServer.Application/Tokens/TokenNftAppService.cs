@@ -174,7 +174,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                     continue;
                 }
 
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
                 tokenList.Add(token);
             }
 
@@ -284,7 +284,8 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                     {
                         Decimals = symbol.Token.Decimals,
                         Symbol = symbol.Token.Symbol,
-                        TokenContractAddress = symbol.Token.Address
+                        TokenContractAddress = symbol.Token.Address,
+                        ImageUrl = symbol.Token.ImageUrl
                     }
                 };
             }
@@ -294,7 +295,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             }
 
             var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, symbol.Token?.ImageUrl);
 
             tokenList.Add(token);
         }
@@ -373,7 +374,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         tokenInfoList = tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
         foreach (var token in tokenInfoList)
         {
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
         }
 
         foreach (var nffItem in tokenInfoList.Where(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)))
@@ -725,9 +726,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
 
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
-
-                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
-
+                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol, tokenInfo.ImageUrl);
                     item.TokenInfo = tokenInfo;
                 }
 

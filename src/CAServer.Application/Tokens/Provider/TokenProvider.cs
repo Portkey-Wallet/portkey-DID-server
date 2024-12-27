@@ -50,7 +50,7 @@ public class TokenProvider : ITokenProvider, ISingletonDependency
             Query = @"
 			    query($chainId:String,$symbol:String,$symbolKeyword:String,$skipCount:Int!,$maxResultCount:Int!) {
                     tokenInfo(dto: {chainId:$chainId,symbol:$symbol,symbolKeyword:$symbolKeyword,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        id,chainId,blockHash,blockHeight,symbol,type,tokenContractAddress,decimals,tokenName,totalSupply,issuer,isBurnable,issueChainId
+                        id,chainId,blockHash,blockHeight,symbol,type,tokenContractAddress,decimals,tokenName,totalSupply,issuer,isBurnable,issueChainId,imageUrl
                     }
                 }",
             Variables = new

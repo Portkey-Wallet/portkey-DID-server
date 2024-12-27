@@ -127,7 +127,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(u => u.Token.ChainId))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
-            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
+            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(u => u.Token.ImageUrl));
         // Contact
         CreateMap<ContactAddressDto, ContactAddress>().ReverseMap();
         CreateMap<ContactAddressDto, ContactAddressEto>();
@@ -323,7 +324,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f =>
                     f.TokenInfo == null || f.TokenInfo.TokenContractAddress.IsNullOrEmpty()
                         ? null
-                        : f.TokenInfo.TokenContractAddress));
+                        : f.TokenInfo.TokenContractAddress))
+            .ForMember(t => t.ImageUrl, m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.ImageUrl));
         CreateMap<IndexerNftCollectionInfo, NftCollection>()
             .ForMember(t => t.ItemCount, m => m.MapFrom(f => f.TokenIds == null ? 0 : f.TokenIds.Count))
             .ForMember(t => t.ImageUrl,
@@ -358,7 +360,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Decimals,
                 m => m.MapFrom(f => f.TokenInfo == null ? new decimal() : f.TokenInfo.Decimals))
             .ForMember(t => t.TokenContractAddress,
-                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.TokenContractAddress));
+                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.TokenContractAddress))
+            .ForMember(t => t.ImageUrl,
+                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.ImageUrl));
 
         CreateMap<IndexerSearchTokenNft, NftInfoDto>()
             .ForMember(t => t.ImageUrl,
@@ -741,7 +745,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.TokenContractAddress, m => m.MapFrom(f => f.Token.Address))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<UserTokenIndex, GetTokenListDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
@@ -750,7 +755,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f => f.Id == Guid.Empty ? $"{f.Token.ChainId}-{f.Token.Symbol}" : f.Id.ToString()))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<UserTokenIndex, GetUserTokenDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
@@ -759,7 +765,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<UserTokenItem, GetUserTokenDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
@@ -768,7 +775,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<IndexerToken, GetTokenInfoDto>();
         CreateMap<IndexerToken, GetTokenListDto>();
@@ -783,7 +791,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(f => f.ChainId))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(f => f.Symbol))
             .ForPath(t => t.Token.Address, m => m.MapFrom(f => f.TokenContractAddress))
-            .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
+            .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(f => f.ImageUrl));
 
         CreateMap<TransactionDto, TransactionEto>();
         CreateMap<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>();
