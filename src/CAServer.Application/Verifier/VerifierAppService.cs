@@ -223,16 +223,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private async Task AppendSecondaryEmailInfo(VerifyTokenRequestDto requestDto, string guardianIdentifierHash,
         string guardianIdentifier, GuardianIdentifierType type)
     {
-        // if (requestDto.CaHash.IsNullOrEmpty())
-        // {
-        //     //existed guardian, get secondary email by guardian's identifierHash
-        //     requestDto.SecondaryEmail = await GetSecondaryEmailAsync(guardianIdentifierHash);
-        // }
-        // else
-        // {
-        //     //add guardian operation, get secondary email by caHash
-        //     requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
-        // }
+        if (requestDto.CaHash.IsNullOrEmpty())
+        {
+            //existed guardian, get secondary email by guardian's identifierHash
+            requestDto.SecondaryEmail = await GetSecondaryEmailAsync(guardianIdentifierHash);
+        }
+        else
+        {
+            //add guardian operation, get secondary email by caHash
+            requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
+        }
 
         requestDto.GuardianIdentifier = guardianIdentifier;
         requestDto.Type = type;
