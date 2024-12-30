@@ -178,7 +178,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
             var guardianIdentifier = userInfo.Email.IsNullOrEmpty() ? userInfo.Id : userInfo.Email;
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Google);
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier,
+                GuardianIdentifierType.Google);
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 
@@ -191,6 +192,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
             }
+
             await AddUserInfoAsync(
                 ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
             return new VerificationCodeResponse
@@ -231,6 +233,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             //add guardian operation, get secondary email by caHash
             requestDto.SecondaryEmail = await GetSecondaryEmailByCaHash(requestDto.CaHash);
         }
+
         requestDto.GuardianIdentifier = guardianIdentifier;
         requestDto.Type = type;
     }
@@ -242,6 +245,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new UserFriendlyException(caHolder.Message);
         }
+
         return caHolder.Data.SecondaryEmail;
     }
 
@@ -258,8 +262,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var user = await _userManager.FindByNameAsync(caHash);
         if (user != null)
         {
+            Logger.LogInformation("[FindByNameAsync] caHash:{0}, userId is:{1}, user info is:{2}", caHash, user.Id,
+                JsonConvert.SerializeObject(user));
             return user.Id;
         }
+
         throw new UserFriendlyException("the user doesn't exist, caHash:" + caHash);
     }
 
@@ -269,6 +276,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             return string.Empty;
         }
+
         var guardianIndex = await _accountProvider.GetIdentifiersAsync(guardianIdentifierHash);
         return guardianIndex != null ? guardianIndex.SecondaryEmail : string.Empty;
     }
@@ -280,8 +288,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var userExtraInfo = await _appleZkProvider.GetAppleUserExtraInfo(requestDto.AccessToken);
-            var guardianIdentifier = userExtraInfo == null || userExtraInfo.Email.IsNullOrEmpty() ? string.Empty : userExtraInfo?.Email;
-            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier, GuardianIdentifierType.Apple);
+            var guardianIdentifier = userExtraInfo == null || userExtraInfo.Email.IsNullOrEmpty()
+                ? string.Empty
+                : userExtraInfo?.Email;
+            await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, guardianIdentifier,
+                GuardianIdentifierType.Apple);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -293,6 +304,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
+
             await AddUserInfoAsync(
                 ObjectMapper.Map<AppleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.AppleUserExtraInfo));
 
@@ -327,7 +339,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var userId = await GetTwitterUserIdAsync(requestDto.AccessToken);
             // statistic
             await StatisticTwitterAsync(userId);
-            
+
             var hashInfo = await GetSaltAndHashAsync(userId);
             await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, string.Empty, GuardianIdentifierType.Twitter);
             var response =
@@ -343,6 +355,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
+
             await AddUserInfoAsync(
                 ObjectMapper.Map<TwitterUserExtraInfo, Dtos.UserExtraInfo>(response.Data.TwitterUserExtraInfo));
 
@@ -378,7 +391,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     public async Task<bool> VerifyRevokeCodeAsync(VerifyRevokeCodeInput input)
     {
         return await _verifierServerClient.VerifyRevokeCodeAsync(input);
-
     }
 
     private async Task<string> GetTwitterUserIdAsync(string accessToken)
@@ -393,6 +405,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new UserFriendlyException("Failed to get user info");
         }
+
         return userInfo.Data.Id;
     }
 
@@ -463,7 +476,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userId = GetTelegramUserId(requestDto.AccessToken);
-            _logger.LogDebug("TeleGram userid is {uid}",userId);
+            _logger.LogDebug("TeleGram userid is {uid}", userId);
             var hashInfo = await GetSaltAndHashAsync(userId);
             await AppendSecondaryEmailInfo(requestDto, hashInfo.Item1, string.Empty, GuardianIdentifierType.Telegram);
             var response =
@@ -477,6 +490,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
+
             await AddUserInfoAsync(
                 ObjectMapper.Map<TelegramUserExtraInfo, Dtos.UserExtraInfo>(response.Data.UserExtraInfo));
 
@@ -512,8 +526,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
             var guardianIdentifier = facebookUser.Email.IsNullOrEmpty() ? string.Empty : facebookUser.Email;
-            await AppendSecondaryEmailInfo(requestDto, userSaltAndHash.Item1, guardianIdentifier, GuardianIdentifierType.Facebook);
-            requestDto.SecondaryEmail = facebookUser.Email.IsNullOrEmpty() ? requestDto.SecondaryEmail : facebookUser.Email;
+            await AppendSecondaryEmailInfo(requestDto, userSaltAndHash.Item1, guardianIdentifier,
+                GuardianIdentifierType.Facebook);
+            requestDto.SecondaryEmail =
+                facebookUser.Email.IsNullOrEmpty() ? requestDto.SecondaryEmail : facebookUser.Email;
             var response =
                 await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
                     userSaltAndHash.Item2);
@@ -526,6 +542,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             {
                 await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
             }
+
             await AddUserInfoAsync(
                 ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
             return new VerificationCodeResponse
@@ -672,7 +689,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             _logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
                 JsonConvert.SerializeObject(guardianGrainDto.Data));
-            
+
             await _distributedEventBus.PublishAsync(
                 ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data));
         }
@@ -780,7 +797,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new Exception("Invalid token");
         }
     }
-    
+
     public async Task<CAHolderResultDto> GetHolderInfoByCaHashAsync(string caHash)
     {
         var result = await GetCaHolderByCaHash(caHash);
@@ -788,9 +805,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new UserFriendlyException(result.Message);
         }
+
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
-    
+
     public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId)
     {
         return await _getVerifierServerProvider.GetVerifierServerDetailsAsync(chainId);
