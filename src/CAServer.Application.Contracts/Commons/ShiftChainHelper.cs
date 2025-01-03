@@ -216,7 +216,7 @@ public static class ShiftChainHelper
             .FirstOrDefault(p => p.Length == 50) ?? addressSuffix;
     }
     
-    private static bool IsAelfAddress(string address)
+    public static bool IsAelfAddress(string address)
     {
         try
         {
