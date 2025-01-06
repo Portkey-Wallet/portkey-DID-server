@@ -6,6 +6,7 @@ using CAServer.AppleAuth;
 using CAServer.CAAccount.Provider;
 using CAServer.Cache;
 using CAServer.Common;
+using CAServer.Common.AelfClient;
 using CAServer.Commons;
 using CAServer.CryptoGift;
 using CAServer.DataReporting;
@@ -173,6 +174,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        context.Services.AddSingleton<IContractClient, MainChainContractClient>();
+        context.Services.AddSingleton<IContractClient, SideChainContractClient>();
         
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();

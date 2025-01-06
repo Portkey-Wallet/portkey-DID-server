@@ -20,4 +20,5 @@ public class GetTokenInfoDto : ChainDisplayNameDto
     public bool IsDisplay { get; set; }
     public string Expires { get; set; }
     public string SeedOwnedSymbol { get; set; }      
+    public string ImageUrl { get; set; }
 }

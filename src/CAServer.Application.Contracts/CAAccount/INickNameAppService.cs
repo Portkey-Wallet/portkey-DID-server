@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
@@ -14,6 +15,8 @@ public interface INickNameAppService
     Task<bool> GetPoppedUpAccountAsync();
     Task<bool> GetBubblingAccountAsync();
     Task ReplaceUserNicknameAsync(ReplaceNicknameDto replaceNicknameDto);
+    
+    Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(QueryUserInfosInput input);
 
     DefaultAvatarResponse GetDefaultAvatars();
 }
