@@ -111,6 +111,7 @@ public static class ShiftChainHelper
         { "SETH", "^0x[a-fA-F0-9]{40}$" },
         { "ETH", "^0x[a-fA-F0-9]{40}$" },
         { "BSC", "^0x[a-fA-F0-9]{40}$" },
+        { "TBSC", "^0x[a-fA-F0-9]{40}$" },
         { "ARBITRUM", "^0x[a-fA-F0-9]{40}$" },
         { "MATIC", "^0x[a-fA-F0-9]{40}$" },
         { "OPTIMISM", "^0x[a-fA-F0-9]{40}$" },
@@ -165,7 +166,7 @@ public static class ShiftChainHelper
     {
         if (address.Contains(CommonConstant.Underline) && address.StartsWith(CommonConstant.ELF))
         {
-            if (!IsAelfAddress(AddressHelper.ToShortAddress(address)))
+            if (!VerifyAelfAddress(AddressHelper.ToShortAddress(address)))
             {
                 return AddressFormat.NoSupport;
             }
@@ -181,7 +182,7 @@ public static class ShiftChainHelper
             return AddressFormat.NoSupport;
         }
 
-        if (IsAelfAddress(address))
+        if (VerifyAelfAddress(address))
         {
             return fromChain == CommonConstant.MainChainId ? AddressFormat.Main : AddressFormat.Dapp;
         }
@@ -216,7 +217,7 @@ public static class ShiftChainHelper
             .FirstOrDefault(p => p.Length == 50) ?? addressSuffix;
     }
     
-    public static bool IsAelfAddress(string address)
+    public static bool VerifyAelfAddress(string address)
     {
         try
         {
@@ -242,7 +243,7 @@ public static class ShiftChainHelper
         
         if(chain is CommonConstant.MainChainId or CommonConstant.TDVVChainId or CommonConstant.TDVWChainId)
         {
-            return AElf.AddressHelper.VerifyFormattedAddress(address);
+            return VerifyAelfAddress(address);
         } 
         
         return !NetworkPatternMap.ContainsKey(chain) || Regex.IsMatch(address, NetworkPatternMap[chain]);
