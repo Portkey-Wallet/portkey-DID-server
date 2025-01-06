@@ -261,7 +261,7 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
     private bool ValidateAddress(string network, string address)
     {
         return network == CommonConstant.ChainName
-            ? ShiftChainHelper.IsAelfAddress(AddressHelper.ToShortAddress(address))
+            ? ShiftChainHelper.VerifyAelfAddress(AddressHelper.ToShortAddress(address))
             : ShiftChainHelper.VerifyAddress(network, address);
     }
 
