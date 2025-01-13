@@ -111,6 +111,7 @@ public static class ShiftChainHelper
         { "SETH", "^0x[a-fA-F0-9]{40}$" },
         { "ETH", "^0x[a-fA-F0-9]{40}$" },
         { "BSC", "^0x[a-fA-F0-9]{40}$" },
+        { "TBSC", "^0x[a-fA-F0-9]{40}$" },
         { "ARBITRUM", "^0x[a-fA-F0-9]{40}$" },
         { "MATIC", "^0x[a-fA-F0-9]{40}$" },
         { "OPTIMISM", "^0x[a-fA-F0-9]{40}$" },
@@ -163,12 +164,17 @@ public static class ShiftChainHelper
 
     public static AddressFormat GetAddressFormat(string fromChain, string address)
     {
-        if (address.Split("_").Length == 3 && address.Split("_")[1].Length == 50)
+        if (address.Contains(CommonConstant.Underline) && address.StartsWith(CommonConstant.ELF))
         {
+            if (!VerifyAelfAddress(AddressHelper.ToShortAddress(address)))
+            {
+                return AddressFormat.NoSupport;
+            }
             if (address.EndsWith(CommonConstant.MainChainId))
             {
                 return AddressFormat.Main;
-            }else if (address.EndsWith(CommonConstant.TDVWChainId) || address.EndsWith(CommonConstant.TDVVChainId))
+            }
+            if (address.EndsWith(CommonConstant.TDVWChainId) || address.EndsWith(CommonConstant.TDVVChainId))
             {
                 return AddressFormat.Dapp;
             }
@@ -176,32 +182,27 @@ public static class ShiftChainHelper
             return AddressFormat.NoSupport;
         }
 
-        if (IsAelfAddress(address))
+        if (VerifyAelfAddress(address))
         {
-            if (fromChain == CommonConstant.MainChainId)
-            {
-                return AddressFormat.Main;
-            }
-
-            return AddressFormat.Dapp;
+            return fromChain == CommonConstant.MainChainId ? AddressFormat.Main : AddressFormat.Dapp;
         }
 
-        if (address.Length == 42)
+        if (IsEthAddress(address))
         {
             return AddressFormat.ETH;
         }
 
-        if (address.Length == 34)
+        if (IsTrxAddress(address))
         {
             return AddressFormat.TRX;
         }
 
-        if (address.Length == 43 || address.Length == 44)
+        if (IsSolanaAddress(address))
         {
             return AddressFormat.Solana;
         }
 
-        if (address.Length == 48 && (address.StartsWith("EQ") || address.StartsWith("UQ")))
+        if (IsTonAddress(address))
         {
             return AddressFormat.TON;
         }
@@ -216,7 +217,7 @@ public static class ShiftChainHelper
             .FirstOrDefault(p => p.Length == 50) ?? addressSuffix;
     }
     
-    private static bool IsAelfAddress(string address)
+    public static bool VerifyAelfAddress(string address)
     {
         try
         {
@@ -227,6 +228,11 @@ public static class ShiftChainHelper
             return false;
         }
     }
+
+    private static bool IsEthAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["ETH"]);
+    private static bool IsTrxAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["TRX"]);
+    private static bool IsSolanaAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["Solana"]);
+    private static bool IsTonAddress(string address) => Regex.IsMatch(address, NetworkPatternMap["TON"]);
     
     public static bool VerifyAddress(string chain, string address)
     {
@@ -237,11 +243,13 @@ public static class ShiftChainHelper
         
         if(chain is CommonConstant.MainChainId or CommonConstant.TDVVChainId or CommonConstant.TDVWChainId)
         {
-            return AElf.AddressHelper.VerifyFormattedAddress(address);
+            return VerifyAelfAddress(address);
         } 
         
         return !NetworkPatternMap.ContainsKey(chain) || Regex.IsMatch(address, NetworkPatternMap[chain]);
     }
+    
+    
 }
 
 public class ChainInfo

@@ -31,4 +31,5 @@ public class TokenInfo
     public int Decimals { get; set; }
     public string TokenName { get; set; }
     public long TotalSupply { get; set; }
+    public string ImageUrl { get; set; }
 }

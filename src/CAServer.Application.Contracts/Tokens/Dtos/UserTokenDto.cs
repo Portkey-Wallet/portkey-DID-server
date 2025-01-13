@@ -33,4 +33,5 @@ public class Token
     public string Symbol { get; set; }
     [Id(4)]
     public int Decimals { get; set; }
+    public string ImageUrl { get; set; }
 }

@@ -69,7 +69,8 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
                 Address = tokenItem.Token.Address,
                 ChainId = tokenItem.Token.ChainId,
                 Decimals = tokenItem.Token.Decimals,
-                Symbol = tokenItem.Token.Symbol
+                Symbol = tokenItem.Token.Symbol,
+                ImageUrl = tokenItem.Token.ImageUrl
             };
         }
 

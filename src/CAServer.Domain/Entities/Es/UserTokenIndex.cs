@@ -12,11 +12,13 @@ public class UserTokenIndex : CAServerEntity<Guid>, IIndexBuild
     [Keyword] public int SortWeight { get; set; }
     public Token Token { get; set; }
 }
+
 public class Token
 {
     [Keyword] public Guid Id { get; set; }
-    [Keyword] public string ChainId {get; set; }
+    [Keyword] public string ChainId { get; set; }
     [Keyword] public string Address { get; set; }
     [Keyword] public string Symbol { get; set; }
+    [Text(Index = false)] public string ImageUrl { get; set; }
     public int Decimals { get; set; }
 }

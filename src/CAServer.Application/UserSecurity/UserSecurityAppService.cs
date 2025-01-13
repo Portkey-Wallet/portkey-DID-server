@@ -486,7 +486,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             Restricted = true
         };
 
-        transferLimit.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.TokenInfo.Symbol);
+        transferLimit.ImageUrl =
+            _assetsLibraryProvider.buildSymbolImageUrl(token.TokenInfo.Symbol, token.TokenInfo.ImageUrl);
 
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))

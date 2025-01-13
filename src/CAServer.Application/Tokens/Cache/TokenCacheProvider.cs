@@ -21,7 +21,8 @@ public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
     private readonly IDistributedCache<GetTokenInfoDto> _tokenInfoCache;
     private readonly ILogger<TokenCacheProvider> _logger;
 
-    public TokenCacheProvider(IContractProvider contractProvider, IDistributedCache<GetTokenInfoDto> tokenInfoCache, ILogger<TokenCacheProvider> logger)
+    public TokenCacheProvider(IContractProvider contractProvider, IDistributedCache<GetTokenInfoDto> tokenInfoCache,
+        ILogger<TokenCacheProvider> logger)
     {
         _contractProvider = contractProvider;
         _tokenInfoCache = tokenInfoCache;
@@ -56,10 +57,15 @@ public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
                         Issuer = output.Issuer.ToBase58(),
                         IsBurnable = output.IsBurnable,
                         IssueChainId = output.IssueChainId,
-                        Expires = output.ExternalInfo?.Value.TryGetValue("__seed_exp_time", out _) == true ?
-                            output.ExternalInfo?.Value["__seed_exp_time"] : "",
-                        SeedOwnedSymbol = output.ExternalInfo?.Value.TryGetValue("__seed_owned_symbol", out _) == true ?
-                            output.ExternalInfo?.Value?["__seed_owned_symbol"] : ""
+                        Expires = output.ExternalInfo?.Value.TryGetValue("__seed_exp_time", out _) == true
+                            ? output.ExternalInfo?.Value["__seed_exp_time"]
+                            : "",
+                        SeedOwnedSymbol = output.ExternalInfo?.Value.TryGetValue("__seed_owned_symbol", out _) == true
+                            ? output.ExternalInfo?.Value?["__seed_owned_symbol"]
+                            : "",
+                        ImageUrl = output.ExternalInfo?.Value.TryGetValue("__ft_image_uri", out _) == true
+                            ? output.ExternalInfo?.Value?["__ft_image_uri"]
+                            : ""
                     }
                     : new GetTokenInfoDto();
                 await _tokenInfoCache.SetAsync(cacheKey, tokenInfoCache, new DistributedCacheEntryOptions
@@ -68,6 +74,7 @@ public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
                 });
                 return tokenInfoCache;
             }
+
             return tokenInfoCache;
         }
         catch (Exception e)
