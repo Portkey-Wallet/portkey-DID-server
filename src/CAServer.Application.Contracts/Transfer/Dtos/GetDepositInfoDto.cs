@@ -14,6 +14,7 @@ public class DepositInfoDto
     public string MinAmountUsd { get; set; }
     public string ServiceFee { get; set; }
     public string ServiceFeeUsd { get; set; }
+    public string CurrentThreshold { get; set; }
     public List<string> ExtraNotes { get; set; }
     public ExtraInfo ExtraInfo { get; set; }
 }
