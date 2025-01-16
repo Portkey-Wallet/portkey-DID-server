@@ -62,10 +62,10 @@ public class CAVerifierController : CAServerController
         [FromHeader] string acToken,
         VerifierServerInput verifierServerInput)
     {
-        // if (verifierServerInput.OperationType == OperationType.CreateCAHolder)
-        // {
-        //     throw new UserFriendlyException("Not support email register yet.");
-        // }
+        if (verifierServerInput.OperationType == OperationType.CreateCAHolder)
+        {
+            throw new UserFriendlyException("Not support email register yet.");
+        }
 
         var type = verifierServerInput.OperationType;
         ValidateOperationType(type);
