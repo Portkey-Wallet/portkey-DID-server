@@ -11,6 +11,7 @@ public class ChainDisplayNameDto
     public string ChainImageUrl { get; set; }
 
     private string _chainId;
+    [Id(2)]
     public string ChainId
     {
         get { return _chainId; }

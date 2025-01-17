@@ -1,9 +1,7 @@
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ZeroHoldings;
 using CAServer.Grains.State.UserExtraInfo;
-using Orleans;
 using Volo.Abp.ObjectMapping;
-
 
 public class ZeroHoldingsConfigGrain: Grain<ZeroHoldingsConfigState>, IZeroHoldingsConfigGrain
 {

@@ -1,6 +1,5 @@
 using CAServer.Grains.State.Market;
 using CAServer.Market;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.Market;

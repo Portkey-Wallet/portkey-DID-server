@@ -76,6 +76,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         //ConfigureEsIndexCreation();   
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<ContractServiceOptions>(configuration.GetSection("ContractService"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<ContractSyncOptions>(configuration.GetSection("Sync"));
         Configure<IndexOptions>(configuration.GetSection("Index"));

@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.ImTransfer;
 
 public interface IImTransferGrain : IGrainWithStringKey

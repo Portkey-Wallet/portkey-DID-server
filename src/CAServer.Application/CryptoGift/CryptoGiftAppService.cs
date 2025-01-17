@@ -171,7 +171,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task<PreGrabbedDto> ListCryptoPreGiftGrabbedItems(Guid redPackageId)
     {
-        var grain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var grain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftGrainDto = await grain.GetCryptoGift(redPackageId);
         if (!cryptoGiftGrainDto.Success || cryptoGiftGrainDto.Data == null)
         {
@@ -220,7 +220,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -327,7 +327,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal, string ipAddress, string identityCode)
     {
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -358,7 +358,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     public async Task CheckClaimQuotaAfterLoginCondition(RedPackageDetailDto redPackageDetailDto, string caHash)
     {
         var redPackageId = redPackageDetailDto.Id;
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -447,7 +447,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -641,7 +641,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         _logger.LogInformation("Test redPackageIndex:{0} cryptoGiftIndices:{1}", redPackageId, JsonConvert.SerializeObject(cryptoGiftIndices));
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         _logger.LogInformation("Test redPackageId:{0} cryptoGiftDto:{1}", redPackageId, JsonConvert.SerializeObject(cryptoGiftDto));
@@ -823,7 +823,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     private async Task<CryptoGiftDto> DoGetCryptoGiftAfterLogin(Guid redPackageId)
     {
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -920,7 +920,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             _logger.LogInformation($"Transfer cached failed cause userId redPackageId:{redPackageId}");
             throw new UserFriendlyException($"the user userId:{userId} doesn't exist");
         }
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {

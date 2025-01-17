@@ -3,7 +3,6 @@ using CAServer.EnumType;
 using CAServer.FreeMint.Dtos;
 using CAServer.Grains.State.FreeMint;
 using Microsoft.Extensions.Options;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.FreeMint;

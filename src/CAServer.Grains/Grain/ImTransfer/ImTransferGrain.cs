@@ -1,6 +1,5 @@
 using CAServer.Grains.State.ImTransfer;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.ImTransfer;

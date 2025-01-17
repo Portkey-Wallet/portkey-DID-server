@@ -641,7 +641,6 @@ public class ContractProvider : IContractProvider
         };
         _logger.LogInformation("SendTransferRedPacketToChainAsync sendInput: {sendInput}",
             JsonConvert.SerializeObject(sendInput));
-        var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);

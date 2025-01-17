@@ -1,5 +1,4 @@
 using CAServer.Grains.State.QrCode;
-using Orleans;
 
 namespace CAServer.Grains.Grain.QrCode;
 

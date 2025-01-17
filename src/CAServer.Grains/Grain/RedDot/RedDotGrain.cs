@@ -1,7 +1,6 @@
 using CAServer.EnumType;
 using CAServer.Grains.State.RedDot;
 using CAServer.RedDot.Dtos;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.RedDot;

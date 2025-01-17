@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.AddressBook;
 
 public interface IAddressBookGrain: IGrainWithGuidKey

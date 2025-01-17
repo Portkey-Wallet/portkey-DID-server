@@ -5,11 +5,11 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.CryptoGift;
 
-public class CryptoGiftGran : Orleans.Grain<CryptoGiftState>, ICryptoGiftGran
+public class CryptoGiftGrain : Orleans.Grain<CryptoGiftState>, ICryptoGiftGrain
 {
     private readonly IObjectMapper _objectMapper;
 
-    public CryptoGiftGran(IObjectMapper objectMapper)
+    public CryptoGiftGrain(IObjectMapper objectMapper)
     {
         _objectMapper = objectMapper;
     }

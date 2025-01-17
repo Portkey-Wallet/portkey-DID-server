@@ -40,16 +40,17 @@
     <PackageReference Include="AElf.Core" Version="1.2.3" />
     <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
     <PackageReference Include="AElf.Kernel.Types" Version="1.2.3" />
-    <PackageReference Include="AElf.OpenTelemetry" Version="8.2.0" />
+    <PackageReference Include="AElf.OpenTelemetry" Version="8.0.5" />
     <PackageReference Include="AElf.Types" Version="1.2.3" />
-    <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
     <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
+    <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="6.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="8.0.6" />
     <PackageReference Include="DistributedLock.Redis" Version="1.0.2" />
-    <PackageReference Include="GraphQL.Client" Version="5.1.0" />
-    <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
+    <PackageReference Include="GraphQL.Client" Version="6.0.0" />
+    <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0-preview1" />
     <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="8.2.0" />
   </ItemGroup>
 

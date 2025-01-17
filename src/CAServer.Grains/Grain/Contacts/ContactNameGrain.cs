@@ -1,5 +1,4 @@
 using CAServer.Grains.State.Contacts;
-using Orleans;
 
 namespace CAServer.Grains.Grain.Contacts;
 

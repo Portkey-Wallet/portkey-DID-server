@@ -1,7 +1,6 @@
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.State.AddressBook;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.AddressBook;

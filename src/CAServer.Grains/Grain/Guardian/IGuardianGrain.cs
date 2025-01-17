@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.Guardian;
 
 public interface IGuardianGrain : IGrainWithStringKey

@@ -1,9 +1,7 @@
 using CAServer.Grains.State.PrivacyPermission;
 using CAServer.PrivacyPermission;
 using CAServer.PrivacyPermission.Dtos;
-using MongoDB.Driver.Linq;
 using Volo.Abp.ObjectMapping;
-using Volo.Abp.PermissionManagement;
 
 namespace CAServer.Grains.Grain.PrivacyPermission;
 

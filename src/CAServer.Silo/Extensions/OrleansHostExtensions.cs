@@ -43,14 +43,16 @@ public static class OrleansHostExtensions
                         settings.ObjectCreationHandling = ObjectCreationHandling.Replace;
                         settings.DefaultValueHandling = DefaultValueHandling.Populate;
                     })
-                .ConfigureServices(services => services.AddSingleton<IGrainStateSerializer, VerifierJsonGrainStateSerializer>())
+                .ConfigureServices(services =>
+                    services.AddSingleton<IGrainStateSerializer, VerifierJsonGrainStateSerializer>())
                 .AddCaServerMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
                 {
                     op.CollectionPrefix = "GrainStorage";
                     op.DatabaseName = orleansConfigSection.GetValue<string>("DataBase");
 
                     var grainIdPrefix = orleansConfigSection
-                        .GetSection("GrainSpecificIdPrefix").GetChildren().ToDictionary(o => o.Key.ToLower(), o => o.Value);
+                        .GetSection("GrainSpecificIdPrefix").GetChildren()
+                        .ToDictionary(o => o.Key.ToLower(), o => o.Value);
                     op.KeyGenerator = id =>
                     {
                         var grainType = id.Type.ToString();
@@ -66,7 +68,8 @@ public static class OrleansHostExtensions
                 .Configure<GrainCollectionOptions>(options =>
                 {
                     // Override the value of CollectionAge to
-                    var collection = orleansConfigSection.GetSection(nameof(GrainCollectionOptions.ClassSpecificCollectionAge))
+                    var collection = orleansConfigSection
+                        .GetSection(nameof(GrainCollectionOptions.ClassSpecificCollectionAge))
                         .GetChildren();
                     foreach (var item in collection)
                     {
@@ -89,7 +92,8 @@ public static class OrleansHostExtensions
                     options.ClusterId = clusterId;
                     options.ServiceId = serviceId;
                 })
-                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
+                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); })
+                .AddActivityPropagation();
                // .AddMemoryGrainStorage("PubSubStore")
                 if (orleansConfigSection.GetValue<bool>("UseDashboard", false))
                 {

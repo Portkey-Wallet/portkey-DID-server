@@ -1,7 +1,6 @@
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.State;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 public class GuardianGrain : Grain<GuardianState>, IGuardianGrain

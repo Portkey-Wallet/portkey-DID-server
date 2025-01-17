@@ -1,5 +1,4 @@
 using CAServer.FreeMint.Dtos;
-using CAServer.Grains.State.FreeMint;
 
 namespace CAServer.Grains.Grain.FreeMint;
 

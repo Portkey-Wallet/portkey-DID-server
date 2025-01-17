@@ -1,6 +1,4 @@
 using CAServer.Grains.State.Bookmark;
-using Google.Protobuf.WellKnownTypes;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.Bookmark;
@@ -69,7 +67,7 @@ public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
         return oldData;
     }
 
-    public async Task<Empty> UpdateGrainIndexCount(Dictionary<int, int> indexCountDict)
+    public async Task<string> UpdateGrainIndexCount(Dictionary<int, int> indexCountDict)
     {
         var itemDict = State.Items.ToDictionary(i => i.Index, i => i);
         foreach (var indexCount in indexCountDict)
