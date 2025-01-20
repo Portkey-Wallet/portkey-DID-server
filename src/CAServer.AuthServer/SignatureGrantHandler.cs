@@ -124,9 +124,9 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         claimsPrincipal.SetScopes("CAServer");
         claimsPrincipal.SetResources(await GetResourcesAsync(context, principal.GetScopes()));
         claimsPrincipal.SetAudiences("CAServer");
-
-        await context.HttpContext.RequestServices.GetRequiredService<AbpOpenIddictClaimDestinationsManager>()
-            .SetAsync(principal);
+        // for detail: https://abp.io/docs/8.2/release-info/migration-guides/abp-7-3
+        await context.HttpContext.RequestServices.GetRequiredService<AbpOpenIddictClaimsPrincipalManager>()
+            .HandleAsync(context.Request,principal);
 
         await _distributedEventBus.PublishAsync(new UserLoginEto()
         {

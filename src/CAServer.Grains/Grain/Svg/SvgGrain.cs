@@ -3,7 +3,6 @@ using CAServer.Grains.State.SvgPart;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.ObjectMapping;
 
-
 namespace CAServer.Grains.Grain.Svg;
 
 public class SvgGrain :Orleans.Grain<SvgState> , ISvgGrain

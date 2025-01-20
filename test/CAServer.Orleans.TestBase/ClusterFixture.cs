@@ -1,6 +1,7 @@
 using AutoMapper;
 using CAServer.Grains;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Hosting;
 using Orleans.TestingHost;
@@ -31,9 +32,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     public TestCluster Cluster { get; private set; }
 
 
-    private class TestSiloConfigurations : ISiloBuilderConfigurator
+    private class TestSiloConfigurations : ISiloConfigurator
     {
-        public void Configure(ISiloHostBuilder hostBuilder)
+        public void Configure(ISiloBuilder hostBuilder)
         {
             hostBuilder.ConfigureServices(services =>
                 {
@@ -41,7 +42,8 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     // services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
                     services.AddMemoryCache();
                     services.AddDistributedMemoryCache();
-                    services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
+                    // todo modify
+                    //services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
 
                     services.AddSingleton(typeof(IDistributedCache), typeof(MemoryDistributedCache));
                     // services.AddSingleton(typeof(IDistributedCache<>), typeof(MemoryDistributedCache<>));
@@ -75,12 +77,13 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     services.OnExposing(onServiceExposingContext =>
                     {
                         //Register types for IObjectMapper<TSource, TDestination> if implements
-                        onServiceExposingContext.ExposedTypes.AddRange(
-                            ReflectionHelper.GetImplementedGenericTypes(
-                                onServiceExposingContext.ImplementationType,
-                                typeof(IObjectMapper<,>)
-                            )
-                        );
+                        // todo modify
+                        // onServiceExposingContext.ExposedTypes.AddRange(
+                        //     ReflectionHelper.GetImplementedGenericTypes(
+                        //         onServiceExposingContext.ImplementationType,
+                        //         typeof(IObjectMapper<,>)
+                        //     )
+                        // );
                     });
                     services.AddTransient(
                         typeof(IObjectMapper<>),
@@ -111,9 +114,10 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         public IMapper Mapper { get; set; }
     }
 
-    // private class TestClientBuilderConfigurator : IClientBuilderConfigurator
-    // {
-    //     public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) => clientBuilder
-    //         .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName);
-    // }
+    private class TestClientBuilderConfigurator : IClientBuilderConfigurator
+    {
+        public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) => clientBuilder
+            .AddMemoryStreams(CAServerApplicationConsts.MessageStreamName);
+            // .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName);
+    }
 }

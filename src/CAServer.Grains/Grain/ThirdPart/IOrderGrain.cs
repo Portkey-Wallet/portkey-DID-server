@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.ThirdPart;
 
 public interface IOrderGrain : IGrainWithGuidKey

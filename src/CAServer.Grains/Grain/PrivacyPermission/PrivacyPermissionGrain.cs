@@ -1,9 +1,7 @@
 using CAServer.Grains.State.PrivacyPermission;
 using CAServer.PrivacyPermission;
 using CAServer.PrivacyPermission.Dtos;
-using MongoDB.Driver.Linq;
 using Volo.Abp.ObjectMapping;
-using Volo.Abp.PermissionManagement;
 
 namespace CAServer.Grains.Grain.PrivacyPermission;
 
@@ -16,16 +14,16 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public async Task<PrivacyPermissionDto> GetPrivacyPermissionAsync()

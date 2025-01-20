@@ -38,7 +38,7 @@ public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
         var requestCacheKey = MakeResponseCacheKey(res.Response.RequestId);
         var clientCacheKey = MakeClientCacheKey(clientId);
         await _cacheProvider.Set(requestCacheKey, resJsonStr, GetMethodResponseTtl(res.Method));
-        _logger.Debug("set cache={requestCacheKey} body={body}", requestCacheKey, resJsonStr);
+        _logger.LogDebug("set cache={requestCacheKey} body={body}", requestCacheKey, resJsonStr);
         _cacheProvider.HSetWithExpire(clientCacheKey, res.Response.RequestId, "", GetClientCacheTtl());
         _logger.LogInformation(
             "set requestCacheKey={requestCacheKey}, clientCacheKey={clientCacheKey}, requestId={RequestId}",
@@ -78,7 +78,7 @@ public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
     public async Task<HubResponseCacheEntity<object>> GetRequestById(string requestId)
     {
         string jsonStr = await _cacheProvider.Get(MakeResponseCacheKey(requestId));
-        _logger.Debug("set cache={requestCacheKey} body={body}", MakeResponseCacheKey(requestId), jsonStr);
+        _logger.LogDebug("set cache={requestCacheKey} body={body}", MakeResponseCacheKey(requestId), jsonStr);
         return jsonStr == null ? null : Deserialize<HubResponseCacheEntity<object>>(jsonStr);
     }
 

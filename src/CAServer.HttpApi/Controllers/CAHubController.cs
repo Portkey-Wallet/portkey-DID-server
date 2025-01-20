@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Hubs;
 using Microsoft.AspNetCore.Mvc;
 

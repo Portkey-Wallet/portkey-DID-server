@@ -3,7 +3,7 @@
   <Import Project="..\..\common.props" />
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>CAServer</RootNamespace>
   </PropertyGroup>
 
@@ -22,7 +22,7 @@
   <ItemGroup>
 
     <PackageReference Include="AWSSDK.S3" Version="3.7.205.22" />
-    <PackageReference Include="AWSSDK.CognitoIdentity" Version="3.7.205.22" />
+    <PackageReference Include="AWSSDK.CognitoIdentity" Version="3.7.300" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
     <PackageReference Include="coverlet.collector" Version="3.2.0">
       <PrivateAssets>all</PrivateAssets>
