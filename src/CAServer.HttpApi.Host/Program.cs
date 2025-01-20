@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CAServer.Commons;
 using CAServer.Hubs;
 using CAServer.Nightingale;
 using Microsoft.AspNetCore.Builder;
@@ -8,7 +7,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
 
 namespace CAServer;
 
@@ -16,7 +14,13 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        Log.Logger = LogHelper.CreateLogger(LogEventLevel.Debug);
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .ReadFrom.Configuration(configuration)
+            .CreateLogger();
 
         try
         {
