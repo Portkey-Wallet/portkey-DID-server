@@ -72,7 +72,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _clusterClient = clusterClient;
         _appleUserProvider = appleUserProvider;
         _appleTransferOptions = appleTransferOptions.Value;
-        _stopRegisterOptions = stopRegisterOptions.Value; 
+        _stopRegisterOptions = stopRegisterOptions.Value;
         _nicknameProvider = nicknameProvider;
         _zkLoginProvider = zkLoginProvider;
         _guardiansCache = guardiansCache;
@@ -87,7 +87,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             return await GetGuardianIdentifiersAsync(guardianIdentifierDto);
         }
 
-        var key = GetGuardianIdentifiersCacheKey(guardianIdentifierDto.GuardianIdentifier, guardianIdentifierDto.ChainId);
+        var key = GetGuardianIdentifiersCacheKey(guardianIdentifierDto.GuardianIdentifier,
+            guardianIdentifierDto.ChainId);
         var result = await _guardiansCache.GetAsync(key);
         if (result != null)
         {
@@ -99,7 +100,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             await _guardiansCache.SetAsync(key, result, new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(_loginCacheOptions.GuardianIdentifiersCacheSeconds)
+                AbsoluteExpiration =
+                    DateTimeOffset.UtcNow.AddSeconds(_loginCacheOptions.GuardianIdentifiersCacheSeconds)
             });
         }
 
@@ -122,17 +124,20 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             sw.Start();
             guardianIdentifierHash = await GetHashFromIdentifierAsync(guardianIdentifierDto.GuardianIdentifier);
             sw.Stop();
-            _logger.LogInformation("GetGuardianIdentifiersAsync:GetHashFromIdentifierAsync=>cost:{0}ms", sw.ElapsedMilliseconds);
+            _logger.LogInformation("GetGuardianIdentifiersAsync:GetHashFromIdentifierAsync=>cost:{0}ms",
+                sw.ElapsedMilliseconds);
             if (string.IsNullOrWhiteSpace(guardianIdentifierHash))
             {
                 throw new UserFriendlyException($"{guardianIdentifierDto.GuardianIdentifier} not exist.",
                     GuardianMessageCode.NotExist);
             }
         }
+
         //get holderInfo from contract
         //100-1600ms, Key optimization
         sw.Restart();
-        var guardianResult = await GetHolderInfosAsync(guardianIdentifierHash, guardianIdentifierDto.ChainId, guardianIdentifierDto.CaHash,
+        var guardianResult = await GetHolderInfosAsync(guardianIdentifierHash, guardianIdentifierDto.ChainId,
+            guardianIdentifierDto.CaHash,
             guardianIdentifierDto.GuardianIdentifier);
         sw.Stop();
         _logger.LogInformation("GetGuardianIdentifiersAsync:GetHolderInfosAsync=>cost:{0}ms", sw.ElapsedMilliseconds);
@@ -213,7 +218,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         return result;
     }
-    
+
     private string GetRegisterInfoCacheKey(string guardianIdentifier)
     {
         return RegisterInfoCachePrefix + guardianIdentifier;
@@ -225,6 +230,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
+
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
         string originChainId;
         if (_loginCacheOptions.RegisterInfoParallelModeSwitch)
@@ -234,11 +240,17 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         else
         {
             var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
-            var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
+            var holderInfo = guardians?.CaHolderInfo?.FirstOrDefault(t =>
+                t.GuardianList != null && !t.GuardianList.Guardians.IsNullOrEmpty() &&
+                !string.IsNullOrWhiteSpace(t.OriginChainId));
+            var guardian = holderInfo?.GuardianList?.Guardians?.FirstOrDefault(t =>
+                t.IdentifierHash == guardianIdentifierHash && t.IsLoginGuardian == true);
+            
             originChainId = guardian == null
                 ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
-                : guardian.OriginChainId;
+                : holderInfo.OriginChainId;
         }
+
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
@@ -273,6 +285,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
             }
+
             throw new UserFriendlyException(guardianGrainDto.Message, GuardianMessageCode.NotExist);
         }
 
@@ -289,12 +302,13 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 {
                     var holderInfo =
                         await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
-                    if (holderInfo.CreateChainId > 0)
+                    if (holderInfo.CreateChainId > 0 &&
+                        ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId) == chainId)
                     {
                         return ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId);
                     }
 
-                    if (holderInfo?.GuardianList?.Guardians?.Count > 0)
+                    if (holderInfo.CreateChainId == 0 && holderInfo?.GuardianList?.Guardians?.Count > 0)
                     {
                         return chainId;
                     }
@@ -303,12 +317,13 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 {
                     var guardianResult =
                         await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId, true);
-                    if (!guardianResult.CreateChainId.IsNullOrEmpty())
+                    if (!guardianResult.CreateChainId.IsNullOrEmpty() && guardianResult.CreateChainId == chainId)
                     {
                         return guardianResult.CreateChainId;
                     }
 
-                    if (guardianResult?.GuardianList?.Guardians?.Count > 0)
+                    if (guardianResult.CreateChainId.IsNullOrEmpty() &&
+                        guardianResult?.GuardianList?.Guardians?.Count > 0)
                     {
                         return chainId;
                     }
@@ -323,18 +338,18 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 }
             }
         }
-        
+
         if (_stopRegisterOptions.Open)
         {
             throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
         }
+
         throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
     }
 
     private async Task<string> GetOriginalChainIdParallelMode(string guardianIdentifierHash, string caHash)
     {
         var holderInfoTasks = new List<Task<string>>();
-        holderInfoTasks.Add(BuildTaskByScan(guardianIdentifierHash, caHash));
         foreach (var (chainId, chainInfo) in _chainOptions.ChainInfos)
         {
             holderInfoTasks.Add(BuildTaskByContract(guardianIdentifierHash, caHash, chainId));
@@ -345,13 +360,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
         }
-        return originalChainIds.FirstOrDefault(item => !item.IsNullOrEmpty());
-    }
 
-    private async Task<string> BuildTaskByScan(string guardianIdentifierHash, string caHash)
-    {
-        var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, caHash);
-        return guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId))?.OriginChainId;
+        return originalChainIds.FirstOrDefault(item => !item.IsNullOrEmpty());
     }
 
     private async Task<string> BuildTaskByContract(string guardianIdentifierHash, string caHash, string chainId)
@@ -360,13 +370,21 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             if (!guardianIdentifierHash.IsNullOrEmpty() && !chainId.IsNullOrEmpty())
             {
-                var guardianResultDto = await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash:guardianIdentifierHash, chainId:chainId, needCache:true);
-                return guardianResultDto.CreateChainId.IsNullOrEmpty() ? null : guardianResultDto.CreateChainId;
+                var guardianResultDto =
+                    await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash: guardianIdentifierHash,
+                        chainId: chainId, needCache: true);
+                return guardianResultDto.CreateChainId.IsNullOrEmpty() || guardianResultDto.CreateChainId != chainId
+                    ? null
+                    : guardianResultDto.CreateChainId;
             }
             else
             {
-                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
-                return holderInfo.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId) : null;
+                var holderInfo =
+                    await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                return holderInfo.CreateChainId > 0 &&
+                       ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId) == chainId
+                    ? ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId)
+                    : null;
             }
         }
         catch (Exception e)
@@ -375,7 +393,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             return null;
         }
     }
-    
+
     private async Task AddGuardianInfoAsync(List<GuardianDto> guardians, Dictionary<string, string> hashDic,
         List<UserExtraInfoIndex> userExtraInfos)
     {
@@ -383,6 +401,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             return;
         }
+
         foreach (var guardian in guardians)
         {
             guardian.GuardianIdentifier = hashDic.GetValueOrDefault(guardian.IdentifierHash);
@@ -432,8 +451,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 return await _guardianProvider.GetHolderInfoFromCacheAsync(guardianIdentifierHash, chainId, true);
             }
-            
-            var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+
+            var holderInfo =
+                await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
             var guardianResultDto = ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
             _guardianProvider.AppendZkLoginInfo(holderInfo, guardianResultDto);
             return guardianResultDto;
@@ -532,12 +552,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     public async Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
         GuardianResultDto guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
-        if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
+        if (guardianResultDto == null || guardianResultDto.GuardianList == null ||
+            guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
         {
             return false;
         }
-        var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result is={0}, caHash={1}", result, updateGuardianIdentifierDto.CaHash);
+
+        var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId,
+            updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result is={0}, caHash={1}", result,
+            updateGuardianIdentifierDto.CaHash);
         return result;
     }
 
