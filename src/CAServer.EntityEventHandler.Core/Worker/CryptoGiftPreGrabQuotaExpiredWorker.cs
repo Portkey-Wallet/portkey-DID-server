@@ -10,17 +10,15 @@ using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.State;
 using CAServer.RedPackage.Dtos;
-using Microsoft.Extensions.DependencyInjection;
+using CAServer.ScheduledTask;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
-using Volo.Abp.BackgroundWorkers;
-using Volo.Abp.Threading;
 
 namespace CAServer.EntityEventHandler.Core.Worker;
 
-public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorkerBase
+public class CryptoGiftPreGrabQuotaExpiredWorker : ScheduledTaskBase
 {
     private const long ExtraDeviationMilliSeconds = 90000;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
@@ -28,20 +26,20 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
     private readonly ICryptoGiftProvider _cryptoGiftProvider;
     private readonly ILogger<CryptoGiftPreGrabQuotaExpiredWorker> _logger;
     
-    public CryptoGiftPreGrabQuotaExpiredWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+    public CryptoGiftPreGrabQuotaExpiredWorker(
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         ICryptoGiftProvider cryptoGiftProvider,
         IClusterClient clusterClient,
-        ILogger<CryptoGiftPreGrabQuotaExpiredWorker> logger) : base(timer, serviceScopeFactory)
+        ILogger<CryptoGiftPreGrabQuotaExpiredWorker> logger)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
         _cryptoGiftProvider = cryptoGiftProvider;
         _clusterClient = clusterClient;
         _logger = logger;
-        Timer.Period = WorkerConst.CryptoGiftExpiredTimePeriod;
+        Period = WorkerConst.CryptoGiftExpiredTimePeriod;
     }
 
-    protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
+    protected override async Task DoWorkAsync()
     {
         var yesterday = DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1)).ToUnixTimeMilliseconds();
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
