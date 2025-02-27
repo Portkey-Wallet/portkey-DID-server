@@ -20,4 +20,6 @@ public interface IUserAssetsAppService
 
     Task NftTraitsProportionCalculateAsync();
     Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request);
+
+    Task<NftItem> SetTraitsPercentageAsync(string traits);
 }

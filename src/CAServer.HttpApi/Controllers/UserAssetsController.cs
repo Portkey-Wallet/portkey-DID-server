@@ -69,6 +69,12 @@ public class UserAssetsController
     {
         return await _userAssetsAppService.GetNFTItemAsync(requestDto);
     }
+    
+    [HttpGet("setTraitsPercentage"), AllowAnonymous]
+    public async Task<NftItem> SetTraitsPercentageAsync(string traits)
+    {
+        return await _userAssetsAppService.SetTraitsPercentageAsync(traits);
+    }
 
     [HttpPost("recentTransactionUsers")]
     public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(
