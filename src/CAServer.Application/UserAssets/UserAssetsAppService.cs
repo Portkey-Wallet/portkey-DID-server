@@ -1622,4 +1622,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return false;
         }
     }
+
+    public async Task<NftItem> SetTraitsPercentageAsync(string traits)
+    {
+        var result = new NftItem()
+        {
+            Traits = traits
+        };
+        await CalculateAndSetTraitsPercentageAsync(result);
+        return result;
+    }
 }
