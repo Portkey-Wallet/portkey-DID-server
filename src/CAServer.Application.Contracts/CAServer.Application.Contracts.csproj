@@ -3,7 +3,7 @@
     <Import Project="..\..\common.props" />
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <RootNamespace>CAServer</RootNamespace>
     </PropertyGroup>
 
@@ -16,53 +16,40 @@
     <ItemGroup>
         <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3" />
-        <PackageReference Include="AutoMapper" Version="12.0.0" />
+        <PackageReference Include="AutoMapper" Version="13.0.1" />
         <PackageReference Include="CodingSeb.ExpressionEvaluator" Version="1.4.40" />
         <PackageReference Include="GoogleAuthenticator" Version="3.1.1" />
-        <PackageReference Include="GraphQL.Client" Version="5.1.0" />
-        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
-        <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />
+        <PackageReference Include="GraphQL.Client" Version="6.0.0" />
+        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
+        <PackageReference Include="GraphQL.Primitives" Version="6.0.0" />
         <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.10.0" />
         <PackageReference Include="Magick.NET.Core" Version="13.10.0" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
-        <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.6.5">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="3.6.5" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Orleans.Client" Version="8.1.0" />
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="8.1.0" />
         <PackageReference Include="NEST" Version="7.17.1" />
-        <PackageReference Include="Orleans.Providers.MongoDB" Version="3.8.0" />
+        <PackageReference Include="Orleans.Providers.MongoDB" Version="8.0.3" />
         <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
         <PackageReference Include="SkiaSharp" Version="2.88.8" />
         <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.0" />
         <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
         <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
-        <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.ObjectExtending" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.Account.Application.Contracts" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.Identity.Application.Contracts" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.PermissionManagement.Application.Contracts" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.TenantManagement.Application.Contracts" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.FeatureManagement.Application.Contracts" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.SettingManagement.Application.Contracts" Version="7.0.0" />
-        <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.1" />
-        <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="7.0.0" />
-        <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0-preview1" />
+        <PackageReference Include="Volo.Abp.Ddd.Domain" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.ObjectExtending" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.Account.Application.Contracts" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.Identity.Application.Contracts" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.PermissionManagement.Application.Contracts" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.TenantManagement.Application.Contracts" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.FeatureManagement.Application.Contracts" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.SettingManagement.Application.Contracts" Version="8.2.0" />
+        <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.2" />
+        <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="8.2.0" />
+        <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
         <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
         <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
     </ItemGroup>
-
-    <ItemGroup>
-        <Reference Include="CAServer.Application">
-            <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
-        </Reference>
-        <Reference Include="CAServer.Grains">
-          <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Grains.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-    
 
     <ItemGroup>
       <Folder Include="Market\atc\" />

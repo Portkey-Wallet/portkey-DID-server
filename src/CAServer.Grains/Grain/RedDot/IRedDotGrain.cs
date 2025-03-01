@@ -1,6 +1,5 @@
 using CAServer.EnumType;
 using CAServer.RedDot.Dtos;
-using Orleans;
 
 namespace CAServer.Grains.Grain.RedDot;
 

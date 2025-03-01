@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Chain;
 using CAServer.Commons.Etos;
 using Microsoft.AspNetCore.Authorization;

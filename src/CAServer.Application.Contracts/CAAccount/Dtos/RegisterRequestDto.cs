@@ -7,6 +7,7 @@ using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Commons;
+using Orleans;
 
 namespace CAServer.Dtos;
 
@@ -128,15 +129,31 @@ public class RegisterRequestDto : IValidatableObject
     }
 }
 
+[GenerateSerializer]
 public class ProjectDelegateInfo
 {
+    [Id(0)]
     public int ChainId { get; set; }
+
+    [Id(1)]
     public string ProjectHash { get; set; }
+
+    [Id(2)]
     public string IdentifierHash { get; set; }
+
+    [Id(3)]
     public int ExpirationTime { get; set; }
+
+    [Id(4)]
     public Dictionary<string,long> Delegations { get; set; }
+
+    [Id(5)]
     public bool IsUnlimitedDelegate { get; set; }
+
+    [Id(6)]
     public string Signature { get; set; }
+
+    [Id(7)]
     public long TimeStamp { get; set; }
     
 }

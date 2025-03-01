@@ -1,7 +1,6 @@
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.State.AddressBook;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.AddressBook;
@@ -17,16 +16,16 @@ public class AddressBookGrain : Grain<AddressBookState>, IAddressBookGrain
         _logger = logger;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken cancellationToken)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, cancellationToken);
     }
     
     public async Task<GrainResultDto<AddressBookGrainDto>> AddContactAsync(AddressBookGrainDto addressBookDto)
