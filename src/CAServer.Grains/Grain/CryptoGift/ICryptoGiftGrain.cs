@@ -1,9 +1,8 @@
 using CAServer.RedPackage.Dtos;
-using Orleans;
 
 namespace CAServer.Grains.Grain.CryptoGift;
 
-public interface ICryptoGiftGran : IGrainWithGuidKey
+public interface ICryptoGiftGrain : IGrainWithGuidKey
 {
     public Task<GrainResultDto<CryptoGiftDto>> GetCryptoGift(Guid redPackageId);
 

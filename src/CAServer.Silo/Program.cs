@@ -1,17 +1,22 @@
-﻿using CAServer.Commons;
-using CAServer.Nightingale;
+﻿using CAServer.Nightingale;
 using CAServer.Silo.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
 
 namespace CAServer.Silo;
 public class Program
 {
     public async static Task<int> Main(string[] args)
     {
-        Log.Logger = LogHelper.CreateLogger(LogEventLevel.Debug);
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .ReadFrom.Configuration(configuration)
+            .CreateLogger();
         
         try
         {
@@ -36,7 +41,7 @@ public class Program
             .UseApolloForHostBuilder()
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
             .UseNightingaleMonitoring()
-            .UseOrleansSnapshot()
             .UseAutofac()
+            .UseOrleansSnapshot()
             .UseSerilog();
 }
