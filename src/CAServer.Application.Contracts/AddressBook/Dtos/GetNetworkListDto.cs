@@ -13,4 +13,5 @@ public class AddressBookNetwork
     public string Name { get; set; }
     public string ChainId { get; set; }
     public string ImageUrl { get; set; }
+    public string Pattern { get; set; }
 }
