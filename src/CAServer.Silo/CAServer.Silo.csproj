@@ -12,10 +12,11 @@
         <PackageReference Include="AElf.OpenTelemetry" Version="8.0.5" />
         <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.2" />
         <PackageReference Include="JsonNet.PrivateSettersContractResolvers" Version="1.0.0" />
-        <PackageReference Include="Microsoft.Orleans.Sdk" Version="8.1.0" />
-        <PackageReference Include="Microsoft.Orleans.Server" Version="8.1.0" />
+        <PackageReference Include="Microsoft.Orleans.Reminders" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Orleans.Server" Version="9.0.0" />
         <PackageReference Include="Orleans.Providers.MongoDB" Version="8.0.3" />
-        <PackageReference Include="OrleansDashboard" Version="8.0.0" />
+        <PackageReference Include="OrleansDashboard" Version="8.2.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
         <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
         <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.0.0" />
