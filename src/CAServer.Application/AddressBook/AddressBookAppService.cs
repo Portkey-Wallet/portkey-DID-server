@@ -163,7 +163,9 @@ public class AddressBookAppService : CAServerAppService, IAddressBookAppService
                 Network = AddressHelper.GetNetwork(networkInfo.Network),
                 Name = AddressHelper.GetNetworkName(networkInfo.Network),
                 ImageUrl = ShiftChainHelper.GetChainImage(networkImageId),
-                ChainId = AddressHelper.GetAelfChainId(networkInfo.Network)
+                ChainId = AddressHelper.GetAelfChainId(networkInfo.Network),
+                Pattern = ShiftChainHelper.NetworkPatternMap.ContainsKey(AddressHelper.GetNetwork(networkInfo.Network)) ? 
+                    ShiftChainHelper.NetworkPatternMap[AddressHelper.GetNetwork(networkInfo.Network)] : ""
             };
 
             if (network.Name.IsNullOrEmpty() || networkList.Select(t => t.Network)
