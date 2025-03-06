@@ -7,8 +7,8 @@ namespace CAServer.Chain;
 [GenerateSerializer]
 public class ChainDto : ChainDisplayNameDto
 {
-    [Id(0)]
-    public string ChainId { get; set; }
+    // [Id(0)]
+    // public string ChainId { get; set; }
 
     [Id(1)]
     public string ChainName { get; set; }
