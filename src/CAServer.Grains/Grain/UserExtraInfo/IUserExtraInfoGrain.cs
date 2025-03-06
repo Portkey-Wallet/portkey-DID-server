@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.UserExtraInfo;
 
 public interface IUserExtraInfoGrain : IGrainWithStringKey

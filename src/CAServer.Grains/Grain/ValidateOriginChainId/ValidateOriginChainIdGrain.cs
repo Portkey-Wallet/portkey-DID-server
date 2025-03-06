@@ -1,5 +1,3 @@
-using AElf.Client.Service;
-using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.ValidateOriginChainId;

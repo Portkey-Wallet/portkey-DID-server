@@ -1,7 +1,6 @@
 using CAServer.EnumType;
 using CAServer.Grains.State.RedDot;
 using CAServer.RedDot.Dtos;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.RedDot;
@@ -15,16 +14,16 @@ public class RedDotGrain : Grain<RedDotState>, IRedDotGrain
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public Task<GrainResultDto<RedDotInfo>> GetRedDotInfo(RedDotType redDotType)

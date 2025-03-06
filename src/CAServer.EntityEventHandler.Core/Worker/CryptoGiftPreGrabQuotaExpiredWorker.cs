@@ -72,7 +72,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
                 {
                     continue;
                 }
-                var grain = _clusterClient.GetGrain<ICryptoGiftGran>(cryptoGiftIndex.RedPackageId);
+                var grain = _clusterClient.GetGrain<ICryptoGiftGrain>(cryptoGiftIndex.RedPackageId);
                 var ctrCryptoGiftResult = await grain.GetCryptoGift(cryptoGiftIndex.RedPackageId);
                 if (!ctrCryptoGiftResult.Success || ctrCryptoGiftResult.Data == null)
                 {

@@ -1,3 +1,4 @@
+using AElf.OpenTelemetry;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
@@ -13,7 +14,8 @@ namespace CAServer.Silo;
 
 [DependsOn(typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreSerilogModule),
-    typeof(CAServerGrainsModule)
+    typeof(CAServerGrainsModule),
+    typeof(OpenTelemetryModule)
 )]
 public class CAServerOrleansSiloModule : AbpModule
 {
