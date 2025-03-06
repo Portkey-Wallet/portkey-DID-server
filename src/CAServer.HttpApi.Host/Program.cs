@@ -16,15 +16,14 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        // var configuration = new ConfigurationBuilder()
-        //     .AddJsonFile("appsettings.json")
-        //     .Build();
-        // Log.Logger = new LoggerConfiguration()
-        //     .Enrich.FromLogContext()
-        //     .ReadFrom.Configuration(configuration)
-        //     .CreateLogger();
-        Log.Logger = LogHelper.CreateLogger(LogEventLevel.Debug);
-
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .ReadFrom.Configuration(configuration)
+            .CreateLogger();
+        
         try
         {
             Log.Information("Starting CAServer.HttpApi.Host");
@@ -35,7 +34,7 @@ public class Program
             builder.Configuration.AddJsonFile("activity.json");
             builder.Configuration.AddJsonFile("userToken.json");
 
-            var hostBuilder = builder.Host.AddAppSettingsSecretsJson()
+            builder.Host.AddAppSettingsSecretsJson()
                 .InitAppConfiguration(false)
                 .UseApolloForConfigureHostBuilder()
                 .UseNightingaleMonitoring()
