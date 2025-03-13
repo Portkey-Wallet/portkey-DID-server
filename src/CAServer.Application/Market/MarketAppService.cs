@@ -59,7 +59,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             result = await GetTrendingList();
         }
-        else if (MarketChosenType.Favorites.ToString().Equals(type))
+        else if (MarketChosenType.Favorites.ToString().Equals(type) && CurrentUser.Id.HasValue)
         {
             result = await GetFavoritesList(CurrentUser.GetId());
         }
@@ -116,7 +116,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task CollectedStatusHandler(List<MarketCryptocurrencyDto> result)
     {
-        if (result.IsNullOrEmpty())
+        if (result.IsNullOrEmpty() || !CurrentUser.Id.HasValue)
         {
             return;
         }

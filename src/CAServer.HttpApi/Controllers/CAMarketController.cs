@@ -27,6 +27,12 @@ public class CAMarketController : CAServerController
     {
         return await _marketAppService.GetMarketCryptocurrencyDataByType(type, sort, sortDir);
     }
+    
+    [HttpGet("noAuth/list"), AllowAnonymous]
+    public async Task<List<MarketCryptocurrencyDto>> GetMarketCryptocurrencyDataByTypeNoAuth(string type, string sort, string sortDir)
+    {
+        return await _marketAppService.GetMarketCryptocurrencyDataByType(type, sort, sortDir);
+    }
 
     [HttpPost("mark")]
     public async Task<string> MarkUserMarketFavoriteToken([FromBody] UserCollectFavoriteTokenDto dto)
