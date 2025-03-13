@@ -2,7 +2,6 @@ using CAServer.Bookmark.Dtos;
 using CAServer.Commons;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.State.Bookmark;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.Bookmark;
@@ -16,16 +15,16 @@ public class BookmarkGrain : Grain<BookmarkState>, IBookmarkGrain
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public async Task<GrainResultDto<BookmarkGrainResultDto>> AddBookMark(BookmarkGrainDto grainDto)

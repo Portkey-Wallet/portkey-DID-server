@@ -33,6 +33,7 @@ public class Program
                 .UseAutofac()
                 .InitAppConfiguration(true)
                 .UseApolloForHostBuilder()
+                .UseOrleansClient()
                 .UseSerilog();
             await builder.AddApplicationAsync<CABackGroundModule>();
             var app = builder.Build();

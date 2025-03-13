@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.Contacts;
 
 public interface IContactNameGrain : IGrainWithStringKey

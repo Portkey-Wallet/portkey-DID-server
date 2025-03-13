@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElf.Indexing.Elasticsearch.Options;
+using AElf.OpenTelemetry;
 using CAServer.Cache;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
@@ -49,6 +50,7 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(CAServerCoinGeckoApiModule),
+    typeof(OpenTelemetryModule),
     typeof(AbpEventBusRabbitMqModule))]
 public class CAServerEntityEventHandlerModule : AbpModule
 {
@@ -76,34 +78,34 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureDistributedLocking(context, configuration);
         ConfigureMassTransit(context, configuration);
         ConfigureRedisCacheProvider(context, configuration);
-        context.Services.AddSingleton<IClusterClient>(o =>
-        {
-            return new ClientBuilder()
-                .ConfigureDefaults()
-                .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-                .UseMongoDBClustering(options =>
-                {
-                    options.DatabaseName = configuration["Orleans:DataBase"];
-                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = configuration["Orleans:ClusterId"];
-                    options.ServiceId = configuration["Orleans:ServiceId"];
-                })
-                .Configure<ClientMessagingOptions>(options =>
-                {
-                    options.ResponseTimeout =
-                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
-                })
-                .ConfigureApplicationParts(parts =>
-                    parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
-                //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
-                .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .AddNightingaleMethodFilter(o)
-                .Build();
-        });
+        // context.Services.AddSingleton<IClusterClient>(o =>
+        // {
+        //     return new ClientBuilder()
+        //         .ConfigureDefaults()
+        //         .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
+        //         .UseMongoDBClustering(options =>
+        //         {
+        //             options.DatabaseName = configuration["Orleans:DataBase"];
+        //             options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+        //         })
+        //         .Configure<ClusterOptions>(options =>
+        //         {
+        //             options.ClusterId = configuration["Orleans:ClusterId"];
+        //             options.ServiceId = configuration["Orleans:ServiceId"];
+        //         })
+        //         .Configure<ClientMessagingOptions>(options =>
+        //         {
+        //             options.ResponseTimeout =
+        //                 TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+        //                     MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+        //         })
+        //         .ConfigureApplicationParts(parts =>
+        //             parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
+        //         //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
+        //         .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+        //         .AddNightingaleMethodFilter(o)
+        //         .Build();
+        // });
     }
     
     private void ConfigureGraphQl(ServiceConfigurationContext context,
@@ -183,8 +185,8 @@ public class CAServerEntityEventHandlerModule : AbpModule
         var cache = context.ServiceProvider.GetRequiredService<IDistributedCache<List<string>>>();
         cache.Set(CommonConstant.ResourceTokenKey, tokenList.UserToken.Select(t => t.Token.Symbol).Distinct().ToList());
 
-        var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async () => await client.Connect());
+        // var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
+        // AsyncHelper.RunSync(async () => await client.Connect());
     }
     
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
@@ -208,8 +210,8 @@ public class CAServerEntityEventHandlerModule : AbpModule
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(client.Close);
+        // var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
+        // AsyncHelper.RunSync(client.Close);
     }
 
     //Create the ElasticSearch Index based on Domain Entity

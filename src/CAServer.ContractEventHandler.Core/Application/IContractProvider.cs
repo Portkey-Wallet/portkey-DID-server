@@ -619,7 +619,7 @@ public class ContractProvider : IContractProvider
         }
 
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
-        _logger.Debug("SendTransferRedPacketToChainAsync message: {redPackageId}", redPackageDetail.Data.Id.ToString());
+        _logger.LogDebug("SendTransferRedPacketToChainAsync message: {redPackageId}", redPackageDetail.Data.Id.ToString());
         foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
         {
             _logger.LogInformation("redPackageKeyGrain GenerateSignature input{param}",
@@ -641,7 +641,6 @@ public class ContractProvider : IContractProvider
         };
         _logger.LogInformation("SendTransferRedPacketToChainAsync sendInput: {sendInput}",
             JsonConvert.SerializeObject(sendInput));
-        var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);

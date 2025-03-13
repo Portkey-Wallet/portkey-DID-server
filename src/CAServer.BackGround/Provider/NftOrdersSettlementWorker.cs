@@ -126,7 +126,7 @@ public class NftOrdersSettlementWorker : IJobWorker, ISingletonDependency
         }
         else
         {
-            _logger.Debug("NftOrdersSettlementWorker finish, success:{Success}/{Total}", success, total);
+            _logger.LogDebug("NftOrdersSettlementWorker finish, success:{Success}/{Total}", success, total);
         }
     }
 }

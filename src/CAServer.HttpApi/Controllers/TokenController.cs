@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Commons;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;

@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.Notify;
 
 public interface INotifyGrain : IGrainWithGuidKey
