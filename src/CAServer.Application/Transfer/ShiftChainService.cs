@@ -128,7 +128,18 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
         await setSendByETransfer(result, request);
 
         await setSendByEBridge(result, request);
+        var notAvailableSendNetworks = _eTransferOptions.NotAvailableSendNetworks;
+        var newNetworkList = new List<NetworkInfoDto>();
+        foreach (var networkInfo in result.NetworkList)
+        {
+            if (notAvailableSendNetworks.FirstOrDefault(t => t.FromNetwork == request.ChainId 
+                                                             && t.ToNetwork == networkInfo.Network && t.Symbol == request.Symbol) == null)
+            {
+                newNetworkList.Add(networkInfo);
+            }
+        }
 
+        result.NetworkList = newNetworkList;
         if (result.NetworkList.Count == 0)
         {
             return new ResponseWrapDto<SendNetworkDto>

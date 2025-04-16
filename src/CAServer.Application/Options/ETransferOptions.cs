@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CAServer.Options;
 
 public class ETransferOptions
@@ -9,4 +11,12 @@ public class ETransferOptions
     public int Timeout { get; set; } = 20;
     public string Version { get; set; }
     public string EBridgeLimiterUrl { get; set; }
+    public List<SendNetwork> NotAvailableSendNetworks { get; set; } = new();
+}
+
+public class SendNetwork
+{
+    public string FromNetwork { get; set; }
+    public string ToNetwork { get; set; }
+    public string Symbol { get; set; }
 }
