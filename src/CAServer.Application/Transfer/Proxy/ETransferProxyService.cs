@@ -23,6 +23,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
     private readonly ETransferOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly ChainOptions _chainOptions;
+    
 
     public ETransferProxyService(
         ILogger<ETransferProxyService> logger, IOptionsSnapshot<ETransferOptions> options,
