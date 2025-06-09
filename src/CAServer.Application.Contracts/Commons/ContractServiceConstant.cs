@@ -175,4 +175,8 @@ public static class CommonConstant
     public const string V2ApiVersion = "v2";
     public const string BaseNetwork = "BASE";
     public const string BaseNetworkName = "Base";
+    
+    public const string AppleUserTransferKey = "AppleUserTransfer";
+    public const string AppleMigrateUserKey = "AppleMigrateUser";
+    public const string AppleMigrateRecordKey = "AppleMigrateRecordKey";
 }
