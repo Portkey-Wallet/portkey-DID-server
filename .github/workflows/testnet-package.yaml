@@ -3,7 +3,7 @@ name: Build and Package
 on:
   push:
     branches:
-      - "feature/*-union"
+      - "feature/app-transfer-tool-v2"
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
@@ -13,12 +13,7 @@ jobs:
     strategy:
       matrix:
         servicename: [
-          CAServer.Silo,
-          CAServer.AuthServer,
-          CAServer.EntityEventHandler,
-          CAServer.ContractEventHandler,
-          CAServer.HttpApi.Host,
-          CAServer.BackGround
+          CAServer.AppleMigrate
         ]
     steps:
       - uses: actions/checkout@v4
@@ -38,12 +33,7 @@ jobs:
     strategy:
       matrix:
         servicename: [
-          CAServer.Silo,
-          CAServer.AuthServer,
-          CAServer.EntityEventHandler,
-          CAServer.ContractEventHandler,
-          CAServer.HttpApi.Host,
-          CAServer.BackGround
+          CAServer.AppleMigrate
         ]
     permissions:
       contents: read
