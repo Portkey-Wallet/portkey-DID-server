@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.AppleAuth;
 using CAServer.AppleVerify;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
@@ -11,6 +12,7 @@ using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -32,7 +34,8 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
     private readonly IVerifierServerClient _verifierServerClient;
     private readonly IGetVerifierServerProvider _verifierServerProvider;
     private readonly IObjectMapper _objectMapper;
-    
+    private readonly AppleAuthOptions _appleAuthOptions;
+
     public AppleZkProvider(
         IGuardianUserProvider guardianUserProvider,
         ILogger<AppleZkProvider> logger,
@@ -41,7 +44,8 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         IHttpClientFactory httpClientFactory,
         IVerifierServerClient verifierServerClient,
         IGetVerifierServerProvider verifierServerProvider,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        IOptionsSnapshot<AppleAuthOptions> appleAuthOption)
     {
         _guardianUserProvider = guardianUserProvider;
         _logger = logger;
@@ -51,6 +55,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
         _verifierServerClient = verifierServerClient;
         _verifierServerProvider = verifierServerProvider;
         _objectMapper = objectMapper;
+        _appleAuthOptions = appleAuthOption.Value;
     }
     
     public async Task<string> SaveGuardianUserBeforeZkLoginAsync(VerifiedZkLoginRequestDto requestDto)
@@ -132,14 +137,7 @@ public class AppleZkProvider : CAServerAppService, IAppleZkProvider
                 ValidateIssuer = true,
                 ValidIssuer = "https://appleid.apple.com",
                 ValidateAudience = true,
-                //_appleAuthOptions.Audiences, in appsettings.json, not in appolo
-                ValidAudiences = new List<string>{
-                    "com.portkey.finance",
-                    "com.portkey.did",
-                    "did.portkey",
-                    "com.portkey.did.tran",
-                    "com.portkey.did.extension.service"
-                },
+                ValidAudiences = _appleAuthOptions.Audiences,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = jwk
