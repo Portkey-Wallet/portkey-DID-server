@@ -184,7 +184,7 @@ public class AppleGuardianProvider : CAServerAppService, IAppleGuardianProvider
             throw new UserFriendlyException($"user not in cache, userId:{userId}");
         }
 
-        var migrateResponseDto = await _migrateUserInfo.GetAsync(CommonConstant.AppleMigrateUserKey + userId);
+        var migrateResponseDto = await _migrateUserInfo.GetAsync(CommonConstant.AppleMigrateUserKey + userInfo.Sub);
         if (migrateResponseDto == null)
         {
             throw new UserFriendlyException($"migrate guardian info not in cache, userId:{userId}");
