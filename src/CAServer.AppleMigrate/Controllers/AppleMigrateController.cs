@@ -51,9 +51,9 @@ public class AppleMigrateController : CAServerController
     }
 
     [HttpGet("getNewUserId")]
-    public async Task<GetNewUserIdDto> GetNewUserIdAsync(string userId)
+    public async Task<GetNewUserIdDto> GetNewUserIdAsync(string transferSub)
     {
-        return await _appleMigrateProvider.GetNewUserIdAsync(userId);
+        return await _appleMigrateProvider.GetNewUserIdAsync(transferSub);
     }
     
     [HttpGet("getSecretAndAccessToken")]

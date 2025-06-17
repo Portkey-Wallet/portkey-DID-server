@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.AppleAuth;
 using CAServer.AppleMigrate.Dtos;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -22,18 +24,21 @@ public class AppleGuardianProvider : CAServerAppService, IAppleGuardianProvider
     private readonly IDistributedCache<AppleUserTransfer> _distributedCache;
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly IDistributedCache<AppleMigrateResponseDto> _migrateUserInfo;
+    private readonly AppleAuthOptions _oldAppleAuthOptions;
     private static long _guardianTotalCount = 0;
 
     public AppleGuardianProvider(
         INESTRepository<GuardianIndex, string> guardianRepository,
         IDistributedCache<AppleUserTransfer> distributedCache,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
-        IDistributedCache<AppleMigrateResponseDto> migrateUserInfo)
+        IDistributedCache<AppleMigrateResponseDto> migrateUserInfo,
+        IOptionsSnapshot<AppleAuthOptions> oldAppleAuthOptions)
     {
         _guardianRepository = guardianRepository;
         _distributedCache = distributedCache;
         _userExtraInfoRepository = userExtraInfoRepository;
         _migrateUserInfo = migrateUserInfo;
+        _oldAppleAuthOptions = oldAppleAuthOptions.Value;
     }
 
     public async Task<int> SetAppleGuardianIntoCache()
@@ -48,56 +53,69 @@ public class AppleGuardianProvider : CAServerAppService, IAppleGuardianProvider
         var guardians = new List<GuardianIndex>();
         var appleUserTransferInfos = new List<AppleUserTransferInfo>();
 
-        var skip = 0;
-        var limit = 100;
-
-        var list = await GetGuardiansAsync(skip, limit);
-        guardians.AddRange(list.Where(t => AppleHelper.IsAppleUserId(t.Identifier)));
-        var queryCount = (int)(_guardianTotalCount / limit) + 1;
-
-        Logger.LogInformation("will query guardian index {count} times.", queryCount);
-        for (var i = 1; i < queryCount; i++)
+        if (_oldAppleAuthOptions.MigrateUserIdList.Count > 0)
         {
-            skip = i * limit;
-            var cur = await GetGuardiansAsync(skip, limit);
-            guardians.AddRange(cur.Where(t => AppleHelper.IsAppleUserId(t.Identifier)));
-        }
-
-        foreach (var guardianIndex in guardians)
-        {
-            if (guardianIndex == null || guardianIndex.Identifier.IsNullOrWhiteSpace()) continue;
-
-            appleUserTransferInfos.Add(new AppleUserTransferInfo()
-            {
-                UserId = guardianIndex.Identifier
-            });
-
-            count++;
-        }
-
-        Logger.LogInformation("apple user guardian count: {count}.", guardians.Count);
-
-        var ids = appleUserTransferInfos.Select(t => t.UserId).ToList();
-
-        var userExtraInfos = await GetUserExtraInfoAsync();
-        foreach (var info in userExtraInfos)
-        {
-            if (info == null || info.Id.IsNullOrWhiteSpace()) continue;
-
-            var id = info.Id.Replace("UserExtraInfo-", "").Trim();
-            if (!ids.Contains(id))
+            foreach (var userId in _oldAppleAuthOptions.MigrateUserIdList)
             {
                 appleUserTransferInfos.Add(new AppleUserTransferInfo()
                 {
-                    UserId = id
+                    UserId = userId
                 });
-
-                Logger.LogWarning("why user id just in extra info index? {userId}", id);
-                count++;
             }
         }
+        else
+        {
+            var skip = 0;
+            var limit = 100;
 
-        Logger.LogInformation("apple user guardian and user extra info count: {count}.", guardians.Count);
+            var list = await GetGuardiansAsync(skip, limit);
+            guardians.AddRange(list.Where(t => AppleHelper.IsAppleUserId(t.Identifier)));
+            var queryCount = (int) (_guardianTotalCount / limit) + 1;
+
+            Logger.LogInformation("will query guardian index {count} times.", queryCount);
+            for (var i = 1; i < queryCount; i++)
+            {
+                skip = i * limit;
+                var cur = await GetGuardiansAsync(skip, limit);
+                guardians.AddRange(cur.Where(t => AppleHelper.IsAppleUserId(t.Identifier)));
+            }
+
+            foreach (var guardianIndex in guardians)
+            {
+                if (guardianIndex == null || guardianIndex.Identifier.IsNullOrWhiteSpace()) continue;
+
+                appleUserTransferInfos.Add(new AppleUserTransferInfo()
+                {
+                    UserId = guardianIndex.Identifier
+                });
+
+                count++;
+            }
+
+            Logger.LogInformation("apple user guardian count: {count}.", guardians.Count);
+
+            var ids = appleUserTransferInfos.Select(t => t.UserId).ToList();
+
+            var userExtraInfos = await GetUserExtraInfoAsync();
+            foreach (var info in userExtraInfos)
+            {
+                if (info == null || info.Id.IsNullOrWhiteSpace()) continue;
+
+                var id = info.Id.Replace("UserExtraInfo-", "").Trim();
+                if (!ids.Contains(id))
+                {
+                    appleUserTransferInfos.Add(new AppleUserTransferInfo()
+                    {
+                        UserId = id
+                    });
+
+                    Logger.LogWarning("why user id just in extra info index? {userId}", id);
+                    count++;
+                }
+            }
+
+            Logger.LogInformation("apple user guardian and user extra info count: {count}.", guardians.Count);
+        }
 
         var userTransferEnd = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
         if (userTransferEnd?.AppleUserTransferInfos is { Count: > 0 })

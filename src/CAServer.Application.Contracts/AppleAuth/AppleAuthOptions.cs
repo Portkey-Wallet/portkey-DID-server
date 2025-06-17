@@ -9,6 +9,7 @@ public class AppleAuthOptions
     public string BingoRedirectUrl { get; set; }
     public string UnifyRedirectUrl { get; set; }
     public ExtensionConfig ExtensionConfig { get; set; }
+    public List<string> MigrateUserIdList { get; set; } = new();
 }
 
 public class ExtensionConfig
