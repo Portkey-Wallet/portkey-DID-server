@@ -145,6 +145,7 @@ public class CAServerApplicationModule : AbpModule
         //Configure<IndexPrefixOptions>(configuration.GetSection("IndexPrefixSetting"));
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
+        Configure<AppleAuthTransferredOptions>(configuration.GetSection("AppleAuthTransferred"));
         Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));

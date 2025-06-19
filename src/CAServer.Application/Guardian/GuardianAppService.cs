@@ -221,7 +221,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
-        if (_appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
+        if (!requestDto.LoginGuardianIdentifier.IsNullOrEmpty() && _appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
         {
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }

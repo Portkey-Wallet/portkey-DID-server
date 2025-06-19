@@ -7,6 +7,7 @@ using AutoMapper;
 using CAServer.Awaken;
 using CAServer.AddressBook.Dtos;
 using CAServer.AddressBook.Etos;
+using CAServer.AppleMigrate.Dtos;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
@@ -1123,5 +1124,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<AddressInfo, ContactAddressInfo>().ReverseMap();
         CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, CAServer.AddressBook.Dtos.ContactCaHolderInfo>().ReverseMap();
         CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, ContactAddressInfoDto>().ReverseMap();
+        
+        CreateMap<UserExtraInfoGrainDto, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<GuardianGrainDto, AppleMigrateResponseDto>();
+        CreateMap<GuardianGrainDto, GuardianIndex>();
     }
 }

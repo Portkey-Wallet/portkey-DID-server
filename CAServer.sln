@@ -73,6 +73,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.ContractEventHandl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Nightingale", "src\CAServer.Nightingale\CAServer.Nightingale.csproj", "{F65B38A5-9835-4146-A82F-E7B73D61A28A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.AppleMigrate", "src\CAServer.AppleMigrate\CAServer.AppleMigrate.csproj", "{2B2DDBFF-1BB7-4EF6-9329-5C8ED5F30F27}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -211,6 +213,10 @@ Global
 		{F65B38A5-9835-4146-A82F-E7B73D61A28A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F65B38A5-9835-4146-A82F-E7B73D61A28A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F65B38A5-9835-4146-A82F-E7B73D61A28A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B2DDBFF-1BB7-4EF6-9329-5C8ED5F30F27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B2DDBFF-1BB7-4EF6-9329-5C8ED5F30F27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B2DDBFF-1BB7-4EF6-9329-5C8ED5F30F27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B2DDBFF-1BB7-4EF6-9329-5C8ED5F30F27}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -249,6 +255,7 @@ Global
 		{8BF4A5D9-90EC-47C6-B778-419099BF453D} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{7AF6AC0F-D8CE-405B-B537-CF9E74B0F591} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
 		{F65B38A5-9835-4146-A82F-E7B73D61A28A} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{2B2DDBFF-1BB7-4EF6-9329-5C8ED5F30F27} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}
