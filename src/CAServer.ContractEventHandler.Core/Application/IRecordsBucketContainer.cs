@@ -142,6 +142,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
     {
         if (records.IsNullOrEmpty())
         {
+            await SetValidatedRecordsAsyncEmpty(chainId);
             return;
         }
         foreach (var syncRecord in records)
@@ -150,6 +151,16 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         }
         
         var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
+        for (int i = 0; i < _indexOptions.MaxBucket; i++)
+        {
+            if (!dict.TryGetValue(i.ToString(), out var value))
+            {
+                var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
+                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
+                await grain.SetValidatedRecords(new List<SyncRecord>());
+            }
+        }
+        
         foreach (var bucket in dict)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
@@ -179,6 +190,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
     {
         if (records.IsNullOrEmpty())
         {
+            await SetToBeValidatedRecordsAsyncEmpty(chainId);
             return;
         }
         foreach (var syncRecord in records)
@@ -186,6 +198,15 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             _logger.LogInformation($"IRecordsBucketContainer SetToBeValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord.BlockHeight}");
         }
         var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
+        for (int i = 0; i < _indexOptions.MaxBucket; i++)
+        {
+            if (!dict.TryGetValue(i.ToString(), out var value))
+            {
+                var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
+                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
+                await grain.SetToBeValidatedRecords(new List<SyncRecord>());
+            }
+        }
         foreach (var bucket in dict)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
