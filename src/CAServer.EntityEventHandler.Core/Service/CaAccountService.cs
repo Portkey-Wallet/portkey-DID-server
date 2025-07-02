@@ -329,7 +329,7 @@ public class CaAccountService : ICaAccountService, ISingletonDependency
     {
         if (!recoverIndex.RecoverySuccess == false) return;
 
-        var title = "Register Error";
+        var title = "Recover Error";
         _ = _businessAlertProvider.SendWebhookAsync(recoverIndex.Id.ToString(), title,
             recoverIndex.RecoveryMessage ?? "-",
             JsonConvert.SerializeObject(recoverIndex));

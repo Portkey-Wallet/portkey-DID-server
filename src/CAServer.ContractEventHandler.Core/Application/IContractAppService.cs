@@ -8,6 +8,7 @@ using AElf;
 using AElf.Client.Dto;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -80,6 +81,7 @@ public class ContractAppService : IContractAppService
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
     private const int AcceleratedThreadCount = 3;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
+    private readonly IBusinessAlertProvider _businessAlertProvider;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -91,7 +93,8 @@ public class ContractAppService : IContractAppService
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount,
         IRedPackageCreateResultService redPackageCreateResultService,
-        INESTRepository<RedPackageIndex, Guid> redPackageRepository)
+        INESTRepository<RedPackageIndex, Guid> redPackageRepository,
+        IBusinessAlertProvider businessAlertProvider)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -111,6 +114,7 @@ public class ContractAppService : IContractAppService
         _packageAccount = packageAccount.Value;
         _redPackageCreateResultService = redPackageCreateResultService;
         _redPackageRepository = redPackageRepository;
+        _businessAlertProvider = businessAlertProvider;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -992,6 +996,14 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation($"SyncQueryEventsAsync Found record = {syncRecord.CaHash} {syncRecord.BlockHeight}");
             }
 
+            if (recordsAmount > 1000)
+            {
+                var title = "SyncQueryEvents Error";
+                _ = _businessAlertProvider.SendWebhookAsync(chainId, title,
+                    $"ValidatedRecords size = {recordsAmount}",
+                    "");
+            } 
+
             if (chainId == ContractAppServiceConstant.MainChainId)
             {
                 foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
@@ -1253,6 +1265,14 @@ public class ContractAppService : IContractAppService
             storedToBeValidatedRecords = OptimizeSyncRecords(storedToBeValidatedRecords
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
             _logger.LogInformation($"ValidateQueryEventsAsync storedToBeValidatedRecords filter retryTimes size = {storedToBeValidatedRecords.Count}");
+
+            if (storedToBeValidatedRecords.Count > 1000)
+            {
+                var title = "ValidateQueryEvents Error";
+                _ = _businessAlertProvider.SendWebhookAsync(chainId, title,
+                    $"ToBeValidatedRecords size = {storedToBeValidatedRecords.Count}",
+                    "");
+            }
 
             for (var i = 0; i < storedToBeValidatedRecords.Count; i++)
             {
