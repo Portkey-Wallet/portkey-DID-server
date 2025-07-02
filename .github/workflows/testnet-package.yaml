@@ -3,7 +3,7 @@ name: Build and Package
 on:
   push:
     branches:
-      - "feature/app-transfer-tool-v2"
+      - "feature/fix-sync-events"
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
