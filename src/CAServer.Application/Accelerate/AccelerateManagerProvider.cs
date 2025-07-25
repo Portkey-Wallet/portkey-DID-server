@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Verifier;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -53,6 +53,23 @@ public class AccelerateManagerProvider : IAccelerateManagerProvider, ISingletonD
             return string.Empty;
         }
         var detailsDto = JsonConvert.DeserializeObject<OperationDetailsDto>(operationDetailsJson);
+        if (type == OperationType.GuardianApproveTransfer)
+        {
+            detailsDto.ToAddress = AddressHelper.ToShortAddress(detailsDto.ToAddress);
+        }
+
         return operationDetailsProvider.GenerateOperationDetails(detailsDto);
+    }
+    
+    private static string ShiftAmountString(string amountStr, int shift)
+    {
+        if (!decimal.TryParse(amountStr, out var amount))
+            throw new ArgumentException("Invalid amount string");
+
+        var multiplier = (decimal)Math.Pow(10, shift);
+        var shifted = amount * multiplier;
+
+        return ((long)shifted).ToString(); 
+    
     }
 }

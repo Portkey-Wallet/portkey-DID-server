@@ -3,7 +3,7 @@ name: Build and Package
 on:
   push:
     branches:
-      - "feature/fix-sync-events"
+      - "feature/fix-operate-details"
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
