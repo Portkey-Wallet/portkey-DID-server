@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Options;
-using CAServer.Tokens.Provider;
 using CAServer.Verifier;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -14,23 +11,20 @@ namespace CAServer.Accelerate;
 
 public interface IAccelerateManagerProvider
 {
-    Task<string> GenerateOperationDetails(OperationType type, string operationDetailsJson);
+    string GenerateOperationDetails(OperationType type, string operationDetailsJson);
 }
 
 public class AccelerateManagerProvider : IAccelerateManagerProvider, ISingletonDependency
 {
     private readonly AccelerateManagerOptions _accelerateManagerOptions;
-    private readonly ITokenProvider _tokenProvider;
 
     private readonly Dictionary<OperationType, IOperationDetailsProvider> _operationDetailsProviders =
         new Dictionary<OperationType, IOperationDetailsProvider>();
 
     public AccelerateManagerProvider(IOptions<AccelerateManagerOptions> accelerateManagerOptions,
-        IEnumerable<IOperationDetailsProvider> operationDetailsProviders,
-        ITokenProvider tokenProvider)
+        IEnumerable<IOperationDetailsProvider> operationDetailsProviders)
     {
         _accelerateManagerOptions = accelerateManagerOptions.Value;
-        _tokenProvider = tokenProvider;
         if (operationDetailsProviders != null)
         {
             foreach (var item in operationDetailsProviders)
@@ -40,7 +34,7 @@ public class AccelerateManagerProvider : IAccelerateManagerProvider, ISingletonD
         }
     }
 
-    public async Task<string> GenerateOperationDetails(OperationType type, string operationDetailsJson)
+    public string GenerateOperationDetails(OperationType type, string operationDetailsJson)
     {
         if (type == OperationType.Unknown || operationDetailsJson.IsNullOrWhiteSpace())
         {
@@ -62,8 +56,6 @@ public class AccelerateManagerProvider : IAccelerateManagerProvider, ISingletonD
         if (type == OperationType.GuardianApproveTransfer)
         {
             detailsDto.ToAddress = AddressHelper.ToShortAddress(detailsDto.ToAddress);
-            var tokenInfo = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, detailsDto.Symbol);
-            detailsDto.Amount = ShiftAmountString(detailsDto.Amount, tokenInfo.Decimals);
         }
 
         return operationDetailsProvider.GenerateOperationDetails(detailsDto);

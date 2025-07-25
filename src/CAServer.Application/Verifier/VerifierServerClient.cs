@@ -101,7 +101,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var operationDetails =
-            await _accelerateManagerProvider.GenerateOperationDetails(dto.OperationType, dto.OperationDetails);
+            _accelerateManagerProvider.GenerateOperationDetails(dto.OperationType, dto.OperationDetails);
         var showOperationDetails = new ShowOperationDetailsDto
         {
             OperationType = GetOperationDecs(dto.OperationType),
@@ -233,7 +233,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var operationDetails =
-            await _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
+            _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
         var type = Convert.ToInt32(input.OperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
@@ -378,7 +378,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
         var url = endPoint + requestUri;
         var operationDetails =
-            await _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
+            _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
         var showOperationDetails = new ShowOperationDetailsDto
         {
             OperationType = GetOperationDecs(input.OperationType),
