@@ -208,8 +208,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
             if (RedPackageDisplayType.CryptoGift.Equals(input.RedPackageDisplayType))
             {
-                var cryptoGiftGran = _clusterClient.GetGrain<ICryptoGiftGran>(input.Id);
-                var cryptoGiftCreateResult = await cryptoGiftGran.CreateCryptoGift(input, createResult.Data.BucketNotClaimed,
+                var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(input.Id);
+                var cryptoGiftCreateResult = await cryptoGiftGrain.CreateCryptoGift(input, createResult.Data.BucketNotClaimed,
                     createResult.Data.BucketClaimed, CurrentUser.Id.Value);
                 if (!cryptoGiftCreateResult.Success)
                 {
@@ -511,7 +511,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                         };
         }
         await _cryptoGiftAppService.CheckClaimQuotaAfterLoginCondition(redPackageResultDto.Data, input.CaHash);
-        var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id);
+        var (ipAddress, identity) = _cryptoGiftAppService.GetIpAddressAndIdentity(input.Id, input.Random);
         var result = await grain.GrabRedPackageWithIdentityInfo(userId, input.UserCaAddress, ipAddress, identity);
         if (result.Success)
         {

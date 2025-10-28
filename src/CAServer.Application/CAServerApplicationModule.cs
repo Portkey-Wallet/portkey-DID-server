@@ -6,6 +6,7 @@ using CAServer.AppleAuth;
 using CAServer.CAAccount.Provider;
 using CAServer.Cache;
 using CAServer.Common;
+using CAServer.Common.AelfClient;
 using CAServer.Commons;
 using CAServer.CryptoGift;
 using CAServer.DataReporting;
@@ -76,6 +77,9 @@ public class CAServerApplicationModule : AbpModule
         Configure<UserProfilePictureOptions>(configuration.GetSection("UserPictures"));
         Configure<MarketCacheOptions>(configuration.GetSection("MarketCache"));
         Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
+        Configure<LoginCacheOptions>(configuration.GetSection("LoginCache"));
+        Configure<AwakenOptions>(configuration.GetSection("AwakenConfig"));
+        Configure<SecondaryEmailOptions>(configuration.GetSection("SecondaryEmail"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
@@ -89,7 +93,14 @@ public class CAServerApplicationModule : AbpModule
         Configure<DepositOptions>(configuration.GetSection("Deposit"));
         Configure<NftToFtOptions>(configuration.GetSection("NftToFt"));
         Configure<ChatBotOptions>(configuration.GetSection("ChatBot"));
-        
+        Configure<FreeMintOptions>(configuration.GetSection("FreeMint"));
+        Configure<ActivityConfigOptions>(configuration.GetSection("ActivityConfigs"));
+        Configure<BeInvitedConfigOptions>(configuration.GetSection("BeInvitedConfig"));
+        Configure<HamsterOptions>(configuration.GetSection("Hamster"));
+        Configure<AddTokenOptions>(configuration.GetSection("AddToken"));
+        Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
+        Configure<ContactMigrateOptions>(configuration.GetSection("ContactMigrate"));
+        Configure<BusinessAlertOptions>(configuration.GetSection("BusinessAlert"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -108,7 +119,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
-
+        context.Services.AddSingleton<IPreValidationStrategy, ZkLoginPreValidationProvider>();
+        context.Services.AddSingleton<IPreValidationStrategy, SignaturePreValidationProvider>();
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
 
@@ -133,6 +145,7 @@ public class CAServerApplicationModule : AbpModule
         //Configure<IndexPrefixOptions>(configuration.GetSection("IndexPrefixSetting"));
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
+        Configure<AppleAuthTransferredOptions>(configuration.GetSection("AppleAuthTransferred"));
         Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
@@ -143,13 +156,15 @@ public class CAServerApplicationModule : AbpModule
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
-        Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<ActivitiesStatusIconOptions>(configuration.GetSection("ActivitiesStatusIcon"));
+        Configure<ActivitiesSourceIconOptions>(configuration.GetSection("ActivitiesSourceIcon"));
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        Configure<TelegramVerifierOptions>(configuration.GetSection("TelegramVerifier"));
         // Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
         Configure<ManagerCountLimitOptions>(configuration.GetSection("ManagerCountLimit"));
         Configure<UserGuideInfoOptions>(configuration.GetSection("GuideInfo"));
@@ -160,6 +175,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        context.Services.AddSingleton<IContractClient, MainChainContractClient>();
+        context.Services.AddSingleton<IContractClient, SideChainContractClient>();
         
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();

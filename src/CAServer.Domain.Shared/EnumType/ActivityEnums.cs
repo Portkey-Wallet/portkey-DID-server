@@ -2,5 +2,6 @@ namespace CAServer.EnumType;
 
 public enum ActivityEnums
 {
-    Invition
+    Invitation = 1,
+    Hamster = 2
 }

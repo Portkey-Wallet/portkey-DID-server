@@ -8,6 +8,7 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Etos;
+using CAServer.FreeMint.Provider;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Search.Dtos;
@@ -17,6 +18,7 @@ using CAServer.Tokens.Provider;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -28,6 +30,7 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
@@ -64,6 +67,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ITokenPriceService _tokenPriceService;
     private readonly IDistributedCache<string> _userNftTraitsCountCache;
     private const string TraitsCachePrefix = "PortKey:NFTtraits:";
+    private readonly IActivityProvider _activityProvider;
+    private readonly NftToFtOptions _nftToFtOptions;
+    private readonly IObjectMapper _objectMapper;
+    private readonly FreeMintOptions _freeMintOptions;
+    private readonly IFreeMintProvider _freeMintProvider;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -77,7 +86,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
         IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
-        IDistributedCache<string> userNftTraitsCountCache)
+        IDistributedCache<string> userNftTraitsCountCache, IActivityProvider activityProvider,
+        IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
+        IObjectMapper objectMapper, IOptionsSnapshot<FreeMintOptions> freeMintOptions,
+        IFreeMintProvider freeMintProvider, IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -101,6 +113,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _ipfsOptions = ipfsOption.Value;
         _tokenPriceService = tokenPriceService;
         _userNftTraitsCountCache = userNftTraitsCountCache;
+        _activityProvider = activityProvider;
+        _nftToFtOptions = nftToFtOptions.Value;
+        _objectMapper = objectMapper;
+        _freeMintOptions = freeMintOptions.Value;
+        _freeMintProvider = freeMintProvider;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -125,7 +143,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             var caAddressInfos = requestDto.CaAddressInfos;
             var indexerTokenInfos = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
-                0, Int32.MaxValue);
+                0, PagedResultRequestDto.MaxMaxResultCount);
 
             indexerTokenInfos.CaHolderTokenBalanceInfo.Data =
                 indexerTokenInfos.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
@@ -191,7 +209,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
 
                 var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
 
                 tokenList.Add(token);
             }
@@ -209,7 +227,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     continue;
                 }
 
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
                 tokenList.Add(token);
             }
 
@@ -329,7 +347,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         try
         {
             var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(requestDto.CaAddressInfos,
-                requestDto.SkipCount, requestDto.MaxResultCount);
+                0, LimitedResultRequestDto.MaxMaxResultCount);
 
             var dto = new GetNftCollectionsDto
             {
@@ -340,8 +358,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (res?.CaHolderNFTCollectionBalanceInfo?.Data == null ||
                 res.CaHolderNFTCollectionBalanceInfo.Data.Count == 0)
             {
+                _logger.LogInformation("[GetNFTCollectionsAsync] data from indexer is empty.");
                 return dto;
             }
+
+            var totalItemCount = res.CaHolderNFTCollectionBalanceInfo.Data.SelectMany(item => item.TokenIds).Count();
+            res.CaHolderNFTCollectionBalanceInfo.Data = res.CaHolderNFTCollectionBalanceInfo.Data
+                .Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
@@ -367,6 +390,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             TryUpdateImageUrlForCollections(dto.Data);
 
+            DealWithDisplayChainImage(dto);
+            dto.TotalNftItemCount = totalItemCount;
             return dto;
         }
         catch (Exception e)
@@ -374,6 +399,26 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "GetNFTCollectionsAsync Error. {dto}", requestDto);
             return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
         }
+    }
+
+    private static void DealWithDisplayChainImage(GetNftCollectionsDto dto)
+    {
+        var symbolToCount = dto.Data.GroupBy(nft => nft.Symbol)
+            .Select(g => new { GroupId = g.Key, Count = g.Count() })
+            .ToDictionary(g => g.GroupId, g => g.Count);
+        foreach (var nftCollection in dto.Data)
+        {
+            symbolToCount.TryGetValue(nftCollection.Symbol, out var count);
+            nftCollection.DisplayChainImage = count > 1;
+        }
+    }
+
+    public async Task<SearchUserAssetsV2Dto> SearchUserAssetsAsyncV2(SearchUserAssetsRequestDto requestDto,
+        SearchUserAssetsDto searchDto)
+    {
+        var nftRequestDto = _objectMapper.Map<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>(requestDto);
+        var collectionsDto = await GetNFTCollectionsAsync(nftRequestDto);
+        return SearchUserAssetsHelper.ToSearchV2(searchDto, collectionsDto.Data, _objectMapper);
     }
 
     private void SetSeedStatusAndTrimCollectionNameForCollections(List<NftCollection> collections)
@@ -418,6 +463,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return dto;
             }
 
+            var symbolToDescription = await ExtractDescription(res);
             foreach (var nftInfo in res.CaHolderNFTBalanceInfo.Data.Where(n => n.NftInfo != null))
             {
                 if (nftInfo.NftInfo.Symbol.IsNullOrEmpty())
@@ -451,6 +497,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 nftItem.Generation = nftInfo.NftInfo.Generation;
                 nftItem.Traits = nftInfo.NftInfo.Traits;
+                if (symbolToDescription.TryGetValue(nftInfo.NftInfo.Symbol, out var description))
+                {
+                    nftItem.Description = description;
+                }
 
                 dto.Data.Add(nftItem);
             }
@@ -487,6 +537,25 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             _logger.LogError(e, "GetNFTItemsAsync Error. {dto}", requestDto);
             return new GetNftItemsDto { Data = new List<NftItem>(), TotalRecordCount = 0 };
+        }
+    }
+
+    private async Task<Dictionary<string, string>> ExtractDescription(IndexerNftInfos res)
+    {
+        var nftItemSymbols = res.CaHolderNFTBalanceInfo.Data
+            .Where(nftInfo => nftInfo.NftInfo != null &&
+                              _freeMintOptions.CollectionInfo.CollectionName.Equals(nftInfo.NftInfo.CollectionName))
+            .Select(d => d.NftInfo.Symbol).ToList();
+        var freeMintIndices = await _freeMintProvider.ListFreeMintItemsAsync(nftItemSymbols);
+        try
+        {
+            var symbolToDescription = freeMintIndices.ToDictionary(index => index.Symbol, index => index.Description);
+            return symbolToDescription;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "freeMintIndices.ToDictionary error");
+            return new Dictionary<string, string>();
         }
     }
 
@@ -537,7 +606,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             nftItem.Traits = nftInfo.NftInfo.Traits;
 
             nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
-
+            var freeMintIndices = await _freeMintProvider.ListFreeMintItemsBySymbolAsync(nftInfo.NftInfo.Symbol);
+            nftItem.Description = freeMintIndices.IsNullOrEmpty() ? "" : freeMintIndices.FirstOrDefault()?.Description;
             if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(nftItem.Symbol))
             {
                 var correctBalance = await CorrectTokenBalanceAsync(nftItem.Symbol,
@@ -691,7 +761,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     }
 
 
-    private async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto)
+    private async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync()
     {
         var itemInfos = new IndexerNftItemInfos
         {
@@ -699,25 +769,29 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         };
         var skipCount = 0;
         const int resultCount = 2000;
+        var symbol = string.Empty;
+        var collectionSymbol = CommonConstant.SgrCollectionSymbol;
         while (true)
         {
             var nftItemInfos =
-                await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-            if (nftItemInfos?.NftItemInfos?.Count == 0 || nftItemInfos?.NftItemInfos == null)
+                await _userAssetsProvider.GetNftItemWithTraitsInfos(symbol, collectionSymbol, skipCount, resultCount);
+            if (nftItemInfos?.NftItemWithTraitsInfos?.Count == 0 || nftItemInfos?.NftItemWithTraitsInfos == null)
             {
                 break;
             }
 
             skipCount += resultCount;
-
-            var list = nftItemInfos?.NftItemInfos;
+            symbol = nftItemInfos.NftItemWithTraitsInfos.LastOrDefault()?.Symbol;
+            _logger.LogInformation("[GetNftItemTraitsInfoAsync] Next symbol: {symbol}", symbol);
+            var list = nftItemInfos.NftItemWithTraitsInfos;
             if (list != null)
             {
                 itemInfos.NftItemInfos.AddRange(list);
             }
         }
 
-        _logger.LogInformation("TotalCount of NftItems is {count}", skipCount);
+        _logger.LogInformation("[GetNftItemTraitsInfoAsync] TotalCount of NftItems is {count}",
+            itemInfos.NftItemInfos.Count);
         return itemInfos;
     }
 
@@ -730,6 +804,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             var traitsTyperCount = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traitType);
             var traitsTypeValueCount = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traitTypeValue);
+            _logger.LogInformation(
+                "CalculateTraitsPercentagesAsync traitsTyperCount key = {0} value = {1} ; traitsTypeValueCount key = {2} value = {3}",
+                TraitsCachePrefix + traitType, traitsTyperCount, TraitsCachePrefix + traitTypeValue,
+                traitsTypeValueCount);
 
             if (traitsTyperCount != null && traitsTypeValueCount != null)
             {
@@ -774,7 +852,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 dto.Data.Add(ObjectMapper.Map<CAHolderTransactionAddress, RecentTransactionUser>(info));
             }
 
-            var contactList = await _userContactProvider.BatchGetUserNameAsync(userCaAddresses, CurrentUser.GetId());
+            var contactList = await _userContactProvider.BatchGetUserNameAsync(userCaAddresses, CurrentUser.GetId(),
+                _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString());
             if (contactList == null)
             {
                 return dto;
@@ -816,7 +895,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task AssembleAddressesAsync(RecentTransactionUser user)
     {
         var contactAddresses =
-            await _userContactProvider.GetContactByUserNameAsync(user.Name, CurrentUser.GetId());
+            await _userContactProvider.GetContactByUserNameAsync(user.Name, CurrentUser.GetId(),
+                _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString());
         user.Addresses = ObjectMapper.Map<List<ContactAddress>, List<UserContactAddressDto>>(contactAddresses);
         user.Addresses?.ForEach(t =>
         {
@@ -942,7 +1022,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
 
-                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
+                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol, tokenInfo.ImageUrl);
 
                     item.TokenInfo = tokenInfo;
                 }
@@ -968,14 +1048,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                         await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
                             requestDto.Height, ImageResizeType.Forest);
                     item.NftInfo.TokenName = searchItem.NftInfo.TokenName;
+                    item.NftInfo.Symbol = searchItem.NftInfo.Symbol;
                 }
 
                 dto.Data.Add(item);
             }
 
             dto.Data = dto.Data.Where(t => t.TokenInfo != null).OrderBy(t => t.Symbol != CommonConstant.DefaultSymbol)
-                .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
-                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
+                .ThenBy(t => t.Symbol).ThenByDescending(t => t.ChainId)
+                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenByDescending(t => t.ChainId))
+                .ToList();
 
             SetSeedStatusAndTypeForUserAssets(dto.Data);
 
@@ -1335,7 +1417,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         return new TokenInfoDto
         {
-            Balance = totalBalance.ToString(),
+            Balance = totalBalance > 0 ? totalBalance.ToString() : "0",
             Decimals = resCaHolderTokenBalanceInfo.First().TokenInfo.Decimals.ToString(),
             BalanceInUsd = totalBalanceInUsd.ToString()
         };
@@ -1343,16 +1425,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     public async Task NftTraitsProportionCalculateAsync()
     {
-        var getNftItemInfosDto = new GetNftItemInfosDto
-        {
-            GetNftItemInfos = new List<GetNftItemInfo>
-            {
-                new GetNftItemInfo
-                {
-                }
-            }
-        };
-        var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
+        var itemInfos = await GetNftItemTraitsInfoAsync();
         var allItemsTraitsListInCollection = itemInfos.NftItemInfos?
             .Where(nftItem =>
                 nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && IsValidJson(nftItem.Traits))
@@ -1367,6 +1440,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             .ToList();
 
         var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
+        _logger.LogInformation(
+            "[GetNftItemTraitsInfoAsync] NftTraitsProportionCalculateAsync traitTypeCounts length = {0}",
+            traitTypeCounts.Count);
         foreach (var traits in traitTypeCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traits, traitTypeCounts[traits].ToString(),
@@ -1379,14 +1455,69 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
             .ToDictionary(g => g.Key, g => g.Count());
+        _logger.LogInformation(
+            "[GetNftItemTraitsInfoAsync] NftTraitsProportionCalculateAsync traitTypeValueCounts length = {0}",
+            traitTypeValueCounts.Count);
         foreach (var traitsValues in traitTypeValueCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
-                traitTypeValueCounts[traitsValues].ToString(),new DistributedCacheEntryOptions()
+                traitTypeValueCounts[traitsValues].ToString(), new DistributedCacheEntryOptions()
                 {
                     AbsoluteExpiration = DateTimeOffset.Now.AddHours(1)
                 });
         }
+    }
+
+    public async Task<bool> UserAssetEstimationAsync(UserAssetEstimationRequestDto request)
+    {
+        if (request.Type == "token" && _nftToFtOptions.NftToFtInfos.ContainsKey(request.Symbol))
+        {
+            request.Type = "nft";
+        }
+
+        switch (request.Type)
+        {
+            case "token":
+            {
+                var token = await _activityProvider.GetTokenDecimalsAsync(request.Symbol);
+                var symbolInfos = token.TokenInfo.Where(t => t.ChainId == request.ChainId).ToList();
+                if (symbolInfos.Count > 0)
+                {
+                    return true;
+                }
+
+                break;
+            }
+            case "nft":
+            {
+                var param = new GetNftItemInfosDto
+                {
+                    GetNftItemInfos = new List<GetNftItemInfo>
+                    {
+                        new GetNftItemInfo
+                        {
+                            ChainId = request.ChainId,
+                            Symbol = request.Symbol
+                        }
+                    }
+                };
+                var nftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(param, 0, 10);
+                if (nftItemInfos.NftItemInfos.Count > 0)
+                {
+                    return true;
+                }
+
+                break;
+            }
+        }
+        
+        var output = await _contractProvider.GetTokenInfoAsync(request.ChainId, request.Symbol);
+        if (output != null && !output.Symbol.IsNullOrEmpty())
+        {
+            return true;
+        }
+        
+        return false;
     }
 
     private async Task<decimal> CalculateTotalBalanceInUsdAsync(List<IndexerTokenInfo> tokenInfos)
@@ -1477,8 +1608,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return -1;
         }
     }
-    
-    
+
+
     private bool IsValidJson(string strInput)
     {
         try
@@ -1491,6 +1622,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return false;
         }
     }
-    
-    
+
+    public async Task<NftItem> SetTraitsPercentageAsync(string traits)
+    {
+        var result = new NftItem()
+        {
+            Traits = traits
+        };
+        await CalculateAndSetTraitsPercentageAsync(result);
+        return result;
+    }
 }

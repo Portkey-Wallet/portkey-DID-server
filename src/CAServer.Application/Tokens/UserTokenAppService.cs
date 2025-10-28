@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -40,6 +41,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly NftToFtOptions _nftToFtOptions;
+    private readonly ILogger<UserTokenAppService> _logger;
 
     public UserTokenAppService(
         IClusterClient clusterClient,
@@ -48,7 +50,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         IDistributedCache<List<string>> distributedCache,
         ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache,
         IAssetsLibraryProvider assetsLibraryProvider, IHttpContextAccessor httpContextAccessor,
-        IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
+        IOptionsSnapshot<NftToFtOptions> nftToFtOptions, ILogger<UserTokenAppService> logger)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -59,29 +61,40 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         _httpContextAccessor = httpContextAccessor;
         _nftToFtOptions = nftToFtOptions.Value;
         _tokenListOptions = tokenListOptions.Value;
+        _logger = logger;
     }
 
     [Authorize]
     public async Task<UserTokenDto> ChangeTokenDisplayAsync(bool isDisplay, string id)
     {
-        if (!Guid.TryParse(id, out var grainId))
+        try
         {
-            var valueTuple = GetTokenInfoFromId(id);
-            grainId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
-        }
+            if (!Guid.TryParse(id, out var grainId))
+            {
+                var valueTuple = GetTokenInfoFromId(id);
+                grainId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
+            }
 
-        //var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
-        var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
-        var userId = CurrentUser.GetId();
-        var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, false);
-        if (!tokenResult.Success)
+            //var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
+            var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
+            var userId = CurrentUser.GetId();
+            var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, false);
+            _logger.LogInformation("ChangeTokenDisplayAsync tokenResult = {0}",
+                JsonConvert.SerializeObject(tokenResult));
+            if (!tokenResult.Success)
+            {
+                throw new UserFriendlyException(tokenResult.Message);
+            }
+
+            await HandleTokenCacheAsync(userId, tokenResult.Data);
+            await PublishAsync(tokenResult.Data, false);
+            return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
+        }
+        catch (Exception e)
         {
-            throw new UserFriendlyException(tokenResult.Message);
+            _logger.LogError(e, "ChangeTokenDisplayAsync has error");
+            throw e;
         }
-
-        await HandleTokenCacheAsync(userId, tokenResult.Data);
-        await PublishAsync(tokenResult.Data, false);
-        return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
     }
 
     private async Task HandleTokenCacheAsync(Guid userId, UserTokenGrainDto tokenDto)
@@ -174,17 +187,17 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
                 continue;
             }
 
-            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
         }
 
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
-            .ThenBy(t => !t.IsDisplay)
+            //.ThenBy(t => !t.IsDisplay)
             .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
             .ThenBy(t => sourceSymbols.Contains(t.Symbol))
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
+            .ThenByDescending(t => t.ChainId)
             .ToList();
 
         return new PagedResultDto<GetUserTokenDto>(tokens.Count,

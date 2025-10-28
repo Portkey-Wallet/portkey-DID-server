@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CAServer.Dtos;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
@@ -8,6 +9,7 @@ using CAServer.CAAccount.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain;
@@ -33,25 +35,29 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly INESTRepository<CAHolderIndex, Guid> _holderRepository;
-    private readonly IImRequestProvider _imRequestProvider;
     private readonly HostInfoOptions _hostInfoOptions;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly INicknameProvider _nicknameProvider;
     private readonly IGuardianAppService _guardianAppService;
+    private readonly IUserProfilePictureProvider _userProfilePictureProvider;
+    private readonly IContactProvider _contactProvider;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
-        INESTRepository<CAHolderIndex, Guid> holderRepository, IImRequestProvider imRequestProvider,
+        INESTRepository<CAHolderIndex, Guid> holderRepository,
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor,
-        INicknameProvider nicknameProvider, IGuardianAppService guardianAppService)
+        INicknameProvider nicknameProvider, IGuardianAppService guardianAppService,
+        IUserProfilePictureProvider userProfilePictureProvider,
+        IContactProvider contactProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _holderRepository = holderRepository;
-        _imRequestProvider = imRequestProvider;
         _hostInfoOptions = hostInfoOptions.Value;
         _httpContextAccessor = httpContextAccessor;
         _nicknameProvider = nicknameProvider;
         _guardianAppService = guardianAppService;
+        _userProfilePictureProvider = userProfilePictureProvider;
+        _contactProvider = contactProvider;
     }
 
     public async Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto)
@@ -66,36 +72,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
-
-        await UpdateImUserAsync(userId, nickNameDto.NickName);
-
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
-    }
-
-    private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
-    {
-        if (_hostInfoOptions.Environment == Options.Environment.Development)
-        {
-            return;
-        }
-
-        var imUserUpdateDto = new ImUserUpdateDto
-        {
-            Name = nickName,
-            Avatar = avatar
-        };
-
-        try
-        {
-            await _imRequestProvider.PostAsync<object>(ImConstant.UpdateImUserUrl, imUserUpdateDto);
-            Logger.LogInformation("{userId} update im user : {name}", userId.ToString(), nickName);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}, {imToken}",
-                userId.ToString(), nickName,
-                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
-        }
     }
 
     public async Task<CAHolderResultDto> GetCaHolderAsync()
@@ -139,8 +116,6 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
-        await UpdateImUserAsync(userId, holderInfo.NickName, holderInfo.Avatar);
-        
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
 
@@ -202,5 +177,41 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
             }
             await _nicknameProvider.ModifyNicknameHandler(guardianResultDto, userId, caHolderGrainDto);
         }
+    }
+
+    public DefaultAvatarResponse GetDefaultAvatars()
+    {
+        return new DefaultAvatarResponse()
+        {
+            DefaultAvatars = _userProfilePictureProvider.GetDefaultUserPictures()
+        };
+    }
+
+    public async Task<List<CAHolderWithAddressResultDto>> QueryHolderInfosAsync(QueryUserInfosInput input)
+    {
+        var result = new List<CAHolderWithAddressResultDto>();
+        if (input.AddressList.IsNullOrEmpty())
+        {
+            return result;
+        }
+
+        var guardiansDto = await _contactProvider.GetCaHolderInfoByAddressAsync(input.AddressList, "");
+        var caHashList = guardiansDto.CaHolderInfo.Select(t => t.CaHash).Distinct().ToList();
+        if (caHashList.Count == 0)
+        {
+            return result;
+        }
+        
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> q) =>
+            q.Terms(i => i.Field(f => f.CaHash).Terms(caHashList));
+        var holders = await _holderRepository.GetListAsync(Filter, limit: caHashList.Count, skip: 0);
+        foreach (var caHolderIndex in holders.Item2)
+        {
+            var caHolderWithAddressResultDto = ObjectMapper.Map<CAHolderIndex, CAHolderWithAddressResultDto>(caHolderIndex);
+            caHolderWithAddressResultDto.Address = guardiansDto.CaHolderInfo.First(t => t.CaHash == caHolderIndex.CaHash).CaAddress;
+            result.Add(caHolderWithAddressResultDto);
+        }
+
+        return result;
     }
 }

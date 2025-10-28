@@ -16,6 +16,12 @@ public interface IActivityProvider
     Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> addressInfos, string inputChainId,
         string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount);
 
+    Task<IndexerTransactions> GetActivitiesWithBlockHeightAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,
+        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount,
+        long startHeight, long endHeight);
+
+    Task<IndexerTransactions> GetActivitiesAsync(string inputChainId, List<string> inputTransactionTypes, long startBlockHeight, long endBlockHeight, int maxResultCount);
+    
     Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash,
         List<CAAddressInfo> addressInfos);
 
@@ -35,4 +41,7 @@ public interface IActivityProvider
         long endBlockHeight);
 
     Task<CaHolderTransactionIndex> GetNotSuccessTransactionAsync(string caAddress, string transactionId);
+    
+    Task<GuardiansDto> GetCaHolderInfoAsync(string identifierHash, int skipCount = 0,
+        int maxResultCount = 10);
 }

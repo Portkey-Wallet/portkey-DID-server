@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
+using CAServer.Commons;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.Signature;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.AutoMapper;
@@ -29,6 +33,8 @@ public class CAServerContractEventHandlerCoreModule : AbpModule
         Configure<CrossChainOptions>(configuration.GetSection("CrossChain"));
         Configure<SyncOriginChainIdOptions>(configuration.GetSection("SyncOriginChainId"));
         Configure<BlockInfoOptions>(configuration.GetSection("BlockInfo"));
+        Configure<ZkLoginWorkerOptions>(configuration.GetSection("ZkLoginWorker"));
+        Configure<ZkLoginWorkerOptions>(configuration.GetSection("NotifyWorker"));
         context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());

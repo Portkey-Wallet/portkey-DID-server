@@ -30,18 +30,21 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private readonly INickNameAppService _nickNameAppService;
     private readonly IGrowthProvider _growthProvider;
     private readonly GrowthOptions _growthOptions;
-    private readonly ActivityDateRangeOptions _activityDateRangeOptions;
+    private readonly ActivityConfigOptions _activityConfigOptions;
+    private readonly HamsterOptions _hamsterOptions;
 
     public GrowthAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         IRedDotAppService redDotAppService, INickNameAppService nickNameAppService,
-        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider, IOptionsSnapshot<ActivityDateRangeOptions> activityDataRangeOptions)
+        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider,
+        IOptionsSnapshot<ActivityConfigOptions> activityConfigOptions, IOptionsSnapshot<HamsterOptions> hamsterOptions)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _redDotAppService = redDotAppService;
         _nickNameAppService = nickNameAppService;
         _growthProvider = growthProvider;
-        _activityDateRangeOptions = activityDataRangeOptions.Value;
+        _hamsterOptions = hamsterOptions.Value;
+        _activityConfigOptions = activityConfigOptions.Value;
         _growthOptions = growthOptions.Value;
     }
 
@@ -67,26 +70,33 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         var growthGrain = _clusterClient.GetGrain<IGrowthGrain>(grainId);
 
         GrowthGrainDto grainDto;
-        var exist = await growthGrain.Exist();
+        var exist = await growthGrain.Exist(projectCode);
         if (!exist)
         {
             grainDto = await CreateGrowthInfoAsync(growthGrain, CurrentUser.GetId(), projectCode);
         }
         else
         {
-            grainDto = await GetGrowthInfoAsync(growthGrain);
+            grainDto = await GetGrowthInfoAsync(growthGrain, projectCode);
         }
 
         var url = $"{_growthOptions.BaseUrl}/api/app/account/{grainDto.ShortLinkCode}";
         return new ShortLinkDto()
         {
-            ShortLink = url
+            ShortLink = url,
+            UserGrowthInfo = new UserGrowthInfo()
+            {
+                CaHash = grainDto.CaHash,
+                ProjectCode = grainDto.ProjectCode,
+                InviteCode = grainDto.InviteCode,
+                ShortLinkCode = grainDto.ShortLinkCode
+            }
         };
     }
 
-    private async Task<GrowthGrainDto> GetGrowthInfoAsync(IGrowthGrain growthGrain)
+    private async Task<GrowthGrainDto> GetGrowthInfoAsync(IGrowthGrain growthGrain, string projectCode)
     {
-        var result = await growthGrain.GetGrowthInfo();
+        var result = await growthGrain.GetGrowthInfo(projectCode);
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
@@ -98,7 +108,8 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private async Task<GrowthGrainDto> CreateGrowthInfoAsync(IGrowthGrain growthGrain, Guid userId, string projectCode)
     {
         var caHash = await GetCaHashAsync();
-        var shortLinkCode = await GenerateShortLinkCodeAsync(caHash);
+        var plainText = caHash + projectCode;
+        var shortLinkCode = await GenerateShortLinkCodeAsync(plainText);
         var result = await growthGrain.CreateGrowthInfo(new GrowthGrainDto()
         {
             UserId = userId,
@@ -151,21 +162,21 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
             $"{_growthOptions.RedirectUrl}?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}&networkType={_growthOptions.NetworkType ?? string.Empty}";
     }
 
-    public async Task<ActivityDateRangeResponseDto> GetActivityDateRangeAsync(ActivityEnums activityEnum)
+    public async Task<ActivityDetailsResponseDto> GetActivityDetailsAsync(ActivityEnums activityEnum)
     {
-        
-        _activityDateRangeOptions.ActivityDateRanges.TryGetValue(activityEnum.ToString(),out var dateRange);
-        if (dateRange != null)
+        _activityConfigOptions.ActivityConfigMap.TryGetValue(activityEnum.ToString(), out var config);
+        if (config != null)
         {
-            return new ActivityDateRangeResponseDto
+            return new ActivityDetailsResponseDto
             {
-                StartDate = dateRange.StartDate,
-                EndDate = dateRange.EndDate
+                ActivityConfig = ObjectMapper.Map<ActivityConfig, ActivityConfigDto>(config.ActivityConfig),
+                RulesConfig = ObjectMapper.Map<RulesConfig, RulesConfigDto>(config.RulesConfig),
             };
         }
-        return new ActivityDateRangeResponseDto();
+
+        return new ActivityDetailsResponseDto();
     }
-    
+
 
     private async Task<string> GetCaHashAsync()
     {

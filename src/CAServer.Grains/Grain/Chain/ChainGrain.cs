@@ -1,6 +1,5 @@
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.State.Chain;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.Chain;
@@ -14,16 +13,16 @@ public class ChainGrain : Grain<ChainState>, IChainGrain
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public async Task<GrainResultDto<ChainGrainDto>> AddChainAsync(ChainGrainDto chainDto)

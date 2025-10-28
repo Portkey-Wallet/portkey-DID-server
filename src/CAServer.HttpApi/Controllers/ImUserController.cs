@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Contacts;
 using CAServer.ImUser;
 using CAServer.ImUser.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
@@ -20,11 +23,14 @@ public class ImUserController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
     private readonly IImUserAppService _imUserAppService;
+    private readonly ILogger<ImUserController> _logger;
 
-    public ImUserController(IContactAppService contactAppService, IImUserAppService imUserAppService)
+    public ImUserController(IContactAppService contactAppService, IImUserAppService imUserAppService,
+        ILogger<ImUserController> logger)
     {
         _contactAppService = contactAppService;
         _imUserAppService = imUserAppService;
+        _logger = logger;
     }
 
     [HttpPost("names")]

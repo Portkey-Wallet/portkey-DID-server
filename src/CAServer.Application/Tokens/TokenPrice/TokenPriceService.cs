@@ -152,7 +152,7 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
                     {
                         AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
                     });
-                    _logger.Debug("refresh current price success:{0}-{1}", key, value);
+                    _logger.LogDebug("refresh current price success:{0}-{1}", key, value);
                 }
 
                 _logger.LogInformation("refresh current price success, the provider used is: {0}",

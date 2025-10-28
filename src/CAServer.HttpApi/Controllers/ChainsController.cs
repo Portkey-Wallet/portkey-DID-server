@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Chain;
+using CAServer.Commons.Etos;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
 
@@ -37,4 +40,11 @@ public class ChainsController : CAServerController
     {
         await _chainsService.DeleteAsync(id);
     }
+    
+    [HttpGet("display/info")]
+    [AllowAnonymous]
+    public async Task<Dictionary<string, ChainDisplayNameDto>> ListChainDisplayInfos(string chainId)
+    {
+        return await _chainsService.ListChainDisplayInfos(chainId);
+    } 
 }

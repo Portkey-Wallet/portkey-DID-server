@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Client.Service;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Search;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using Microsoft.Extensions.Logging;
@@ -36,14 +39,17 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     private readonly INESTRepository<OrderSettlementIndex, Guid> _orderSettlementRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
-
+    private readonly ISignatureProvider _signatureProvider;
+    private readonly ChainOptions _chainOptions;
+    
     public ThirdPartOrderProvider(
         INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         INESTRepository<NftOrderIndex, Guid> nftOrderRepository,
         ILogger<ThirdPartOrderProvider> logger, INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository,
-        INESTRepository<OrderSettlementIndex, Guid> orderSettlementRepository)
+        INESTRepository<OrderSettlementIndex, Guid> orderSettlementRepository, ISignatureProvider signatureProvider,
+        IOptionsSnapshot<ChainOptions> chainOptions)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
@@ -52,6 +58,8 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         _orderStatusInfoRepository = orderStatusInfoRepository;
         _orderSettlementRepository = orderSettlementRepository;
         _thirdPartOptions = thirdPartOptions;
+        _signatureProvider = signatureProvider;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<RampOrderIndex> GetThirdPartOrderIndexAsync(string orderId)
@@ -333,12 +341,19 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     }
 
 
-    public void SignMerchantDto(NftMerchantBaseDto input)
+    public async void SignMerchantDto(NftMerchantBaseDto input)
     {
-        var merchantOption = _thirdPartOptions.CurrentValue.Merchant.GetOption(input.MerchantName);
-        AssertHelper.NotEmpty(merchantOption?.DidPrivateKey, "Merchant {Merchant} did private key empty",
-            input.MerchantName);
-        input.Signature = MerchantSignatureHelper.GetSignature(merchantOption?.DidPrivateKey, input);
+        if (!_chainOptions.ChainInfos.TryGetValue(CommonConstant.MainChainId, out var chainInfo))
+        {
+            return;
+        }
+
+        var client = new AElfClient(chainInfo.BaseUrl);
+        await client.IsConnectedAsync();
+        var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, MerchantSignatureHelper.GetRawData(input));
+
+        input.Signature = ByteStringHelper.FromHexString(txWithSign).ToString();
     }
 
     public void VerifyMerchantSignature(NftMerchantBaseDto input)

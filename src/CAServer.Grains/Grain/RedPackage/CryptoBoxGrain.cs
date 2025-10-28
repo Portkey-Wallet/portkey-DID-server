@@ -3,9 +3,6 @@ using CAServer.Grains.State;
 using CAServer.Grains.State.RedPackage;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
-using Orleans.Providers.Streams.Generator;
-using Serilog;
-using Serilog.Core;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -22,16 +19,16 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public async Task<GrainResultDto<RedPackageDetailDto>> CreateRedPackage(SendRedPackageInputDto input, int decimalIn,
@@ -352,6 +349,12 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
     public Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(Guid packageId)
     {
         var result = new GrainResultDto<RedPackageDetailDto>();
+        if (State?.Id == null || !packageId.Equals(State.Id))
+        {
+            result.Success = false;
+            result.Message = "there is no record";
+            return Task.FromResult(result);
+        }
         result.Success = true;
         var dto = _objectMapper.Map<RedPackageState, RedPackageDetailDto>(State);
         dto.TotalCount = State.Items.Count;

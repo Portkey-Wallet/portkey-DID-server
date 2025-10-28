@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.DataReporting;
 using CAServer.DataReporting.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -30,5 +31,11 @@ public class DataReportController : CAServerController
     public async Task ReportTransactionAsync(TransactionReportDto input)
     {
         await _dataReportAppService.ReportTransactionAsync(input);
+    }
+    
+    [HttpPost("account"), Authorize]
+    public async Task ReportAccountAsync(AccountReportDto input)
+    {
+        await _dataReportAppService.ReportAccountAsync(input);
     }
 }

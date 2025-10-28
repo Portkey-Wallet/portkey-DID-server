@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.RedPackage;
 
 public interface IRedPackageKeyGrain : IGrainWithGuidKey

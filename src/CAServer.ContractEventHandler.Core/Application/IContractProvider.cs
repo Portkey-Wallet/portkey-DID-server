@@ -6,6 +6,8 @@ using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
+using CAServer.CAAccount.Dtos;
+using CAServer.Common.AelfClient;
 using CAServer.Grains.Grain;
 using CAServer.Commons;
 using CAServer.ContractService;
@@ -85,12 +87,14 @@ public class ContractProvider : IContractProvider
     private readonly IDistributedCache<BlockDto> _distributedCache;
     private readonly BlockInfoOptions _blockInfoOptions;
     private readonly ContractServiceProxy _contractServiceProxy;
+    private readonly IContractClientSelector _contractClientSelector;
 
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
         IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope, IDistributedCache<BlockDto> distributedCache,
-        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, ContractServiceProxy contractServiceProxy)
+        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, ContractServiceProxy contractServiceProxy,
+        IContractClientSelector contractClientSelector)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
@@ -101,6 +105,7 @@ public class ContractProvider : IContractProvider
         _indicatorScope = indicatorScope;
         _distributedCache = distributedCache;
         _contractServiceProxy = contractServiceProxy;
+        _contractClientSelector = contractClientSelector;
         _blockInfoOptions = blockInfoOptions.Value;
     }
 
@@ -111,9 +116,10 @@ public class ContractProvider : IContractProvider
         {
             var chainInfo = _chainOptions.ChainInfos[chainId];
 
-            var client = new AElfClient(chainInfo.BaseUrl);
-            await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            //var client = new AElfClient(chainInfo.BaseUrl);
+            var client = _contractClientSelector.GetContractClient(chainId);
+            var ownAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(chainInfo.PublicKey))
+                .ToBase58();
             var contractAddress = isCrossChain ? chainInfo.CrossChainContractAddress : chainInfo.ContractAddress;
 
             var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
@@ -144,7 +150,9 @@ public class ContractProvider : IContractProvider
         {
             if (methodName != MethodName.GetHolderInfo)
             {
-                _logger.LogError(e, methodName + " error: {param}", param);
+                _logger.LogError(e,
+                    "CallTransactionAsync error, chainId:{chainId}, methodName:{methodName}, param:{param}, msg:{msg}",
+                    chainId, methodName, param, e.Message);
             }
 
             return new T();
@@ -159,7 +167,7 @@ public class ContractProvider : IContractProvider
 
             _logger.LogInformation(
                 "ForwardTransactionAsync to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 chainId,
                 result.TransactionId, result.BlockNumber, result.Status, result.Error);
 
@@ -167,8 +175,7 @@ public class ContractProvider : IContractProvider
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "ForwardTransactionAsync error, chainId {chainId}",
-                JsonConvert.SerializeObject(chainId, Formatting.Indented));
+            _logger.LogError(e, "ForwardTransactionAsync error, chainId {chainId}", chainId);
             return new TransactionResultDto
             {
                 Status = TransactionState.Failed,
@@ -200,8 +207,8 @@ public class ContractProvider : IContractProvider
             return new GetHolderInfoOutput();
         }
 
-        _logger.LogDebug(MethodName.GetHolderInfo + " result: {output}",
-            JsonConvert.SerializeObject(output.ToString(), Formatting.Indented));
+        // _logger.LogDebug(MethodName.GetHolderInfo + " result: {output}",
+        //     JsonConvert.SerializeObject(output.ToString(), Formatting.Indented));
 
         return output;
     }
@@ -251,7 +258,8 @@ public class ContractProvider : IContractProvider
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetTransactionResult on chain {chainId} with txId: {txId} error", chainId, txId);
+            _logger.LogError(e, "GetTransactionResult on chain {chainId} with txId: {txId} error, msg:{msg}", chainId,
+                txId, e.Message);
             return new TransactionResultDto();
         }
     }
@@ -293,8 +301,7 @@ public class ContractProvider : IContractProvider
             var result = await _contractServiceProxy.CreateHolderInfoAsync(createHolderDto);
 
             _logger.LogInformation(
-                "CreateHolderInfo to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "CreateHolderInfo to chain: {id} result: TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 createHolderDto.ChainId,
                 result.TransactionId, result.BlockNumber, result.Status, result.Error);
 
@@ -303,7 +310,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "CreateHolderInfo error: {message}",
-                JsonConvert.SerializeObject(createHolderDto.ToString(), Formatting.Indented));
+                JsonConvert.SerializeObject(createHolderDto));
             return new TransactionResultDto
             {
                 Status = TransactionState.Failed,
@@ -344,11 +351,11 @@ public class ContractProvider : IContractProvider
             createHolderDto.CaHash = outputGetHolderInfo.CaHash;
             createHolderDto.ChainId = createChainId;
 
-            var result = await _contractServiceProxy.CreateHolderInfoOnNonCreateChainAsync(chainInfo.ChainId, createHolderDto);
+            var result =
+                await _contractServiceProxy.CreateHolderInfoOnNonCreateChainAsync(chainInfo.ChainId, createHolderDto);
 
             _logger.LogInformation(
-                "accelerated registration on chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "accelerated registration on chain: {id} result: TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 createHolderDto.ChainId,
                 result.TransactionId, result.BlockNumber, result.Status, result.Error);
             return result;
@@ -356,7 +363,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "accelerated registration error: {chainId}, {message}", chainInfo.ChainId,
-                JsonConvert.SerializeObject(createHolderDto.ToString(), Formatting.Indented));
+                JsonConvert.SerializeObject(createHolderDto));
             return new TransactionResultDto
             {
                 Status = TransactionState.Failed,
@@ -370,19 +377,20 @@ public class ContractProvider : IContractProvider
         try
         {
             var result = await _contractServiceProxy.SocialRecoveryAsync(socialRecoveryDto);
-
-            _logger.LogInformation(
-                "SocialRecovery to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
-                socialRecoveryDto.ChainId,
-                result.TransactionId, result.BlockNumber, result.Status, result.Error);
+            if (result != null)
+            {
+                _logger.LogInformation(
+                    "SocialRecovery to chain: {id} result:" +
+                    "TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                    socialRecoveryDto.ChainId,
+                    result.TransactionId, result.BlockNumber, result.Status, result.Error);
+            }
 
             return result;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "SocialRecovery error: {message}",
-                JsonConvert.SerializeObject(socialRecoveryDto.ToString(), Formatting.Indented));
+            _logger.LogError(e, "SocialRecovery error: {message}", JsonConvert.SerializeObject(socialRecoveryDto));
             return new TransactionResultDto
             {
                 Status = TransactionState.Failed,
@@ -397,12 +405,13 @@ public class ContractProvider : IContractProvider
         try
         {
             await CheckCreateChainIdAsync(result);
-            
-            var transactionDto = await _contractServiceProxy.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
+
+            var transactionDto =
+                await _contractServiceProxy.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
 
             _logger.LogInformation(
                 "ValidateTransaction to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 chainId,
                 transactionDto.TransactionResultDto.TransactionId, transactionDto.TransactionResultDto.BlockNumber,
                 transactionDto.TransactionResultDto.Status,
@@ -436,8 +445,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "GetSyncHolderInfoInput on chain: {id} error: {dto}", chainId,
-                JsonConvert.SerializeObject(transactionInfo ?? new TransactionInfo(),
-                    Formatting.Indented));
+                JsonConvert.SerializeObject(transactionInfo ?? new TransactionInfo()));
             return new SyncHolderInfoInput();
         }
     }
@@ -514,7 +522,7 @@ public class ContractProvider : IContractProvider
 
             _logger.LogInformation(
                 "SyncTransaction to chain: {id} result:" +
-                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                "TransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
                 chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
 
             return result;
@@ -522,7 +530,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "SyncTransaction to Chain: {id} Error: {input}", chainId,
-                JsonConvert.SerializeObject(input.ToString(), Formatting.Indented));
+                JsonConvert.SerializeObject(input));
             return new TransactionResultDto();
         }
     }
@@ -578,6 +586,7 @@ public class ContractProvider : IContractProvider
         {
             return null;
         }
+
         var grab = redPackageDetail.Items.Sum(item => long.Parse(item.Amount));
         var sendInput = new RefundCryptoBoxInput
         {
@@ -587,8 +596,9 @@ public class ContractProvider : IContractProvider
                 await redPackageKeyGrain.GenerateSignature(
                     $"{redPackageId}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
         };
-        _logger.LogInformation("SendTransferRedPacketRefundAsync input {input}",JsonConvert.SerializeObject(sendInput));
-        
+        _logger.LogInformation("SendTransferRedPacketRefundAsync input {input}",
+            JsonConvert.SerializeObject(sendInput));
+
         return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.RefundCryptoBox);
     }
@@ -597,8 +607,8 @@ public class ContractProvider : IContractProvider
     public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
         GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom)
     {
-        _logger.LogInformation("SendTransferRedPacketToChainAsync message: " + "\n{redPackageDetail}",
-            JsonConvert.SerializeObject(redPackageDetail, Formatting.Indented));
+        _logger.LogInformation("SendTransferRedPacketToChainAsync message: {redPackageDetail}",
+            JsonConvert.SerializeObject(redPackageDetail));
         //build param for transfer red package input 
         var list = new List<TransferCryptoBoxInput>();
         var redPackageId = redPackageDetail.Data.Id;
@@ -609,7 +619,7 @@ public class ContractProvider : IContractProvider
         }
 
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
-        _logger.Debug("SendTransferRedPacketToChainAsync message: {redPackageId}", redPackageDetail.Data.Id.ToString());
+        _logger.LogDebug("SendTransferRedPacketToChainAsync message: {redPackageId}", redPackageDetail.Data.Id.ToString());
         foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
         {
             _logger.LogInformation("redPackageKeyGrain GenerateSignature input{param}",
@@ -629,9 +639,8 @@ public class ContractProvider : IContractProvider
             CryptoBoxId = redPackageId.ToString(),
             TransferCryptoBoxInputs = { list }
         };
-        _logger.LogInformation("SendTransferRedPacketToChainAsync sendInput: " + "\n{sendInput}",
-            JsonConvert.SerializeObject(sendInput, Formatting.Indented));
-        var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+        _logger.LogInformation("SendTransferRedPacketToChainAsync sendInput: {sendInput}",
+            JsonConvert.SerializeObject(sendInput));
 
         return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);

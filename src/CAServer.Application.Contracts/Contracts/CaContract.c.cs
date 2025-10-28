@@ -36,6 +36,10 @@ namespace Portkey.Contracts.CA {
       {
         Manager = Manager
       },
+      new CAHolderCreated
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -96,6 +100,10 @@ namespace Portkey.Contracts.CA {
       {
         CaHash = CaHash
       },
+      new GuardianAdded
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -119,6 +127,10 @@ namespace Portkey.Contracts.CA {
       {
         CaHash = CaHash
       },
+      new GuardianRemoved
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -141,6 +153,10 @@ namespace Portkey.Contracts.CA {
       new GuardianUpdated
       {
         CaHash = CaHash
+      },
+      new GuardianUpdated
+      {
+        Platform = Platform
       },
       };
     }
@@ -174,6 +190,10 @@ namespace Portkey.Contracts.CA {
       {
         LoginGuardian = LoginGuardian
       },
+      new LoginGuardianAdded
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -205,6 +225,10 @@ namespace Portkey.Contracts.CA {
       {
         Manager = Manager
       },
+      new ManagerInfoSocialRecovered
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -234,6 +258,10 @@ namespace Portkey.Contracts.CA {
       new ManagerInfoAdded
       {
         Manager = Manager
+      },
+      new ManagerInfoAdded
+      {
+        Platform = Platform
       },
       };
     }
@@ -265,6 +293,10 @@ namespace Portkey.Contracts.CA {
       {
         Manager = Manager
       },
+      new ManagerInfoRemoved
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -294,6 +326,10 @@ namespace Portkey.Contracts.CA {
       new ManagerInfoUpdated
       {
         Manager = Manager
+      },
+      new ManagerInfoUpdated
+      {
+        Platform = Platform
       },
       };
     }
@@ -325,6 +361,10 @@ namespace Portkey.Contracts.CA {
       {
         LoginGuardianIdentifierHash = LoginGuardianIdentifierHash
       },
+      new LoginGuardianUnbound
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -355,6 +395,10 @@ namespace Portkey.Contracts.CA {
       {
         LoginGuardian = LoginGuardian
       },
+      new LoginGuardianRemoved
+      {
+        Platform = Platform
+      },
       };
     }
 
@@ -363,105 +407,6 @@ namespace Portkey.Contracts.CA {
       return new LoginGuardianRemoved
       {
         CaAddress = CaAddress,
-      };
-    }
-  }
-
-  public partial class VerifierServerEndPointsAdded : aelf::IEvent<VerifierServerEndPointsAdded>
-  {
-    public global::System.Collections.Generic.IEnumerable<VerifierServerEndPointsAdded> GetIndexed()
-    {
-      return new List<VerifierServerEndPointsAdded>
-      {
-      new VerifierServerEndPointsAdded
-      {
-        VerifierServer = VerifierServer
-      },
-      };
-    }
-
-    public VerifierServerEndPointsAdded GetNonIndexed()
-    {
-      return new VerifierServerEndPointsAdded
-      {
-      };
-    }
-  }
-
-  public partial class VerifierServerEndPointsRemoved : aelf::IEvent<VerifierServerEndPointsRemoved>
-  {
-    public global::System.Collections.Generic.IEnumerable<VerifierServerEndPointsRemoved> GetIndexed()
-    {
-      return new List<VerifierServerEndPointsRemoved>
-      {
-      new VerifierServerEndPointsRemoved
-      {
-        VerifierServer = VerifierServer
-      },
-      };
-    }
-
-    public VerifierServerEndPointsRemoved GetNonIndexed()
-    {
-      return new VerifierServerEndPointsRemoved
-      {
-      };
-    }
-  }
-
-  public partial class VerifierServerRemoved : aelf::IEvent<VerifierServerRemoved>
-  {
-    public global::System.Collections.Generic.IEnumerable<VerifierServerRemoved> GetIndexed()
-    {
-      return new List<VerifierServerRemoved>
-      {
-      new VerifierServerRemoved
-      {
-        VerifierServer = VerifierServer
-      },
-      };
-    }
-
-    public VerifierServerRemoved GetNonIndexed()
-    {
-      return new VerifierServerRemoved
-      {
-      };
-    }
-  }
-
-  public partial class CAServerAdded : aelf::IEvent<CAServerAdded>
-  {
-    public global::System.Collections.Generic.IEnumerable<CAServerAdded> GetIndexed()
-    {
-      return new List<CAServerAdded>
-      {
-      };
-    }
-
-    public CAServerAdded GetNonIndexed()
-    {
-      return new CAServerAdded
-      {
-        CaSeverAdded = CaSeverAdded,
-      };
-    }
-  }
-
-  public partial class CAServerRemoved : aelf::IEvent<CAServerRemoved>
-  {
-    public global::System.Collections.Generic.IEnumerable<CAServerRemoved> GetIndexed()
-    {
-      return new List<CAServerRemoved>
-      {
-      };
-    }
-
-    public CAServerRemoved GetNonIndexed()
-    {
-      return new CAServerRemoved
-      {
-        CaServerRemoved = CaServerRemoved,
       };
     }
   }

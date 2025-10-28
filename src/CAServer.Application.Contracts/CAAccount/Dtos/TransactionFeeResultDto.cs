@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using CAServer.Commons;
+using CAServer.Commons.Etos;
 
 namespace CAServer.CAAccount.Dtos;
 
-public class TransactionFeeResultDto
+public class TransactionFeeResultDto : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public Fee TransactionFee { get; set; }
 }
 

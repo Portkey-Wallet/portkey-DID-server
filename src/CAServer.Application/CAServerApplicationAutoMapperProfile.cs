@@ -4,9 +4,14 @@ using System.Linq;
 using AElf;
 using AElf.Types;
 using AutoMapper;
+using CAServer.Awaken;
+using CAServer.AddressBook.Dtos;
+using CAServer.AddressBook.Etos;
+using CAServer.AppleMigrate.Dtos;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -14,7 +19,6 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
-using CAServer.CryptoGift.Dtos;
 using CAServer.DataReporting.Dtos;
 using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
@@ -22,11 +26,14 @@ using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
+using CAServer.FreeMint.Dtos;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.AddressBook;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.CryptoGift;
+using CAServer.Grains.Grain.FreeMint;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
@@ -39,8 +46,10 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.Growth.Dtos;
 using CAServer.Growth.Etos;
 using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Hubs;
 using CAServer.ImTransfer.Dtos;
 using CAServer.ImTransfer.Etos;
@@ -72,6 +81,7 @@ using CAServer.Tokens.Provider;
 using CAServer.Transfer.Dtos;
 using CAServer.Upgrade.Dtos;
 using CAServer.Upgrade.Etos;
+using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo;
@@ -82,6 +92,7 @@ using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using CoinGecko.Entities.Response.Coins;
+using Google.Protobuf;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.AutoMapper;
@@ -93,7 +104,12 @@ using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 using Google.Protobuf.Collections;
-using static Google.Protobuf.WellKnownTypes.TimeExtensions;
+using Google.Protobuf.WellKnownTypes;
+using Microsoft.IdentityModel.Tokens;
+using Enum = System.Enum;
+using GuardianDto = CAServer.Guardian.GuardianDto;
+using ManagerInfoDto = CAServer.Guardian.ManagerInfoDto;
+using NoncePayload = Portkey.Contracts.CA.NoncePayload;
 
 namespace CAServer;
 
@@ -101,6 +117,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
 {
     public CAServerApplicationAutoMapperProfile()
     {
+        CreateMap<GuardiansDto, GuardiansAppDto>();
+        CreateMap<GuardianEto, GuardianIndex>();
+        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
+        CreateMap<GoogleUserInfoDto, CAServer.Verifier.Dtos.UserExtraInfo>();
         CreateMap<UserTokenGrainDto, UserTokenEto>();
         CreateMap<UserTokenGrainDto, UserTokenDeleteEto>();
         CreateMap<UserTokenGrainDto, UserTokenDto>();
@@ -108,7 +128,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(u => u.Token.ChainId))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
-            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
+            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(u => u.Token.ImageUrl));
         // Contact
         CreateMap<ContactAddressDto, ContactAddress>().ReverseMap();
         CreateMap<ContactAddressDto, ContactAddressEto>();
@@ -127,14 +148,153 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactIndex, ContactDto>().ForMember(c => c.ModificationTime,
             d => d.MapFrom(s => new DateTimeOffset(s.ModificationTime).ToUnixTimeMilliseconds()));
         CreateMap<Entities.Es.ContactAddress, ContactAddressDto>().ReverseMap();
-
+        CreateMap<TradePairsItemToken, CAServer.UserAssets.Dtos.Token>()
+            .ForMember(d => d.Symbol, f => f.MapFrom(s => s.Symbol))
+            .ForMember(d => d.Decimals, f => f.MapFrom(s => s.Decimals))
+            .ForMember(d => d.ChainId, f => f.MapFrom(s => s.ChainId))
+            .ForMember(d => d.ImageUrl, f => f.MapFrom(s => s.ImageUri))
+            ;
         CreateMap<HubRequestContextDto, HubRequestContext>();
         CreateMap<RegisterDto, RegisterGrainDto>();
         CreateMap<CreateHolderEto, CreateHolderResultGrainDto>();
         CreateMap<RegisterGrainDto, AccountRegisterCreateEto>();
         CreateMap<RegisterDto, CAAccountEto>();
         CreateMap<RecoveryDto, RecoveryGrainDto>();
+        CreateMap<ManagerInfo, ManagerDto>()
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(source => source.Address.ToBase58()))
+            .ForMember(dest => dest.ExtraData, opt => opt.MapFrom(source => source.ExtraData));
         CreateMap<RecoveryGrainDto, AccountRecoverCreateEto>();
+        CreateMap<GuardianInfo, Portkey.Contracts.CA.GuardianInfo>()
+            .ForMember(dest => dest.IdentifierHash, opt => opt.MapFrom(src => Hash.LoadFromHex(src.IdentifierHash)))
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (Portkey.Contracts.CA.GuardianType)(int)src.Type))
+            .ForPath(dest => dest.VerificationInfo, opt => opt.MapFrom(src => new Portkey.Contracts.CA.VerificationInfo
+            {
+                Id = src.VerificationInfo.Id.IsNullOrWhiteSpace()
+                    ? Hash.Empty : Hash.LoadFromHex(src.VerificationInfo.Id),
+                Signature = src.VerificationInfo.Signature.IsNullOrWhiteSpace() 
+                    ? ByteString.Empty : ByteStringHelper.FromHexString(src.VerificationInfo.Signature),
+                VerificationDoc = src.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() 
+                    ? string.Empty : src.VerificationInfo.VerificationDoc
+            }))
+            .ForPath(dest => dest.ZkLoginInfo, opt => opt.MapFrom(src => new ZkLoginInfo
+                {
+                    IdentifierHash = src.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
+                        ? Hash.Empty : Hash.LoadFromHex(src.ZkLoginInfo.IdentifierHash),
+                    Salt = src.ZkLoginInfo.Salt.IsNullOrEmpty() ? string.Empty : src.ZkLoginInfo.Salt,
+                    Nonce = src.ZkLoginInfo.Nonce.IsNullOrEmpty() ? string.Empty : src.ZkLoginInfo.Nonce,
+                    ZkProof = src.ZkLoginInfo.ZkProof.IsNullOrEmpty() ? string.Empty : src.ZkLoginInfo.ZkProof,
+                    Issuer = src.ZkLoginInfo.Issuer.IsNullOrEmpty() ? string.Empty : src.ZkLoginInfo.Issuer,
+                    Kid = src.ZkLoginInfo.Kid.IsNullOrEmpty() ? string.Empty : src.ZkLoginInfo.Kid,
+                    CircuitId = src.ZkLoginInfo.CircuitId.IsNullOrEmpty() ? string.Empty : src.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = src.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty() ? string.Empty : src.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = src.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = new NoncePayload
+                    {
+                        AddManagerAddress = new AddManager
+                        {
+                            CaHash = src.ZkLoginInfo.NoncePayload.AddManager.CaHash.IsNullOrWhiteSpace()
+                                ? Hash.Empty : Hash.LoadFromHex(src.ZkLoginInfo.NoncePayload.AddManager.CaHash),
+                            ManagerAddress = src.ZkLoginInfo.NoncePayload.AddManager.ManagerAddress.IsNullOrWhiteSpace()
+                                ? new Address() : Address.FromBase58(src.ZkLoginInfo.NoncePayload.AddManager.ManagerAddress),
+                            Timestamp = new Timestamp
+                            {
+                                Seconds = src.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
+                                Nanos = 0
+                            }
+                        }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { src.ZkLoginInfo.ZkProofPiA },
+                        ZkProofPiB1 = { src.ZkLoginInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { src.ZkLoginInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { src.ZkLoginInfo.ZkProofPiB3 },
+                        ZkProofPiC = { src.ZkLoginInfo.ZkProofPiC }
+                    }
+                }));
+        CreateMap<AccountRegisterCreateEto, CreateHolderDto>()
+            .ForMember(d => d.Platform,
+                opt => opt.MapFrom(e => Enum.IsDefined(typeof(Platform), (int)e.Source) ? (Platform)(int)e.Source : Platform.Undefined))
+            .ForMember(d => d.GuardianInfo, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
+            {
+                Type = (Portkey.Contracts.CA.GuardianType)(int)e.GuardianInfo.Type,
+                IdentifierHash = Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
+                VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id.IsNullOrWhiteSpace()
+                        ? Hash.Empty
+                        : Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
+                    Signature = e.GuardianInfo.VerificationInfo.Signature.IsNullOrWhiteSpace()
+                        ? ByteString.Empty
+                        : ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace()
+                        ? string.Empty
+                        : e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null
+                    ? new ZkLoginInfo()
+                    : new ZkLoginInfo
+                    {
+                        IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash.IsNullOrWhiteSpace()
+                            ? Hash.Empty
+                            : Hash.LoadFromHex(e.GuardianInfo.ZkLoginInfo.IdentifierHash),
+                        Salt = e.GuardianInfo.ZkLoginInfo.Salt.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Salt,
+                        Nonce = e.GuardianInfo.ZkLoginInfo.Nonce.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Nonce,
+                        ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.ZkProof,
+                        Issuer = e.GuardianInfo.ZkLoginInfo.Issuer.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Issuer,
+                        Kid = e.GuardianInfo.ZkLoginInfo.Kid.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.Kid,
+                        CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.CircuitId,
+                        PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                            ? string.Empty
+                            : e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                        IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                            ? IdentifierHashType.Sha256Hash
+                            : IdentifierHashType.PoseidonHash,
+                        NoncePayload = new NoncePayload
+                        {
+                            AddManagerAddress = new AddManager
+                            {
+                                CaHash = e.CaHash.IsNullOrWhiteSpace()
+                                    ? Hash.Empty
+                                    : Hash.LoadFromHex(e.CaHash),
+                                ManagerAddress = e.ManagerInfo.Address.IsNullOrWhiteSpace()
+                                    ? new Address()
+                                    : Address.FromBase58(e.ManagerInfo.Address),
+                                Timestamp = new Timestamp
+                                {
+                                    Seconds = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManager.Timestamp,
+                                    Nanos = 0
+                                }
+                            }
+                        },
+                        ZkProofInfo = new ZkProofInfo
+                        {
+                            ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofPiA },
+                            ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB1 },
+                            ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB2 },
+                            ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofPiB3 },
+                            ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofPiC }
+                        }
+                    }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = Address.FromBase58(e.ManagerInfo.Address),
+                ExtraData = e.ManagerInfo.ExtraData
+            }));
 
         CreateMap<RecoveryDto, CAAccountRecoveryEto>();
         CreateMap<RegisterGrainDto, AccountRegisterCompletedEto>();
@@ -150,7 +310,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ChainGrainDto, ChainCreateEto>();
         CreateMap<ChainGrainDto, ChainUpdateEto>();
         CreateMap<ChainGrainDto, ChainDeleteEto>();
-
+        CreateMap<GoogleUserInfoDto, Verifier.Dtos.UserExtraInfo>();
         CreateMap<VerificationSignatureRequestDto, VierifierCodeRequestInput>();
 
         CreateMap<ChainDto, ChainUpdateEto>();
@@ -165,7 +325,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f =>
                     f.TokenInfo == null || f.TokenInfo.TokenContractAddress.IsNullOrEmpty()
                         ? null
-                        : f.TokenInfo.TokenContractAddress));
+                        : f.TokenInfo.TokenContractAddress))
+            .ForMember(t => t.ImageUrl, m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.ImageUrl));
         CreateMap<IndexerNftCollectionInfo, NftCollection>()
             .ForMember(t => t.ItemCount, m => m.MapFrom(f => f.TokenIds == null ? 0 : f.TokenIds.Count))
             .ForMember(t => t.ImageUrl,
@@ -200,7 +361,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Decimals,
                 m => m.MapFrom(f => f.TokenInfo == null ? new decimal() : f.TokenInfo.Decimals))
             .ForMember(t => t.TokenContractAddress,
-                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.TokenContractAddress));
+                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.TokenContractAddress))
+            .ForMember(t => t.ImageUrl,
+                m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.ImageUrl));
 
         CreateMap<IndexerSearchTokenNft, NftInfoDto>()
             .ForMember(t => t.ImageUrl,
@@ -246,6 +409,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<GuardianGrainDto, GuardianEto>();
         CreateMap<GuardianGrainDto, GuardianDeleteEto>();
         CreateMap<GuardianIndex, GuardianIndexDto>().ReverseMap();
+        CreateMap<UserExtraInfoIndex, UserExtraInfoIndexDto>();
 
         CreateMap<ManagerInfo, ManagerInfoDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.Address.ToBase58()));
@@ -289,6 +453,37 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = new Portkey.Contracts.CA.ZkLoginInfo()
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash
+                        : IdentifierHashType.PoseidonHash,
+                    NoncePayload = new NoncePayload()
+                    {
+                        AddManagerAddress = new AddManager()
+                        {
+                            CaHash = e.CaHash,
+                            ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                            Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                        }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
+                    }
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -299,7 +494,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.ReferralCode,
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
             .ForMember(t => t.ProjectCode,
-                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode))
+            .ForMember(t => t.Platform, f => f.MapFrom(m => m.Platform));
 
         CreateMap<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>()
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
@@ -311,12 +507,44 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = new ZkLoginInfo()
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash
+                        : IdentifierHashType.PoseidonHash,
+                    NoncePayload = new NoncePayload()
+                    {
+                        AddManagerAddress = new AddManager()
+                        {
+                            CaHash = e.CaHash,
+                            ManagerAddress = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                            Timestamp = e.GuardianInfo.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                        }
+                    },
+                    ZkProofInfo = new ZkProofInfo
+                    {
+                        ZkProofPiA = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                        ZkProofPiB1 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                        ZkProofPiB2 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                        ZkProofPiB3 = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                        ZkProofPiC = { e.GuardianInfo.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
+                    }
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
                 Address = e.ManagerInfo.Address,
-                ExtraData = e.ManagerInfo.ExtraData
+                ExtraData = e.ManagerInfo.ExtraData,
+                Platform = e.Platform
             }))
             .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
 
@@ -331,6 +559,49 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         Id = g.VerificationInfo.Id,
                         Signature = g.VerificationInfo.Signature,
                         VerificationDoc = g.VerificationInfo.VerificationDoc
+                    },
+                    ZkLoginInfo = new ZkLoginInfo()
+                    {
+                        IdentifierHash = g.ZkLoginInfo == null ? Hash.Empty : g.ZkLoginInfo.IdentifierHash,
+                        Issuer = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Issuer,
+                        Kid = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Kid,
+                        Nonce = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Nonce,
+                        ZkProof = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.ZkProof,
+                        Salt = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.Salt,
+                        CircuitId = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.CircuitId,
+                        PoseidonIdentifierHash = g.ZkLoginInfo == null ? "" : g.ZkLoginInfo.PoseidonIdentifierHash,
+                        IdentifierHashType = g.ZkLoginInfo == null
+                            ? IdentifierHashType.Sha256Hash
+                            : (g.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                                ? IdentifierHashType.Sha256Hash
+                                : IdentifierHashType.PoseidonHash),
+                        NoncePayload = new NoncePayload()
+                        {
+                            AddManagerAddress = new AddManager()
+                            {
+                                CaHash = e.CaHash.IsNullOrEmpty() ? Hash.Empty : e.CaHash,
+                                ManagerAddress = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null
+                                                                       || g.ZkLoginInfo.NoncePayload
+                                                                           .AddManagerAddress == null
+                                    ? new Address()
+                                    : g.ZkLoginInfo.NoncePayload.AddManagerAddress.ManagerAddress,
+                                Timestamp = g.ZkLoginInfo == null || g.ZkLoginInfo.NoncePayload == null
+                                                                  || g.ZkLoginInfo.NoncePayload.AddManagerAddress ==
+                                                                  null
+                                    ? new Timestamp()
+                                    : g.ZkLoginInfo.NoncePayload.AddManagerAddress.Timestamp
+                            }
+                        },
+                        ZkProofInfo = g.ZkLoginInfo == null
+                            ? new ZkProofInfo()
+                            : new ZkProofInfo
+                            {
+                                ZkProofPiA = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiA },
+                                ZkProofPiB1 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB1 },
+                                ZkProofPiB2 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB2 },
+                                ZkProofPiB3 = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiB3 },
+                                ZkProofPiC = { g.ZkLoginInfo.ZkProofInfo.ZkProofPiC }
+                            }
                     }
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -343,7 +614,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.ReferralCode,
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
             .ForMember(t => t.ProjectCode,
-                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode))
+            .ForMember(t => t.Platform,
+                f => f.MapFrom(m => m.Platform));
 
         CreateMap<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>()
             .ForMember(d => d.LoginGuardians,
@@ -473,7 +746,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.TokenContractAddress, m => m.MapFrom(f => f.Token.Address))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<UserTokenIndex, GetTokenListDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
@@ -482,7 +756,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f => f.Id == Guid.Empty ? $"{f.Token.ChainId}-{f.Token.Symbol}" : f.Id.ToString()))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<UserTokenIndex, GetUserTokenDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
@@ -491,7 +766,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<UserTokenItem, GetUserTokenDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
@@ -500,7 +776,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
-            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals))
+            .ForPath(t => t.ImageUrl, m => m.MapFrom(f => f.Token.ImageUrl));
 
         CreateMap<IndexerToken, GetTokenInfoDto>();
         CreateMap<IndexerToken, GetTokenListDto>();
@@ -515,7 +792,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(f => f.ChainId))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(f => f.Symbol))
             .ForPath(t => t.Token.Address, m => m.MapFrom(f => f.TokenContractAddress))
-            .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
+            .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(f => f.ImageUrl));
 
         CreateMap<TransactionDto, TransactionEto>();
         CreateMap<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>();
@@ -536,6 +814,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty))
             .ReverseMap();
         CreateMap<CAHolderIndex, CAHolderResultDto>();
+        CreateMap<CAHolderIndex, CAHolderWithAddressResultDto>();
         CreateMap<ContactAddress, ContactAddressDto>();
         CreateMap<CreateUpdateContactDto, ContactDto>();
         CreateMap<ContactDto, ContactGrainDto>();
@@ -632,10 +911,13 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(dest => dest.Username, src => src.MapFrom(m => "Pending Deposit"));
         CreateMap<PreGrabbedItemDto, GrabItemDto>();
         CreateMap<RedPackageDetailDto, CryptoGiftHistoryItemDto>()
-            .ForMember(dest => dest.Label, src => src.MapFrom(m => ETransferConstant.SgrName.Equals(m.Symbol) ? ETransferConstant.SgrDisplayName : null))
+            .ForMember(dest => dest.Label,
+                src => src.MapFrom(m =>
+                    ETransferConstant.SgrName.Equals(m.Symbol) ? ETransferConstant.SgrDisplayName : null))
             .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
             .ForMember(dest => dest.Decimals, src => src.MapFrom(m => m.Decimal))
-            .ForMember(dest => dest.DisplayStatus, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
+            .ForMember(dest => dest.DisplayStatus,
+                src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
@@ -769,7 +1051,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CAServer.Options.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenItem, UserTokenIndexDto>();
         CreateMap<AuthTokenRequestDto, ETransferAuthTokenRequestDto>().ForMember(des => des.ClientId,
-            opt => opt.MapFrom(f => ETransferConstant.ClientId))
+                opt => opt.MapFrom(f => ETransferConstant.ClientId))
             .ForMember(des => des.GrantType,
                 opt => opt.MapFrom(f => ETransferConstant.GrantType))
             .ForMember(des => des.Version,
@@ -781,25 +1063,70 @@ public class CAServerApplicationAutoMapperProfile : Profile
             ;
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
-        CreateMap<CoinMarkets, MarketCryptocurrencyDto> ()
+        CreateMap<CoinMarkets, MarketCryptocurrencyDto>()
             .ForMember(t => t.Symbol, s => s.MapFrom(m => m.Symbol.ToUpper()))
             .ForMember(t => t.OriginalMarketCap, s => s.MapFrom(m => m.MarketCap))
             .ForMember(t => t.OriginalCurrentPrice, s => s.MapFrom(m => m.CurrentPrice))
-            .ForMember(t => t.PriceChangePercentage24H, s => 
-                s.MapFrom(m => !m.PriceChangePercentage24H.HasValue ? Decimal.Zero : Math.Round((decimal)m.PriceChangePercentage24H, 1)))
+            .ForMember(t => t.PriceChangePercentage24H, s =>
+                s.MapFrom(m =>
+                    !m.PriceChangePercentage24H.HasValue
+                        ? Decimal.Zero
+                        : Math.Round((decimal)m.PriceChangePercentage24H, 1)))
             .ForMember(t => t.CurrentPrice, s =>
-                s.MapFrom(m => (m.CurrentPrice == null || !m.CurrentPrice.HasValue) ? Decimal.Zero
-                    : Decimal.Compare((decimal)m.CurrentPrice, Decimal.One) >= 0 ? Math.Round((decimal)m.CurrentPrice, 2) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.1) >= 0 ? Math.Round((decimal)m.CurrentPrice, 4, MidpointRounding.ToZero) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.01) >= 0 ? Math.Round((decimal)m.CurrentPrice, 5, MidpointRounding.ToZero) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 6, MidpointRounding.ToZero) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.0001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 7, MidpointRounding.ToZero) : (decimal)m.CurrentPrice))
-            .ForMember(t => t.MarketCap, s => 
-                s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue) ? string.Empty
-                : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000).ToString("0.00") + "B"
-                : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000).ToString("0.00") + "M"
-                : m.MarketCap.ToString()));
+                s.MapFrom(m => (m.CurrentPrice == null || !m.CurrentPrice.HasValue)
+                    ? Decimal.Zero
+                    : Decimal.Compare((decimal)m.CurrentPrice, Decimal.One) >= 0
+                        ? Math.Round((decimal)m.CurrentPrice, 2)
+                        : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.1) >= 0
+                            ? Math.Round((decimal)m.CurrentPrice, 4, MidpointRounding.ToZero)
+                            : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.01) >= 0
+                                ? Math.Round((decimal)m.CurrentPrice, 5, MidpointRounding.ToZero)
+                                : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.001) >= 0
+                                    ? Math.Round((decimal)m.CurrentPrice, 6, MidpointRounding.ToZero)
+                                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.0001) >= 0
+                                        ? Math.Round((decimal)m.CurrentPrice, 7, MidpointRounding.ToZero)
+                                        : (decimal)m.CurrentPrice))
+            .ForMember(t => t.MarketCap, s =>
+                s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue)
+                    ? string.Empty
+                    : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0)
+                        ? Decimal.Divide((decimal)m.MarketCap, 1000000000).ToString("0.00") + "B"
+                        : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0)
+                            ? Decimal.Divide((decimal)m.MarketCap, 1000000).ToString("0.00") + "M"
+                            : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
         CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
+        CreateMap<ActivityConfig, ActivityConfigDto>();
+        CreateMap<RulesConfig, RulesConfigDto>();
+        CreateMap<BeInvitedConfig, BeInvitedConfigDto>();
+        CreateMap<TaskConfigInfo, TaskConfig>();
+        CreateMap<NoticeInfo, Notice>();
+
+        CreateMap<ConfirmRequestDto, ConfirmGrainDto>();
+        CreateMap<FreeMintIndex, GetItemInfoDto>();
+        CreateMap<AccountReportDto, AccountReportEto>();
+        CreateMap<GrowthIndex, GrowthUserInfoDto>();
+        CreateMap<IndexerToken, GetUserTokenDto>()
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.TokenContractAddress));
+        CreateMap<VerifiedZkLoginRequestDto, VerifyTokenRequestDto>();
+        CreateMap<TokenInfoDto, TokenInfoV2Dto>();
+        CreateMap<SearchUserAssetsRequestDto, GetNftCollectionsRequestDto>();
+        CreateMap<ChainsInfoIndex, ChainResultDto>();
+        CreateMap<CAServer.Entities.Es.DefaultTokenInfo, CAServer.Chain.DefaultToken>();
+        CreateMap<FreeMintCollectionInfo, FreeMintCollectionInfoDto>();
+        CreateMap<CAHolderIndex, AddressBook.Dtos.ContactCaHolderInfo>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
+        CreateMap<AddressBookDto, AddressBookGrainDto>().ReverseMap();
+        CreateMap<AddressBookGrainDto, AddressBookEto>();
+        CreateMap<AddressBookIndex, AddressBookDto>();
+        CreateMap<AddressInfo, ContactAddressInfoDto>().ReverseMap();
+        CreateMap<ContactAddressInfoDto, ContactAddressInfo>().ReverseMap();
+        CreateMap<AddressInfo, ContactAddressInfo>().ReverseMap();
+        CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, CAServer.AddressBook.Dtos.ContactCaHolderInfo>().ReverseMap();
+        CreateMap<CAServer.Entities.Es.ContactCaHolderInfo, ContactAddressInfoDto>().ReverseMap();
+        
+        CreateMap<UserExtraInfoGrainDto, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<GuardianGrainDto, AppleMigrateResponseDto>();
+        CreateMap<GuardianGrainDto, GuardianIndex>();
     }
 }

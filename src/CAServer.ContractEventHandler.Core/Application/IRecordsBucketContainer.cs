@@ -19,7 +19,9 @@ public interface IRecordsBucketContainer : ISingletonDependency
     Task<List<SyncRecord>> GetValidatedRecordsAsync(string chainId);
     Task<List<SyncRecord>> GetToBeValidatedRecordsAsync(string chainId);
     Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> records);
+    Task SetValidatedRecordsAsyncEmpty(string chainId);
     Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);
+    Task SetToBeValidatedRecordsAsyncEmpty(string chainId);
 }
 
 public class RecordsBucketContainer : IRecordsBucketContainer
@@ -34,6 +36,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         _logger = logger;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
+        _logger.LogInformation($"IRecordsBucketContainer init MaxBucket {_indexOptions.MaxBucket}");
     }
 
     public async Task AddValidatedRecordsAsync(string chainId, List<SyncRecord> records)
@@ -43,9 +46,14 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             return;
         }
 
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord
+                .BlockHeight}");
+        }
         try
         {
-            var dict = GetSyncRecordBucketDictionary(records);
+            var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
 
             foreach (var bucket in dict)
             {
@@ -54,12 +62,11 @@ public class RecordsBucketContainer : IRecordsBucketContainer
                 await grain.AddValidatedRecordsAsync(bucket.Value);
             }
 
-            _logger.LogInformation("Set ValidatedRecords to Chain: {id} Success", chainId);
+            _logger.LogInformation("IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {id} Success", chainId);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Set ValidatedRecords to Chain: {id} Failed, {records}", chainId,
-                JsonConvert.SerializeObject(records));
+            _logger.LogError(e, "IRecordsBucketContainer AddValidatedRecordsAsync to Chain: {id} error, {records}", chainId,records.Count.ToString());
         }
     }
 
@@ -69,10 +76,14 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         {
             return;
         }
-
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer AddToBeValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord
+                .BlockHeight}");
+        }
         try
         {
-            var dict = GetSyncRecordBucketDictionary(records);
+            var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
 
             foreach (var bucket in dict)
             {
@@ -81,12 +92,11 @@ public class RecordsBucketContainer : IRecordsBucketContainer
                 await grain.AddToBeValidatedRecordsAsync(bucket.Value);
             }
 
-            _logger.LogInformation("Set ToBeValidatedRecords to Chain: {id} Success", chainId);
+            _logger.LogInformation("IRecordsBucketContainer AddToBeValidatedRecordsAsync to Chain: {id} Success", chainId);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Set ToBeValidatedRecords to Chain: {id} Failed, {records}", chainId,
-                JsonConvert.SerializeObject(records));
+            _logger.LogError(e, "IRecordsBucketContainer AddToBeValidatedRecordsAsync to Chain: {id} error, {records}", chainId, records.Count.ToString());
         }
     }
 
@@ -130,35 +140,109 @@ public class RecordsBucketContainer : IRecordsBucketContainer
 
     public async Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
-        for (var i = 0; i < _indexOptions.MaxBucket; i++)
+        if (records.IsNullOrEmpty())
+        {
+            await SetValidatedRecordsAsyncEmpty(chainId);
+            return;
+        }
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer SetValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord.BlockHeight}");
+        }
+        
+        var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
+        for (int i = 0; i < _indexOptions.MaxBucket; i++)
+        {
+            if (!dict.TryGetValue(i.ToString(), out var value))
+            {
+                var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
+                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
+                await grain.SetValidatedRecords(new List<SyncRecord>());
+            }
+        }
+        
+        foreach (var bucket in dict)
+        {
+            var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
+                GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket.Key));
+            try
+            {
+                await grain.SetValidatedRecords(bucket.Value);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "IRecordsBucketContainer SetValidatedRecordsAsync to Chain: {id} error, {records}", chainId, bucket.Value.Count.ToString());
+                throw;
+            }
+        }
+    }
+    public async Task SetValidatedRecordsAsyncEmpty(string chainId)
+    {
+        for (int i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.SetValidatedRecords(records);
+            await grain.SetValidatedRecords(new List<SyncRecord>());
         }
     }
 
     public async Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
-        for (var i = 0; i < _indexOptions.MaxBucket; i++)
+        if (records.IsNullOrEmpty())
+        {
+            await SetToBeValidatedRecordsAsyncEmpty(chainId);
+            return;
+        }
+        foreach (var syncRecord in records)
+        {
+            _logger.LogInformation($"IRecordsBucketContainer SetToBeValidatedRecordsAsync to Chain: {chainId} syncRecord = {syncRecord.CaHash} {syncRecord.BlockHeight}");
+        }
+        var dict = GetSyncRecordBucketDictionary(records,_indexOptions.MaxBucket);
+        for (int i = 0; i < _indexOptions.MaxBucket; i++)
+        {
+            if (!dict.TryGetValue(i.ToString(), out var value))
+            {
+                var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
+                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
+                await grain.SetToBeValidatedRecords(new List<SyncRecord>());
+            }
+        }
+        foreach (var bucket in dict)
+        {
+            var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
+                GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket.Key));
+            try
+            {
+                await grain.SetToBeValidatedRecords(bucket.Value);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "IRecordsBucketContainer SetToBeValidatedRecordsAsync to Chain: {id} error, {records}", chainId, bucket.Value.Count.ToString());
+                throw;
+            }
+        }
+    }
+    public async Task SetToBeValidatedRecordsAsyncEmpty(string chainId)
+    {
+        for (int i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.SetToBeValidatedRecords(records);
+            await grain.SetToBeValidatedRecords(new List<SyncRecord>());
         }
     }
-    
-    private string GetSyncRecordBucket(SyncRecord record)
+
+    private string GetSyncRecordBucket(SyncRecord record, int maxBucket)
     {
-        return "0";
+        return (record.CaHash.GetHashCode() % maxBucket).ToString();
     }
 
-    private Dictionary<string, List<SyncRecord>> GetSyncRecordBucketDictionary(List<SyncRecord> records)
+    private Dictionary<string, List<SyncRecord>> GetSyncRecordBucketDictionary(List<SyncRecord> records, int maxBucket)
     {
         var dict = new Dictionary<string, List<SyncRecord>>();
         foreach (var record in records)
         {
-            var bucket = GetSyncRecordBucket(record);
+            var bucket = GetSyncRecordBucket(record, maxBucket);
             if (dict.TryGetValue(bucket, out var value))
             {
                 value.Add(record);

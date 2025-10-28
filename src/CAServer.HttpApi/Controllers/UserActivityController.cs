@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.CAActivity;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
@@ -46,4 +47,4 @@ public class UserActivityController
     {
         return await _userActivityAppService.GetCaHolderCreateTimeAsync(requestDto);
     }
-}   
+}

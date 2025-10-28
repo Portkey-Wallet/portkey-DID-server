@@ -59,7 +59,8 @@ public partial class GrowthServiceTest
     {
         var provider = new Mock<IGrowthProvider>();
         provider.Setup(t =>
-                t.GetReferralRecordListAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                t.GetReferralRecordListAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(),
+                    It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<List<int>>()))
             .ReturnsAsync(new List<ReferralRecordIndex>()
             {
                 new ReferralRecordIndex()

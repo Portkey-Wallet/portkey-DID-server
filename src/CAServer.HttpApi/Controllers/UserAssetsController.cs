@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using Asp.Versioning;
+using CAServer.Awaken;
 using CAServer.Commons;
 using CAServer.Tokens;
 using CAServer.UserAssets;
@@ -41,6 +43,16 @@ public class UserAssetsController
             : await _tokenDisplayAppService.GetTokenAsync(requestDto);
     }
 
+    [HttpGet("awaken/token")]
+    public async Task<AwakenSupportedTokenResponse> ListAwakenSupportedTokensAsync(int skipCount, int maxResultCount,
+        int page, string chainId, string caAddress)
+    {
+        skipCount = skipCount <= 0 ? 0 : skipCount;
+        maxResultCount = maxResultCount <= 0 ? 100 : maxResultCount;
+        page = page <= 1 ? 1 : page;
+        return await _tokenNftAppService.ListAwakenSupportedTokensAsync(skipCount, maxResultCount, page, chainId, caAddress);
+    }
+
     [HttpPost("nftCollections")]
     public async Task<GetNftCollectionsDto> GetNFTCollectionsAsync(GetNftCollectionsRequestDto requestDto)
     {
@@ -57,6 +69,12 @@ public class UserAssetsController
     public async Task<NftItem> GetNFTItemAsync(GetNftItemRequestDto requestDto)
     {
         return await _userAssetsAppService.GetNFTItemAsync(requestDto);
+    }
+    
+    [HttpGet("setTraitsPercentage"), AllowAnonymous]
+    public async Task<NftItem> SetTraitsPercentageAsync(string traits)
+    {
+        return await _userAssetsAppService.SetTraitsPercentageAsync(traits);
     }
 
     [HttpPost("recentTransactionUsers")]
@@ -100,5 +118,12 @@ public class UserAssetsController
     public async Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto)
     {
         return await _userAssetsAppService.GetTokenBalanceAsync(requestDto);
+    }
+    
+    [AllowAnonymous]
+    [HttpGet("asset-estimation")]
+    public async Task<bool> AssetEstimation(UserAssetEstimationRequestDto request)
+    {
+        return await _userAssetsAppService.UserAssetEstimationAsync(request);
     }
 }

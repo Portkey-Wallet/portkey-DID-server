@@ -51,3 +51,8 @@ public class NFTTraitsSyncOptions
 {
     public int Sync { get; set; }
 }
+
+public class SyncChainHeightOptions
+{
+    public int Period { get; set; } = 5;
+}

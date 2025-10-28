@@ -31,7 +31,10 @@ public interface IContractProvider
 {
     public Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash, string chainId);
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
+    public Task<BoolValue> VerifyZkLogin(string chainId, GuardianInfo guardianInfo, Hash caHash);
+    public Task<BoolValue> VerifySignature(string chainId, GuardianInfo guardianInfo, string methodName, Hash caHash, string operationDetails);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
+    public Task<GetAllowanceOutput> GetAllowanceAsync(string symbol, string owner, string spender, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
 
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId,
@@ -55,7 +58,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ILogger<ContractProvider> _logger;
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
     private readonly ISignatureProvider _signatureProvider;
-    private readonly ContractOptions _contractOptions;
     private readonly IClusterClient _clusterClient;
     private readonly IIndicatorScope _indicatorScope;
     private readonly ContractServiceProxy _contractServiceProxy;
@@ -64,7 +66,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public ContractProvider(IOptionsMonitor<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope,
+        IIndicatorScope indicatorScope,
         ContractServiceProxy contractServiceProxy)
     {
         _chainOptions = chainOptions.CurrentValue;
@@ -74,7 +76,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         _indicatorScope = indicatorScope;
         _contractServiceProxy = contractServiceProxy;
         _clusterClient = clusterClient;
-        _contractOptions = contractOptions.Value;
     }
 
     public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
@@ -108,8 +109,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
-        string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
-
+        string addressFromPrivateKey = client.GetAddressFromPrivateKey(SignatureKeyHelp.CommonPrivateKeyForCallTx);
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction =
@@ -118,7 +118,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
 
-        var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
+        var txWithSign = client.SignTransaction(SignatureKeyHelp.CommonPrivateKeyForCallTx, transaction);
 
         var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.ExecuteTransactionAsync.ToString());
@@ -239,6 +239,31 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             new Empty(), _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
     }
 
+    public async Task<BoolValue> VerifyZkLogin(string chainId, Portkey.Contracts.CA.GuardianInfo guardianInfo, Hash caHash)
+    {
+        var param = new VerifyZkLoginRequest()
+        {
+            GuardianApproved = guardianInfo,
+            CaHash = caHash
+        };
+        return await CallTransactionAsync<BoolValue>(
+            AElfContractMethodName.VerifyZkLogin, param, _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
+    }
+
+    public async Task<BoolValue> VerifySignature(string chainId, GuardianInfo guardianInfo, string methodName, Hash caHash,
+        string operationDetails)
+    {
+        var param = new VerifySignatureRequest()
+        {
+            GuardianApproved = guardianInfo,
+            MethodName = methodName,
+            CaHash = caHash,
+            OperationDetails = operationDetails
+        };
+        return await CallTransactionAsync<BoolValue>(
+            AElfContractMethodName.VerifySignature, param, _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
+    }
+
     public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
     {
         if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
@@ -253,6 +278,24 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         };
 
         return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance, getBalanceParam,
+            _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
+    }
+
+    public async Task<GetAllowanceOutput> GetAllowanceAsync(string symbol, string owner, string spender, string chainId)
+    {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
+        {
+            return null;
+        }
+
+        var param = new GetAllowanceOutput
+        {
+            Symbol = symbol,
+            Owner = Address.FromBase58(owner),
+            Spender = Address.FromBase58(spender),
+        };
+
+        return await CallTransactionAsync<GetAllowanceOutput>(AElfContractMethodName.GetAllowance, param,
             _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 

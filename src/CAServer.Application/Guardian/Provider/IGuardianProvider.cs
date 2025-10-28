@@ -9,4 +9,8 @@ public interface IGuardianProvider
 
     Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(string guardianIdentifierHash, string caHash,
         string chainId);
+
+    Task<GuardianResultDto> GetHolderInfoFromCacheAsync(string guardianIdentifierHash, string chainId, bool needCache = false);
+
+    void AppendZkLoginInfo(GetHolderInfoOutput holderInfo, GuardianResultDto guardianResult);
 }

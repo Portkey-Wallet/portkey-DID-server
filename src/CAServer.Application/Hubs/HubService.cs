@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Entities.Es;
-using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Hub;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
-using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -37,6 +35,8 @@ public class HubService : CAServerAppService, IHubService
     private readonly Dictionary<string, string> _clientOrderListener = new();
     private readonly Dictionary<string, Func<NotifyOrderDto, Task>> _orderNotifyListeners = new();
 
+    //private readonly IGrowthStatisticAppService _statisticAppService;
+
 
     public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
         IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
@@ -54,7 +54,7 @@ public class HubService : CAServerAppService, IHubService
         _orderWsNotifyProvider = orderWsNotifyProvider;
     }
 
-     public async Task Ping(HubRequestContext context, string content)
+    public async Task Ping(HubRequestContext context, string content)
     {
         const string PingMethodName = "Ping";
         _hubProvider.ResponseAsync(new HubResponse<string>() { RequestId = context.RequestId, Body = content },
@@ -122,17 +122,96 @@ public class HubService : CAServerAppService, IHubService
     {
         await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
     }
-    
+
     public async Task RequestRampOrderStatus(string clientId, string orderId)
     {
         await RequestOrderStatusAsync(clientId, orderId);
     }
-    
+
+    // public async Task ReferralRecordListAsync(ReferralRecordRequestDto input)
+    // {
+    //     // while (true)
+    //     // {
+    //     //     try
+    //     //     {
+    //     //         // stop while disconnected
+    //     //         if (_connectionProvider.GetConnectionByClientId(input.TargetClientId) != null)
+    //     //         {
+    //     //             //await GetReferralRecordListAsync(input);
+    //     //         }
+    //     //         _logger.LogWarning("Get ReferralRecords STOP");
+    //     //         break;
+    //     //     }
+    //     //     catch (Exception e)
+    //     //     {
+    //     //         _logger.LogError(e, "");
+    //     //         break;
+    //     //     }
+    //     // }
+    // }
+
+    // public async Task RewardProgressAsync(ActivityEnums activityEnums, string targetClientId)
+    // {
+    //     // while (true)
+    //     // {
+    //     //     try
+    //     //     {
+    //     //         // stop while disconnected
+    //     //         if (_connectionProvider.GetConnectionByClientId(targetClientId) != null)
+    //     //         {
+    //     //             //await RewardProgressChangedAsync(activityEnums, targetClientId);
+    //     //         }
+    //     //         _logger.LogWarning("Get RewardProgressChanged STOP");
+    //     //         break;
+    //     //     }
+    //     //     catch (Exception e)
+    //     //     {
+    //     //         _logger.LogError(e, "");
+    //     //         break;
+    //     //     }
+    //     //}
+    // }
+    //
+    // private async Task RewardProgressChangedAsync(ActivityEnums activityEnums, string targetClientId)
+    // {
+    //     // var rewardProgressResponseDto = await _statisticAppService.GetRewardProgressAsync(activityEnums);
+    //     // try
+    //     // {
+    //     //     var methodName = "RewardProgressChanged";
+    //     //     await _caHubProvider.ResponseAsync(
+    //     //         new HubResponseBase<RewardProgressResponseDto>(rewardProgressResponseDto), targetClientId,
+    //     //         methodName);
+    //     // }
+    //     // catch (Exception e)
+    //     // {
+    //     //     _logger.LogError(e, "RewardProgressChanged error, clientId={ClientId}, enums={enums}", targetClientId,
+    //     //         activityEnums.ToString());
+    //     // }
+    // }
+    //
+    // private async Task GetReferralRecordListAsync(ReferralRecordRequestDto dto)
+    // {
+    //     // var referralRecordResponseDto = await _statisticAppService.GetReferralRecordList(dto);
+    //     // try
+    //     // {
+    //     //     var methodName = "ReferralRecordListChanged";
+    //     //     await _caHubProvider.ResponseAsync(
+    //     //         new HubResponseBase<ReferralRecordResponseDto>(referralRecordResponseDto), dto.TargetClientId,
+    //     //         methodName);
+    //     // }
+    //     // catch (Exception e)
+    //     // {
+    //     //     _logger.LogError(e, "Get ReferralRecordList error, clientId={ClientId}, dto={dto}", dto.TargetClientId,
+    //     //         JsonConvert.SerializeObject(dto));
+    //     // }
+    // }
+
+
     public async Task RequestNFTOrderStatusAsync(string clientId, string orderId)
     {
         await RequestOrderStatusAsync(clientId, orderId);
     }
-    
+
     public async Task RequestOrderStatusAsync(string clientId, string orderId)
     {
         await _orderWsNotifyProvider.RegisterOrderListenerAsync(clientId, orderId, async notifyOrderDto =>
@@ -140,14 +219,16 @@ public class HubService : CAServerAppService, IHubService
             try
             {
                 var methodName = notifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
-                await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId, methodName);
+                await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId,
+                    methodName);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "notify orderStatus error, clientId={ClientId}, orderId={OrderId}", clientId, orderId);
+                _logger.LogError(e, "notify orderStatus error, clientId={ClientId}, orderId={OrderId}", clientId,
+                    orderId);
             }
         });
-        
+
         // notify current order immediately
         var currentOrder = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(orderId);
         var notifyOrderDto = _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder);
@@ -156,8 +237,8 @@ public class HubService : CAServerAppService, IHubService
 
     public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
     {
-        await RequestConditionOrderAsync(targetClientId, orderId,      
-            esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString() 
+        await RequestConditionOrderAsync(targetClientId, orderId,
+            esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString()
                            || esOrderData.Status == OrderStatusType.TransferFailed.ToString()
                            || esOrderData.Status == OrderStatusType.Invalid.ToString(),
             "onOrderTransferredReceived");
@@ -165,13 +246,14 @@ public class HubService : CAServerAppService, IHubService
 
     public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
     {
-        await RequestConditionOrderAsync(targetClientId, orderId, 
+        await RequestConditionOrderAsync(targetClientId, orderId,
             esOrderData => !string.IsNullOrWhiteSpace(esOrderData.Address),
             "onAchTxAddressReceived");
     }
-    
 
-    private async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> matchCondition, string callbackMethod)
+
+    private async Task RequestConditionOrderAsync(string targetClientId, string orderId,
+        Func<OrderDto, bool> matchCondition, string callbackMethod)
     {
         var cts = new CancellationTokenSource(_thirdPartOptions.CurrentValue.Timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
@@ -181,7 +263,8 @@ public class HubService : CAServerAppService, IHubService
                 // stop while disconnected
                 if (_connectionProvider.GetConnectionByClientId(targetClientId) == null)
                 {
-                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} STOP, connection disconnected",
+                    _logger.LogWarning(
+                        "Get third-part order {OrderId} {CallbackMethod} STOP, connection disconnected",
                         orderId, callbackMethod);
                     break;
                 }
@@ -190,36 +273,39 @@ public class HubService : CAServerAppService, IHubService
                 var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
                 if (esOrderData == null || esOrderData.Id == new Guid())
                 {
-                    _logger.LogError("This order {OrderId} {CallbackMethod} not exists in the es", orderId, callbackMethod);
+                    _logger.LogError("This order {OrderId} {CallbackMethod} not exists in the es", orderId,
+                        callbackMethod);
                     break;
                 }
 
                 // condition mot match
                 if (!matchCondition(esOrderData))
                 {
-                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
+                    _logger.LogWarning(
+                        "Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
                         orderId, callbackMethod);
                     await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.CurrentValue.Timer.DelaySeconds));
                     continue;
                 }
 
                 // push address to client via ws
-                var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(
-                    new NotifyOrderDto()
-                    {
-                        OrderId = esOrderData.Id,
-                        MerchantName = esOrderData.MerchantName,
-                        Address = esOrderData.Address,
-                        Network = esOrderData.Network,
-                        Crypto = esOrderData.Crypto,
-                        CryptoAmount = esOrderData.CryptoAmount,
-                        Status = esOrderData.Status
-                    },
-                    Formatting.None,
-                    new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver()
-                    }));
+                var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(
+                    JsonConvert.SerializeObject(
+                        new NotifyOrderDto()
+                        {
+                            OrderId = esOrderData.Id,
+                            MerchantName = esOrderData.MerchantName,
+                            Address = esOrderData.Address,
+                            Network = esOrderData.Network,
+                            Crypto = esOrderData.Crypto,
+                            CryptoAmount = esOrderData.CryptoAmount,
+                            Status = esOrderData.Status
+                        },
+                        Formatting.None,
+                        new JsonSerializerSettings
+                        {
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        }));
                 await _caHubProvider.ResponseAsync(
                     new HubResponseBase<Dictionary<string, string>>
                     {
@@ -233,11 +319,14 @@ public class HubService : CAServerAppService, IHubService
             }
             catch (OperationCanceledException oce)
             {
-                _logger.LogError(oce, "Timed out waiting for third-part order { {OrderId} {CallbackMethod}  update status", orderId, callbackMethod);
+                _logger.LogError(oce,
+                    "Timed out waiting for third-part order { {OrderId} {CallbackMethod}  update status", orderId,
+                    callbackMethod);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "An exception occurred during the query third-part order {OrderId} {CallbackMethod} ",
+                _logger.LogError(e,
+                    "An exception occurred during the query third-part order {OrderId} {CallbackMethod} ",
                     orderId, callbackMethod);
                 break;
             }

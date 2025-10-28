@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Telegram;
 using CAServer.Telegram.Dtos;
 using CAServer.Telegram.Options;
@@ -62,5 +63,11 @@ public class TelegramAuthController : CAServerController
         {
             Token = token
         };
+    }
+    
+    [HttpPost("bot/register")]
+    public async Task<TelegramAuthResponseDto<TelegramBotInfoDto>> RegisterTelegramBot([FromBody] RegisterTelegramBotDto registerTelegramBotDto)
+    {
+        return await _telegramAuthService.RegisterTelegramBot(registerTelegramBotDto);
     }
 }

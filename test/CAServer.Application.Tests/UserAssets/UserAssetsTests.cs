@@ -56,6 +56,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var clusterClientMock = new Mock<IClusterClient>();
         var guardianProviderMock = new Mock<IGuardianProvider>();
         var seedImageOptionsMock = new Mock<IOptionsSnapshot<SeedImageOptions>>();
+        var activityProviderMock = new Mock<IActivityProvider>();
         seedImageOptionsMock.Setup(o => o.Value).Returns(new SeedImageOptions());
         var userTokenAppServiceMock = new Mock<IUserTokenAppService>();
         var searchAppServiceMock = new Mock<ISearchAppService>();
@@ -85,7 +86,14 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             searchAppService: searchAppServiceMock.Object,
             tokenCacheProvider: tokenCacheProvider.Object,
             ipfsOption: ipfsOption.Object,
-            tokenPriceService: tokenPriceServiceMock.Object);
+            tokenPriceService: tokenPriceServiceMock.Object,
+            activityProvider: activityProviderMock.Object,
+            objectMapper: null,
+            nftToFtOptions: null,
+            freeMintOptions:null,
+            freeMintProvider:null,
+            httpContextAccessor: null
+            );
         return userAssetsAppService;
     }
 
@@ -110,6 +118,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
         services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
         services.AddSingleton(GetMockSearchAppService());
+        services.AddSingleton(GetMockActivityProvider());
+        
     }
 
     private void Login(Guid userId)
@@ -321,6 +331,37 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             }
         };
         await _userAssetsAppService.GetNFTItemAsync(requestDto);
+    }
+    
+    [Fact]
+    public async Task UserAssetEstimationAsync_Test()
+    {
+        var requestDto = new UserAssetEstimationRequestDto
+        {
+            Symbol = "SEED-0",
+            ChainId = "MockChainId",
+            Type = "token"
+        };
+        var result = await _userAssetsAppService.UserAssetEstimationAsync(requestDto);
+        result.ShouldBe(true);
+        
+        var dto = new UserAssetEstimationRequestDto
+        {
+            Symbol = "SEED-0",
+            ChainId = "MockChainId",
+            Type = "nft"
+        };
+        var result1 = await _userAssetsAppService.UserAssetEstimationAsync(dto);
+        result1.ShouldBe(true);
+        
+        var dto1 = new UserAssetEstimationRequestDto
+        {
+            Symbol = "SEED-0",
+            ChainId = "MockChainId",
+            Type = "token1"
+        };
+        var result2 = await _userAssetsAppService.UserAssetEstimationAsync(dto1);
+        result2.ShouldBe(false);
     }
 
 

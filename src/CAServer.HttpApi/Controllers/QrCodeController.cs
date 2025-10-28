@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.QrCode;
 using CAServer.QrCode.Dtos;
 using Microsoft.AspNetCore.Mvc;

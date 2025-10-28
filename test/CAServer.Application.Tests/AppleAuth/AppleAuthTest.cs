@@ -14,6 +14,8 @@ using AElf.Types;
 using CAServer.AppleAuth.Dtos;
 using CAServer.AppleVerify;
 using CAServer.Commons;
+using CAServer.Growth.Dtos;
+using CAServer.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -52,11 +54,12 @@ public partial class AppleAuthTest : CAServerApplicationTestBase
     [Fact]
     public async Task DecodeRawTransactionTest()
     {
+
         var v1 = new Version("1.30.0");
         var v2 = new Version("1.21.0");
         var result = v1 > v2;
-        
-        
+
+
         var publicKey =
             "04bc680e9f8ea189fb510f3f9758587731a9a64864f9edbc706cea6e8bf85cf6e56f236ba58d8840f3fce34cbf16a97f69dc784183d2eef770b367f6e8a90151af";
         var rawTransaction =
@@ -137,7 +140,6 @@ public partial class AppleAuthTest : CAServerApplicationTestBase
                 UnifyRedirectUrl = string.Empty,
                 ExtensionConfig = new ExtensionConfig
                 {
-                    PrivateKey = string.Empty,
                     TeamId = string.Empty,
                     ClientId = string.Empty,
                     KeyId = string.Empty
@@ -202,7 +204,6 @@ public partial class AppleAuthTest : CAServerApplicationTestBase
                 {
                     ClientId = "test",
                     KeyId = "test",
-                    PrivateKey = pkcs8PrivateKey,
                     TeamId = "test"
                 }
             });

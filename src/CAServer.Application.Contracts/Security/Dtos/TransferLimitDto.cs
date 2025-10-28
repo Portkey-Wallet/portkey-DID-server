@@ -1,10 +1,10 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Security.Dtos;
 
-public class TransferLimitDto
+public class TransferLimitDto : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string Symbol { get; set; }
     public long Decimals { get; set; }
     public string SingleLimit { get; set; }

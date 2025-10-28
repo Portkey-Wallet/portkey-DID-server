@@ -2,6 +2,7 @@ using System;
 using CAServer.Account;
 using CAServer.Dtos;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Dtos.Zklogin;
 using CAServer.Hubs;
 using Volo.Abp.EventBus;
 

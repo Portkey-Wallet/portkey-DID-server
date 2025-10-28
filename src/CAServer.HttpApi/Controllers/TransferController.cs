@@ -1,10 +1,13 @@
 using System.Threading.Tasks;
+using CAServer.AddressBook.Dtos;
+using Asp.Versioning;
 using CAServer.Transfer;
 using CAServer.Transfer.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using GetNetworkListDto = CAServer.Transfer.Dtos.GetNetworkListDto;
 
 namespace CAServer.Controllers;
 
@@ -16,10 +19,12 @@ namespace CAServer.Controllers;
 public class TransferController : CAServerController
 {
     private readonly ITransferAppService _transferAppService;
+    private readonly IShiftChainService _shiftChainService;
 
-    public TransferController(ITransferAppService transferAppService)
+    public TransferController(ITransferAppService transferAppService, IShiftChainService shiftChainService)
     {
         _transferAppService = transferAppService;
+        _shiftChainService = shiftChainService;
     }
 
     [AllowAnonymous]
@@ -47,6 +52,17 @@ public class TransferController : CAServerController
     {
         return await _transferAppService.GetNetworkListAsync(request);
     }
+    [HttpGet("getReceiveNetworkList")]
+    public async Task<ResponseWrapDto<ReceiveNetworkDto>> GetNetworkListBySymbolAsync(GetReceiveNetworkListRequestDto request)
+    {
+        return await _shiftChainService.GetReceiveNetworkList(request);
+    }
+
+    [HttpGet("getSendNetworkList")]
+    public async Task<ResponseWrapDto<SendNetworkDto>> GetDestinationList(GetSendNetworkListRequestDto request)
+    {
+        return await _shiftChainService.GetSendNetworkList(request);
+    }
 
     [HttpGet("deposit/calculator")]
     public async Task<ResponseWrapDto<CalculateDepositRateDto>> CalculateDepositRateAsync(GetCalculateDepositRateRequestDto request)
@@ -70,5 +86,12 @@ public class TransferController : CAServerController
     public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetOrderRecordRequestDto request)
     {
         return await _transferAppService.GetRecordListAsync(request);
+    }
+    
+        
+    [HttpGet("support"), AllowAnonymous]
+    public async Task<GetSupportNetworkDto> GetSupportNetworkListAsync()
+    {
+        return await _shiftChainService.GetSupportNetworkListAsync();
     }
 }

@@ -1,6 +1,5 @@
 using CAServer.Grains.State.Tokens;
 using CAServer.Tokens.Dtos;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.Tokens.UserTokens;
@@ -14,16 +13,16 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(cancellationToken);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public Task<GrainResultDto<UserTokenGrainDto>> GetUserToken()
@@ -69,7 +68,8 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
                 Address = tokenItem.Token.Address,
                 ChainId = tokenItem.Token.ChainId,
                 Decimals = tokenItem.Token.Decimals,
-                Symbol = tokenItem.Token.Symbol
+                Symbol = tokenItem.Token.Symbol,
+                ImageUrl = tokenItem.Token.ImageUrl
             };
         }
 

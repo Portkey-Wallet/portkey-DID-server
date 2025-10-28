@@ -31,6 +31,9 @@ public class Program
             var builder = WebApplication.CreateBuilder(args);
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+                .InitAppConfiguration(true)
+                .UseApolloForHostBuilder()
+                .UseOrleansClient()
                 .UseSerilog();
             await builder.AddApplicationAsync<CABackGroundModule>();
             var app = builder.Build();

@@ -36,6 +36,9 @@ public class FacebookUserInfoDto
     public string GuardianType { get; set; }
     
     public string Picture { get; set; }
+    
+    public string LastName { get; set; }
+    public string FullName { get; set; }
 }
 
 public class FacebookPictureDto

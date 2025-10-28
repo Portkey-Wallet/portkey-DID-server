@@ -1,5 +1,4 @@
 using CAServer.Grains.State.ApplicationHandler;
-using Orleans;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
@@ -16,7 +15,7 @@ public interface  ISyncRecordGrain : IGrainWithStringKey
 
 public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
 {
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         await ReadStateAsync();
         

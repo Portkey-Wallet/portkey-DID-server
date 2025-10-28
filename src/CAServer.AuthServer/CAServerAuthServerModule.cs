@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using AElf.OpenTelemetry;
 using CAServer.Commons;
 using CAServer.Contract;
 using Localization.Resources.AbpUi;
@@ -54,7 +55,8 @@ namespace CAServer;
     typeof(CAServerApplicationContractsModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
-    typeof(CAServerSignatureModule)
+    typeof(CAServerSignatureModule),
+    typeof(OpenTelemetryModule)
 )]
 public class CAServerAuthServerModule : AbpModule
 {
@@ -161,7 +163,7 @@ public class CAServerAuthServerModule : AbpModule
 
         Configure<AbpBackgroundJobOptions>(options => { options.IsJobExecutionEnabled = false; });
 
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:Auth:"; });
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
 
         var dataProtectionBuilder = context.Services.AddDataProtection().SetApplicationName("CAServer");
         if (!hostingEnvironment.IsDevelopment())

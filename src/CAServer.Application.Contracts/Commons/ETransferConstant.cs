@@ -21,6 +21,8 @@ public static class ETransferConstant
     public const string ToType = "to";
     public const string TronName = "TRX";
     public const string DefaultToken = "ELF";
+    public const string InvalidAddressCode = "40001";
+    public const string InvalidAddressMessage= "Invalid address";
     
 
     public const string GetConnectToken = "connect/token";

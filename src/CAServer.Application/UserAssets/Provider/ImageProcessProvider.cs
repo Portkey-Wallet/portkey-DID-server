@@ -70,7 +70,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
                 return imageUrl;
             }
 
-            return await GetResizeImageUrlAsync(imageUrl, width, height, type);
+            return await GetResizeImageUrlAsync(imageUrl, width, height);
         }
         catch (Exception ex)
         {
@@ -88,7 +88,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
                 return new ThumbnailResponseDto();
             }
 
-            var resImage = await GetResizeImageUrlAsync(imageUrl, width, height, ImageResizeType.Im);
+            var resImage = await GetResizeImageUrlAsync(imageUrl, width, height);
             return new ThumbnailResponseDto
             {
                 ThumbnailUrl = resImage
@@ -169,13 +169,32 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         await Client.GetAsync(url);
     }
 
-    private async Task<string> GetResizeImageUrlAsync(string imageUrl, int width, int height, ImageResizeType type)
+    private async Task<string> GetResizeImageUrlAsync(string imageUrl, int width, int height)
     {
+        var type = GetS3Type(imageUrl);
         var produceImage = GetResizeUrl(imageUrl, width, height, true, type);
         await SendUrlAsync(produceImage);
 
         var resImage = GetResizeUrl(imageUrl, width, height, false, type);
         return resImage;
+    }
+
+    private ImageResizeType GetS3Type(string imageUrl)
+    {
+        var urlSplit = imageUrl.Split(new string[] { UserAssetsServiceConstant.AwsDomain },
+            StringSplitOptions.RemoveEmptyEntries);
+
+        if (urlSplit[0].ToLower().Contains(CommonConstant.ImS3Mark))
+        {
+            return ImageResizeType.Im;
+        }
+
+        if (urlSplit[0].ToLower().Contains(CommonConstant.PortkeyS3Mark))
+        {
+            return ImageResizeType.PortKey;
+        }
+
+        return ImageResizeType.Forest;
     }
 
     private string GetImageUrlSuffix(string imageUrl)

@@ -38,7 +38,7 @@ public static class VersionContentHelper
         }
     }
 
-    private static SearchUserPackageAssetsDto FilterUserPackageAssets(SearchUserPackageAssetsDto userPackageAssets)
+    public static SearchUserPackageAssetsDto FilterUserPackageAssets(SearchUserPackageAssetsDto userPackageAssets)
     {
         var filteredData = userPackageAssets.Data
             .Where(asset => asset.AssetType != (int)AssetType.NFT

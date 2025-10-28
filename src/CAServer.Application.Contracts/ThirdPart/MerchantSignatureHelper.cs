@@ -18,6 +18,11 @@ public static class MerchantSignatureHelper
         return GetSignature(primaryKey, rawData);
     }
 
+    public static string GetRawData( object data)
+    {
+        return ThirdPartHelper.ConvertObjectToSortedString(data, SignatureField);
+    }
+
     public static string GetSignature(string privateKey, string rawData)
     {
         var privateKeyByte = ByteArrayHelper.HexStringToByteArray(privateKey);

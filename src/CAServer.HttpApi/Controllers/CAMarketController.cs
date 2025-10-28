@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Market;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +24,12 @@ public class CAMarketController : CAServerController
     
     [HttpGet("list")]
     public async Task<List<MarketCryptocurrencyDto>> GetMarketCryptocurrencyDataByType(string type, string sort, string sortDir)
+    {
+        return await _marketAppService.GetMarketCryptocurrencyDataByType(type, sort, sortDir);
+    }
+    
+    [HttpGet("noAuth/list"), AllowAnonymous]
+    public async Task<List<MarketCryptocurrencyDto>> GetMarketCryptocurrencyDataByTypeNoAuth(string type, string sort, string sortDir)
     {
         return await _marketAppService.GetMarketCryptocurrencyDataByType(type, sort, sortDir);
     }

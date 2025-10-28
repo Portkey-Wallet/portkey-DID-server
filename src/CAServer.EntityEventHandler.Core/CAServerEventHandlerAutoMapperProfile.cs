@@ -1,13 +1,19 @@
+using System;
 using AutoMapper;
+using CAServer.AddressBook.Dtos;
+using CAServer.AddressBook.Etos;
+using CAServer.AddressBook.Migrate.Eto;
 using CAServer.Chain;
 using CAServer.Guardian;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Growth.Etos;
+using CAServer.IpInfo;
 using CAServer.Notify.Etos;
 using CAServer.RedDot.Etos;
 using CAServer.Security.Etos;
@@ -49,20 +55,24 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(u => u.Token.ChainId))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
-            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
+            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(u => u.Token.ImageUrl));
 
         CreateMap<UserTokenDeleteEto, UserTokenIndex>()
             .ForPath(t => t.Token.Id, m => m.MapFrom(u => u.Token.Id))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(u => u.Token.ChainId))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
-            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
+            .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address))
+            .ForPath(t => t.Token.ImageUrl, m => m.MapFrom(u => u.Token.ImageUrl));
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
         CreateMap<UpdateCAHolderEto, CAHolderIndex>();
         CreateMap<DefaultToken, DefaultTokenInfo>();
         CreateMap<ChainCreateEto, ChainsInfoIndex>();
         CreateMap<ChainUpdateEto, ChainsInfoIndex>();
         CreateMap<ChainDeleteEto, ChainsInfoIndex>();
+        CreateMap<ChainResultDto, ChainsInfoIndex>();
+        CreateMap<ChainsInfoIndex, ChainResultDto>();
         CreateMap<GuardianEto, GuardianIndex>();
         CreateMap<OrderEto, RampOrderIndex>();
         CreateMap<UserExtraInfoEto, UserExtraInfoIndex>();
@@ -80,5 +90,16 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<RedDotEto, RedDotIndex>();
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
         CreateMap<TwitterStatisticEto, TwitterStatisticIndex>();
+        CreateMap<AccountReportEto, AccountReportIndex>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.CaHash))
+            .ForMember(t => t.ClientType, m => m.MapFrom(f => f.ClientType.ToString()))
+            .ForMember(t => t.OperationType, m => m.MapFrom(f => f.OperationType.ToString()))
+            .ForMember(t => t.CreateTime, f => f.MapFrom(f => DateTime.UtcNow));
+
+        CreateMap<IpInfoDto, CountryInfo>();
+        CreateMap<AddressBookEto, AddressBookIndex>();
+        CreateMap<CAServer.AddressBook.Dtos.ContactCaHolderInfo, CAServer.Entities.Es.ContactCaHolderInfo>();
+        CreateMap<ContactAddressInfoDto, AddressInfo>();
+        CreateMap<AddressBookMigrateEto, AddressBookMigrateIndex>();
     }
 }

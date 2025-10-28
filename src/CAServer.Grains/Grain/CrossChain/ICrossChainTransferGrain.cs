@@ -1,5 +1,3 @@
-using Orleans;
-
 namespace CAServer.Grains.Grain.CrossChain;
 
 public interface ICrossChainTransferGrain : IGrainWithStringKey

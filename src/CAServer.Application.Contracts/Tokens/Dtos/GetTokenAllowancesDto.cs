@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Commons.Etos;
 
 namespace CAServer.Tokens.Dtos;
 
@@ -8,9 +9,8 @@ public class GetTokenAllowancesDto
     public long TotalRecordCount { get; set; }
 }
 
-public class TokenAllowance
+public class TokenAllowance : ChainDisplayNameDto
 {
-    public string ChainId { get; set; }
     public string ContractAddress { get; set; }
     public string Url { get; set; }
     public string Icon { get; set; }
@@ -24,4 +24,15 @@ public class SymbolApprove
     public string Symbol { get; set; }
     public long Amount { get; set; }
     public int Decimals { get; set; }
+    public string ImageUrl { get; set; }
+    public long UpdateTime { get; set; }
+}
+
+public class GetAllowanceDTO
+{
+    public string ChainId { get; set; }
+    public string Symbol { get; set; }
+    public string Owner { get; set; }
+    public string Spender { get; set; }
+    public long Allowance { get; set; }
 }

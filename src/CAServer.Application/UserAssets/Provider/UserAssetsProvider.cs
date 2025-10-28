@@ -52,7 +52,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             Query = @"
 			    query($symbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderTokenBalanceInfo(dto: {symbol:$symbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,balance,caAddress,tokenIds,tokenInfo{id,chainId,symbol,tokenContractAddress,decimals,tokenName,totalSupply}},totalRecordCount}
+                        data{chainId,balance,caAddress,tokenIds,tokenInfo{id,chainId,symbol,tokenContractAddress,decimals,tokenName,totalSupply,imageUrl}},totalRecordCount}
                 }",
             Variables = new
             {
@@ -97,7 +97,8 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         });
     }
 
-    public async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto, int inputSkipCount,
+    public async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto,
+        int inputSkipCount,
         int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<IndexerNftItemInfos>(new GraphQLRequest
@@ -112,6 +113,26 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
                 getNftItemInfos = getNftItemInfosDto.GetNftItemInfos,
                 skipCount = inputSkipCount,
                 maxResultCount = inputMaxResultCount
+            }
+        });
+    }
+
+    public async Task<IndexerNftItemWithTraitsInfos> GetNftItemWithTraitsInfos(string symbol, string collectionSymbol,
+        int skipCount, int maxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerNftItemWithTraitsInfos>(new GraphQLRequest
+        {
+            Query = @"
+			    query($symbol:String,$collectionSymbol:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    nftItemWithTraitsInfos(dto: {symbol:$symbol,collectionSymbol:$collectionSymbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        symbol,supply,traits}
+                }",
+            Variables = new
+            {
+                symbol = symbol,
+                collectionSymbol = collectionSymbol,
+                skipCount = skipCount,
+                maxResultCount = maxResultCount
             }
         });
     }
@@ -178,7 +199,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             Query = @"
 			    query($searchWord:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderSearchTokenNFT(dto: {searchWord:$searchWord,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,balance,caAddress,tokenId,tokenInfo{type,symbol,tokenContractAddress,decimals,tokenName,totalSupply},nftInfo{symbol,decimals,imageUrl,collectionSymbol,collectionName,tokenName,totalSupply,tokenContractAddress}},totalRecordCount}
+                        data{chainId,balance,caAddress,tokenId,tokenInfo{type,symbol,tokenContractAddress,decimals,tokenName,totalSupply,imageUrl},nftInfo{symbol,decimals,imageUrl,collectionSymbol,collectionName,tokenName,totalSupply,tokenContractAddress}},totalRecordCount}
                 }",
             Variables = new
             {

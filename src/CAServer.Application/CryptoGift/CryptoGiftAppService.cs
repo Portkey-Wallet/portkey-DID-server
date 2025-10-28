@@ -171,7 +171,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task<PreGrabbedDto> ListCryptoPreGiftGrabbedItems(Guid redPackageId)
     {
-        var grain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var grain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftGrainDto = await grain.GetCryptoGift(redPackageId);
         if (!cryptoGiftGrainDto.Success || cryptoGiftGrainDto.Data == null)
         {
@@ -198,14 +198,14 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
 
-    public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId)
+    public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId, string random)
     {
         await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(1));
         if (handle == null)
         {
             throw new UserFriendlyException("please take a break for a while~");
         }
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         if (ipAddress.IsNullOrEmpty())
         {
             throw new UserFriendlyException("portkey can't get your ip, grab failed~");
@@ -220,7 +220,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -236,7 +236,40 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException(grabbedResult.Message);
         }
+
+        await PutIdentityCodeInCache(identityCode, ipAddress);
         return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
+    }
+
+    private async Task PutIdentityCodeInCache(string identityCode, string ipAddress)
+    {
+        if (identityCode.IsNullOrEmpty() || ipAddress.IsNullOrEmpty())
+        {
+            return;
+        }
+        var key = GetIpAddressIdentityCodeCacheKey(ipAddress);
+        try
+        {
+            await _distributedCache.RemoveAsync(key);
+            await _distributedCache.SetAsync(key, identityCode, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddHours(1)
+            });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "PutIdentityCodeInCache error identityCode:{0} ipAddress:{1}", identityCode, ipAddress);
+        }
+    }
+
+    public async Task<string> GetIdentityCodeFromCache(string ipAddress)
+    {
+        return await _distributedCache.GetAsync(GetIpAddressIdentityCodeCacheKey(ipAddress));
+    }
+
+    private string GetIpAddressIdentityCodeCacheKey(string ipAddress)
+    {
+        return "CryptoGiftIdentity:" + ipAddress;
     }
 
     private static void CheckClaimCondition(RedPackageDetailDto redPackageDetailDto, CryptoGiftDto cryptoGiftDto,
@@ -294,7 +327,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal, string ipAddress, string identityCode)
     {
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -325,7 +358,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
     public async Task CheckClaimQuotaAfterLoginCondition(RedPackageDetailDto redPackageDetailDto, string caHash)
     {
         var redPackageId = redPackageDetailDto.Id;
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -373,6 +406,8 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         if (!cryptoGiftDto.Items.Any(c => c.IdentityCode.Equals(identityCode)
                                          && GrabbedStatus.Created.Equals(c.GrabbedStatus)))
         {
+            _logger.LogWarning("CheckClaimConditionWhenAutoTransfer redPackageId:{0} userId:{1} identityCode:{2} cryptoGiftDto:{3}", 
+                cryptoGiftDto.Id, userId, identityCode, JsonConvert.SerializeObject(cryptoGiftDto));
             throw new UserFriendlyException("You didn't pre grab a crypto gift");
         }
     }
@@ -404,7 +439,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         return getNftItemInfosDto;
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId, string random)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -412,7 +447,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -420,7 +455,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         //get the sender info
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
@@ -606,7 +641,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         _logger.LogInformation("Test redPackageIndex:{0} cryptoGiftIndices:{1}", redPackageId, JsonConvert.SerializeObject(cryptoGiftIndices));
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         _logger.LogInformation("Test redPackageId:{0} cryptoGiftDto:{1}", redPackageId, JsonConvert.SerializeObject(cryptoGiftDto));
@@ -659,7 +694,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         };
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId, string random)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -669,7 +704,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         }
         Guid receiverId = await GetUserId(caHash, 0);
         var redPackageDetailDto = redPackageDetail.Data;
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         
         // get nft info
@@ -788,7 +823,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
 
     private async Task<CryptoGiftDto> DoGetCryptoGiftAfterLogin(Guid redPackageId)
     {
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -885,7 +920,7 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             _logger.LogInformation($"Transfer cached failed cause userId redPackageId:{redPackageId}");
             throw new UserFriendlyException($"the user userId:{userId} doesn't exist");
         }
-        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGrain>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
         {
@@ -1056,9 +1091,9 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         return preGrabBucketItemDto;
     }
 
-    public (string, string) GetIpAddressAndIdentity(Guid redPackageId)
+    public (string, string) GetIpAddressAndIdentity(Guid redPackageId, string random)
     {
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = _ipInfoAppService.GetRemoteIp(random);
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         return new ValueTuple<string, string>(ipAddress, identityCode);
     }
@@ -1103,7 +1138,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         cryptoGiftIndices = cryptoGiftIndices.Where(crypto => crypto.CreateTime > createTime).ToList();
-        _logger.LogInformation("====================cryptoGiftIndices:{0} ", JsonConvert.SerializeObject(cryptoGiftIndices));
         var details = new List<RedPackageDetailDto>();
         foreach (var cryptoGiftIndex in cryptoGiftIndices)
         {
@@ -1116,7 +1150,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             details.Add(redPackageDetail.Data);
         }
 
-        _logger.LogInformation("====================redPackageDetail:{0} ", JsonConvert.SerializeObject(details));
         var cryptoGiftClaimDtos = details.Select(detail => new CryptoGiftClaimDto()
         {
             UserId = detail.SenderId,
@@ -1128,7 +1161,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         IDictionary<string, string> groupToCaAddress = new Dictionary<string, string>();
         var userIdChainId = cryptoGiftClaimDtos.GroupBy(c => c.UserId + "#" + c.ChainId)
             .Select(group => new {Group = group.Key});
-        _logger.LogInformation("===========userIdChainId:{0}", JsonConvert.SerializeObject(userIdChainId));
         foreach (var item in userIdChainId)
         {
             if (groupToCaAddress.TryGetValue(item.Group, out var value))
@@ -1139,7 +1171,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
             var split = item.Group.Split("#");
             groupToCaAddress.Add(item.Group, await GetCaAddress(Guid.Parse(split[0]), split[1]));
         }
-        _logger.LogInformation("===========groupToCaAddress:{0}", JsonConvert.SerializeObject(groupToCaAddress));
         foreach (var cryptoGiftClaimDto in cryptoGiftClaimDtos)
         {
             var key = cryptoGiftClaimDto.UserId + "#" + cryptoGiftClaimDto.ChainId;
@@ -1162,7 +1193,6 @@ public partial class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppSe
         var caHash = caHolderIndex.CaHash;
         try
         {
-            _logger.LogInformation("---------------GetCaAddress userId:{0} caHash:{1} chainId:{2}", userId, caHash, chainId);
             var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
             if (result != null)
             {

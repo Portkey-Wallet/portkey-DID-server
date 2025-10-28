@@ -5,6 +5,7 @@ using CAServer.Bookmark.Dtos;
 using CAServer.Contacts;
 using CAServer.EnumType;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.AddressBook;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
@@ -21,6 +22,7 @@ using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
+using CAServer.Grains.State.AddressBook;
 using CAServer.Grains.State.Bookmark;
 using CAServer.Grains.State.Chain;
 using CAServer.Grains.State.Contacts;
@@ -67,6 +69,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GuardianState, GuardianGrainDto>();
 
         CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.Platform, opt => opt.MapFrom(m => m.Platform))
             .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
             {
                 ChainId = e.ProjectDelegateInfo.ChainId,
@@ -90,6 +93,21 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    ZkProofInfo = e.GuardianInfo.ZkLoginInfo.ZkProofInfo,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = e.GuardianInfo.ZkLoginInfo.NoncePayload
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
@@ -112,12 +130,28 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     Id = e.GuardianInfo.VerificationInfo.Id,
                     Signature = e.GuardianInfo.VerificationInfo.Signature,
                     VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                },
+                ZkLoginInfo = e.GuardianInfo.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
+                {
+                    IdentifierHash = e.GuardianInfo.ZkLoginInfo.IdentifierHash,
+                    Salt = e.GuardianInfo.ZkLoginInfo.Salt,
+                    Nonce = e.GuardianInfo.ZkLoginInfo.Nonce,
+                    ZkProof = e.GuardianInfo.ZkLoginInfo.ZkProof,
+                    ZkProofInfo = e.GuardianInfo.ZkLoginInfo.ZkProofInfo,
+                    Issuer = e.GuardianInfo.ZkLoginInfo.Issuer,
+                    Kid = e.GuardianInfo.ZkLoginInfo.Kid,
+                    CircuitId = e.GuardianInfo.ZkLoginInfo.CircuitId,
+                    PoseidonIdentifierHash = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash,
+                    IdentifierHashType = e.GuardianInfo.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                        ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    NoncePayload = e.GuardianInfo.ZkLoginInfo.NoncePayload
                 }
             }))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
                 Address = e.ManagerInfo.Address,
-                ExtraData = e.ManagerInfo.ExtraData
+                ExtraData = e.ManagerInfo.ExtraData,
+                Platform = e.Platform
             }))
             .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
 
@@ -133,6 +167,21 @@ public class CAServerGrainsAutoMapperProfile : Profile
                         Signature = g.VerificationInfo.Signature,
                         VerificationDoc = g.VerificationInfo.VerificationDoc
                     }
+                    // ZkLoginInfo = g.ZkLoginInfo == null ? new ZkLoginInfo() : new ZkLoginInfo
+                    // {
+                    //     IdentifierHash = g.ZkLoginInfo.IdentifierHash,
+                    //     Salt = g.ZkLoginInfo.Salt,
+                    //     Nonce = g.ZkLoginInfo.Nonce,
+                    //     ZkProof = g.ZkLoginInfo.ZkProof,
+                    //     ZkProofInfo = g.ZkLoginInfo.ZkProofInfo,
+                    //     Issuer = g.ZkLoginInfo.Issuer,
+                    //     Kid = g.ZkLoginInfo.Kid,
+                    //     CircuitId = g.ZkLoginInfo.CircuitId,
+                    //     PoseidonIdentifierHash = g.ZkLoginInfo.PoseidonIdentifierHash,
+                    //     IdentifierHashType = g.ZkLoginInfo.PoseidonIdentifierHash.IsNullOrEmpty()
+                    //         ? IdentifierHashType.Sha256Hash : IdentifierHashType.PoseidonHash,
+                    //     NoncePayload = g.ZkLoginInfo.NoncePayload
+                    // }
                 }).ToList()))
             .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
@@ -144,7 +193,9 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ForMember(t => t.ReferralCode,
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
             .ForMember(t => t.ProjectCode,
-                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode))
+            .ForMember(t => t.Platform,
+                f => f.MapFrom(m => m.Platform));
 
         CreateMap<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>()
             .ForMember(d => d.LoginGuardians,
@@ -213,6 +264,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<PendingTreasuryOrderState, PendingTreasuryOrderDto>().ReverseMap();
         CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
+        CreateMap<InviteInfo, GrowthGrainDto>().ReverseMap();
         CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
+        CreateMap<AddressBookGrainDto, AddressBookState>().ReverseMap();
     }
 }

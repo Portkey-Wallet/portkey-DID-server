@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Awaken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -14,6 +15,10 @@ using CAServer.Tokens.Provider;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using CAServer.ZeroHoldings;
+using CAServer.ZeroHoldings.constant;
+using CAServer.ZeroHoldings.Dtos;
+using MassTransit.Util;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,6 +40,7 @@ namespace CAServer.Tokens;
 [DisableAuditing]
 public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppService
 {
+    private const string DefaultSymbolBalance = "0";
     private readonly ILogger<TokenDisplayAppService> _logger;
     private readonly ITokenAppService _tokenAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
@@ -52,6 +58,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
     private readonly TokenListOptions _tokenListOptions;
     private readonly IContractProvider _contractProvider;
     private readonly NftToFtOptions _nftToFtOptions;
+    private readonly IZeroHoldingsConfigAppService _zeroHoldingsConfigAppService;
 
     public TokenDisplayAppService(
         ILogger<TokenDisplayAppService> logger, IUserAssetsProvider userAssetsProvider,
@@ -63,7 +70,9 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         IDistributedCache<string> userTokenBalanceCache,
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
-        IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
+        IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
+        IZeroHoldingsConfigAppService zeroHoldingsConfigAppService
+    )
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -82,6 +91,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         _ipfsOptions = ipfsOption.Value;
         _tokenListOptions = tokenListOptions.Value;
         _nftToFtOptions = nftToFtOptions.Value;
+        _zeroHoldingsConfigAppService = zeroHoldingsConfigAppService;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -106,7 +116,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         {
             var caAddressInfos = requestDto.CaAddressInfos;
             var indexerTokenInfos = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
-                0, Int32.MaxValue);
+                0, PagedResultRequestDto.MaxMaxResultCount);
 
             indexerTokenInfos.CaHolderTokenBalanceInfo.Data =
                 indexerTokenInfos.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
@@ -173,7 +183,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 }
 
                 var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
 
                 tokenList.Add(token);
             }
@@ -190,7 +200,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                     continue;
                 }
 
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol, token.ImageUrl);
                 tokenList.Add(token);
             }
 
@@ -229,11 +239,21 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 var balanceInUsd = CalculationHelper.GetBalanceInUsd(priceDict[token.Symbol], long.Parse(token.Balance),
                     token.Decimals);
                 token.Price = priceDict[token.Symbol];
-                token.BalanceInUsd = token.Price == 0 ? string.Empty : balanceInUsd.ToString();
+                token.BalanceInUsd = token.Price == 0 ? DefaultSymbolBalance : balanceInUsd.ToString();
             }
 
-            dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
+            dto.TotalBalanceInUsd = PrecisionDisplayHelper.FormatNumber(CalculateTotalBalanceInUsd(dto.Data));
             dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
+
+            dto.Data.ForEach(t =>
+            {
+                if (decimal.TryParse(t.Balance, out var balance))
+                {
+                    t.Balance = balance < 0 ? "0" : t.Balance;
+                }
+            });
+
+            // await filterZeroByConfig(dto);
 
             return dto;
         }
@@ -241,6 +261,24 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         {
             _logger.LogError(e, "GetTokenAsync Error. {dto}", requestDto);
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
+        }
+    }
+
+    private async Task filterZeroByConfig(GetTokenDto dto)
+    {
+        try
+        {
+            ZeroHoldingsConfigDto config = await _zeroHoldingsConfigAppService.GetStatus();
+            if (ZeroHoldingsConfigConstant.CloseStatus == config.Status)
+            {
+                List<Token> filterData = dto.Data.Where(d => decimal.Parse(d.Balance) == 0).ToList();
+                dto.Data = filterData;
+                dto.TotalRecordCount = filterData.Count;
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "filterZeroByConfig Error. {dto}", dto);
         }
     }
 
@@ -455,7 +493,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             .ThenBy(t => t.AssetType == (int)AssetType.NFT)
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
+            .ThenByDescending(t => t.ChainId)
             .ToList();
     }
 
@@ -583,7 +621,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
 
-                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
+                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol, tokenInfo.ImageUrl);
 
                     item.TokenInfo = tokenInfo;
                 }

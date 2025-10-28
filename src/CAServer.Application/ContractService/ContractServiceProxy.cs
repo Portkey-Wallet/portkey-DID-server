@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using AElf.Client.Dto;
 using CAServer.CAAccount;
@@ -9,7 +8,6 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
 
@@ -18,16 +16,16 @@ namespace CAServer.ContractService;
 public class ContractServiceProxy : ISingletonDependency
 {
     private readonly ILogger<ContractServiceProxy> _logger;
-    private readonly IClusterClient _clusterClient;
     private readonly IContractService _contractService;
+    private readonly IContractAppProvider _contractAppProvider;
     private readonly IOptionsMonitor<ContractServiceOptions> _contractServiceOptions;
 
-    public ContractServiceProxy(ILogger<ContractServiceProxy> logger, IClusterClient clusterClient,
-        IContractService contractService, IOptionsMonitor<ContractServiceOptions> contractServiceOptions)
+    public ContractServiceProxy(ILogger<ContractServiceProxy> logger, IContractService contractService,
+        IContractAppProvider contractAppProvider, IOptionsMonitor<ContractServiceOptions> contractServiceOptions)
     {
         _logger = logger;
-        _clusterClient = clusterClient;
         _contractService = contractService;
+        _contractAppProvider = contractAppProvider;
         _contractServiceOptions = contractServiceOptions;
     }
 
@@ -36,10 +34,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.CreateHolderInfoAsync(createHolderDto);
-            }
+                return await _contractAppProvider.CreateHolderInfoAsync(createHolderDto);
             default:
                 return await _contractService.CreateHolderInfoAsync(createHolderDto);
         }
@@ -51,10 +46,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.CreateHolderInfoOnNonCreateChainAsync(chainId, createHolderDto);
-            }
+                return await _contractAppProvider.CreateHolderInfoOnNonCreateChainAsync(chainId, createHolderDto);
             default:
                 return await _contractService.CreateHolderInfoOnNonCreateChainAsync(chainId, createHolderDto);
         }
@@ -65,10 +57,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.SocialRecoveryAsync(socialRecoveryDto);
-            }
+                return await _contractAppProvider.SocialRecoveryAsync(socialRecoveryDto);
             default:
                 return await _contractService.SocialRecoveryAsync(socialRecoveryDto);
         }
@@ -80,10 +69,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.ValidateTransactionAsync(chainId, output, unsetLoginGuardianTypes);
-            }
+                return await _contractAppProvider.ValidateTransactionAsync(chainId, output, unsetLoginGuardianTypes);
             default:
                 return await _contractService.ValidateTransactionAsync(chainId, output, unsetLoginGuardianTypes);
         }
@@ -94,10 +80,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
-            }
+                return await _contractAppProvider.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
             default:
                 return await _contractService.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
         }
@@ -108,10 +91,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.SyncTransactionAsync(chainId, input);
-            }
+                return await _contractAppProvider.SyncTransactionAsync(chainId, input);
             default:
                 return await _contractService.SyncTransactionAsync(chainId, input);
         }
@@ -122,10 +102,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.ForwardTransactionAsync(chainId, rawTransaction);
-            }
+                return await _contractAppProvider.ForwardTransactionAsync(chainId, rawTransaction);
             default:
                 return await _contractService.ForwardTransactionAsync(chainId, rawTransaction);
         }
@@ -138,11 +115,8 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, param, payRedPackageFrom,
+                return await _contractAppProvider.SendTransferRedPacketToChainAsync(chainId, param, payRedPackageFrom,
                     redPackageContractAddress, methodName);
-            }
             default:
                 return await _contractService.SendTransferRedPacketToChainAsync(chainId, param, payRedPackageFrom,
                     redPackageContractAddress, methodName);
@@ -154,10 +128,7 @@ public class ContractServiceProxy : ISingletonDependency
         switch (_contractServiceOptions.CurrentValue.UseGrainService)
         {
             case true:
-            {
-                var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-                return await grain.AuthorizeDelegateAsync(assignProjectDelegateeDto);
-            }
+                return await _contractAppProvider.AuthorizeDelegateAsync(assignProjectDelegateeDto);
             default:
                 return await _contractService.AuthorizeDelegateAsync(assignProjectDelegateeDto);
         }

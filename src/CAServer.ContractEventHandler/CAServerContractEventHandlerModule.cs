@@ -1,10 +1,12 @@
 using System;
 using AElf.Indexing.Elasticsearch;
+using AElf.OpenTelemetry;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
+using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Monitor;
@@ -26,6 +28,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Orleans;
 using Orleans.Configuration;
@@ -61,7 +65,8 @@ namespace CAServer.ContractEventHandler;
     typeof(CAServerMongoDbModule),
     typeof(CAServerMonitorModule),
     typeof(AbpBackgroundJobsHangfireModule),
-    typeof(AElfIndexingElasticsearchModule)
+    typeof(AElfIndexingElasticsearchModule),
+    typeof(OpenTelemetryModule)
 )]
 public class CAServerContractEventHandlerModule : AbpModule
 {
@@ -71,6 +76,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         //ConfigureEsIndexCreation();   
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<ContractServiceOptions>(configuration.GetSection("ContractService"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<ContractSyncOptions>(configuration.GetSection("Sync"));
         Configure<IndexOptions>(configuration.GetSection("Index"));
@@ -79,8 +86,9 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<GrabRedPackageOptions>(configuration.GetSection("GrabRedPackage"));
         Configure<NFTTraitsSyncOptions>(configuration.GetSection("NFTTraitsSync"));
         Configure<TransactionReportOptions>(configuration.GetSection("TransactionReport"));
+        Configure<SyncChainHeightOptions>(configuration.GetSection("SyncChainHeight"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
-        ConfigureOrleans(context, configuration);
+        // ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
         context.Services.AddSingleton<IContractAppService, ContractAppService>();
         context.Services.AddSingleton<IContractProvider, ContractProvider>();
@@ -95,6 +103,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureDistributedLocking(context, configuration);
         ConfigureHangfire(context, configuration);
         // ConfigureOpenTelemetry(context);
+
+        AddAelfClient(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -129,7 +139,7 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
-        StartOrleans(context.ServiceProvider);
+        // StartOrleans(context.ServiceProvider);
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
@@ -138,58 +148,59 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
         context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
-        
+        context.AddBackgroundWorkerAsync<ChainHeightWorker>();
+        // context.AddBackgroundWorkerAsync<SendingTransactionInfoByEmailAfterApprovalWorker>();
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        StopOrleans(context.ServiceProvider);
+        // StopOrleans(context.ServiceProvider);
     }
 
-    private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        context.Services.AddSingleton(o =>
-        {
-            return new ClientBuilder()
-                .ConfigureDefaults()
-                .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-                .UseMongoDBClustering(options =>
-                {
-                    options.DatabaseName = configuration["Orleans:DataBase"];
-                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = configuration["Orleans:ClusterId"];
-                    options.ServiceId = configuration["Orleans:ServiceId"];
-                })
-                .Configure<ClientMessagingOptions>(options =>
-                {
-                    options.ResponseTimeout =
-                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
-                })
-                .ConfigureApplicationParts(parts =>
-                    parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
-                .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .AddNightingaleMethodFilter(o)
-                .Build();
-        });
-    }
+    // private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
+    // {
+    //     context.Services.AddSingleton(o =>
+    //     {
+    //         return new ClientBuilder()
+    //             .ConfigureDefaults()
+    //             .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
+    //             .UseMongoDBClustering(options =>
+    //             {
+    //                 options.DatabaseName = configuration["Orleans:DataBase"];
+    //                 options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+    //             })
+    //             .Configure<ClusterOptions>(options =>
+    //             {
+    //                 options.ClusterId = configuration["Orleans:ClusterId"];
+    //                 options.ServiceId = configuration["Orleans:ServiceId"];
+    //             })
+    //             .Configure<ClientMessagingOptions>(options =>
+    //             {
+    //                 options.ResponseTimeout =
+    //                     TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+    //                         MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+    //             })
+    //             .ConfigureApplicationParts(parts =>
+    //                 parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
+    //             .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+    //             .AddNightingaleMethodFilter(o)
+    //             .Build();
+    //     });
+    // }
 
 
-    private static void StartOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async () => await client.Connect());
-    }
-
-    private static void StopOrleans(IServiceProvider serviceProvider)
-    {
-        var client = serviceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(client.Close);
-    }
+    // private static void StartOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(async () => await client.Connect());
+    // }
+    //
+    // private static void StopOrleans(IServiceProvider serviceProvider)
+    // {
+    //     var client = serviceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(client.Close);
+    // }
 
     // TODO Temporary Needed fixed later.
     private void ConfigureTokenCleanupService()
@@ -244,5 +255,28 @@ public class CAServerContractEventHandlerModule : AbpModule
             opt.HeartbeatInterval = TimeSpan.FromMilliseconds(3000);
             opt.Queues = new[] { "default", "notDefault" };
         });
+    }
+    
+    private void AddAelfClient(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var chainInfos = context.Services.BuildServiceProvider().GetRequiredService<IOptions<ChainOptions>>();
+        if (chainInfos == null || chainInfos.Value.ChainInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        foreach (var chainInfo in chainInfos.Value.ChainInfos)
+        {
+            var clientName = chainInfo.Key == CommonConstant.MainChainId
+                ? AelfClientConstant.MainChainClient
+                : AelfClientConstant.SideChainClient;
+
+            context.Services.AddHttpClient(clientName,
+                httpClient =>
+                {
+                    httpClient.BaseAddress = new Uri(chainInfo.Value.BaseUrl);
+                    httpClient.Timeout = TimeSpan.FromSeconds(60);
+                });
+        }
     }
 }

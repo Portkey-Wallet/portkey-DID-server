@@ -200,6 +200,8 @@ namespace AElf.Contracts.MultiToken {
       {
         Symbol = Symbol,
         Amount = Amount,
+        Payer = Payer,
+        Receiver = Receiver,
       };
     }
   }
@@ -244,6 +246,7 @@ namespace AElf.Contracts.MultiToken {
         IsBurnable = IsBurnable,
         IssueChainId = IssueChainId,
         ExternalInfo = ExternalInfo,
+        Owner = Owner,
       };
     }
   }
@@ -319,21 +322,110 @@ namespace AElf.Contracts.MultiToken {
     }
   }
 
-  public partial class ExternalInfoChanged : aelf::IEvent<ExternalInfoChanged>
+  public partial class TransactionFeeDelegationAdded : aelf::IEvent<TransactionFeeDelegationAdded>
   {
-    public global::System.Collections.Generic.IEnumerable<ExternalInfoChanged> GetIndexed()
+    public global::System.Collections.Generic.IEnumerable<TransactionFeeDelegationAdded> GetIndexed()
     {
-      return new List<ExternalInfoChanged>
+      return new List<TransactionFeeDelegationAdded>
       {
+      new TransactionFeeDelegationAdded
+      {
+        Delegator = Delegator
+      },
+      new TransactionFeeDelegationAdded
+      {
+        Delegatee = Delegatee
+      },
+      new TransactionFeeDelegationAdded
+      {
+        Caller = Caller
+      },
       };
     }
 
-    public ExternalInfoChanged GetNonIndexed()
+    public TransactionFeeDelegationAdded GetNonIndexed()
     {
-      return new ExternalInfoChanged
+      return new TransactionFeeDelegationAdded
       {
-        Symbol = Symbol,
-        ExternalInfo = ExternalInfo,
+      };
+    }
+  }
+
+  public partial class TransactionFeeDelegationCancelled : aelf::IEvent<TransactionFeeDelegationCancelled>
+  {
+    public global::System.Collections.Generic.IEnumerable<TransactionFeeDelegationCancelled> GetIndexed()
+    {
+      return new List<TransactionFeeDelegationCancelled>
+      {
+      new TransactionFeeDelegationCancelled
+      {
+        Delegator = Delegator
+      },
+      new TransactionFeeDelegationCancelled
+      {
+        Delegatee = Delegatee
+      },
+      new TransactionFeeDelegationCancelled
+      {
+        Caller = Caller
+      },
+      };
+    }
+
+    public TransactionFeeDelegationCancelled GetNonIndexed()
+    {
+      return new TransactionFeeDelegationCancelled
+      {
+      };
+    }
+  }
+
+  public partial class SymbolAliasAdded : aelf::IEvent<SymbolAliasAdded>
+  {
+    public global::System.Collections.Generic.IEnumerable<SymbolAliasAdded> GetIndexed()
+    {
+      return new List<SymbolAliasAdded>
+      {
+      new SymbolAliasAdded
+      {
+        Symbol = Symbol
+      },
+      new SymbolAliasAdded
+      {
+        Alias = Alias
+      },
+      };
+    }
+
+    public SymbolAliasAdded GetNonIndexed()
+    {
+      return new SymbolAliasAdded
+      {
+      };
+    }
+  }
+
+  public partial class SymbolAliasDeleted : aelf::IEvent<SymbolAliasDeleted>
+  {
+    public global::System.Collections.Generic.IEnumerable<SymbolAliasDeleted> GetIndexed()
+    {
+      return new List<SymbolAliasDeleted>
+      {
+      new SymbolAliasDeleted
+      {
+        Symbol = Symbol
+      },
+      new SymbolAliasDeleted
+      {
+        Alias = Alias
+      },
+      };
+    }
+
+    public SymbolAliasDeleted GetNonIndexed()
+    {
+      return new SymbolAliasDeleted
+      {
       };
     }
   }

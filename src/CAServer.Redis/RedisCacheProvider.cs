@@ -140,4 +140,34 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
         var length = await _database.SortedSetLengthAsync(leaderboardKey);
         return length;
     }
+
+    public async Task SetAddAsync(string key, string value, TimeSpan? expire)
+    {
+        await _database.SetAddAsync(key, value);
+        if (expire != null)
+        {
+            _database.KeyExpire(key, expire);
+        }
+    }
+
+    public async Task SetAddAsync(string key, List<string> values, TimeSpan? expire)
+    {
+        RedisValue[] vList = values.Select(p => new RedisValue(p)).ToArray();
+        await _database.SetAddAsync(key, vList);
+        if (expire != null)
+        {
+            _database.KeyExpire(key, expire);
+        }
+    }
+
+    public async Task SetRemoveAsync(string key, List<string> values)
+    {
+        RedisValue[] vList = values.Select(p => new RedisValue(p)).ToArray();
+        await _database.SetRemoveAsync(key, vList);
+    }
+
+    public async Task<RedisValue[]> SetMembersAsync(string key)
+    {
+        return await _database.SetMembersAsync(key);
+    }
 }

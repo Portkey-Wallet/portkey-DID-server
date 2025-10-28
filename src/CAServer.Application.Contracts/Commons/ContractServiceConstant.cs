@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CAServer.Commons;
 
@@ -7,6 +8,7 @@ public static class AElfContractMethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string GetVerifierServers = "GetVerifierServers";
     public const string GetBalance = "GetBalance";
+    public const string GetAllowance = "GetAllowance";
     public const string GetTokenInfo = "GetTokenInfo";
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
@@ -15,6 +17,31 @@ public static class AElfContractMethodName
     public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfo";
     public const string SocialRecovery = "SocialRecovery";
     public const string ManagerForwardCall = "ManagerForwardCall";
+    public const string Issue = "Issue";
+    public const string CreateCAHolder = "CreateCAHolder";
+    public const string RemoveGuardian = "RemoveGuardian";
+    public const string UpdateGuardian = "UpdateGuardian";
+    public const string RemoveOtherManagerInfo = "RemoveOtherManagerInfo";
+    public const string SetGuardianForLogin = "SetGuardianForLogin";
+    public const string UnsetGuardianForLogin = "UnsetGuardianForLogin";
+    public const string SetTransferLimit = "SetTransferLimit";
+    public const string RemoveManagerInfo = "RemoveManagerInfo";
+    public const string GuardianApproveTransfer = "GuardianApproveTransfer";
+    public const string VerifyZkLogin = "VerifyZkLogin";
+    public const string VerifySignature = "VerifySignature";
+    public static List<string> MethodNames = new List<string>()
+    {
+        CreateCAHolder,
+        SocialRecovery,
+        AddGuardian,
+        RemoveGuardian,
+        UpdateGuardian,
+        RemoveOtherManagerInfo,
+        SetGuardianForLogin,
+        SetTransferLimit,
+        UnsetGuardianForLogin,
+        RemoveManagerInfo,
+    };
 }
 
 public static class CommonConstant
@@ -26,7 +53,7 @@ public static class CommonConstant
     public const string Underline = "_";
     public const string Comma = ",";
     public const string UpperZ = "z";
-
+    public const string DefaultDappName = "Unknown";
     public const string CurrencyFiat = "Fiat";
     public const string CurrencyCrypto = "Crypto";
 
@@ -53,6 +80,7 @@ public static class CommonConstant
     public const string MainChainId = "AELF";
     public const string TDVVChainId = "tDVV";
     public const string TDVWChainId = "tDVW";
+    public static List<string> ChainIds = new List<string> { MainChainId, TDVWChainId, TDVVChainId };
     public const double DefaultAchFee = 0.39;
     public const double DefaultCrossChainFee = 0.35;
     public const double DefaultMaxFee = 0.39;
@@ -63,6 +91,7 @@ public static class CommonConstant
     public const string SgrCoingeckoId = "schrodinger-2";
     public const string SgrSymbol = "SGR";
     public const string SgrSymbolName = "SGR-1";
+    public const string SgrCollectionSymbol = "SGR-0";
 
     public const string CryptoGiftProjectCode = "20000";
 
@@ -111,8 +140,43 @@ public static class CommonConstant
     
     public const string ActivitiesStartVersion = "1.17.0";
     public const string NftToFtStartVersion = "1.18.0";
+    public const string RevampVersion = "3.0.0";
 
     public const string ReferralKey = "Portkey:ReferralBank";
+    public const string HamsterRankKey = "Portkey:HamsterBank";
+    
 
     public const string DefaultReferralActivityStartTime = "2024-06-27 00:00:00";
+
+    public const string SingUp = " created a Portkey account";
+    public const string HamsterScore = " collected {0} $ACORNS";
+    
+    
+    public const int InitTokenId = 10;
+    public const string FreeMintTokenIdGrainId = "FreeMint-TokenId";
+    public const int FreeMintTotalSupply = 1;
+    public const int FreeMintDecimals = 0;
+
+    public const string PortkeyS3Mark = "did";
+    public const string ImS3Mark = "im";
+
+    public const string HamsterPassSymbol = "HAMSTERPASS-1";
+    public const string HamsterKingSymbol = "KINGHAMSTER-1";
+
+    public const string VersionName = "Version";
+    
+    public const string TokenInfoCachePrefix = "TokenInfo";
+    public const string SyncStateUri = "apps/sync-state";
+    public const string ReplaceUri = "app/graphql";
+
+    public const string VerificationCodeExpired = "Verification code expired. Please request a new one to continue.";
+    public const string TooManyRetries = "Too many retries. Please request a new verification code to continue.";
+    public const string IncorrectCode = "Incorrect code, please try again.";
+    public const string V2ApiVersion = "v2";
+    public const string BaseNetwork = "BASE";
+    public const string BaseNetworkName = "Base";
+    
+    public const string AppleUserTransferKey = "AppleUserTransfer";
+    public const string AppleMigrateUserKey = "AppleMigrateUser";
+    public const string AppleMigrateRecordKey = "AppleMigrateRecordKey";
 }

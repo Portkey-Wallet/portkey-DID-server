@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.Commons;
 using CAServer.Commons;
 using CAServer.ThirdPart;
@@ -64,6 +65,18 @@ public class ThirdPartUserController : CAServerController
     public async Task<CommonResponseDto<RampCryptoDto>> GetRampCurrencyAsync(RampCryptoRequest request)
     {
         return await _thirdPartOrdersAppService.GetRampCryptoListAsync(request);
+    }
+
+    [HttpGet("ramp/crypto/alchemy")]
+    public async Task<(List<AlchemyFiatDto>, string)> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
+    {
+        return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
+    }
+    
+    [HttpGet("ramp/crypto/transak")]
+    public async Task<(List<TransakCryptoItem>, string)> GetAlchemyFiatListAsync(RampCryptoRequest request)
+    {
+        return await _thirdPartOrdersAppService.GetCryptoCurrenciesAsync(request);
     }
 
     [HttpGet("ramp/fiat")]

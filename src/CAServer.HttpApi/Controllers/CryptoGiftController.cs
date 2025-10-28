@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using CAServer.CryptoGift;
 using CAServer.CryptoGift.Dtos;
 using CAServer.RedPackage.Dtos;
@@ -59,20 +60,20 @@ public class CryptoGiftController : CAServerController
     [HttpPost("grab")]
     public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift([FromBody] PreGrabCryptoGiftCmd preGrabCryptoGiftCmd)
     {
-        Stopwatch sw = new Stopwatch();
+        var sw = new Stopwatch();
         sw.Start();
-        var result = await _cryptoGiftAppService.PreGrabCryptoGift(preGrabCryptoGiftCmd.Id);
+        var result = await _cryptoGiftAppService.PreGrabCryptoGift(preGrabCryptoGiftCmd.Id, preGrabCryptoGiftCmd.Random);
         sw.Stop();
         _logger.LogInformation($"statistics id:{preGrabCryptoGiftCmd.Id} PreGrabCryptoGift cost:{sw.ElapsedMilliseconds}ms");
         return result;
     }
     
     [HttpGet("detail")]
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync([Required] Guid id)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync([Required] Guid id, string random)
     {
         Stopwatch sw = new Stopwatch();
         sw.Start();
-        var result = await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id);
+        var result = await _cryptoGiftAppService.GetCryptoGiftDetailAsync(id, random);
         sw.Stop();
         _logger.LogInformation($"statistics id:{id} GetCryptoGiftDetail cost:{sw.ElapsedMilliseconds}ms");
         return result;
@@ -80,14 +81,14 @@ public class CryptoGiftController : CAServerController
     
     [HttpGet("login/detail")]
     // [Authorize]
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync([Required] Guid id, [Required]string caHash)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync([Required] Guid id, [Required]string caHash, string random)
     {
         // var receiverId = CurrentUser.GetId();
         // if (Guid.Empty.Equals(receiverId))
         // {
         //     throw new UserFriendlyException("current user not exist!");
         // }
-        return  await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id);
+        return  await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id, random);
     }
 
     [HttpGet("test/detail")]
