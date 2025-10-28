@@ -2,8 +2,7 @@ name: Build and Package
 
 on:
   push:
-    branches:
-      - "feature/fix-operate-details"
+    branches: ['release/*', 'hotfix/*']
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 

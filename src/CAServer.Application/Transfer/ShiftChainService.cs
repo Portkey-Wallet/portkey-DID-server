@@ -261,12 +261,29 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                 });
                 foreach (var networkDto in networkList.Data.NetworkList)
                 {
-                    receiveNetwork.DestinationMap[chainId].Add(new NetworkInfoDto
+                    var networks = receiveNetwork.DestinationMap[chainId];
+                    var network = networks.FirstOrDefault(n => n.Network == networkDto.Network);
+                    if (network == null)
                     {
-                        Network = networkDto.Network,
-                        Name = networkDto.Name,
-                        ImageUrl = ShiftChainHelper.GetChainImage(networkDto.Network),
-                        ServiceList = new List<ServiceDto>
+                        receiveNetwork.DestinationMap[chainId].Add(new NetworkInfoDto
+                        {
+                            Network = networkDto.Network,
+                            Name = networkDto.Name,
+                            ImageUrl = ShiftChainHelper.GetChainImage(networkDto.Network),
+                            ServiceList = new List<ServiceDto>
+                            {
+                                new ServiceDto
+                                {
+                                    ServiceName = ShiftChainHelper.ETransferTool,
+                                    MultiConfirmTime = networkDto.MultiConfirmTime,
+                                    MaxAmount = maxAmount
+                                }
+                            }
+                        });
+                    }
+                    else
+                    {
+                        network.ServiceList = new List<ServiceDto>
                         {
                             new ServiceDto
                             {
@@ -274,8 +291,9 @@ public class ShiftChainService : CAServerAppService, IShiftChainService
                                 MultiConfirmTime = networkDto.MultiConfirmTime,
                                 MaxAmount = maxAmount
                             }
-                        }
-                    });
+                        };
+                    }
+
                     networkMap[networkDto.Network] = new NetworkInfoDto
                     {
                         Network = networkDto.Network,
