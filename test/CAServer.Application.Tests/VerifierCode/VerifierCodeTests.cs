@@ -145,7 +145,7 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
         }
         catch (Exception e)
         {
-            e.Message.ShouldBe("Validate VerifierCode Failed :Verify VerifierCode Failed.");
+            e.Message.ShouldBe("Verify VerifierCode Failed.");
         }
     }
 

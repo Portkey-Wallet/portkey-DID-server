@@ -58,7 +58,14 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         var redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(redPackageId);
         var input = NewSendRedPackageInputDto(redPackageId);
         input.Count = 2;
-        await redPackageGrain.CreateRedPackage(input, 8, 1, userId1,86400000);
+        var redPackage = await redPackageGrain.CreateRedPackage(input, 8, 1, userId1,86400000);
+        long amount = 0;
+        foreach (var item in redPackage.Data.BucketNotClaimed)
+        {
+            Assert.NotEqual(0, item.Amount);
+            amount += item.Amount;
+        }
+        Assert.Equal(input.TotalAmount, amount.ToString());
         var res = await redPackageGrain.GrabRedPackage(userId1, "xxxx");
         res.Success.ShouldBe(true);
         await redPackageGrain.GrabRedPackage(userId2, "xxxx");

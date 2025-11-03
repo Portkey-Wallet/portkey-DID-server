@@ -74,6 +74,27 @@ public partial class GuardianTest
                 
             });
 
+        provider.Setup(t => t.GetHolderInfoAsync(It.IsAny<Hash>(), It.IsAny<Hash>(), It.IsAny<string>()))
+            .ReturnsAsync(new GetHolderInfoOutput
+            {
+                GuardianList =  new GuardianList()
+                {
+                    Guardians =
+                    {
+                        new List<Portkey.Contracts.CA.Guardian>()
+                        {
+                            new Portkey.Contracts.CA.Guardian()
+                            {
+                                IdentifierHash = Hash.LoadFromHex(_identifierHash),
+                                VerifierId = HashHelper.ComputeFrom("123"),
+                                
+                            }
+                        }
+                    }
+                },
+                CreateChainId = 9992731
+            });
+
         return provider.Object;
     }
     

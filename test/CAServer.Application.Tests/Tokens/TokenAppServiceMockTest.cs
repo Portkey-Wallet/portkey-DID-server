@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using AElf.Contracts.MultiToken;
 using CAServer.CoinGeckoApi;
 using CAServer.Common;
 using CAServer.Entities.Es;
@@ -81,6 +82,20 @@ public partial class TokenAppServiceTest
             }
         });
         return mock.Object;
+    }
+    
+    public IContractProvider GetContractProviderMock()
+    {
+        var provider = new Mock<IContractProvider>();
+
+        provider.Setup(t => t.GetAllowanceAsync(It.IsAny<string>(),It.IsAny<string>(),It.IsAny<string>(),It.IsAny<string>()))
+            .ReturnsAsync(new GetAllowanceOutput
+            {
+                Symbol = "ELF",
+                Allowance = 0
+            });
+
+        return provider.Object;
     }
 
     public static IOptionsMonitor<TokenPriceWorkerOption> GetMockTokenPriceWorkerOption()

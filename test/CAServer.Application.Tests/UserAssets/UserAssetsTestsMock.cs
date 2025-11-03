@@ -136,6 +136,7 @@ public partial class UserAssetsTests
                                     Symbol = "TEST-1",
                                     CollectionSymbol = "TEST-0",
                                     Decimals = 5,
+                                    CollectionName = "TestCollection"
                                 }
                             }
                         }

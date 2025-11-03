@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CAServer.CAAccount.Dtos;
 
-public class RegisterInfoDto
+public class RegisterInfoDto : IValidatableObject
 {
     public string LoginGuardianIdentifier { get; set; }
     public string CaHash { get; set; }

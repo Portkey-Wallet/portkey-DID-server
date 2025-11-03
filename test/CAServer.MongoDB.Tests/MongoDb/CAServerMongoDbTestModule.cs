@@ -1,5 +1,7 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using System;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Volo.Abp.Data;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.Sqlite;
 using Volo.Abp.Modularity;
@@ -8,26 +10,20 @@ namespace CAServer.MongoDB;
 
 [DependsOn(
     typeof(CAServerTestBaseModule),
-    typeof(AbpEntityFrameworkCoreSqliteModule)
+    typeof(CAServerMongoDbModule)
     )]
 public class CAServerMongoDbTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        Configure<AbpDbContextOptions>(options =>
+        var stringArray = CAServerMongoDbFixture.ConnectionString.Split('?');
+        var connectionString = stringArray[0].EnsureEndsWith('/') +
+                                   "Db_" +
+                               Guid.NewGuid().ToString("N") + "/?" + stringArray[1];
+        
+        Configure<AbpDbConnectionOptions>(options =>
         {
-            options.PreConfigure(c =>
-            {
-                c.DbContextOptions.UseSqlite(CreateDatabaseAndGetConnection());
-            });
+            options.ConnectionStrings.Default = connectionString;
         });
-    }
-    
-    private static SqliteConnection CreateDatabaseAndGetConnection()
-    {
-        var connection = new SqliteConnection("Data Source=:memory:");
-        connection.Open();
-
-        return connection;
     }
 }

@@ -84,7 +84,7 @@ public partial class ContactTest : CAServerApplicationTestBase
         var updateDto = new CreateUpdateContactDto
         {
             Name = newName,
-            RelationId = "aa"
+            Addresses = Addresses
         };
         var updateResult = await _contactAppService.UpdateAsync(createResult.Id, updateDto);
 
@@ -182,7 +182,7 @@ public partial class ContactTest : CAServerApplicationTestBase
             await _contactAppService.CreateAsync(new CreateUpdateContactDto
             {
                 Name = "",
-                Addresses = null
+                Addresses = new List<ContactAddressDto>()
             });
         }
         catch (Exception e)
@@ -192,14 +192,14 @@ public partial class ContactTest : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task CreateOrUpdate_Addresses_Null_Test()
+    public async Task CreateOrUpdate_Addresses_Empty_Test()
     {
         try
         {
             await _contactAppService.CreateAsync(new CreateUpdateContactDto
             {
                 Name = DefaultName,
-                Addresses = null
+                Addresses = new List<ContactAddressDto>()
             });
         }
         catch (Exception e)

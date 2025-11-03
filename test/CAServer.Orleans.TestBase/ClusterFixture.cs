@@ -43,7 +43,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     services.AddMemoryCache();
                     services.AddDistributedMemoryCache();
                     // todo modify
-                    //services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
+                    services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
 
                     services.AddSingleton(typeof(IDistributedCache), typeof(MemoryDistributedCache));
                     // services.AddSingleton(typeof(IDistributedCache<>), typeof(MemoryDistributedCache<>));

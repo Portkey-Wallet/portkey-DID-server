@@ -4,7 +4,7 @@ using Xunit;
 namespace CAServer;
 
 [CollectionDefinition(CAServerTestConsts.CollectionDefinitionName)]
-public class CAServerDomainCollection
+public class CAServerDomainCollection: CAServerMongoDbCollectionFixtureBase
 {
 
 }

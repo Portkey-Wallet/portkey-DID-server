@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Contacts.Provider;
+using CAServer.FreeMint.Dtos;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Search;
@@ -119,7 +120,16 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
         services.AddSingleton(GetMockSearchAppService());
         services.AddSingleton(GetMockActivityProvider());
-        
+        services.Configure<FreeMintOptions>(options =>
+        {
+            options.CollectionInfo = new FreeMintCollectionInfo
+            {
+                Symbol = "TEST-0",
+                ChainId = "AELF",
+                CollectionName = "TestCollection"
+            };
+        });
+
     }
 
     private void Login(Guid userId)

@@ -4,12 +4,15 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
+using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Validation;
@@ -39,10 +42,14 @@ public partial class GuardianTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(GetGuardianProviderMock());
+       // services.AddSingleton(GetGuardianProviderMock());
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetChainOptions());
         services.AddSingleton(GetContractProviderMock());
+        var graphQlHelper = Substitute.For<IGraphQLHelper>();
+        var graphQlClient = Substitute.For<IGraphQLClient>();
+        services.AddSingleton(graphQlClient);
+        services.AddSingleton(graphQlHelper);
     }
 
     [Fact]
@@ -54,13 +61,13 @@ public partial class GuardianTest : CAServerApplicationTestBase
             Id = guardianIdentifier,
             Identifier = guardianIdentifier,
             IdentifierHash = HashHelper.ComputeFrom("123").ToHex(),
-            Salt = "Salt",
+            Salt = "Salt"
         });
 
         var result = await _guardianAppService.GetGuardianIdentifiersAsync(new GuardianIdentifierDto
         {
             GuardianIdentifier = _identifier,
-            ChainId = "TEST"
+            ChainId = "AELF"
         });
 
         result.ShouldNotBeNull();
@@ -132,7 +139,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
         });
 
         result.ShouldNotBeNull();
-        result.OriginChainId.ShouldBe("TEST");
+        result.OriginChainId.ShouldBe("AELF");
     }
 
     [Fact]

@@ -125,7 +125,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     services.AddMemoryCache();
                     services.AddDistributedMemoryCache();
                     // todo modify
-                    //services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
+                    services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
 
                     services.AddSingleton(typeof(DistributedCache<>));
                     services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
@@ -137,8 +137,8 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                         o.Application = "test";
                     });
                     services.AddSingleton<IMonitorLogger, MonitorLogger>();
-                    services.AddSingleton<IIndicatorLogger, IndicatorLogger>();
-                    services.AddSingleton<IIndicatorScope, IndicatorScope>();
+                    services.AddScoped<IIndicatorLogger, IndicatorLogger>();
+                    services.AddScoped<IIndicatorScope, IndicatorScope>();
                     services.Configure<AbpDistributedCacheOptions>(cacheOptions =>
                     {
                         cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
