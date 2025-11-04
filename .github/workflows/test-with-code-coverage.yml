@@ -47,7 +47,7 @@ jobs:
               dotnet test ${name} --no-restore --no-build --verbosity diagnostic --logger trx --diag diag.log --settings CodeCoverage.runsettings --results-directory coverage --collect:"XPlat Code Coverage" 
           done
       - name: Upload test artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: |
