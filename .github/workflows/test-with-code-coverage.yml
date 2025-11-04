@@ -41,8 +41,6 @@ jobs:
 
       - name: Test
         run: |
-          while sleep 60; do echo "⏳ Still running at $(date)"; done &
-          trap 'echo "🛑 Cleaning up..."; kill $(jobs -p)' EXIT
           for name in `ls ./test/*.Tests/*.csproj | awk '{print $NF}'`;
           do
               dotnet test ${name} --no-restore --no-build --verbosity normal --logger trx --settings CodeCoverage.runsettings --results-directory coverage --collect:"XPlat Code Coverage" 
