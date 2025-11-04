@@ -46,12 +46,6 @@ jobs:
           do
               dotnet test ${name} --no-restore --no-build --verbosity diagnostic --logger trx --diag diag.log --settings CodeCoverage.runsettings --results-directory coverage --collect:"XPlat Code Coverage" 
           done
-      - name: Upload test artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            **/diag.log
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
@@ -60,3 +54,11 @@ jobs:
           files: coverage/*/coverage.cobertura.xml
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/diag.log    
