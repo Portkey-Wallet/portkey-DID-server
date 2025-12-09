@@ -1,0 +1,96 @@
+{
+  "RampOptions": {
+    "Providers": {
+      "Alchemy": {
+        "Name": "AlchemyPay",
+        "AppId": "xxxxx",
+        "BaseUrl": "https://ramptest.alchemypay.org",
+        "Logo": "https://ramp.alchemypay.org/static/img/6.32716249.svg",
+        "CountryIconUrl": "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
+        "WebhookUrl" :"http://127.0.0.1:5001/api/app/thirdPart/order/alchemy",
+        "PaymentTags": [
+          "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
+          "https://ramp.alchemypay.org/static/img/2.a5406123.svg",
+          "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
+        ],
+        "Coverage": {
+          "OnRamp": true,
+          "OffRamp": true
+        },
+        "NetworkMapping": {
+          "AELF": "ELF"
+        },
+        "SymbolMapping": {
+          "USDT": "USDT-aelf"
+        }
+      },
+      "Transak": {
+        "Name": "Transak",
+        "AppId": "xxxxx",
+        "BaseUrl": "https://global-stg.transak.com",
+        "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
+        "CountryIconUrl": "http://127.0.0.1:5001/api/app/image/svg/{SVG_MD5}.svg",
+        "WebhookUrl" :"http://127.0.0.1:5001/api/app/thirdPart/order/transak",
+        "PaymentTags": [
+          "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
+          "https://ramp.alchemypay.org/static/img/2.a5406123.svg"
+        ],
+        "Coverage": {
+          "OnRamp": true,
+          "OffRamp": true
+        },
+        "NetworkMapping": {
+          "AELF": "aelf"
+        },
+        "SymbolMapping": {
+        }
+      }
+    },
+    "CryptoList": [
+      {
+        "Symbol": "ELF",
+        "Icon": "https://explorer-test.aelf.io/favicon.test.ico",
+        "Decimals": "8",
+        "Network": "AELF",
+        "ChainId": "AELF",
+        "Address": ""
+      },
+      {
+        "Symbol": "USDT",
+        "Icon": "https://portkey-im-dev.s3.ap-northeast-1.amazonaws.com/USDT.jpg",
+        "Decimals": "6",
+        "Network": "AELF",
+        "ChainId": "AELF",
+        "Address": ""
+      }
+    ],
+    "DefaultCurrency": {
+      "Crypto": "ELF",
+      "CryptoAmount": "400",
+      "Network": "AELF",
+      "ChainId": "AELF",
+      "Fiat": "USD",
+      "FiatAmount": "200"
+    },
+    "PortkeyIdWhiteList": [
+    ],
+    "CoverageExpressions": {
+      "Alchemy": {
+        "OnRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ],
+        "OffRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ]
+      },
+      "Transak": {
+        "OnRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ],
+        "OffRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ]
+      }
+    }
+  }
+}

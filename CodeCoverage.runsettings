@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File name extension must be .runsettings -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>      
+       <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Exclude>[xunit.*]*,[*Tests]*</Exclude> <!-- [Assembly-Filter]Type-Filter -->
+          <ExcludeByFile>**/src/CAServer.Application.Contracts/Contracts/*.c.cs,**/src/CAServer.Application/IGraphQLProvider.cs,**/src/CAServer.Monitor/Logger/*.cs,**/src/CAServer.ContractEventHandler.Core/Application/*.cs,**/src/CAServer.ContractEventHandler.Core/Application/IContractAppService.cs,**/src/CAServer.EntityEventHandler.Core/Worker/*.cs,**/src/CAServer.Application.Contracts/Contracts/*.g.cs,**/test/**/*.cs,**/src/CAServer.Application.Contracts/Permissions/**/*.cs,**/src/CAServer.DbMigrator/**/*.cs,**/src/CAServer.Domain/**/*.cs,**/src/CAServer.Domain.Shared/**/*.cs,**/src/CAServer.EntityEventHandler/**/*.cs,**/src/CAServer.EntityFrameworkCore/**/*.cs,**/src/CAServer.HttpApi.Host/**/*.cs,**/src/CAServer.HttpApi.Client/**/*.cs,**/src/CAServer.AuthServer/**/*.cs,**/src/CAServer.MongoDB/**/*.cs,**/src/CAServer.HttpApi/Controllers/*.cs,**/src/CAServer.HttpApi/Hubs/*.cs,**/src/CAServer.HttpApi/HubsEventHandler/*.cs,**/src/CAServer.CoinGeckoApi/**/*.cs</ExcludeByFile>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute</ExcludeByAttribute>
+          <SingleHit>false</SingleHit>
+        </Configuration>
+      </DataCollector>    
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

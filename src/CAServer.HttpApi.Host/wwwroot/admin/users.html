@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users</title>
+    <link rel="icon" href="img/icon.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/search_table.css">
+    <link rel="stylesheet" href="css/modal.css">
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+<header>
+    <nav>
+        <ul id="menu">
+            <li><a href="./index.html">Home</a></li>
+        </ul>
+    </nav>
+    <div id="user-info">
+        <span></span>
+        <button id="logout-button" class="primary">Sign out</button>
+    </div>
+</header>
+
+<main>
+    <div id="rolesModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>
+                <label for="modal-rolesUserId">UserId:</label>
+                <input type="text" id="modal-rolesUserId" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-rolesUserName">UserName:</label>
+                <input type="text" id="modal-rolesUserName" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-roles">Roles:</label>
+                <input type="text" id="modal-roles" class="modal-input" placeholder=""/>
+            </p>
+            <p style="text-align:center">
+                <button class="primary cancel-btn">Cancel</button>
+                <button class="danger confirm-btn">Update</button>
+            </p>
+        </div>
+    </div>
+    <div id="newUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>
+                <label for="modal-newUserName">UserName:</label>
+                <input type="text" id="modal-newUserName" class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-newUserEmail">Email:</label>
+                <input type="text" id="modal-newUserEmail" class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-newUserPassword">Init password:</label>
+                <input type="text" id="modal-newUserPassword" class="modal-input" placeholder="" value="Asdf.1234"/>
+            </p>
+            <p style="text-align:center">
+                <button class="primary cancel-btn">Cancel</button>
+                <button class="danger confirm-btn">Update</button>
+            </p>
+        </div>
+    </div>
+    <div id="resetMfaModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>
+                <label for="modal-userId">UserId:</label>
+                <input type="text" id="modal-userId" class="modal-input" placeholder=""/>
+            </p>
+            <p style="text-align:center">
+                <button class="private cancel-btn">Cancel</button>
+                <button class="danger confirm-btn">Reset</button>
+            </p>
+        </div>
+    </div>
+    <div id="resetPwdModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>
+                <label for="modal-pwdUserId">UserId:</label>
+                <input type="text" id="modal-pwdUserId" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-pwdUserId">UserName:</label>
+                <input type="text" id="modal-pwdUserName" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-pwd">New password:</label>
+                <input type="text" id="modal-pwd" class="modal-input" placeholder="" value="Asdf.1234"/>
+            </p>
+            <p style="text-align:center">
+                <button class="private cancel-btn">Cancel</button>
+                <button class="danger confirm-btn">Reset</button>
+            </p>
+        </div>
+    </div>
+    
+    <div class="search-form">
+        <button class="confirm-btn" onclick="NewUser()">New</button>&nbsp;
+        <button type="button" id="resetUserButton" class="primary" onclick="resetTfa()">Reset user MFA</button>
+    </div>
+
+    <table id="orders-table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>UserName</th>
+            <th>Email</th>
+            <th>Rules</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Order rows will be added here -->
+        </tbody>
+    </table>
+
+    <div class="pagination" id="pagination-container"></div>
+    
+</main>
+
+<footer>
+    <p>Copyright</p>
+</footer>
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dateFormat.js"></script>
+<script src="js/modal.js"></script>
+<script>
+    let filterKey = "CAServer";
+    let currentPage = 1;
+    let pageSize = 20;
+    let items = {};
+    let users = {};
+    $(document).ready(function() {
+        App.loadUser();
+        $("#user-info span").html(App.User().userName)
+        $("#logout-button").on("click", App.logout);
+        if (!App.User().rules.includes("admin"))
+            window.location.href = "index.html"
+        fetchUsers();
+    });
+
+    function fetchUsers(page = 1) {
+        let skip = (page - 1) * pageSize;
+        if (skip != skip) {
+            debugger;
+        }
+        let requestData = {
+            filter: filterKey,
+            skipCount: (page - 1) * pageSize,
+            maxResultCount: pageSize
+        };
+        $.ajax({
+            url: App.Uri.users,
+            method: 'GET',
+            contentType: "application/json",
+            data: requestData,
+            success: function(response) {
+                updateTable(response.items);
+                fillUserRole();
+                currentPage = page;
+                let totalPage = Math.ceil(response.totalCount / pageSize); 
+                generatePagination(totalPage, currentPage);
+            }
+        });
+    }
+    
+    function updateTable(users) {
+        var $tbody = $("#orders-table tbody");
+        $tbody.empty();
+        users.forEach(function(user) {
+            items[user.id] = user;
+            $tbody.append(`<tr>
+                <td>${user.id}</td>
+                <td>${user.userName}</td>
+                <td>${user.email}</td>
+                <td name="userRule" data-userId="${user.id}">...</td>
+                <td>
+                    <button onclick="UpdateRoles('${user.id}', '${user.userName}')">Roles</button>
+                    <button onclick="UpdatePassword('${user.id}', '${user.userName}')">Password</button>
+                </td>
+            </tr>`);
+        });
+    }
+    
+    
+    function UpdatePassword(userId, userName) {
+        $("#modal-rolesUserId").val(userId)
+        $("#modal-rolesUserName").val(userName)
+        $.ajax({
+            url: App.Uri.userById(userId),
+            method: "GET",
+            data: { userId: userId },
+            success: function(response) {
+                users[userId] = response;
+                $("#modal-pwdUserId").val(response.id);
+                $("#modal-pwdUserName").val(response.userName);
+            }
+        });
+        Modal.showModal("#resetPwdModal", function () {
+            let $password = $("#modal-pwd");
+            if (!$password.val()) {
+                $password.addClass("error");
+                App.showToast("Invalid new password")
+                return false;
+            }
+            let user = users[userId];
+            user["password"] = $password.val();
+
+            $.ajax({
+                url: App.Uri.userById(userId),
+                method: "PUT",
+                data: JSON.stringify(user),
+                success: function() {
+                    alert("success")
+                }
+            }).then(() => fetchUsers(1));
+        });
+    }
+    
+    function UpdateRoles(userId, userName) {
+        $("#modal-rolesUserId").val(userId)
+        $("#modal-rolesUserName").val(userName)
+        $.ajax({
+            url: App.Uri.userRule(userId),
+            method: "GET",
+            data: { userId: userId },
+            success: function(response) {
+                let roles = "";
+                for(role of response.items) {
+                    roles += role.name
+                    roles += ","
+                }
+                roles = roles.substring(0, roles.length - 1)
+                $("#modal-roles").val(roles)
+            }
+        });
+        Modal.showModal("#rolesModal", function () {
+            let roles = $("#modal-roles").val().split(",");
+            $.ajax({
+                url: App.Uri.userRule(userId),
+                method: "PUT",
+                data: JSON.stringify({ roleNames: roles }),
+                success: function() {
+                    alert("success")
+                }
+            }).then(() => fetchUsers(1));
+        });
+    }
+    
+    function NewUser() {
+        Modal.showModal("#newUserModal", function() {
+            let $userName = $("#modal-newUserName");
+            let $email = $("#modal-newUserEmail");
+            let $password = $("#modal-newUserPassword");
+            if (!$userName.val()) {
+                $userName.addClass("error");
+                App.showToast("Invalid userName")
+                return false;
+            }
+            if (!$email.val()) {
+                $email.addClass("error");
+                App.showToast("Invalid email")
+                return false;
+            }
+            if (!$password.val()) {
+                $password.addClass("error");
+                App.showToast("Invalid init password")
+                return false;
+            }
+            
+            $.ajax({
+                url: App.Uri.users,
+                method: "POST",
+                data: JSON.stringify({ 
+                    userName: $userName.val(),
+                    email: $email.val(),
+                    surname: filterKey,
+                    password: $password.val(),
+                    isActive: true,
+                }),
+                success: function(response) {
+                    alert("success")
+                }
+            }).then(() => fetchUsers(1));
+        })
+    }
+    
+    
+    function fillUserRole() {
+        $("td[name='userRule']").each(function() {
+            var $td = $(this);
+            var userId = $td.data("userid");
+            $.ajax({
+                url: App.Uri.userRule(userId),
+                method: "GET",
+                data: { userId: userId },
+                success: function(response) {
+                    let roles = "";
+                    for(role of response.items) {
+                        roles += role.name 
+                        roles += ","
+                    }
+                    $td.html(roles.substring(0, roles.length - 1));
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching role for userId " + userId + ": " + error);
+                    $td.html(`(failed)`);
+                }
+            });
+        });
+    }
+
+    
+    
+    function generatePagination(totalPages, currentPage) {
+        let $paginationContainer = $("#pagination-container");
+        $paginationContainer.empty();
+
+        let startPage = Math.max(1, currentPage - 10);
+        let endPage = Math.min(totalPages, currentPage + 10);
+        if(currentPage > 1) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage - 1})">Prev</button>&nbsp;`);
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${i})" ${i === currentPage ? 'class="active" disabled' : ''}>${i}</button>&nbsp;`);
+        }
+        if(currentPage < totalPages) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage + 1})">Next</button>&nbsp;`);
+        }
+    }
+
+    let resetTfa = function() {
+        Modal.showModal("#resetMfaModal", function() {
+            let userId = $("#modal-userId").val();
+            $.ajax({
+                url: `${App.Uri.userMfa}?data=${userId}`,
+                method: "DELETE"
+            })
+        });
+    }
+    
+    $("#search-button").click(function() {
+        fetchOrders(1);
+    });
+
+    $("#prev-page").click(function() {
+        if (currentPage > 1) fetchOrders(currentPage - 1);
+    });
+    $("#next-page").click(function() {
+        fetchOrders(currentPage + 1);
+    });
+    
+</script>
+</body>
+</html>

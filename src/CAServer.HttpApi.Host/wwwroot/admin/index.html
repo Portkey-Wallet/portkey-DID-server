@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home page</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="icon" href="img/icon.svg">
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+<header>
+    <nav>
+        <ul id="menu">
+            <li id="users" data-role="admin"><a href="./users.html">Users</a></li>
+            <li id="roles" data-role="admin"><a href="./roles.html">Roles</a></li>
+            <li data-role="OrderManager,OrderViewer"><a href="./rampOrder.html">Ramp order</a></li>
+            <li data-role="OrderManager,OrderViewer"><a href="./treasuryOrder.html">Treasury order</a></li>
+        </ul>
+    </nav>
+    <div id="user-info">
+        <span></span>
+        <button id="logout-button" class="primary">Sign out</button>
+        &nbsp;
+        <a href="settings.html" target="_blank"><button id="mfa-button" class="primary">Settings</button></a>
+    </div>
+</header>
+
+<main>
+    <h1>welcome</h1>
+</main>
+
+<footer>
+    <p>Copyright</p>
+</footer>
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script>
+
+    $(document).ready(function() {
+        App.loadUser();
+        $("#user-info span").html(App.User().userName)
+        $.ajax({
+            url: App.Uri.user,
+            method: 'GET',
+            success: function(response) {
+                console.log("login token", JSON.stringify(response));
+            }
+        });
+        if (App.User().rules.split(",").includes("admin")) {
+            $("li.admin").show();
+        } else {
+            $("li.admin").remove();
+        }
+        $("#logout-button").on("click", App.logout);
+        
+    });
+
+</script>
+</body>
+</html>

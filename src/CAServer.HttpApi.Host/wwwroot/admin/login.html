@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<link rel="stylesheet" type="text/css" href="css/login.css">
+	<link rel="icon" href="img/icon.svg">
+	<title>Login Page</title>
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+<div class="login-container">
+	<form method="post" id="login-form">
+		<h2>Login</h2>
+		<div class="input-group">
+			<label for="username">Username</label>
+			<input type="text" id="username" name="username" required>
+		</div>
+		<div class="input-group">
+			<label for="password">Password</label>
+			<input type="password" id="password" name="password" required>
+		</div>
+		<button type="submit">Login</button>
+	</form>
+</div>
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script>
+	
+	$(document).ready(function() {
+		$("#login-form").submit(function(event) {
+			event.preventDefault();
+
+			var username = $("#username").val();
+			var password = $("#password").val();
+
+			$.ajax({
+				url: App.Config().authServer + App.AuthServerUri.login,
+				method: 'POST',
+				contentType: 'application/x-www-form-urlencoded',
+				data: {
+					grant_type: 'password',
+					username: username,
+					password: password,
+					client_id: App.Config().clientId,
+					scope: "CAServer"
+				},
+				success: function(response) {
+					console.log("login token", JSON.stringify(response));
+					localStorage.setItem("accessToken", response.access_token);
+					localStorage.setItem("tokenType", response.token_type);
+					window.location.href = 'index.html';
+				}
+			});
+		});
+	});
+	
+</script>
+</body>
+</html>
