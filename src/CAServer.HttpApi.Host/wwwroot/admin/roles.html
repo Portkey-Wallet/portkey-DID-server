@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramp Order Page</title>
+    <link rel="icon" href="img/icon.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/search_table.css">
+    <link rel="stylesheet" href="css/modal.css">
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+<header>
+    <nav>
+        <ul id="menu">
+            <li><a href="./index.html">Home</a></li>
+        </ul>
+    </nav>
+    <div id="user-info">
+        <span></span>
+        <button id="logout-button" class="primary">Sign out</button>
+    </div>
+</header>
+
+<main>
+    <div id="rolesModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>
+                <label for="modal-roleName">RoleName:</label>
+                <input type="text" id="modal-roleName" class="modal-input" placeholder=""/>
+            </p>
+            <p style="text-align:center">
+                <button class="primary cancel-btn">Cancel</button>
+                <button class="danger confirm-btn">Add</button>
+            </p>
+        </div>
+    </div>
+    
+    <div id="roleDeleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Are you sure you want to delete the role?</h2>
+            <p>
+                <label for="modal-delRoleId">RoleId:</label>
+                <input type="text" id="modal-delRoleId" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-delRoleName">RoleName:</label>
+                <input type="text" id="modal-delRoleName" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p style="text-align:center">
+                <button class="primary cancel-btn">Cancel</button>
+                <button class="danger confirm-btn">DELETE</button>
+            </p>
+        </div>
+    </div>
+    
+    <div class="search-form">
+        <button class="confirm-btn" onclick="NewRole()">New</button>
+    </div>
+
+    <table id="orders-table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>RoleName</th>
+            <th>IsDefault</th>
+            <th>IsStatic</th>
+            <th>IsPublic</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Order rows will be added here -->
+        </tbody>
+    </table>
+
+    <div class="pagination" id="pagination-container"></div>
+    
+</main>
+
+<footer>
+    <p>Copyright</p>
+</footer>
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dateFormat.js"></script>
+<script src="js/modal.js"></script>
+<script>
+
+    let currentPage = 1;
+    let pageSize = 20;
+    let items = {};
+    $(document).ready(function() {
+        App.loadUser();
+        App.checkPermission("admin");
+        $("#user-info span").html(App.User().userName)
+        $("#logout-button").on("click", App.logout);
+        fetchRoles();
+    });
+
+    function fetchRoles(page = 1) {
+        let requestData = {
+            skipCount: (page - 1) * pageSize,
+            maxResultCount: pageSize
+        };
+        $.ajax({
+            url: App.Uri.roles,
+            method: 'GET',
+            contentType: "application/json",
+            data: requestData,
+            success: function(response) {
+                updateTable(response.items);
+                currentPage = page;
+                let totalPage = Math.ceil(response.totalCount / pageSize); 
+                generatePagination(totalPage, currentPage);
+            }
+        });
+    }
+    
+    function updateTable(roles) {
+        let $tbody = $("#orders-table tbody");
+        $tbody.empty();
+        roles.forEach(function(role) {
+            items[role.id] = role;
+
+            let deleteBtn = role.isStatic ? "" : `<button class="danger" onclick="DeleteRoles('${role.id}', '${role.name}')">Delete</button>`;
+            $tbody.append(`<tr>
+                <td>${role.id}</td>
+                <td>${role.name}</td>
+                <td>${role.isDefault}</td>
+                <td>${role.isStatic}</td>
+                <td>${role.isPublic}</td>
+                <td>
+                   ${deleteBtn}
+                </td>
+            </tr>`);
+        });
+    }
+    
+    
+    function DeleteRoles(roleId, userName) {
+        $("#modal-delRoleId").val(roleId)
+        $("#modal-delRoleName").val(userName)
+        Modal.showModal("#roleDeleteModal", function () {
+            $.ajax({
+                url: App.Uri.roles + "/" + roleId,
+                method: "DELETE",
+                success: function(response) {
+                    alert("success")
+                }
+            }).then(() => fetchRoles());
+        });
+    }
+    
+    
+    function NewRole() {
+        Modal.showModal("#rolesModal", function() {
+            $.ajax({
+                url: App.Uri.roles,
+                method: "POST",
+                data: JSON.stringify({ 
+                    name: $("#modal-roleName").val(),
+                    isDefault: false,
+                    isPublic: true
+                }),
+                success: function() {
+                    alert("success")
+                }
+            }).then(() => fetchRoles());
+        })
+    }
+    
+    function generatePagination(totalPages, currentPage) {
+        let $paginationContainer = $("#pagination-container");
+        $paginationContainer.empty();
+
+        let startPage = Math.max(1, currentPage - 10);
+        let endPage = Math.min(totalPages, currentPage + 10);
+        if(currentPage > 1) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage - 1})">Prev</button>&nbsp;`);
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${i})" ${i === currentPage ? 'class="active" disabled' : ''}>${i}</button>&nbsp;`);
+        }
+        if(currentPage < totalPages) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage + 1})">Next</button>&nbsp;`);
+        }
+    }
+    
+    $("#search-button").click(function() {
+        fetchOrders(1);
+    });
+
+    $("#prev-page").click(function() {
+        if (currentPage > 1) fetchOrders(currentPage - 1);
+    });
+    $("#next-page").click(function() {
+        fetchOrders(currentPage + 1);
+    });
+    
+</script>
+</body>
+</html>

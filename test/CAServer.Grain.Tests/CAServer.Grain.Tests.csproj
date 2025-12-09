@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+        <PackageReference Include="Microsoft.Orleans.TestingHost" Version="9.0.0" />
+        <PackageReference Include="Nethereum.Hex" Version="4.14.0" />
+        <PackageReference Include="Shouldly" Version="4.0.3" />
+        <PackageReference Include="Volo.Abp.Core" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.Caching" Version="8.2.0" />
+        <PackageReference Include="xunit.extensibility.core" Version="2.4.1" />
+        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+        <PackageReference Include="coverlet.collector" Version="3.2.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Moq" Version="4.18.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\CAServer.Application\CAServer.Application.csproj" />
+        <ProjectReference Include="..\..\src\CAServer.Grains\CAServer.Grains.csproj" />
+        <ProjectReference Include="..\CAServer.Domain.Tests\CAServer.Domain.Tests.csproj" />
+<!--        <ProjectReference Include="..\CAServer.Orleans.TestBase\CAServer.Orleans.TestBase.csproj" />-->
+        <ProjectReference Include="..\CAServer.TestBase\CAServer.TestBase.csproj" />
+        <ProjectReference Include="..\..\src\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
+    </ItemGroup>
+
+
+</Project>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasury Order Detail</title>
+    <link rel="icon" href="img/icon.svg">
+    <link rel="stylesheet" href="css/style.css"/>
+    <link rel="stylesheet" href="css/index.css"/>
+    <link rel="stylesheet" href="css/search_table.css"/>
+    <link rel="stylesheet" href="css/modal.css"/>
+    
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.css"/>
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+<div id="updateOrderModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <p>
+            <label for="modal-reason">Input reason:</label><br/>
+            <textarea cols="30" rows="6" id="modal-reason" class="modal-input" placeholder=""></textarea>
+        </p>
+        <p>
+            <label for="modal-googleTfa">Google two factor code:</label>
+            <input type="text" id="modal-googleTfa" class="modal-input" placeholder=""/> 
+        </p>
+        <p style="text-align:center">
+            <button class="private cancel-btn">Cancel</button>
+            <button class="danger confirm-btn">Confirm</button>   
+        </p>
+    </div>
+</div>
+
+
+<header>
+    <nav>
+        <ul id="menu">
+            <li>Treasury order detail</li>
+        </ul>
+    </nav>
+    <div id="user-info">
+        <span></span>
+        <button id="logout-button" class="primary">Sign out</button>
+    </div>
+</header>
+
+<main>
+    <div id="editor"></div>
+</main>
+
+<footer>
+    <p><button id="update-button" data-role="OrderManager">Update order</button></p>
+</footer>
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script src="js/modal.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
+<script>
+
+    let orderId = App.getQueryString("orderId");
+    let globalEditor;
+
+    $(document).ready(function() {
+        App.loadUser();
+        $("#user-info span").html(App.User().userName)
+        $("#logout-button").click(App.logout);
+        $("#update-button").click(updateOrder);
+    });
+
+    require.config({
+        paths: {
+            'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs'
+        }
+    });
+    
+    require(['vs/editor/editor.main'], function () {
+        document.title = orderId;
+
+        globalEditor = monaco.editor.create(document.getElementById('editor'), {
+            value: "",
+            language: 'json',
+            theme: 'vs-light',
+            roundedSelection: true,
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            wordWrap: "on",
+            scrollbar :{
+                vertical: 'auto',
+            }
+        });
+
+        $(document).ready(function() {
+            let editContainer = $('#editor');
+            let resize = function() {
+                let textHeight = window.innerHeight - 90 - editContainer.offset().top;
+                editContainer.height(textHeight + "px");
+                console.log("textHeight="+ textHeight)
+                $(".view-lines").css("height", textHeight + "px");
+                globalEditor.layout();
+            }
+            fetchOrders();
+            $(window).resize(resize);
+            resize();
+        });
+    });
+
+    function fetchOrders() {
+        let requestData = {
+            IdIn: orderId,
+            skipCount: 0,
+            maxResultCount: 1
+        };
+        if (!orderId) {
+            App.showToast("orderId empty")
+            return;
+        }
+        $.ajax({
+            url: App.Uri.treasuryOrders,
+            method: 'GET',
+            contentType: "application/json",
+            data: requestData,
+            success: function(response) {
+                if (!response || !response.success){
+                    return App.showToast(response.message)
+                }
+                if (!response.data.items) {
+                    return App.showToast("order not found")
+                }
+                if (!globalEditor) {
+                    return App.showToast("Editor has not been initialized yet.")
+                }
+                const orderData = JSON.stringify(response.data.items[0], null, 4);
+                globalEditor.setValue(orderData);
+            }
+        });
+    }
+    
+    function updateOrder() {
+        Modal.showModal("#updateOrderModal", () => {
+            let orderData = globalEditor.getValue();
+            let reason = $("#modal-reason").val();
+            let googleTfa = $("#modal-googleTfa").val();
+            
+            $.ajax({
+                url: App.Uri.treasuryOrder,
+                method: 'POST',
+                contentType: "application/json",
+                data: JSON.stringify({
+                    reason: reason,
+                    googleTfaPin: googleTfa,
+                    data : JSON.parse(orderData)
+                })
+            }).then(fetchOrders)
+            
+        });
+    }
+
+    
+</script>
+</body>
+</html>

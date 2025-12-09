@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>CAServer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\CAServer.Application\CAServer.Application.csproj" />
+    <ProjectReference Include="..\..\src\CAServer.AuthServer\CAServer.AuthServer.csproj" />
+    <ProjectReference Include="..\..\src\CAServer.BackGround\CAServer.BackGround.csproj" />
+    <ProjectReference Include="..\..\src\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
+    <ProjectReference Include="..\..\src\CAServer.EntityEventHandler.Core\CAServer.EntityEventHandler.Core.csproj" />
+    <ProjectReference Include="..\..\src\CAServer.Redis\CAServer.Redis.csproj" />
+    <ProjectReference Include="..\CAServer.Domain.Tests\CAServer.Domain.Tests.csproj" />
+    <ProjectReference Include="..\CAServer.Grain.Tests\CAServer.Grain.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+
+    <PackageReference Include="AWSSDK.S3" Version="3.7.205.22" />
+    <PackageReference Include="AWSSDK.CognitoIdentity" Version="3.7.300" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+    <PackageReference Include="coverlet.collector" Version="3.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" Version="4.18.4" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,318 @@
+{
+  "Tokens": {
+    "UserToken":
+    [
+      {
+        "IsDefault": true,
+        "IsDisplay" : true,
+        "SortWeight": 1,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"ELF",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"BNB",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"DAI",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"ETH",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"USDC",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 6
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"USDT",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 6
+        }
+      },
+      {
+        "IsDefault": true,
+        "IsDisplay" : true,
+        "SortWeight": 1,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"ELF",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"BNB",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"DAI",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"ETH",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"USDC",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 6
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : true,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"USDT",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 6
+        }
+      }
+    ],
+    "SourceToken":
+    [
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"CPU",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"RAM",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"DISK",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"NET",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"READ",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token": {
+          "ChainId": "AELF",
+          "Symbol":"WRITE",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "AELF",
+          "Symbol":"STORAGE",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "AELF",
+          "Symbol":"TRAFFIC",
+          "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"CPU",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"RAM",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"DISK",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"NET",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"READ",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":  {
+          "ChainId": "tDVV",
+          "Symbol":"WRITE",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":   {
+          "ChainId": "tDVV",
+          "Symbol":"STORAGE",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      },
+      {
+        "IsDefault": false,
+        "IsDisplay" : false,
+        "SortWeight": 0,
+        "Token":   {
+          "ChainId": "tDVV",
+          "Symbol":"TRAFFIC",
+          "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
+          "Decimals": 8
+        }
+      }
+    ]
+  }
+}

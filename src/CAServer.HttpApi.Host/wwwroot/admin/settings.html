@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<link rel="stylesheet" type="text/css" href="css/login.css">
+	<link rel="stylesheet" type="text/css" href="css/modal.css">
+	<link rel="icon" href="img/icon.svg">
+	<title>Settings</title>
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+
+<div id="resetPwdModal" class="modal">
+	<div class="modal-content">
+		<span class="close">&times;</span>
+		<p>
+			<label for="modal-oldPwd">Old password:</label>
+			<input type="password" id="modal-oldPwd" class="modal-input" placeholder=""/>
+		</p>
+		<p>
+			<label for="modal-newPwd">New password:</label>
+			<input type="password" id="modal-newPwd" class="modal-input" placeholder=""/>
+		</p>
+		<p>
+			<label for="modal-repeatPwd">Repeat password:</label>
+			<input type="password" id="modal-repeatPwd" class="modal-input" placeholder="" value=""/>
+		</p>
+		<p style="text-align:center">
+			<button class="private cancel-btn">Cancel</button>
+			<button class="danger confirm-btn">Save</button>
+		</p>
+	</div>
+</div>
+
+<div class="login-container">
+	<form method="post" id="mfa-form">
+		<h2>Settings</h2>
+
+		<div id="resetBox" style="display:none">
+			<div class="input-group" id="GoogleTfaCode">
+				<h5 style="margin-bottom:0;text-align:center;">Google Authenticator Two factor authorize</h5>
+				<img src=""/>
+				<p style="word-break: break-all;margin-top:0"></p>
+			</div>
+			<div class="input-group" id="GoogleTfaOldPin" style="display:none">
+				<label for="OldPin">Please input old pin</label>
+				<input type="text" id="OldPin">
+			</div>
+			<div class="input-group" id="GoogleTfaNewPin">
+				<label for="NewPin">Please input new pin</label>
+				<input type="text" id="NewPin" required>
+			</div>
+			<button type="submit" id="saveButton">Save</button>
+		</div>
+
+		<button type="button" id="resetButton" onclick="generateGoogleTfa()">Set google TFA</button>
+		<button type="button" class="danger" onclick="ResetPassword()">Reset password</button>
+	</form>
+</div>
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script src="js/modal.js"></script>
+<script>
+	
+	$(document).ready(function() {
+		App.loadUser();
+		$("#mfa-form").submit(saveTfa)
+		// if (!App.User().mfaExists) {
+		// 	generateGoogleTfa();
+		// }
+		if (App.User().rules.split(",").includes("admin")) {
+			$("#resetUserButton").show();
+		}
+	});
+	
+	
+	let ResetPassword = function() {
+		Modal.showModal("#resetPwdModal", function(){
+			let $oldPwd = $("#modal-oldPwd");
+			let $pwd = $("#modal-newPwd");
+			let $pwd2 = $("#modal-repeatPwd");
+			if (!$pwd.val()) {
+				App.showToast("Invalid password");
+				$pwd.addClass("error");
+				return false;
+			}
+			if ($pwd.val() !== $pwd2.val()) {
+				App.showToast("Password not match");
+				$pwd2.addClass("error");
+				return false;
+			}
+			let success = false;
+			$.ajax({
+				url: App.Uri.changePassword,
+				method: "POST",
+				async: false,
+				data: JSON.stringify({
+					"currentPassword": $oldPwd.val(),
+					"newPassword": $pwd.val()
+				}),
+				success: function (){
+					success = true;
+					alert("success")
+				}
+			})
+			return success;
+		});
+	}
+	
+	let generateGoogleTfa = function() {
+		$("#resetButton").hide();
+		$.ajax({
+			url: App.Uri.mfa,
+			method: "GET",
+			async: false,
+			success: function (response) {
+				console.info(JSON.stringify(response))
+				if (response && response.success && response.data) {
+					$("#GoogleTfaCode img").attr("src", response.data.codeImage);
+					$("#GoogleTfaCode p").html(response.data.manualEntryKey);
+					if (App.User().mfaExists) {
+						$("#GoogleTfaOldPin input").attr("required", "required");
+						$("#GoogleTfaOldPin").show();
+					}
+					$("#resetBox").show();
+				}
+			}
+		})
+	}
+	
+	let saveTfa = function(event) {
+		event.preventDefault();
+		$.ajax({
+			url: App.Uri.mfa,
+			method: "POST",
+			contentType: "application/json",
+			async: false,
+			data: JSON.stringify({
+				OldPin: $("#GoogleTfaOldPin input").val(),
+				NewPin: $("#GoogleTfaNewPin input").val(),
+			}),
+			success: function (response) {
+				console.info(JSON.stringify(response))
+				if (response && response.success) {
+					window.location.reload();
+					alert("Success")
+					return;
+				}
+				if (response) {
+					App.showToast(response.message)
+				}
+			}
+		})
+	}
+	
+	
+</script>
+</body>
+</html>
