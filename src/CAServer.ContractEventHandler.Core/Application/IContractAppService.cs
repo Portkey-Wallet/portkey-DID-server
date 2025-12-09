@@ -1062,6 +1062,8 @@ public class ContractAppService : IContractAppService
             {
                 var indexHeight = await _contractProvider.GetIndexHeightFromMainChainAsync(
                     ContractAppServiceConstant.MainChainId, await _contractProvider.GetChainIdAsync(chainId));
+                var mainHeight =
+                    await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
 
                 await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
                 var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
@@ -1079,10 +1081,10 @@ public class ContractAppService : IContractAppService
                     _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
 
                     var retryTimes = 0;
-                    var mainHeight =
-                        await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
                     var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
                     _logger.LogInformation($"SyncQueryEventsAsync SyncToMain indexMainChainBlock {indexMainChainBlock} {mainHeight} {record.BlockHeight}");
+                    // Need to wait until the side chain indexes a block with the main chain's mainHeight  
+                    // before syncing records from the side chain  
                     while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
                     {
                         _logger.LogInformation($"SyncQueryEventsAsync SyncToMain Delay");
