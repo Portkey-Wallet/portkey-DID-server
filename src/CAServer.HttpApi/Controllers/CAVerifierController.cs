@@ -211,8 +211,7 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
-        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
-            operationType, acToken);
+        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
     }
 
     [HttpPost("verifyCode")]
