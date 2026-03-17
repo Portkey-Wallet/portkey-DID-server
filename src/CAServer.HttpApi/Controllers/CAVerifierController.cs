@@ -89,8 +89,7 @@ public class CAVerifierController : CAServerController
 
         return type switch
         {
-            OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type, acToken),
+            OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(sendVerificationRequestInput),
             OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
                 sendVerificationRequestInput, type, acToken),
             _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
@@ -217,11 +216,10 @@ public class CAVerifierController : CAServerController
             acToken);
     }
 
-    private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
+    private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(
+        SendVerificationRequestInput sendVerificationRequestInput)
     {
-        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
-            operationType, acToken);
+        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
     }
 
     [HttpPost("verifyCode")]

@@ -156,6 +156,52 @@ public class CAVerifierControllerTests
     }
 
     [Fact]
+    public async Task SendVerificationRequest_Should_Not_Require_Captcha_For_CreateCAHolder_When_CheckSwitch_Is_On()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()))
+            .ReturnsAsync(new VerifierServerResponse
+            {
+                VerifierSessionId = Guid.NewGuid()
+            });
+
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.ShouldApply("Email", OperationType.CreateCAHolder)).Returns(true);
+        rateLimitService.Setup(x => x.CheckAsync("9.9.9.9", OperationType.CreateCAHolder, It.IsAny<string>()))
+            .ReturnsAsync(RegistrationEmailRateLimitCheckResult.Allow());
+
+        var googleAppService = new Mock<IGoogleAppService>();
+
+        var controller = CreateController(
+            verifierAppService: verifierAppService.Object,
+            registrationEmailRateLimitService: rateLimitService.Object,
+            googleAppService: googleAppService.Object,
+            checkSwitchOpen: true,
+            googleRecaptchaSwitchOpen: true);
+        controller.HttpContext.Request.Headers[RequestIpHeaderHelper.XForwardedFor] = "9.9.9.9";
+
+        var response = await controller.SendVerificationRequest(null, null, new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "user@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.CreateCAHolder
+        });
+
+        Assert.NotNull(response);
+        Assert.Equal(StatusCodes.Status200OK, controller.HttpContext.Response.StatusCode);
+        verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Once);
+        verifierAppService.Verify(x => x.CountVerifyCodeInterfaceRequestAsync(It.IsAny<string>()), Times.Never);
+        googleAppService.Verify(x => x.IsGoogleRecaptchaOpenAsync(It.IsAny<string>(), It.IsAny<OperationType>()),
+            Times.Never);
+        googleAppService.Verify(
+            x => x.ValidateTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlatformType>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task SendVerificationRequest_Should_Bypass_Hard_Limit_For_Approve()
     {
         var verifierAppService = new Mock<IVerifierAppService>();
