@@ -88,6 +88,8 @@ The request is rejected as soon as one window exceeds its configured threshold.
 
 These thresholds are intentionally more permissive for `SocialRecovery` because it is a normal-user recovery flow with more legitimate retries.
 
+If both thresholds for one operation are configured as non-positive values, that operation is treated as disabled for the hard limiter and bypasses the header-only enforcement path.
+
 ## Error Handling
 
 ### Missing IP Headers
@@ -127,6 +129,8 @@ The host configuration section is:
   }
 }
 ```
+
+`IsEnabled` controls the feature globally. For each operation, at least one of `Per10Minutes` or `PerHour` must be a positive value for the limiter to apply.
 
 ## Observability
 

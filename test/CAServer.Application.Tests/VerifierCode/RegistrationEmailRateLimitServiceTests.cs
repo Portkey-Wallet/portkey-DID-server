@@ -37,6 +37,22 @@ public class RegistrationEmailRateLimitServiceTests
     }
 
     [Fact]
+    public void ShouldApply_ReturnsFalse_When_Rule_Has_No_Effective_Window()
+    {
+        var service = CreateService(new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            {
+                Per10Minutes = 0,
+                PerHour = 0
+            }
+        });
+
+        Assert.False(service.ShouldApply("Email", OperationType.CreateCAHolder));
+    }
+
+    [Fact]
     public async Task CheckAsync_Blocks_CreateCAHolder_After_Default_Ten_Minute_Limit()
     {
         var service = CreateService();
@@ -123,6 +139,27 @@ public class RegistrationEmailRateLimitServiceTests
         var result = await service.CheckAsync("5.5.5.5", OperationType.CreateCAHolder, "trace-disabled");
 
         Assert.True(result.IsAllowed);
+    }
+
+    [Fact]
+    public async Task CheckAsync_ReturnsAllow_When_Rule_Has_No_Effective_Window()
+    {
+        var cacheProvider = new Mock<ICacheProvider>();
+        var service = CreateService(new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            {
+                Per10Minutes = 0,
+                PerHour = 0
+            }
+        }, cacheProvider.Object);
+
+        var result = await service.CheckAsync("6.6.6.6", OperationType.CreateCAHolder, "trace-no-window");
+
+        Assert.True(result.IsAllowed);
+        cacheProvider.Verify(x => x.Increase(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TimeSpan?>()),
+            Times.Never);
     }
 
     private static RegistrationEmailRateLimitService CreateService(

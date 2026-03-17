@@ -31,13 +31,14 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
     {
         return _options.IsEnabled &&
                string.Equals(guardianType, "Email", StringComparison.OrdinalIgnoreCase) &&
-               TryGetRule(operationType, out _);
+               TryGetRule(operationType, out var rule) &&
+               HasEffectiveWindow(rule);
     }
 
     public async Task<RegistrationEmailRateLimitCheckResult> CheckAsync(string clientIp, OperationType operationType,
         string traceId)
     {
-        if (!_options.IsEnabled || !TryGetRule(operationType, out var rule))
+        if (!_options.IsEnabled || !TryGetRule(operationType, out var rule) || !HasEffectiveWindow(rule))
         {
             return RegistrationEmailRateLimitCheckResult.Allow();
         }
@@ -95,6 +96,11 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
         };
 
         return rule != null;
+    }
+
+    private static bool HasEffectiveWindow(RegistrationEmailRateLimitRuleOptions rule)
+    {
+        return rule is { Per10Minutes: > 0 } || rule is { PerHour: > 0 };
     }
 
     private static IEnumerable<RateLimitWindow> BuildWindows(OperationType operationType,
