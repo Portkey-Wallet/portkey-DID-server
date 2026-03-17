@@ -4,6 +4,7 @@ using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Threading.Tasks;
 using Asp.Versioning;
+using CAServer;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Cmd;
 using CAServer.Dtos;
@@ -35,17 +36,18 @@ public class CAVerifierController : CAServerController
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string CheckSwitch = "CheckSwitch";
-    private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly ISecondaryEmailAppService _secondaryEmailAppService;
+    private readonly IRegistrationEmailRateLimitService _registrationEmailRateLimitService;
     
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
         ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService,
-        IZkLoginProvider zkLoginProvider, ISecondaryEmailAppService secondaryEmailAppService)
+        IZkLoginProvider zkLoginProvider, ISecondaryEmailAppService secondaryEmailAppService,
+        IRegistrationEmailRateLimitService registrationEmailRateLimitService)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
@@ -56,6 +58,7 @@ public class CAVerifierController : CAServerController
         _ipWhiteListAppService = ipWhiteListAppService;
         _zkLoginProvider = zkLoginProvider;
         _secondaryEmailAppService = secondaryEmailAppService;
+        _registrationEmailRateLimitService = registrationEmailRateLimitService;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -70,6 +73,12 @@ public class CAVerifierController : CAServerController
 
         var type = verifierServerInput.OperationType;
         ValidateOperationType(type);
+        var rateLimitResponse = await TryHandleRegistrationEmailRateLimitAsync(verifierServerInput, type);
+        if (rateLimitResponse != null)
+        {
+            return rateLimitResponse;
+        }
+
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
 
@@ -296,24 +305,7 @@ public class CAVerifierController : CAServerController
 
     private string UserIpAddress(HttpContext context)
     {
-        var isHeadersContainsIps = context.Request.Headers.TryGetValue(XForwardedFor, out var userIpAddress);
-        if (isHeadersContainsIps)
-        {
-            var ipAddressList = context.Request.Headers[XForwardedFor];
-            if (!string.IsNullOrWhiteSpace(ipAddressList))
-            {
-                var ips = ipAddressList.ToString().Split(",");
-                if (ips.Length > 0)
-                {
-                    userIpAddress = ips[0].Trim();
-                }
-
-                return userIpAddress;
-            }
-        }
-
-        userIpAddress = context.Connection.RemoteIpAddress?.ToString();
-        return userIpAddress;
+        return RequestIpHeaderHelper.GetClientIp(context.Request);
     }
 
     private void ValidateOperationType(OperationType operationType)
@@ -458,5 +450,35 @@ public class CAVerifierController : CAServerController
         sw.Stop();
         _logger.LogInformation("GetVerifierServerDetailsAsync cost:{0}ms", sw.ElapsedMilliseconds);
         return result;
+    }
+
+    private async Task<VerifierServerResponse> TryHandleRegistrationEmailRateLimitAsync(
+        VerifierServerInput verifierServerInput, OperationType operationType)
+    {
+        if (!_registrationEmailRateLimitService.ShouldApply(verifierServerInput.Type, operationType))
+        {
+            return null;
+        }
+
+        var traceId = HttpContext.TraceIdentifier;
+        var clientIp = RequestIpHeaderHelper.GetClientIp(HttpContext.Request);
+        if (string.IsNullOrWhiteSpace(clientIp))
+        {
+            _logger.LogWarning(
+                "Registration email rate limit rejected request due to missing ip headers. traceId:{TraceId}, operationType:{OperationType}",
+                traceId, operationType);
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            return new VerifierServerResponse();
+        }
+
+        var result = await _registrationEmailRateLimitService.CheckAsync(clientIp, operationType, traceId);
+        if (result.IsAllowed)
+        {
+            return null;
+        }
+
+        HttpContext.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+        HttpContext.Response.Headers["Retry-After"] = result.RetryAfterSeconds.ToString();
+        return new VerifierServerResponse();
     }
 }
