@@ -77,23 +77,28 @@ public class CAVerifierController : CAServerController
 
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+        var shouldApplyRegistrationRateLimit =
+            _registrationEmailRateLimitService.ShouldApply(sendVerificationRequestInput.Type, type);
 
         if (type == OperationType.CreateCAHolder)
         {
-            var rateLimitResponse =
-                await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, type);
-            if (rateLimitResponse != null)
+            if (shouldApplyRegistrationRateLimit)
             {
-                return rateLimitResponse;
+                var rateLimitResponse =
+                    await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, type);
+                if (rateLimitResponse != null)
+                {
+                    return rateLimitResponse;
+                }
             }
 
             return await RegisterSendVerificationRequestAsync(sendVerificationRequestInput);
         }
 
-        if (type == OperationType.SocialRecovery)
+        if (type == OperationType.SocialRecovery && shouldApplyRegistrationRateLimit)
         {
             return await RecoverySendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput, type,
-                acToken);
+                acToken, true);
         }
 
         if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
@@ -103,6 +108,8 @@ public class CAVerifierController : CAServerController
 
         return type switch
         {
+            OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput, type, acToken, false),
             _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
                 type, acToken)
         };
@@ -212,7 +219,8 @@ public class CAVerifierController : CAServerController
     }
 
     private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken,
+        bool applyHardLimit)
     {
         var guardianExists =
             await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
@@ -221,16 +229,19 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
-        var rateLimitResponse =
-            await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, operationType);
-        if (rateLimitResponse != null)
+        if (applyHardLimit)
         {
-            return rateLimitResponse;
-        }
+            var rateLimitResponse =
+                await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, operationType);
+            if (rateLimitResponse != null)
+            {
+                return rateLimitResponse;
+            }
 
-        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
-        {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+            if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+            {
+                return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+            }
         }
 
         return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType,

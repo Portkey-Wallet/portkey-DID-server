@@ -17,7 +17,7 @@ It does not introduce hard limits for normal in-product flows such as transfer a
 - Requests with `OperationType == CreateCAHolder`
 - Requests with `OperationType == SocialRecovery`
 - Config-controlled feature enablement
-- Guardian existence gating for `SocialRecovery` before quota consumption
+- Guardian existence gating for `SocialRecovery` before quota consumption when the hard limiter is enabled
 - Header-based client IP extraction from `X-Forwarded-For` and `X-Real-IP` for the hard limiter only
 - Redis-backed fixed-window counters
 - `400 Bad Request` when both IP headers are missing
@@ -90,7 +90,7 @@ If multiple windows exceed their thresholds in the same request, the limiter ret
 
 These thresholds are intentionally more permissive for `SocialRecovery` because it is a normal-user recovery flow with more legitimate retries.
 
-For `SocialRecovery`, quota is consumed only after `GuardianExistsAsync(...)` confirms that the recovery target exists.
+For `SocialRecovery`, when the hard limiter is enabled, quota is consumed only after `GuardianExistsAsync(...)` confirms that the recovery target exists.
 Requests for non-existent guardians bypass the hard limiter and do not consume quota.
 
 If both thresholds for one operation are configured as non-positive values, that operation is treated as disabled for the hard limiter and bypasses the header-only enforcement path.
@@ -159,6 +159,7 @@ The server must not log raw email values as part of this feature.
 - Existing captcha behavior remains unchanged for flows that already use captcha or app-check today.
 - The hard limiter is evaluated only when `RegistrationEmailRateLimit:IsEnabled` is set to `true`.
 - The recommended rollout is to deploy code first with `IsEnabled = false`, verify that registration and recovery requests preserve the current baseline behavior, and then enable the feature through configuration.
+- When `IsEnabled = false`, `SocialRecovery` preserves the current `master` baseline behavior, including the `CheckSwitch = false` fast path that does not introduce guardian existence gating.
 - Existing non-limiter flows keep their original `RemoteIpAddress` fallback behavior.
 - In `SocialRecovery`, when the hard limiter resolves a forwarded client IP, the same request reuses that IP for downstream whitelist/captcha/count logic.
 - If future abuse patterns change, business-flow-specific policies can be added separately for transfer or approval flows.
@@ -166,6 +167,7 @@ The server must not log raw email values as part of this feature.
 ## Verification Strategy
 
 - With `IsEnabled = false`, registration and recovery email requests should preserve the current baseline behavior with no new `400` or `429` introduced by this feature.
+- With `IsEnabled = false` and `CheckSwitch = false`, `SocialRecovery` should still short-circuit to `SendVerificationRequestAsync(...)` without invoking `GuardianExistsAsync(...)`.
 - With `IsEnabled = true`, a normal registration or recovery request with valid forwarding headers should still succeed.
 - With `IsEnabled = true`, the server should log a successful rate-limit check that includes `traceId`, `clientIp`, `operationType`, and window information.
 - With `IsEnabled = true`, if a later window hits a Redis error after an earlier window already proved the request should be blocked, the request should still return the previously computed block result.

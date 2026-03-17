@@ -109,6 +109,7 @@ public class CAVerifierControllerTests
         var verifierAppService = new Mock<IVerifierAppService>();
         verifierAppService.Setup(x => x.GuardianExistsAsync("missing@example.com")).ReturnsAsync(false);
         var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.ShouldApply("Email", OperationType.SocialRecovery)).Returns(true);
         var controller = CreateController(verifierAppService: verifierAppService.Object,
             registrationEmailRateLimitService: rateLimitService.Object, checkSwitchOpen: true);
 
@@ -122,10 +123,162 @@ public class CAVerifierControllerTests
         });
 
         Assert.Null(response);
-        rateLimitService.Verify(x => x.ShouldApply(It.IsAny<string>(), It.IsAny<OperationType>()), Times.Never);
+        rateLimitService.Verify(x => x.ShouldApply("Email", OperationType.SocialRecovery), Times.Once);
         rateLimitService.Verify(x => x.CheckAsync(It.IsAny<string>(), It.IsAny<OperationType>(), It.IsAny<string>()),
             Times.Never);
         verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendVerificationRequest_Should_Preserve_Baseline_When_SocialRecovery_Is_Disabled_And_CheckSwitch_Is_Off()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()))
+            .ReturnsAsync(new VerifierServerResponse
+            {
+                VerifierSessionId = Guid.NewGuid()
+            });
+        verifierAppService.Setup(x => x.GuardianExistsAsync(It.IsAny<string>())).ThrowsAsync(new InvalidOperationException("should not be called"));
+
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.ShouldApply("Email", OperationType.SocialRecovery)).Returns(false);
+
+        var controller = CreateController(
+            verifierAppService: verifierAppService.Object,
+            registrationEmailRateLimitService: rateLimitService.Object,
+            checkSwitchOpen: false);
+
+        var response = await controller.SendVerificationRequest(null, null, new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "missing@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.SocialRecovery
+        });
+
+        Assert.NotNull(response);
+        Assert.Equal(StatusCodes.Status200OK, controller.HttpContext.Response.StatusCode);
+        verifierAppService.Verify(x => x.GuardianExistsAsync(It.IsAny<string>()), Times.Never);
+        verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Once);
+        rateLimitService.Verify(x => x.CheckAsync(It.IsAny<string>(), It.IsAny<OperationType>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendVerificationRequest_Should_Bypass_GuardianLookup_Exception_When_SocialRecovery_Is_Disabled_And_CheckSwitch_Is_Off()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()))
+            .ReturnsAsync(new VerifierServerResponse
+            {
+                VerifierSessionId = Guid.NewGuid()
+            });
+        verifierAppService.Setup(x => x.GuardianExistsAsync(It.IsAny<string>())).ThrowsAsync(new InvalidOperationException("guardian service error"));
+
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.ShouldApply("Email", OperationType.SocialRecovery)).Returns(false);
+
+        var controller = CreateController(
+            verifierAppService: verifierAppService.Object,
+            registrationEmailRateLimitService: rateLimitService.Object,
+            checkSwitchOpen: false);
+
+        var response = await controller.SendVerificationRequest(null, null, new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "user@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.SocialRecovery
+        });
+
+        Assert.NotNull(response);
+        Assert.Equal(StatusCodes.Status200OK, controller.HttpContext.Response.StatusCode);
+        verifierAppService.Verify(x => x.GuardianExistsAsync(It.IsAny<string>()), Times.Never);
+        verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendVerificationRequest_Should_Return_Null_When_SocialRecovery_Is_Enabled_And_CheckSwitch_Is_Off_But_Guardian_Is_Missing()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.GuardianExistsAsync("missing@example.com")).ReturnsAsync(false);
+
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.ShouldApply("Email", OperationType.SocialRecovery)).Returns(true);
+
+        var controller = CreateController(
+            verifierAppService: verifierAppService.Object,
+            registrationEmailRateLimitService: rateLimitService.Object,
+            checkSwitchOpen: false);
+
+        var response = await controller.SendVerificationRequest(null, null, new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "missing@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.SocialRecovery
+        });
+
+        Assert.Null(response);
+        verifierAppService.Verify(x => x.GuardianExistsAsync("missing@example.com"), Times.Once);
+        verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Never);
+        rateLimitService.Verify(x => x.CheckAsync(It.IsAny<string>(), It.IsAny<OperationType>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendVerificationRequest_Should_Apply_HardLimit_And_Then_Send_When_SocialRecovery_Is_Enabled_And_CheckSwitch_Is_Off()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.GuardianExistsAsync("user@example.com")).ReturnsAsync(true);
+        verifierAppService.Setup(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()))
+            .ReturnsAsync(new VerifierServerResponse
+            {
+                VerifierSessionId = Guid.NewGuid()
+            });
+
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.ShouldApply("Email", OperationType.SocialRecovery)).Returns(true);
+        rateLimitService.Setup(x => x.CheckAsync("6.6.6.6", OperationType.SocialRecovery, It.IsAny<string>()))
+            .ReturnsAsync(RegistrationEmailRateLimitCheckResult.Allow());
+
+        var googleAppService = new Mock<IGoogleAppService>();
+
+        var controller = CreateController(
+            verifierAppService: verifierAppService.Object,
+            registrationEmailRateLimitService: rateLimitService.Object,
+            googleAppService: googleAppService.Object,
+            checkSwitchOpen: false);
+        controller.HttpContext.Request.Headers[RequestIpHeaderHelper.XForwardedFor] = "6.6.6.6";
+
+        var response = await controller.SendVerificationRequest(null, null, new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "user@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.SocialRecovery
+        });
+
+        Assert.NotNull(response);
+        Assert.Equal(StatusCodes.Status200OK, controller.HttpContext.Response.StatusCode);
+        verifierAppService.Verify(x => x.GuardianExistsAsync("user@example.com"), Times.Once);
+        rateLimitService.Verify(x => x.CheckAsync("6.6.6.6", OperationType.SocialRecovery, It.IsAny<string>()),
+            Times.Once);
+        verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Once);
+        verifierAppService.Verify(x => x.CountVerifyCodeInterfaceRequestAsync(It.IsAny<string>()), Times.Never);
+        googleAppService.Verify(x => x.IsGoogleRecaptchaOpenAsync(It.IsAny<string>(), It.IsAny<OperationType>()),
+            Times.Never);
+        googleAppService.Verify(
+            x => x.ValidateTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlatformType>()),
             Times.Never);
     }
 
