@@ -17,7 +17,7 @@ It does not introduce hard limits for normal in-product flows such as transfer a
 - Requests with `OperationType == CreateCAHolder`
 - Requests with `OperationType == SocialRecovery`
 - Config-controlled feature enablement
-- Header-based client IP extraction from `X-Forwarded-For` and `X-Real-IP`
+- Header-based client IP extraction from `X-Forwarded-For` and `X-Real-IP` for the hard limiter only
 - Redis-backed fixed-window counters
 - `400 Bad Request` when both IP headers are missing
 - `429 Too Many Requests` with `Retry-After` when the hard limit is exceeded
@@ -28,7 +28,7 @@ It does not introduce hard limits for normal in-product flows such as transfer a
 - No hard rate limit for `GuardianApproveTransfer`
 - No hard rate limit for `SetSecondaryEmail`
 - No email-address-based rate limiting in v1
-- No fallback to `RemoteIpAddress`
+- No trusted-proxy hardening in v1
 
 ## Operation Types In Scope
 
@@ -39,7 +39,9 @@ All other operation types are explicitly excluded from this hard limiter in v1.
 
 ## IP Extraction Rules
 
-The server reads the client IP from HTTP headers only.
+### Hard Limiter Path
+
+The registration/recovery hard limiter reads the client IP from HTTP headers only.
 
 1. Read `X-Forwarded-For`
 2. Split by comma
@@ -48,7 +50,16 @@ The server reads the client IP from HTTP headers only.
 5. Split by comma and use the first non-empty trimmed value
 6. If both headers are missing or empty, reject the request with `400 Bad Request`
 
-This behavior assumes the upstream gateway or proxy writes trusted forwarding headers.
+### Legacy Flows
+
+Existing controller flows outside the new hard limiter keep the previous best-effort behavior:
+
+1. Read the first IP from `X-Forwarded-For`
+2. If missing, fallback to `RemoteIpAddress`
+
+This preserves historical behavior for captcha, `isGoogleRecaptchaOpen`, secondary email, and other existing request paths.
+
+The hard-limiter behavior assumes the upstream gateway or proxy writes trusted forwarding headers.
 
 ## Rate Limit Model
 
@@ -83,7 +94,7 @@ These thresholds are intentionally more permissive for `SocialRecovery` because 
 
 - HTTP status: `400 Bad Request`
 - Response body: empty `VerifierServerResponse`
-- Reason: the server cannot evaluate the required header-based IP policy
+- Reason: the hard limiter cannot evaluate the required forwarding-header-based IP policy
 
 ### Rate Limit Exceeded
 
@@ -138,6 +149,7 @@ The server must not log raw email values as part of this feature.
 - Captcha remains a separate risk-control layer.
 - The hard limiter is evaluated only when `RegistrationEmailRateLimit:IsEnabled` is set to `true`.
 - The recommended rollout is to deploy code first with `IsEnabled = false`, verify that registration and recovery requests still behave normally, and then enable the feature through configuration.
+- Existing non-limiter flows keep their original `RemoteIpAddress` fallback behavior.
 - If future abuse patterns change, business-flow-specific policies can be added separately for transfer or approval flows.
 
 ## Verification Strategy

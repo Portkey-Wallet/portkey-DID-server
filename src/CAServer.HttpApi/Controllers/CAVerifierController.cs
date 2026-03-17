@@ -305,7 +305,22 @@ public class CAVerifierController : CAServerController
 
     private string UserIpAddress(HttpContext context)
     {
-        return RequestIpHeaderHelper.GetClientIp(context.Request);
+        if (context.Request.Headers.TryGetValue(RequestIpHeaderHelper.XForwardedFor, out var userIpAddress))
+        {
+            var ipAddressList = context.Request.Headers[RequestIpHeaderHelper.XForwardedFor];
+            if (!string.IsNullOrWhiteSpace(ipAddressList))
+            {
+                var ips = ipAddressList.ToString().Split(",");
+                if (ips.Length > 0)
+                {
+                    userIpAddress = ips[0].Trim();
+                }
+
+                return userIpAddress;
+            }
+        }
+
+        return context.Connection.RemoteIpAddress?.ToString();
     }
 
     private void ValidateOperationType(OperationType operationType)
@@ -461,7 +476,7 @@ public class CAVerifierController : CAServerController
         }
 
         var traceId = HttpContext.TraceIdentifier;
-        var clientIp = RequestIpHeaderHelper.GetClientIp(HttpContext.Request);
+        var clientIp = RequestIpHeaderHelper.GetForwardedClientIp(HttpContext.Request);
         if (string.IsNullOrWhiteSpace(clientIp))
         {
             _logger.LogWarning(

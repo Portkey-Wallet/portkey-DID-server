@@ -8,7 +8,7 @@ public static class RequestIpHeaderHelper
     public const string XForwardedFor = "X-Forwarded-For";
     public const string XRealIp = "X-Real-IP";
 
-    public static string GetClientIp(HttpRequest request)
+    public static string GetForwardedClientIp(HttpRequest request)
     {
         return GetFirstHeaderIp(request, XForwardedFor) ?? GetFirstHeaderIp(request, XRealIp);
     }
