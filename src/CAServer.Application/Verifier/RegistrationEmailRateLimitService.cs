@@ -45,9 +45,9 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
 
         try
         {
+            var now = GetUtcNow();
             foreach (var window in BuildWindows(operationType, rule))
             {
-                var now = DateTime.UtcNow;
                 var windowStart = GetWindowStart(now, window.WindowSize);
                 var windowEnd = windowStart.Add(window.WindowSize);
                 var ttl = windowEnd - now;
@@ -96,6 +96,11 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
         };
 
         return rule != null;
+    }
+
+    protected virtual DateTime GetUtcNow()
+    {
+        return DateTime.UtcNow;
     }
 
     private static bool HasEffectiveWindow(RegistrationEmailRateLimitRuleOptions rule)

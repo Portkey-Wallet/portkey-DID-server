@@ -119,6 +119,39 @@ public class RegistrationEmailRateLimitServiceTests
     }
 
     [Fact]
+    public async Task CheckAsync_Uses_Same_Timestamp_For_All_Windows_In_One_Request()
+    {
+        var cacheProvider = new RecordingCacheProvider();
+        var options = new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            {
+                Per10Minutes = 10,
+                PerHour = 10
+            }
+        };
+        var service = CreateServiceWithUtcNowSequence(
+            new[]
+            {
+                new DateTime(2026, 1, 1, 10, 59, 59, 999, DateTimeKind.Utc),
+                new DateTime(2026, 1, 1, 11, 0, 0, 1, DateTimeKind.Utc)
+            },
+            options,
+            cacheProvider);
+
+        var result = await service.CheckAsync("7.7.7.7", OperationType.CreateCAHolder, "trace-rollover");
+
+        Assert.True(result.IsAllowed);
+        Assert.Equal(1, service.UtcNowCallCount);
+        Assert.Equal(2, cacheProvider.Keys.Count);
+        Assert.Contains("RegistrationEmailRateLimit:CreateCAHolder:CreateCAHolder:10m:202601011050:7.7.7.7",
+            cacheProvider.Keys);
+        Assert.Contains("RegistrationEmailRateLimit:CreateCAHolder:CreateCAHolder:1h:202601011000:7.7.7.7",
+            cacheProvider.Keys);
+    }
+
+    [Fact]
     public async Task CheckAsync_Fails_Open_When_Cache_Throws()
     {
         var service = CreateService(cacheProvider: new ThrowingCacheProvider());
@@ -174,6 +207,21 @@ public class RegistrationEmailRateLimitServiceTests
 
         return new RegistrationEmailRateLimitService(
             cacheProvider ?? new InMemoryCounterCacheProvider(),
+            Mock.Of<ILogger<RegistrationEmailRateLimitService>>(),
+            optionsSnapshot.Object);
+    }
+
+    private static TestRegistrationEmailRateLimitService CreateServiceWithUtcNowSequence(
+        IEnumerable<DateTime> utcNowSequence,
+        RegistrationEmailRateLimitOptions options,
+        ICacheProvider cacheProvider)
+    {
+        var optionsSnapshot = new Mock<IOptionsSnapshot<RegistrationEmailRateLimitOptions>>();
+        optionsSnapshot.Setup(x => x.Value).Returns(options);
+
+        return new TestRegistrationEmailRateLimitService(
+            utcNowSequence,
+            cacheProvider,
             Mock.Of<ILogger<RegistrationEmailRateLimitService>>(),
             optionsSnapshot.Object);
     }
@@ -287,6 +335,39 @@ public class RegistrationEmailRateLimitServiceTests
         public override Task<long> Increase(string key, int increase, TimeSpan? expire)
         {
             throw new InvalidOperationException("redis unavailable");
+        }
+    }
+
+    private sealed class RecordingCacheProvider : InMemoryCounterCacheProvider
+    {
+        public List<string> Keys { get; } = new();
+
+        public override Task<long> Increase(string key, int increase, TimeSpan? expire)
+        {
+            Keys.Add(key);
+            return base.Increase(key, increase, expire);
+        }
+    }
+
+    private sealed class TestRegistrationEmailRateLimitService : RegistrationEmailRateLimitService
+    {
+        private readonly Queue<DateTime> _utcNowSequence;
+
+        public TestRegistrationEmailRateLimitService(IEnumerable<DateTime> utcNowSequence,
+            ICacheProvider cacheProvider,
+            ILogger<RegistrationEmailRateLimitService> logger,
+            IOptionsSnapshot<RegistrationEmailRateLimitOptions> options)
+            : base(cacheProvider, logger, options)
+        {
+            _utcNowSequence = new Queue<DateTime>(utcNowSequence);
+        }
+
+        public int UtcNowCallCount { get; private set; }
+
+        protected override DateTime GetUtcNow()
+        {
+            UtcNowCallCount++;
+            return _utcNowSequence.Dequeue();
         }
     }
 }
