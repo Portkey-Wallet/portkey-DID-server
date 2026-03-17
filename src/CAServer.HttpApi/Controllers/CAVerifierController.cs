@@ -29,6 +29,7 @@ namespace CAServer.Controllers;
 [Route("api/app/account")]
 public class CAVerifierController : CAServerController
 {
+    private const string ResolvedClientIpItemKey = "RegistrationEmailRateLimit:ResolvedClientIp";
     private readonly IVerifierAppService _verifierAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CAVerifierController> _logger;
@@ -73,14 +74,27 @@ public class CAVerifierController : CAServerController
 
         var type = verifierServerInput.OperationType;
         ValidateOperationType(type);
-        var rateLimitResponse = await TryHandleRegistrationEmailRateLimitAsync(verifierServerInput, type);
-        if (rateLimitResponse != null)
-        {
-            return rateLimitResponse;
-        }
 
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+
+        if (type == OperationType.CreateCAHolder)
+        {
+            var rateLimitResponse =
+                await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, type);
+            if (rateLimitResponse != null)
+            {
+                return rateLimitResponse;
+            }
+
+            return await RegisterSendVerificationRequestAsync(sendVerificationRequestInput);
+        }
+
+        if (type == OperationType.SocialRecovery)
+        {
+            return await RecoverySendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput, type,
+                acToken);
+        }
 
         if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
         {
@@ -89,9 +103,6 @@ public class CAVerifierController : CAServerController
 
         return type switch
         {
-            OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(sendVerificationRequestInput),
-            OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type, acToken),
             _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
                 type, acToken)
         };
@@ -203,13 +214,23 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
-
-        //check guardian isExists;
         var guardianExists =
             await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
         if (!guardianExists)
         {
             return null;
+        }
+
+        var rateLimitResponse =
+            await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, operationType);
+        if (rateLimitResponse != null)
+        {
+            return rateLimitResponse;
+        }
+
+        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        {
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
 
         return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType,
@@ -303,6 +324,13 @@ public class CAVerifierController : CAServerController
 
     private string UserIpAddress(HttpContext context)
     {
+        if (context.Items.TryGetValue(ResolvedClientIpItemKey, out var resolvedClientIp) &&
+            resolvedClientIp is string requestScopedClientIp &&
+            !string.IsNullOrWhiteSpace(requestScopedClientIp))
+        {
+            return requestScopedClientIp;
+        }
+
         if (context.Request.Headers.TryGetValue(RequestIpHeaderHelper.XForwardedFor, out var userIpAddress))
         {
             var ipAddressList = context.Request.Headers[RequestIpHeaderHelper.XForwardedFor];
@@ -466,9 +494,9 @@ public class CAVerifierController : CAServerController
     }
 
     private async Task<VerifierServerResponse> TryHandleRegistrationEmailRateLimitAsync(
-        VerifierServerInput verifierServerInput, OperationType operationType)
+        string guardianType, OperationType operationType)
     {
-        if (!_registrationEmailRateLimitService.ShouldApply(verifierServerInput.Type, operationType))
+        if (!_registrationEmailRateLimitService.ShouldApply(guardianType, operationType))
         {
             return null;
         }
@@ -484,6 +512,7 @@ public class CAVerifierController : CAServerController
             return new VerifierServerResponse();
         }
 
+        HttpContext.Items[ResolvedClientIpItemKey] = clientIp;
         var result = await _registrationEmailRateLimitService.CheckAsync(clientIp, operationType, traceId);
         if (result.IsAllowed)
         {

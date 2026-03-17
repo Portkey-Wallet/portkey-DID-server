@@ -119,6 +119,39 @@ public class RegistrationEmailRateLimitServiceTests
     }
 
     [Fact]
+    public async Task CheckAsync_Returns_Longest_RetryAfter_When_Multiple_Windows_Are_Exceeded()
+    {
+        var fixedNow = new DateTime(2026, 1, 1, 10, 5, 0, DateTimeKind.Utc);
+        var options = new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            {
+                Per10Minutes = 1,
+                PerHour = 1
+            }
+        };
+        var service = CreateServiceWithUtcNowSequence(
+            new[]
+            {
+                fixedNow,
+                fixedNow
+            },
+            options,
+            new InMemoryCounterCacheProvider());
+
+        await service.CheckAsync("3.3.3.3", OperationType.CreateCAHolder, "trace-first");
+        var result = await service.CheckAsync("3.3.3.3", OperationType.CreateCAHolder, "trace-second");
+
+        Assert.NotNull(result);
+        Assert.False(result.IsAllowed);
+        Assert.Equal("CreateCAHolder:1h", result.WindowName);
+        Assert.Equal(1, result.Limit);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(3300, result.RetryAfterSeconds);
+    }
+
+    [Fact]
     public async Task CheckAsync_Uses_Same_Timestamp_For_All_Windows_In_One_Request()
     {
         var cacheProvider = new RecordingCacheProvider();
@@ -157,6 +190,65 @@ public class RegistrationEmailRateLimitServiceTests
         var service = CreateService(cacheProvider: new ThrowingCacheProvider());
 
         var result = await service.CheckAsync("4.4.4.4", OperationType.CreateCAHolder, "trace-fail-open");
+
+        Assert.True(result.IsAllowed);
+    }
+
+    [Fact]
+    public async Task CheckAsync_Returns_Block_When_Later_Window_Throws_After_Earlier_Window_Is_Exceeded()
+    {
+        var fixedNow = new DateTime(2026, 1, 1, 10, 5, 0, DateTimeKind.Utc);
+        var options = new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            {
+                Per10Minutes = 1,
+                PerHour = 1
+            }
+        };
+        var service = CreateServiceWithUtcNowSequence(
+            new[]
+            {
+                fixedNow,
+                fixedNow
+            },
+            options,
+            new ThrowOnMatchedWindowCacheProvider(":1h:", 2));
+
+        await service.CheckAsync("4.4.4.4", OperationType.CreateCAHolder, "trace-first");
+        var result = await service.CheckAsync("4.4.4.4", OperationType.CreateCAHolder, "trace-partial-failure");
+
+        Assert.NotNull(result);
+        Assert.False(result.IsAllowed);
+        Assert.Equal("CreateCAHolder:10m", result.WindowName);
+        Assert.Equal(1, result.Limit);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(300, result.RetryAfterSeconds);
+    }
+
+    [Fact]
+    public async Task CheckAsync_Fails_Open_When_Later_Window_Throws_Before_Any_Window_Is_Exceeded()
+    {
+        var fixedNow = new DateTime(2026, 1, 1, 10, 5, 0, DateTimeKind.Utc);
+        var options = new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            {
+                Per10Minutes = 10,
+                PerHour = 10
+            }
+        };
+        var service = CreateServiceWithUtcNowSequence(
+            new[]
+            {
+                fixedNow
+            },
+            options,
+            new ThrowOnMatchedWindowCacheProvider(":1h:", 1));
+
+        var result = await service.CheckAsync("5.5.5.5", OperationType.CreateCAHolder, "trace-fail-open");
 
         Assert.True(result.IsAllowed);
     }
@@ -335,6 +427,33 @@ public class RegistrationEmailRateLimitServiceTests
         public override Task<long> Increase(string key, int increase, TimeSpan? expire)
         {
             throw new InvalidOperationException("redis unavailable");
+        }
+    }
+
+    private sealed class ThrowOnMatchedWindowCacheProvider : InMemoryCounterCacheProvider
+    {
+        private readonly string _windowMarker;
+        private readonly int _throwOnMatchedCallNumber;
+        private int _matchedCallCount;
+
+        public ThrowOnMatchedWindowCacheProvider(string windowMarker, int throwOnMatchedCallNumber)
+        {
+            _windowMarker = windowMarker;
+            _throwOnMatchedCallNumber = throwOnMatchedCallNumber;
+        }
+
+        public override Task<long> Increase(string key, int increase, TimeSpan? expire)
+        {
+            if (key.Contains(_windowMarker, StringComparison.Ordinal))
+            {
+                _matchedCallCount++;
+                if (_matchedCallCount == _throwOnMatchedCallNumber)
+                {
+                    throw new InvalidOperationException("redis unavailable");
+                }
+            }
+
+            return base.Increase(key, increase, expire);
         }
     }
 

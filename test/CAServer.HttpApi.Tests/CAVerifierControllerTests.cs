@@ -80,6 +80,7 @@ public class CAVerifierControllerTests
     public async Task SendVerificationRequest_Should_Fallback_To_XRealIp()
     {
         var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.GuardianExistsAsync("user@example.com")).ReturnsAsync(true);
         verifierAppService.Setup(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()))
             .ReturnsAsync(new VerifierServerResponse());
         var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
@@ -100,6 +101,32 @@ public class CAVerifierControllerTests
 
         rateLimitService.Verify(x => x.CheckAsync("4.4.4.4", OperationType.SocialRecovery, It.IsAny<string>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task SendVerificationRequest_Should_Not_Consume_SocialRecovery_Quota_When_Guardian_Does_Not_Exist()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.GuardianExistsAsync("missing@example.com")).ReturnsAsync(false);
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        var controller = CreateController(verifierAppService: verifierAppService.Object,
+            registrationEmailRateLimitService: rateLimitService.Object, checkSwitchOpen: true);
+
+        var response = await controller.SendVerificationRequest(null, null, new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "missing@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.SocialRecovery
+        });
+
+        Assert.Null(response);
+        rateLimitService.Verify(x => x.ShouldApply(It.IsAny<string>(), It.IsAny<OperationType>()), Times.Never);
+        rateLimitService.Verify(x => x.CheckAsync(It.IsAny<string>(), It.IsAny<OperationType>(), It.IsAny<string>()),
+            Times.Never);
+        verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Never);
     }
 
     [Fact]
@@ -199,6 +226,58 @@ public class CAVerifierControllerTests
         googleAppService.Verify(
             x => x.ValidateTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlatformType>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task SendVerificationRequest_Should_Reuse_Resolved_XRealIp_For_SocialRecovery_Risk_Control()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.GuardianExistsAsync("user@example.com")).ReturnsAsync(true);
+        verifierAppService.Setup(x => x.CountVerifyCodeInterfaceRequestAsync("4.4.4.4")).ReturnsAsync(1);
+        verifierAppService.Setup(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()))
+            .ReturnsAsync(new VerifierServerResponse
+            {
+                VerifierSessionId = Guid.NewGuid()
+            });
+
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.ShouldApply("Email", OperationType.SocialRecovery)).Returns(true);
+        rateLimitService.Setup(x => x.CheckAsync("4.4.4.4", OperationType.SocialRecovery, It.IsAny<string>()))
+            .ReturnsAsync(RegistrationEmailRateLimitCheckResult.Allow());
+
+        var ipWhiteListAppService = new Mock<IIpWhiteListAppService>();
+        ipWhiteListAppService.Setup(x => x.IsInWhiteListAsync("4.4.4.4")).ReturnsAsync(true);
+
+        var googleAppService = new Mock<IGoogleAppService>();
+        googleAppService.Setup(x => x.IsGoogleRecaptchaOpenAsync("4.4.4.4", OperationType.SocialRecovery))
+            .ReturnsAsync(false);
+
+        var controller = CreateController(
+            verifierAppService: verifierAppService.Object,
+            registrationEmailRateLimitService: rateLimitService.Object,
+            googleAppService: googleAppService.Object,
+            ipWhiteListAppService: ipWhiteListAppService.Object,
+            checkSwitchOpen: true,
+            googleRecaptchaSwitchOpen: false);
+        controller.HttpContext.Request.Headers[RequestIpHeaderHelper.XRealIp] = "4.4.4.4";
+
+        var response = await controller.SendVerificationRequest(null, null, new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "user@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.SocialRecovery
+        });
+
+        Assert.NotNull(response);
+        Assert.Equal(StatusCodes.Status200OK, controller.HttpContext.Response.StatusCode);
+        rateLimitService.Verify(x => x.CheckAsync("4.4.4.4", OperationType.SocialRecovery, It.IsAny<string>()),
+            Times.Once);
+        ipWhiteListAppService.Verify(x => x.IsInWhiteListAsync("4.4.4.4"), Times.Once);
+        googleAppService.Verify(x => x.IsGoogleRecaptchaOpenAsync("4.4.4.4", OperationType.SocialRecovery),
+            Times.Once);
+        verifierAppService.Verify(x => x.CountVerifyCodeInterfaceRequestAsync("4.4.4.4"), Times.Once);
     }
 
     [Fact]

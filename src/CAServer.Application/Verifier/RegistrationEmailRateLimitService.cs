@@ -43,10 +43,11 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
             return RegistrationEmailRateLimitCheckResult.Allow();
         }
 
-        try
+        var now = GetUtcNow();
+        RegistrationEmailRateLimitCheckResult blockedResult = null;
+        foreach (var window in BuildWindows(operationType, rule))
         {
-            var now = GetUtcNow();
-            foreach (var window in BuildWindows(operationType, rule))
+            try
             {
                 var windowStart = GetWindowStart(now, window.WindowSize);
                 var windowEnd = windowStart.Add(window.WindowSize);
@@ -67,20 +68,39 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
                         "Registration email rate limit exceeded. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}, limit:{Limit}, count:{Count}, remaining:{RemainingQuota}, retryAfterSeconds:{RetryAfterSeconds}",
                         traceId, clientIp, operationType, window.Name, window.Limit, count, remainingQuota,
                         retryAfterSeconds);
-                    return RegistrationEmailRateLimitCheckResult.Block(window.Name, window.Limit, count,
-                        remainingQuota, retryAfterSeconds);
+                    if (blockedResult == null || retryAfterSeconds > blockedResult.RetryAfterSeconds)
+                    {
+                        blockedResult = RegistrationEmailRateLimitCheckResult.Block(window.Name, window.Limit, count,
+                            remainingQuota, retryAfterSeconds);
+                    }
+
+                    continue;
                 }
 
                 _logger.LogDebug(
                     "Registration email rate limit check passed. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}, limit:{Limit}, count:{Count}, remaining:{RemainingQuota}",
                     traceId, clientIp, operationType, window.Name, window.Limit, count, remainingQuota);
             }
+            catch (Exception e)
+            {
+                if (blockedResult != null)
+                {
+                    _logger.LogError(e,
+                        "Registration email rate limit preserved existing block after window check failure. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}",
+                        traceId, clientIp, operationType, window.Name);
+                    return blockedResult;
+                }
+
+                _logger.LogError(e,
+                    "Registration email rate limit failed open. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}",
+                    traceId, clientIp, operationType, window.Name);
+                return RegistrationEmailRateLimitCheckResult.Allow();
+            }
         }
-        catch (Exception e)
+
+        if (blockedResult != null)
         {
-            _logger.LogError(e,
-                "Registration email rate limit failed open. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}",
-                traceId, clientIp, operationType);
+            return blockedResult;
         }
 
         return RegistrationEmailRateLimitCheckResult.Allow();
