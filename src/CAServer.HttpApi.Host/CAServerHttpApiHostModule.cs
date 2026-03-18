@@ -84,7 +84,6 @@ public class CAServerHttpApiHostModule : AbpModule
 
         Configure<RampOptions>(configuration.GetSection("RampOptions"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
-        Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         context.Services.AddOptions<RealIpOptions>()
             .Bind(configuration.GetSection("RealIp"))
             .ValidateOnStart();

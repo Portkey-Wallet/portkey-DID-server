@@ -154,7 +154,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
-        Configure<RegistrationEmailRateLimitOptions>(configuration.GetSection("RegistrationEmailRateLimit"));
         context.Services.AddOptions<RegistrationEmailRateLimitOptions>()
             .Bind(configuration.GetSection("RegistrationEmailRateLimit"))
             .ValidateOnStart();
