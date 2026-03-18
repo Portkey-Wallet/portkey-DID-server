@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using CAServer.CAAccount.Dtos;
 using Microsoft.Extensions.Options;
 
 namespace CAServer.Options;
@@ -39,7 +38,8 @@ public class RegistrationEmailRateLimitOptionsValidator : IValidateOptions<Regis
                     failures.Add(
                         $"RegistrationEmailRateLimit:Policies:{operationType}:GuardianType must not be empty.");
                 }
-                else if (!Enum.TryParse<GuardianIdentifierType>(policy.GuardianType.Trim(), true, out _))
+                else if (!RegistrationEmailRateLimitGuardianTypeHelper.TryParseDefinedGuardianType(
+                             policy.GuardianType, out _))
                 {
                     failures.Add(
                         $"RegistrationEmailRateLimit:Policies:{operationType}:GuardianType must be a valid GuardianIdentifierType value.");

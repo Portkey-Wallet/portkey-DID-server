@@ -50,6 +50,28 @@ public class RegistrationEmailRateLimitServiceTests
     }
 
     [Fact]
+    public void GetPolicy_ReturnsNull_When_GuardianType_Is_Undefined_Numeric_Value()
+    {
+        var service = CreateService(new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>
+            {
+                [OperationType.CreateCAHolder] = new()
+                {
+                    GuardianType = "999",
+                    Per10Minutes = 10,
+                    PerHour = 30
+                }
+            }
+        });
+
+        var result = service.GetPolicy(CreateContext("Email", OperationType.CreateCAHolder));
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public void GetPolicy_ReturnsNull_When_Disabled()
     {
         var service = CreateService(new RegistrationEmailRateLimitOptions
@@ -364,6 +386,29 @@ public class RegistrationEmailRateLimitServiceTests
                 [OperationType.CreateCAHolder] = new()
                 {
                     GuardianType = "Eamil",
+                    Per10Minutes = 10,
+                    PerHour = 30
+                }
+            }
+        });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, x => x.Contains("GuardianType must be a valid GuardianIdentifierType"));
+    }
+
+    [Fact]
+    public void OptionsValidator_Should_Fail_When_GuardianType_Is_Undefined_Numeric_Value()
+    {
+        var validator = new RegistrationEmailRateLimitOptionsValidator();
+
+        var result = validator.Validate(string.Empty, new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>
+            {
+                [OperationType.CreateCAHolder] = new()
+                {
+                    GuardianType = "999",
                     Per10Minutes = 10,
                     PerHour = 30
                 }

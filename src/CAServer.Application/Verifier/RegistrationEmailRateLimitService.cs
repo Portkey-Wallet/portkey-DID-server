@@ -143,7 +143,8 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
 
     private static bool TryParseGuardianType(string guardianType, out GuardianIdentifierType parsedGuardianType)
     {
-        return Enum.TryParse(guardianType?.Trim(), true, out parsedGuardianType);
+        return RegistrationEmailRateLimitGuardianTypeHelper.TryParseDefinedGuardianType(guardianType,
+            out parsedGuardianType);
     }
 
     private static IEnumerable<RateLimitWindow> BuildWindows(RegistrationEmailRateLimitPolicy policy)

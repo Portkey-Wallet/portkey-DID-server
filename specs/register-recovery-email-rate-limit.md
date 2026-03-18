@@ -162,7 +162,8 @@ For each policy, the limiter applies only when:
 - the request guardian type matches `GuardianType` after trimmed, case-insensitive normalization
 - at least one of `Per10Minutes` or `PerHour` is positive
 
-`GuardianType` must be a valid `GuardianIdentifierType` value such as `Email`.
+`GuardianType` must be a valid named `GuardianIdentifierType` value such as `Email`.
+Undefined numeric enum values are rejected during configuration validation.
 `RequireGuardianExistsBeforeConsume` controls whether guardian existence must be confirmed before quota consumption, not whether guardian existence is checked at all.
 For `SocialRecovery`, guardian existence is always checked when the limiter policy applies; the flag only controls whether that check happens before or after quota consumption.
 If `IsEnabled = true`, the configuration is validated so that policies are present, `GuardianType` is not blank, `GuardianType` is valid, and thresholds are not negative.
