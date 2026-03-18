@@ -419,6 +419,29 @@ public class RegistrationEmailRateLimitServiceTests
         Assert.Contains(result.Failures, x => x.Contains("GuardianType must be a valid GuardianIdentifierType"));
     }
 
+    [Fact]
+    public void OptionsValidator_Should_Fail_When_Disabled_But_Configured_Policy_Is_Invalid()
+    {
+        var validator = new RegistrationEmailRateLimitOptionsValidator();
+
+        var result = validator.Validate(string.Empty, new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = false,
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>
+            {
+                [OperationType.CreateCAHolder] = new()
+                {
+                    GuardianType = "invalid",
+                    Per10Minutes = 10,
+                    PerHour = 30
+                }
+            }
+        });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, x => x.Contains("GuardianType must be a valid GuardianIdentifierType"));
+    }
+
     private static RegistrationEmailRateLimitOptions CreateOptions()
     {
         return new RegistrationEmailRateLimitOptions

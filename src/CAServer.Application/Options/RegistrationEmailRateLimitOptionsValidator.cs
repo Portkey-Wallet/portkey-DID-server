@@ -13,15 +13,13 @@ public class RegistrationEmailRateLimitOptionsValidator : IValidateOptions<Regis
             return ValidateOptionsResult.Fail("RegistrationEmailRateLimit options are required.");
         }
 
-        if (!options.IsEnabled)
-        {
-            return ValidateOptionsResult.Success;
-        }
-
         var failures = new List<string>();
         if (options.Policies == null || options.Policies.Count == 0)
         {
-            failures.Add("RegistrationEmailRateLimit:Policies must not be empty when IsEnabled is true.");
+            if (options.IsEnabled)
+            {
+                failures.Add("RegistrationEmailRateLimit:Policies must not be empty when IsEnabled is true.");
+            }
         }
         else
         {

@@ -19,7 +19,7 @@ public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
 
     public string GetForwardedClientIp()
     {
-        return GetHeaderIpInOrder(_realIpOptions.HeaderKey, ClientIpHeaders.XForwardedFor, ClientIpHeaders.XRealIp);
+        return GetHeaderIpInOrder(BuildForwardedHeaderCandidates());
     }
 
     public string GetBestEffortClientIp()
@@ -37,7 +37,7 @@ public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
             return requestScopedClientIp;
         }
 
-        return GetHeaderIpInOrder(_realIpOptions.HeaderKey, ClientIpHeaders.XForwardedFor, ClientIpHeaders.XRealIp) ??
+        return GetHeaderIpInOrder(BuildBestEffortHeaderCandidates()) ??
                GetRemoteIp(context);
     }
 
@@ -77,7 +77,33 @@ public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
         context.Items[ClientIpContextItems.ResolvedClientIp] = clientIp;
     }
 
-    private string GetHeaderIpInOrder(params string[] headerNames)
+    private IEnumerable<string> BuildForwardedHeaderCandidates()
+    {
+        yield return NormalizeHeaderName(_realIpOptions.HeaderKey);
+
+        if (!_realIpOptions.AllowLegacyForwardedFallback)
+        {
+            yield break;
+        }
+
+        yield return ClientIpHeaders.XForwardedFor;
+        yield return ClientIpHeaders.XRealIp;
+    }
+
+    private IEnumerable<string> BuildBestEffortHeaderCandidates()
+    {
+        yield return NormalizeHeaderName(_realIpOptions.HeaderKey);
+
+        if (!_realIpOptions.AllowLegacyForwardedFallback)
+        {
+            yield break;
+        }
+
+        yield return ClientIpHeaders.XForwardedFor;
+        yield return ClientIpHeaders.XRealIp;
+    }
+
+    private string GetHeaderIpInOrder(IEnumerable<string> headerNames)
     {
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var headerName in headerNames)
@@ -108,5 +134,10 @@ public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
         return remoteIpAddress.IsIPv4MappedToIPv6
             ? remoteIpAddress.MapToIPv4().ToString()
             : remoteIpAddress.ToString();
+    }
+
+    private static string NormalizeHeaderName(string headerName)
+    {
+        return string.IsNullOrWhiteSpace(headerName) ? null : headerName.Trim();
     }
 }

@@ -16,15 +16,14 @@ public class RealIpMiddleware
 {
     private readonly RequestDelegate _requestDelegate;
     private readonly ILogger<RealIpMiddleware> _logger;
-    private readonly RealIpOptions _realIpOptions;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly AddToWhiteListUrlsOptions _addToWhiteListUrlsOptions;
     private readonly IHttpClientIpResolver _clientIpResolver;
     private readonly ICurrentUser _currentUser;
 
 
-    public RealIpMiddleware(RequestDelegate requestDelegate, IOptions<RealIpOptions> realIpOptions,
-        ILogger<RealIpMiddleware> logger, IIpWhiteListAppService ipWhiteListAppService,
+    public RealIpMiddleware(RequestDelegate requestDelegate, ILogger<RealIpMiddleware> logger,
+        IIpWhiteListAppService ipWhiteListAppService,
         IOptions<AddToWhiteListUrlsOptions> addToWhiteListUrlsOptions, ICurrentUser currentUser,
         IHttpClientIpResolver clientIpResolver)
     {
@@ -33,21 +32,12 @@ public class RealIpMiddleware
         _ipWhiteListAppService = ipWhiteListAppService;
         _currentUser = currentUser;
         _addToWhiteListUrlsOptions = addToWhiteListUrlsOptions.Value;
-        _realIpOptions = realIpOptions.Value;
         _clientIpResolver = clientIpResolver;
     }
 
     public async Task Invoke(HttpContext context)
     {
-        var headers = context.Request.Headers;
-        if (!headers.ContainsKey(_realIpOptions.HeaderKey))
-        {
-            _logger.LogDebug("Unknown ip address. no setting");
-            await _requestDelegate(context);
-            return;
-        }
-
-        var userIp = _clientIpResolver.GetFirstHeaderIp(_realIpOptions.HeaderKey);
+        var userIp = _clientIpResolver.GetForwardedClientIp();
         if (string.IsNullOrWhiteSpace(userIp))
         {
             _logger.LogDebug("Unknown ip address,Refused visit server.ipArr is null");

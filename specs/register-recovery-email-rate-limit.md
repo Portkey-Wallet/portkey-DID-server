@@ -18,7 +18,7 @@ It does not introduce hard limits for normal in-product flows such as transfer a
 - Requests with `OperationType == SocialRecovery`
 - Config-controlled feature enablement
 - Guardian existence gating for `SocialRecovery` before quota consumption when the hard limiter is enabled
-- Header-based client IP extraction from the configured forwarded header source with fallback to `X-Forwarded-For` and `X-Real-IP` for the hard limiter only
+- Header-based client IP extraction from the configured forwarded header source, with explicit optional fallback to `X-Forwarded-For` and `X-Real-IP`
 - Redis-backed fixed-window counters
 - `400 Bad Request` when both IP headers are missing
 - `429 Too Many Requests` with `Retry-After` when the hard limit is exceeded
@@ -55,10 +55,10 @@ The registration/recovery hard limiter uses `GetForwardedClientIp()` and reads t
 
 1. Read `RealIpOptions.HeaderKey` when configured
 2. Split by comma and use the first non-empty trimmed value
-3. If the configured header is empty or missing, fallback to `X-Forwarded-For`
-4. If `X-Forwarded-For` is empty or missing, fallback to `X-Real-IP`
+3. If `RealIpOptions.AllowLegacyForwardedFallback = true`, fallback to `X-Forwarded-For`
+4. If that is still missing, fallback to `X-Real-IP`
 5. Duplicate header names are ignored during fallback resolution
-6. If all forwarded headers are missing or empty, reject the request with `400 Bad Request`
+6. If all allowed forwarded headers are missing or empty, reject the request with `400 Bad Request`
 
 ### Legacy Flows
 
@@ -66,7 +66,7 @@ Existing flows outside the new hard limiter use `GetBestEffortClientIp()` and ke
 
 1. Reuse a request-scoped resolved IP when one was already established by the hard limiter path
 2. Otherwise read the first IP from `RealIpOptions.HeaderKey`
-3. If missing, fallback to `X-Forwarded-For`
+3. If `RealIpOptions.AllowLegacyForwardedFallback = true`, fallback to `X-Forwarded-For`
 4. If still missing, fallback to `X-Real-IP`
 5. If still missing, fallback to `RemoteIpAddress`
 
@@ -166,7 +166,8 @@ For each policy, the limiter applies only when:
 Undefined numeric enum values are rejected during configuration validation.
 `RequireGuardianExistsBeforeConsume` controls whether guardian existence must be confirmed before quota consumption, not whether guardian existence is checked at all.
 For `SocialRecovery`, guardian existence is always checked when the limiter policy applies; the flag only controls whether that check happens before or after quota consumption.
-If `IsEnabled = true`, the configuration is validated so that policies are present, `GuardianType` is not blank, `GuardianType` is valid, and thresholds are not negative.
+`RealIp:HeaderKey` must not be blank, and `RealIp:AllowLegacyForwardedFallback` controls whether resolver logic may fallback to `X-Forwarded-For` / `X-Real-IP` when the configured header is absent.
+Registration email rate-limit policy schema is validated at startup; if policy entries are present, `GuardianType` must not be blank, `GuardianType` must be valid, and thresholds must not be negative even before the feature is enabled.
 
 ## Observability
 

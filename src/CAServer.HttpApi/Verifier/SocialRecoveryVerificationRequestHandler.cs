@@ -35,32 +35,20 @@ public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLim
         {
             if (!checkSwitchOpen)
             {
-                var baselineResponse =
-                    await _verifierAppService.SendVerificationRequestAsync(context.SendVerificationRequestInput);
-                return VerificationRequestOperationResult.Handled(baselineResponse);
+                return await ContinueRecoveryAsync(context, checkSwitchOpen);
             }
 
-            var legacyGuardianExists =
-                await _verifierAppService.GuardianExistsAsync(context.SendVerificationRequestInput.GuardianIdentifier);
-            if (!legacyGuardianExists)
+            if (!await GuardianExistsAsync(context))
             {
                 return VerificationRequestOperationResult.Handled();
             }
 
-            var legacyResponse = await _verificationRequestRiskControlService.HandleRecoveryOperationAsync(
-                context.RecaptchaToken, context.AcToken, context.SendVerificationRequestInput, context.OperationType);
-            ArgumentNullException.ThrowIfNull(legacyResponse);
-            return VerificationRequestOperationResult.Handled(legacyResponse.Response, legacyResponse.StatusCode);
+            return await ContinueRecoveryAsync(context, checkSwitchOpen);
         }
 
-        if (policy.RequireGuardianExistsBeforeConsume)
+        if (policy.RequireGuardianExistsBeforeConsume && !await GuardianExistsAsync(context))
         {
-            var guardianExists =
-                await _verifierAppService.GuardianExistsAsync(context.SendVerificationRequestInput.GuardianIdentifier);
-            if (!guardianExists)
-            {
-                return VerificationRequestOperationResult.Handled();
-            }
+            return VerificationRequestOperationResult.Handled();
         }
 
         var rateLimitResult = await TryApplyRateLimitAsync(context);
@@ -69,16 +57,22 @@ public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLim
             return rateLimitResult;
         }
 
-        if (!policy.RequireGuardianExistsBeforeConsume)
+        if (!policy.RequireGuardianExistsBeforeConsume && !await GuardianExistsAsync(context))
         {
-            var guardianExists =
-                await _verifierAppService.GuardianExistsAsync(context.SendVerificationRequestInput.GuardianIdentifier);
-            if (!guardianExists)
-            {
-                return VerificationRequestOperationResult.Handled();
-            }
+            return VerificationRequestOperationResult.Handled();
         }
 
+        return await ContinueRecoveryAsync(context, checkSwitchOpen);
+    }
+
+    private async Task<bool> GuardianExistsAsync(VerificationRequestOperationContext context)
+    {
+        return await _verifierAppService.GuardianExistsAsync(context.SendVerificationRequestInput.GuardianIdentifier);
+    }
+
+    private async Task<VerificationRequestOperationResult> ContinueRecoveryAsync(
+        VerificationRequestOperationContext context, bool checkSwitchOpen)
+    {
         if (!checkSwitchOpen)
         {
             var directResponse = await _verifierAppService.SendVerificationRequestAsync(context.SendVerificationRequestInput);

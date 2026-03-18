@@ -155,6 +155,9 @@ public class CAServerApplicationModule : AbpModule
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
         Configure<RegistrationEmailRateLimitOptions>(configuration.GetSection("RegistrationEmailRateLimit"));
+        context.Services.AddOptions<RegistrationEmailRateLimitOptions>()
+            .Bind(configuration.GetSection("RegistrationEmailRateLimit"))
+            .ValidateOnStart();
         context.Services.TryAddEnumerable(ServiceDescriptor.Singleton<
             IValidateOptions<RegistrationEmailRateLimitOptions>, RegistrationEmailRateLimitOptionsValidator>());
         Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions"));
