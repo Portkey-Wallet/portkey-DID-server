@@ -237,9 +237,7 @@ public class CAVerifierControllerTests
             httpContext.Connection.RemoteIpAddress = IPAddress.Parse(remoteIpAddress);
         }
 
-        var httpContextAccessor = new Mock<IHttpContextAccessor>();
-        httpContextAccessor.SetupGet(x => x.HttpContext).Returns(httpContext);
-        var clientIpResolver = new TestHttpClientIpResolver(httpContextAccessor.Object);
+        var clientIpResolver = TestHttpClientIpResolverFactory.Create(httpContext);
 
         var mapper = new Mock<IObjectMapper>();
         mapper.Setup(x => x.Map<VerifierServerInput, SendVerificationRequestInput>(It.IsAny<VerifierServerInput>()))
@@ -260,8 +258,8 @@ public class CAVerifierControllerTests
         {
             IsOpen = switchName switch
             {
-                "CheckSwitch" => checkSwitchOpen,
-                "GoogleRecaptcha" => googleRecaptchaSwitchOpen,
+                VerificationSwitchNames.CheckSwitch => checkSwitchOpen,
+                VerificationSwitchNames.GoogleRecaptcha => googleRecaptchaSwitchOpen,
                 _ => false
             }
         });
@@ -287,69 +285,5 @@ public class CAVerifierControllerTests
         };
 
         return controller;
-    }
-
-    private sealed class TestHttpClientIpResolver : IHttpClientIpResolver
-    {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
-        public TestHttpClientIpResolver(IHttpContextAccessor httpContextAccessor)
-        {
-            _httpContextAccessor = httpContextAccessor;
-        }
-
-        public string GetForwardedClientIp()
-        {
-            return GetFirstHeaderIp(ClientIpHeaders.XForwardedFor) ?? GetFirstHeaderIp(ClientIpHeaders.XRealIp);
-        }
-
-        public string GetBestEffortClientIp()
-        {
-            var context = _httpContextAccessor.HttpContext;
-            if (context == null)
-            {
-                return null;
-            }
-
-            if (context.Items.TryGetValue("CAServer:ResolvedClientIp", out var resolvedClientIp) &&
-                resolvedClientIp is string requestScopedClientIp &&
-                !string.IsNullOrWhiteSpace(requestScopedClientIp))
-            {
-                return requestScopedClientIp;
-            }
-
-            return GetFirstHeaderIp(ClientIpHeaders.XForwardedFor) ??
-                   GetFirstHeaderIp(ClientIpHeaders.XRealIp) ??
-                   context.Connection.RemoteIpAddress?.ToString();
-        }
-
-        public string GetFirstHeaderIp(string headerName)
-        {
-            var context = _httpContextAccessor.HttpContext;
-            if (context == null || !context.Request.Headers.TryGetValue(headerName, out var headerValue))
-            {
-                return null;
-            }
-
-            foreach (var ip in headerValue.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            {
-                if (!string.IsNullOrWhiteSpace(ip))
-                {
-                    return ip;
-                }
-            }
-
-            return null;
-        }
-
-        public void SetResolvedClientIp(string clientIp)
-        {
-            if (_httpContextAccessor.HttpContext == null || string.IsNullOrWhiteSpace(clientIp))
-            {
-                return;
-            }
-
-            _httpContextAccessor.HttpContext.Items["CAServer:ResolvedClientIp"] = clientIp;
-        }
     }
 }

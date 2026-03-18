@@ -36,8 +36,6 @@ public class CAVerifierController : CAServerController
     private readonly ILogger<CAVerifierController> _logger;
     private readonly ISwitchAppService _switchAppService;
     private readonly IGoogleAppService _googleAppService;
-    private const string GoogleRecaptcha = "GoogleRecaptcha";
-    private const string CheckSwitch = "CheckSwitch";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
@@ -91,7 +89,7 @@ public class CAVerifierController : CAServerController
             return operationResult.Response;
         }
 
-        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        if (!_switchAppService.GetSwitchStatus(VerificationSwitchNames.CheckSwitch).IsOpen)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
@@ -157,7 +155,7 @@ public class CAVerifierController : CAServerController
     {
         var type = operationTypeRequestInput.OperationType;
         ValidateOperationType(type);
-        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        if (!_switchAppService.GetSwitchStatus(VerificationSwitchNames.CheckSwitch).IsOpen)
         {
             return false;
         }
@@ -200,7 +198,7 @@ public class CAVerifierController : CAServerController
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             return new VerifySecondaryEmailResponse();
         }
-        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        if (!_switchAppService.GetSwitchStatus(VerificationSwitchNames.CheckSwitch).IsOpen)
         {
             return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
         }
@@ -262,10 +260,7 @@ public class CAVerifierController : CAServerController
 
     private void ApplyRiskControlResult<TResponse>(RiskControlExecutionResult<TResponse> riskControlResult)
     {
-        if (riskControlResult == null || !riskControlResult.IsHandled)
-        {
-            return;
-        }
+        ArgumentNullException.ThrowIfNull(riskControlResult);
 
         ApplyStatusCode(riskControlResult.StatusCode);
     }

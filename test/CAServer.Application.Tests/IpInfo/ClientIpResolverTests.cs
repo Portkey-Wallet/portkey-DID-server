@@ -1,6 +1,8 @@
 using System.Net;
+using CAServer;
 using CAServer.IpInfo;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -36,6 +38,17 @@ public class HttpClientIpResolverTests
     }
 
     [Fact]
+    public void GetForwardedClientIp_Should_Prioritize_Configured_HeaderKey()
+    {
+        var resolver = CreateResolver(configuredHeaderKey: "X-Client-IP");
+        resolver.HttpContext.Request.Headers["X-Client-IP"] = "20.20.20.20";
+        resolver.HttpContext.Request.Headers[ClientIpHeaders.XForwardedFor] = "21.21.21.21";
+        resolver.HttpContext.Request.Headers[ClientIpHeaders.XRealIp] = "22.22.22.22";
+
+        Assert.Equal("20.20.20.20", resolver.Service.GetForwardedClientIp());
+    }
+
+    [Fact]
     public void GetBestEffortClientIp_Should_Prefer_RequestScoped_Resolved_Ip()
     {
         var resolver = CreateResolver(remoteIpAddress: "6.6.6.6");
@@ -60,6 +73,16 @@ public class HttpClientIpResolverTests
     }
 
     [Fact]
+    public void GetBestEffortClientIp_Should_Prioritize_Configured_HeaderKey()
+    {
+        var resolver = CreateResolver(remoteIpAddress: "23.23.23.23", configuredHeaderKey: "X-Client-IP");
+        resolver.HttpContext.Request.Headers["X-Client-IP"] = "24.24.24.24";
+        resolver.HttpContext.Request.Headers[ClientIpHeaders.XForwardedFor] = "25.25.25.25";
+
+        Assert.Equal("24.24.24.24", resolver.Service.GetBestEffortClientIp());
+    }
+
+    [Fact]
     public void GetFirstHeaderIp_Should_Support_Configured_Header_Name()
     {
         var resolver = CreateResolver();
@@ -69,7 +92,7 @@ public class HttpClientIpResolverTests
     }
 
     private static (HttpClientIpResolver Service, DefaultHttpContext HttpContext) CreateResolver(
-        string remoteIpAddress = null)
+        string remoteIpAddress = null, string configuredHeaderKey = ClientIpHeaders.XForwardedFor)
     {
         var httpContext = new DefaultHttpContext();
         if (!string.IsNullOrWhiteSpace(remoteIpAddress))
@@ -79,6 +102,9 @@ public class HttpClientIpResolverTests
 
         var accessor = new Mock<IHttpContextAccessor>();
         accessor.SetupGet(x => x.HttpContext).Returns(httpContext);
-        return (new HttpClientIpResolver(accessor.Object), httpContext);
+        return (new HttpClientIpResolver(accessor.Object, Microsoft.Extensions.Options.Options.Create(new RealIpOptions
+        {
+            HeaderKey = configuredHeaderKey
+        })), httpContext);
     }
 }

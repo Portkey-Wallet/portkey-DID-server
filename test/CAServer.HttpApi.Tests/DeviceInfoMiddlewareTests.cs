@@ -18,10 +18,7 @@ public class DeviceInfoMiddlewareTests
         httpContext.Request.Headers[ClientIpHeaders.XRealIp] = "4.4.4.4";
         httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("5.5.5.5");
 
-        var accessor = new Mock<IHttpContextAccessor>();
-        accessor.SetupGet(x => x.HttpContext).Returns(httpContext);
-
-        var resolver = new HttpClientIpResolver(accessor.Object);
+        var resolver = TestHttpClientIpResolverFactory.Create(httpContext);
         DeviceInfo capturedDeviceInfo = null;
         var middleware = new DeviceInfoMiddleware(_ =>
         {

@@ -17,7 +17,6 @@ namespace CAServer.Verifier;
 
 public class VerificationRequestRiskControlService : IVerificationRequestRiskControlService, ITransientDependency
 {
-    private const string GoogleRecaptcha = "GoogleRecaptcha";
     private readonly ICurrentUser _currentUser;
     private readonly IGoogleAppService _googleAppService;
     private readonly IHttpClientIpResolver _clientIpResolver;
@@ -52,28 +51,16 @@ public class VerificationRequestRiskControlService : IVerificationRequestRiskCon
                 HttpStatusCode.Unauthorized);
         }
 
-        return await ExecuteAsync(new RiskControlRequest<VerifierServerResponse>
-        {
-            RecaptchaToken = recaptchaToken,
-            AcToken = acToken,
-            OperationType = operationType,
-            PlatformType = sendVerificationRequestInput.PlatformType,
-            SendAsync = () => _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput),
-            OnMissingIp = () =>
-            {
-                _logger.LogDebug("No userIp in header when operation is {operationType}", operationType);
-                return RiskControlExecutionResult<VerifierServerResponse>.Handled();
-            },
-            OnMissingToken = isWhiteListPath =>
-            {
-                _logger.LogDebug("No token is provided when operation is {operationType}", operationType);
-                return RiskControlExecutionResult<VerifierServerResponse>.Handled();
-            },
-            OnInvalidToken = (isWhiteListPath, isAcTokenFailure) => isAcTokenFailure
-                ? RiskControlExecutionResult<VerifierServerResponse>.Handled(new VerifierServerResponse(),
-                    HttpStatusCode.Unauthorized)
-                : RiskControlExecutionResult<VerifierServerResponse>.Handled()
-        });
+        return await ExecuteAsync(CreateVerifierRequest(recaptchaToken, acToken, sendVerificationRequestInput,
+            operationType));
+    }
+
+    public async Task<RiskControlExecutionResult<VerifierServerResponse>> HandleRecoveryOperationAsync(
+        string recaptchaToken, string acToken,
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+    {
+        return await ExecuteAsync(CreateVerifierRequest(recaptchaToken, acToken, sendVerificationRequestInput,
+            operationType));
     }
 
     public async Task<RiskControlExecutionResult<VerifySecondaryEmailResponse>> HandleSecondaryEmailAsync(
@@ -144,7 +131,7 @@ public class VerificationRequestRiskControlService : IVerificationRequestRiskCon
     private async Task<RiskControlExecutionResult<TResponse>> ExecuteWhiteListFlowAsync<TResponse>(
         RiskControlRequest<TResponse> request, string userIpAddress)
     {
-        var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
+        var switchStatus = _switchAppService.GetSwitchStatus(VerificationSwitchNames.GoogleRecaptcha);
         var googleRecaptchaOpen =
             await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, request.OperationType);
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
@@ -179,6 +166,33 @@ public class VerificationRequestRiskControlService : IVerificationRequestRiskCon
         }
 
         return request.OnInvalidToken(isWhiteListPath, false);
+    }
+
+    private RiskControlRequest<VerifierServerResponse> CreateVerifierRequest(string recaptchaToken, string acToken,
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+    {
+        return new RiskControlRequest<VerifierServerResponse>
+        {
+            RecaptchaToken = recaptchaToken,
+            AcToken = acToken,
+            OperationType = operationType,
+            PlatformType = sendVerificationRequestInput.PlatformType,
+            SendAsync = () => _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput),
+            OnMissingIp = () =>
+            {
+                _logger.LogDebug("No userIp in header when operation is {operationType}", operationType);
+                return RiskControlExecutionResult<VerifierServerResponse>.Handled();
+            },
+            OnMissingToken = _ =>
+            {
+                _logger.LogDebug("No token is provided when operation is {operationType}", operationType);
+                return RiskControlExecutionResult<VerifierServerResponse>.Handled();
+            },
+            OnInvalidToken = (_, isAcTokenFailure) => isAcTokenFailure
+                ? RiskControlExecutionResult<VerifierServerResponse>.Handled(new VerifierServerResponse(),
+                    HttpStatusCode.Unauthorized)
+                : RiskControlExecutionResult<VerifierServerResponse>.Handled()
+        };
     }
 
     private sealed class RiskControlRequest<TResponse>

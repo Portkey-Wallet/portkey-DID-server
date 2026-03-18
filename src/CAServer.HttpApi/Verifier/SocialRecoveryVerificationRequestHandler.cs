@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.IpInfo;
 using CAServer.Switch;
@@ -8,19 +9,18 @@ namespace CAServer.Verifier;
 public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLimitedOperationHandlerBase,
     IVerificationRequestOperationHandler, ITransientDependency
 {
-    private const string CheckSwitch = "CheckSwitch";
-    private readonly IVerificationRequestRiskControlService _guardianOperationRiskControlService;
+    private readonly IVerificationRequestRiskControlService _verificationRequestRiskControlService;
     private readonly ISwitchAppService _switchAppService;
     private readonly IVerifierAppService _verifierAppService;
 
     public SocialRecoveryVerificationRequestHandler(IHttpClientIpResolver clientIpResolver,
         Microsoft.Extensions.Logging.ILogger<SocialRecoveryVerificationRequestHandler> logger,
         IRegistrationEmailRateLimitService registrationEmailRateLimitService,
-        IVerificationRequestRiskControlService guardianOperationRiskControlService,
+        IVerificationRequestRiskControlService verificationRequestRiskControlService,
         ISwitchAppService switchAppService, IVerifierAppService verifierAppService)
         : base(clientIpResolver, logger, registrationEmailRateLimitService)
     {
-        _guardianOperationRiskControlService = guardianOperationRiskControlService;
+        _verificationRequestRiskControlService = verificationRequestRiskControlService;
         _switchAppService = switchAppService;
         _verifierAppService = verifierAppService;
     }
@@ -30,7 +30,7 @@ public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLim
     public async Task<VerificationRequestOperationResult> HandleAsync(VerificationRequestOperationContext context)
     {
         var policy = GetRateLimitPolicy(context);
-        var checkSwitchOpen = _switchAppService.GetSwitchStatus(CheckSwitch).IsOpen;
+        var checkSwitchOpen = _switchAppService.GetSwitchStatus(VerificationSwitchNames.CheckSwitch).IsOpen;
         if (policy == null)
         {
             if (!checkSwitchOpen)
@@ -47,11 +47,10 @@ public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLim
                 return VerificationRequestOperationResult.Handled();
             }
 
-            var legacyResponse = await _guardianOperationRiskControlService.HandleGuardianOperationAsync(
+            var legacyResponse = await _verificationRequestRiskControlService.HandleRecoveryOperationAsync(
                 context.RecaptchaToken, context.AcToken, context.SendVerificationRequestInput, context.OperationType);
-            return legacyResponse.IsHandled
-                ? VerificationRequestOperationResult.Handled(legacyResponse.Response, legacyResponse.StatusCode)
-                : VerificationRequestOperationResult.NotHandled();
+            ArgumentNullException.ThrowIfNull(legacyResponse);
+            return VerificationRequestOperationResult.Handled(legacyResponse.Response, legacyResponse.StatusCode);
         }
 
         if (policy.RequireGuardianExistsBeforeConsume)
@@ -76,10 +75,9 @@ public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLim
             return VerificationRequestOperationResult.Handled(directResponse);
         }
 
-        var response = await _guardianOperationRiskControlService.HandleGuardianOperationAsync(context.RecaptchaToken,
+        var response = await _verificationRequestRiskControlService.HandleRecoveryOperationAsync(context.RecaptchaToken,
             context.AcToken, context.SendVerificationRequestInput, context.OperationType);
-        return response.IsHandled
-            ? VerificationRequestOperationResult.Handled(response.Response, response.StatusCode)
-            : VerificationRequestOperationResult.NotHandled();
+        ArgumentNullException.ThrowIfNull(response);
+        return VerificationRequestOperationResult.Handled(response.Response, response.StatusCode);
     }
 }

@@ -10,6 +10,10 @@ public interface IVerificationRequestRiskControlService
         string acToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType);
 
+    Task<RiskControlExecutionResult<VerifierServerResponse>> HandleRecoveryOperationAsync(string recaptchaToken,
+        string acToken,
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType);
+
     Task<RiskControlExecutionResult<VerifySecondaryEmailResponse>> HandleSecondaryEmailAsync(string recaptchaToken,
         string acToken, VerifySecondaryEmailCmd cmd);
 }

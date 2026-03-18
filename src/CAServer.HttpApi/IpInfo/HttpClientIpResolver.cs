@@ -1,22 +1,25 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.IpInfo;
 
 public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
 {
-    private const string ResolvedClientIpItemKey = "CAServer:ResolvedClientIp";
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly RealIpOptions _realIpOptions;
 
-    public HttpClientIpResolver(IHttpContextAccessor httpContextAccessor)
+    public HttpClientIpResolver(IHttpContextAccessor httpContextAccessor, IOptions<RealIpOptions> realIpOptions)
     {
         _httpContextAccessor = httpContextAccessor;
+        _realIpOptions = realIpOptions.Value ?? new RealIpOptions();
     }
 
     public string GetForwardedClientIp()
     {
-        return GetFirstHeaderIp(ClientIpHeaders.XForwardedFor) ?? GetFirstHeaderIp(ClientIpHeaders.XRealIp);
+        return GetHeaderIpInOrder(_realIpOptions.HeaderKey, ClientIpHeaders.XForwardedFor, ClientIpHeaders.XRealIp);
     }
 
     public string GetBestEffortClientIp()
@@ -27,15 +30,14 @@ public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
             return null;
         }
 
-        if (context.Items.TryGetValue(ResolvedClientIpItemKey, out var resolvedClientIp) &&
+        if (context.Items.TryGetValue(ClientIpContextItems.ResolvedClientIp, out var resolvedClientIp) &&
             resolvedClientIp is string requestScopedClientIp &&
             !string.IsNullOrWhiteSpace(requestScopedClientIp))
         {
             return requestScopedClientIp;
         }
 
-        return GetFirstHeaderIp(ClientIpHeaders.XForwardedFor) ??
-               GetFirstHeaderIp(ClientIpHeaders.XRealIp) ??
+        return GetHeaderIpInOrder(_realIpOptions.HeaderKey, ClientIpHeaders.XForwardedFor, ClientIpHeaders.XRealIp) ??
                GetRemoteIp(context);
     }
 
@@ -72,7 +74,27 @@ public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
             return;
         }
 
-        context.Items[ResolvedClientIpItemKey] = clientIp;
+        context.Items[ClientIpContextItems.ResolvedClientIp] = clientIp;
+    }
+
+    private string GetHeaderIpInOrder(params string[] headerNames)
+    {
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var headerName in headerNames)
+        {
+            if (string.IsNullOrWhiteSpace(headerName) || !visited.Add(headerName))
+            {
+                continue;
+            }
+
+            var headerIp = GetFirstHeaderIp(headerName);
+            if (!string.IsNullOrWhiteSpace(headerIp))
+            {
+                return headerIp;
+            }
+        }
+
+        return null;
     }
 
     private static string GetRemoteIp(HttpContext context)
