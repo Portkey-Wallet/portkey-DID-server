@@ -27,25 +27,50 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
         _options = options.Value;
     }
 
-    public bool ShouldApply(string guardianType, OperationType operationType)
+    public RegistrationEmailRateLimitPolicy GetPolicy(RegistrationEmailRateLimitContext context)
     {
-        return _options.IsEnabled &&
-               string.Equals(guardianType, "Email", StringComparison.OrdinalIgnoreCase) &&
-               TryGetRule(operationType, out var rule) &&
-               HasEffectiveWindow(rule);
+        if (!_options.IsEnabled || context == null ||
+            !TryGetPolicyOptions(context.OperationType, out var policyOptions))
+        {
+            return null;
+        }
+
+        if (!string.Equals(context.GuardianType, policyOptions.GuardianType, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var policy = new RegistrationEmailRateLimitPolicy
+        {
+            GuardianType = policyOptions.GuardianType,
+            OperationType = context.OperationType,
+            Per10Minutes = policyOptions.Per10Minutes,
+            PerHour = policyOptions.PerHour,
+            RequireGuardianExistsBeforeConsume = policyOptions.RequireGuardianExistsBeforeConsume
+        };
+
+        return policy.HasEffectiveWindow ? policy : null;
     }
 
-    public async Task<RegistrationEmailRateLimitCheckResult> CheckAsync(string clientIp, OperationType operationType,
-        string traceId)
+    public async Task<RegistrationEmailRateLimitCheckResult> CheckAsync(RegistrationEmailRateLimitContext context)
     {
-        if (!_options.IsEnabled || !TryGetRule(operationType, out var rule) || !HasEffectiveWindow(rule))
+        var policy = GetPolicy(context);
+        if (policy == null)
         {
             return RegistrationEmailRateLimitCheckResult.Allow();
         }
 
+        if (string.IsNullOrWhiteSpace(context.ClientIp))
+        {
+            throw new ArgumentException("ClientIp is required when registration email rate limit policy applies.",
+                nameof(context));
+        }
+
+        var clientIp = context.ClientIp;
+        var traceId = context.TraceId;
         var now = GetUtcNow();
         RegistrationEmailRateLimitCheckResult blockedResult = null;
-        foreach (var window in BuildWindows(operationType, rule))
+        foreach (var window in BuildWindows(policy))
         {
             try
             {
@@ -57,7 +82,7 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
                     ttl = TimeSpan.FromSeconds(1);
                 }
 
-                var key = $"{CacheKeyPrefix}:{operationType}:{window.Name}:{windowStart:yyyyMMddHHmm}:{clientIp}";
+                var key = $"{CacheKeyPrefix}:{policy.OperationType}:{window.Name}:{windowStart:yyyyMMddHHmm}:{clientIp}";
                 var count = await _cacheProvider.Increase(key, 1, ttl);
                 var remainingQuota = Math.Max(window.Limit - (int)count, 0);
 
@@ -66,12 +91,12 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
                     var retryAfterSeconds = (int)Math.Ceiling(ttl.TotalSeconds);
                     _logger.LogWarning(
                         "Registration email rate limit exceeded. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}, limit:{Limit}, count:{Count}, remaining:{RemainingQuota}, retryAfterSeconds:{RetryAfterSeconds}",
-                        traceId, clientIp, operationType, window.Name, window.Limit, count, remainingQuota,
+                        traceId, clientIp, policy.OperationType, window.Name, window.Limit, count, remainingQuota,
                         retryAfterSeconds);
                     if (blockedResult == null || retryAfterSeconds > blockedResult.RetryAfterSeconds)
                     {
-                        blockedResult = RegistrationEmailRateLimitCheckResult.Block(window.Name, window.Limit, count,
-                            remainingQuota, retryAfterSeconds);
+                        blockedResult = RegistrationEmailRateLimitCheckResult.Block(policy, window.Name, window.Limit,
+                            count, remainingQuota, retryAfterSeconds);
                     }
 
                     continue;
@@ -79,7 +104,7 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
 
                 _logger.LogDebug(
                     "Registration email rate limit check passed. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}, limit:{Limit}, count:{Count}, remaining:{RemainingQuota}",
-                    traceId, clientIp, operationType, window.Name, window.Limit, count, remainingQuota);
+                    traceId, clientIp, policy.OperationType, window.Name, window.Limit, count, remainingQuota);
             }
             catch (Exception e)
             {
@@ -87,35 +112,18 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
                 {
                     _logger.LogError(e,
                         "Registration email rate limit preserved existing block after window check failure. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}",
-                        traceId, clientIp, operationType, window.Name);
+                        traceId, clientIp, policy.OperationType, window.Name);
                     return blockedResult;
                 }
 
                 _logger.LogError(e,
                     "Registration email rate limit failed open. traceId:{TraceId}, ip:{Ip}, operationType:{OperationType}, window:{Window}",
-                    traceId, clientIp, operationType, window.Name);
+                    traceId, clientIp, policy.OperationType, window.Name);
                 return RegistrationEmailRateLimitCheckResult.Allow();
             }
         }
 
-        if (blockedResult != null)
-        {
-            return blockedResult;
-        }
-
-        return RegistrationEmailRateLimitCheckResult.Allow();
-    }
-
-    private bool TryGetRule(OperationType operationType, out RegistrationEmailRateLimitRuleOptions rule)
-    {
-        rule = operationType switch
-        {
-            OperationType.CreateCAHolder => _options.CreateCAHolder,
-            OperationType.SocialRecovery => _options.SocialRecovery,
-            _ => null
-        };
-
-        return rule != null;
+        return blockedResult ?? RegistrationEmailRateLimitCheckResult.Allow();
     }
 
     protected virtual DateTime GetUtcNow()
@@ -123,22 +131,23 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
         return DateTime.UtcNow;
     }
 
-    private static bool HasEffectiveWindow(RegistrationEmailRateLimitRuleOptions rule)
+    private bool TryGetPolicyOptions(OperationType operationType, out RegistrationEmailRateLimitPolicyOptions policy)
     {
-        return rule is { Per10Minutes: > 0 } || rule is { PerHour: > 0 };
+        policy = null;
+        return _options.Policies != null && _options.Policies.TryGetValue(operationType, out policy) &&
+               policy != null;
     }
 
-    private static IEnumerable<RateLimitWindow> BuildWindows(OperationType operationType,
-        RegistrationEmailRateLimitRuleOptions rule)
+    private static IEnumerable<RateLimitWindow> BuildWindows(RegistrationEmailRateLimitPolicy policy)
     {
-        if (rule.Per10Minutes > 0)
+        if (policy.Per10Minutes > 0)
         {
-            yield return new RateLimitWindow($"{operationType}:10m", rule.Per10Minutes, TenMinuteWindow);
+            yield return new RateLimitWindow($"{policy.OperationType}:10m", policy.Per10Minutes, TenMinuteWindow);
         }
 
-        if (rule.PerHour > 0)
+        if (policy.PerHour > 0)
         {
-            yield return new RateLimitWindow($"{operationType}:1h", rule.PerHour, HourWindow);
+            yield return new RateLimitWindow($"{policy.OperationType}:1h", policy.PerHour, HourWindow);
         }
     }
 

@@ -83,9 +83,7 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
             $"X-Forwarded-For: {_httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString()}");
 
         var ip = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString().Split(',')
-            .FirstOrDefault();
-
-        ip ??= string.Empty;
+            .FirstOrDefault() ?? string.Empty;
 
         if (!Match(ip))
         {

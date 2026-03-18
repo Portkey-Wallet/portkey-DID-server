@@ -9,6 +9,7 @@ using CAServer.CAAccount;
 using CAServer.CAAccount.Cmd;
 using CAServer.Dtos;
 using CAServer.Google;
+using CAServer.IpInfo;
 using CAServer.IpWhiteList;
 using CAServer.Switch;
 using CAServer.Verifier;
@@ -29,8 +30,8 @@ namespace CAServer.Controllers;
 [Route("api/app/account")]
 public class CAVerifierController : CAServerController
 {
-    private const string ResolvedClientIpItemKey = "RegistrationEmailRateLimit:ResolvedClientIp";
     private readonly IVerifierAppService _verifierAppService;
+    private readonly IHttpClientIpResolver _clientIpResolver;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CAVerifierController> _logger;
     private readonly ISwitchAppService _switchAppService;
@@ -41,16 +42,19 @@ public class CAVerifierController : CAServerController
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly IZkLoginProvider _zkLoginProvider;
     private readonly ISecondaryEmailAppService _secondaryEmailAppService;
-    private readonly IRegistrationEmailRateLimitService _registrationEmailRateLimitService;
-    
+    private readonly IVerificationRequestOperationDispatcher _verificationRequestOperationDispatcher;
+    private readonly IVerificationRequestRiskControlService _verificationRequestRiskControlService;
 
-    public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
+    public CAVerifierController(IVerifierAppService verifierAppService, IHttpClientIpResolver clientIpResolver,
+        IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
         ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService,
         IZkLoginProvider zkLoginProvider, ISecondaryEmailAppService secondaryEmailAppService,
-        IRegistrationEmailRateLimitService registrationEmailRateLimitService)
+        IVerificationRequestOperationDispatcher verificationRequestOperationDispatcher,
+        IVerificationRequestRiskControlService verificationRequestRiskControlService)
     {
         _verifierAppService = verifierAppService;
+        _clientIpResolver = clientIpResolver;
         _objectMapper = objectMapper;
         _logger = logger;
         _switchAppService = switchAppService;
@@ -59,7 +63,8 @@ public class CAVerifierController : CAServerController
         _ipWhiteListAppService = ipWhiteListAppService;
         _zkLoginProvider = zkLoginProvider;
         _secondaryEmailAppService = secondaryEmailAppService;
-        _registrationEmailRateLimitService = registrationEmailRateLimitService;
+        _verificationRequestOperationDispatcher = verificationRequestOperationDispatcher;
+        _verificationRequestRiskControlService = verificationRequestRiskControlService;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -77,28 +82,13 @@ public class CAVerifierController : CAServerController
 
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        var shouldApplyRegistrationRateLimit =
-            _registrationEmailRateLimitService.ShouldApply(sendVerificationRequestInput.Type, type);
-
-        if (type == OperationType.CreateCAHolder)
+        var operationResult = await _verificationRequestOperationDispatcher.HandleAsync(
+            new VerificationRequestOperationContext(recaptchatoken, acToken, sendVerificationRequestInput,
+                HttpContext.TraceIdentifier));
+        if (operationResult.IsHandled)
         {
-            if (shouldApplyRegistrationRateLimit)
-            {
-                var rateLimitResponse =
-                    await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, type);
-                if (rateLimitResponse != null)
-                {
-                    return rateLimitResponse;
-                }
-            }
-
-            return await RegisterSendVerificationRequestAsync(sendVerificationRequestInput);
-        }
-
-        if (type == OperationType.SocialRecovery && shouldApplyRegistrationRateLimit)
-        {
-            return await RecoverySendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput, type,
-                acToken, true);
+            ApplyOperationResult(operationResult);
+            return operationResult.Response;
         }
 
         if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
@@ -106,152 +96,10 @@ public class CAVerifierController : CAServerController
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
 
-        return type switch
-        {
-            OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type, acToken, false),
-            _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
-                type, acToken)
-        };
-    }
-
-    private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
-    {
-        if (_currentUser.IsAuthenticated)
-        {
-            return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput,
-                operationType, acToken);
-        }
-
-        HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-        return new VerifierServerResponse();
-    }
-
-    private async Task<VerifierServerResponse> CheckUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
-    {
-        var userIpAddress = UserIpAddress(HttpContext);
-        if (string.IsNullOrWhiteSpace(userIpAddress))
-        {
-            return null;
-        }
-
-        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
-
-        if (isInWhiteList)
-        {
-            return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
-                operationType, acToken);
-        }
-
-        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
-        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
-        {
-            _logger.LogDebug("No token is provided when operation is {operationType}", operationType);
-            return null;
-        }
-
-        var response =
-            await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken,
-                sendVerificationRequestInput.PlatformType);
-
-        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
-        {
-            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            return new VerifierServerResponse();
-        }
-
-        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
-            !string.IsNullOrWhiteSpace(recaptchaToken) &&
-            response.RcValidResult)
-        {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-        }
-
-        return null;
-    }
-
-    private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVerifyCodeAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
-    {
-        var userIpAddress = UserIpAddress(HttpContext);
-        if (string.IsNullOrWhiteSpace(userIpAddress))
-        {
-            _logger.LogDebug("No userIp in header when operation is {operationType}", operationType);
-            return null;
-        }
-
-        _logger.LogDebug("userIp is {userIp}", userIpAddress);
-        var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
-        var googleRecaptchaOpen =
-            await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, operationType);
-        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
-        if (!switchStatus.IsOpen || !googleRecaptchaOpen)
-        {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-        }
-
-        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
-        {
-            _logger.LogDebug("No token is provided when operation is {operationType}", operationType);
-            return null;
-        }
-
-        var response =
-            await _googleAppService.ValidateTokenAsync(recaptchaToken,
-                acToken, sendVerificationRequestInput.PlatformType);
-
-        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
-        {
-            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            return new VerifierServerResponse();
-        }
-
-        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
-            !string.IsNullOrWhiteSpace(recaptchaToken) &&
-            response.RcValidResult)
-        {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-        }
-
-        return null;
-    }
-
-    private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken,
-        bool applyHardLimit)
-    {
-        var guardianExists =
-            await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
-        if (!guardianExists)
-        {
-            return null;
-        }
-
-        if (applyHardLimit)
-        {
-            var rateLimitResponse =
-                await TryHandleRegistrationEmailRateLimitAsync(sendVerificationRequestInput.Type, operationType);
-            if (rateLimitResponse != null)
-            {
-                return rateLimitResponse;
-            }
-
-            if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
-            {
-                return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-            }
-        }
-
-        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType,
-            acToken);
-    }
-
-    private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(
-        SendVerificationRequestInput sendVerificationRequestInput)
-    {
-        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        var riskControlResult = await _verificationRequestRiskControlService.HandleGuardianOperationAsync(
+            recaptchatoken, acToken, sendVerificationRequestInput, type);
+        ApplyRiskControlResult(riskControlResult);
+        return riskControlResult.Response;
     }
 
     [HttpPost("verifyCode")]
@@ -314,7 +162,7 @@ public class CAVerifierController : CAServerController
             return false;
         }
 
-        var userIpAddress = UserIpAddress(HttpContext);
+        var userIpAddress = _clientIpResolver.GetBestEffortClientIp();
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
 
         var result = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
@@ -331,33 +179,6 @@ public class CAVerifierController : CAServerController
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)
     {
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
-    }
-
-    private string UserIpAddress(HttpContext context)
-    {
-        if (context.Items.TryGetValue(ResolvedClientIpItemKey, out var resolvedClientIp) &&
-            resolvedClientIp is string requestScopedClientIp &&
-            !string.IsNullOrWhiteSpace(requestScopedClientIp))
-        {
-            return requestScopedClientIp;
-        }
-
-        if (context.Request.Headers.TryGetValue(RequestIpHeaderHelper.XForwardedFor, out var userIpAddress))
-        {
-            var ipAddressList = context.Request.Headers[RequestIpHeaderHelper.XForwardedFor];
-            if (!string.IsNullOrWhiteSpace(ipAddressList))
-            {
-                var ips = ipAddressList.ToString().Split(",");
-                if (ips.Length > 0)
-                {
-                    userIpAddress = ips[0].Trim();
-                }
-
-                return userIpAddress;
-            }
-        }
-
-        return context.Connection.RemoteIpAddress?.ToString();
     }
 
     private void ValidateOperationType(OperationType operationType)
@@ -383,7 +204,10 @@ public class CAVerifierController : CAServerController
         {
             return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
         }
-        return await VerifyUserIpAndGoogleRecaptchaAsync(recaptchatoken, cmd, acToken);
+        var riskControlResult =
+            await _verificationRequestRiskControlService.HandleSecondaryEmailAsync(recaptchatoken, acToken, cmd);
+        ApplyRiskControlResult(riskControlResult);
+        return riskControlResult.Response;
     }
     
     [HttpPost("verifyCode/secondary/email")]
@@ -410,84 +234,6 @@ public class CAVerifierController : CAServerController
         return await _secondaryEmailAppService.GetSecondaryEmailAsync(userId);
     }
     
-    private async Task<VerifySecondaryEmailResponse> VerifyUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
-        VerifySecondaryEmailCmd cmd, string acToken)
-    {
-        var userIpAddress = UserIpAddress(HttpContext);
-        if (string.IsNullOrWhiteSpace(userIpAddress))
-        {
-            throw new UserFriendlyException("user ip address not exist");
-        }
-        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
-        if (isInWhiteList)
-        {
-            return await GoogleRecaptchaAndSendSecondaryEmailVerifyCodeAsync(recaptchaToken, cmd, acToken);
-        }
-        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
-        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
-        {
-            throw new UserFriendlyException("invalid recaptchaToken and acToken");
-        }
-
-        var response = await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken, cmd.PlatformType);
-        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
-        {
-            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            return new VerifySecondaryEmailResponse();
-        }
-
-        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
-            !string.IsNullOrWhiteSpace(recaptchaToken) && response.RcValidResult)
-        {
-            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
-        }
-        HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-        return new VerifySecondaryEmailResponse();
-    }
-    
-    private async Task<VerifySecondaryEmailResponse> GoogleRecaptchaAndSendSecondaryEmailVerifyCodeAsync(string recaptchaToken,
-        VerifySecondaryEmailCmd cmd, string acToken)
-    {
-        var userIpAddress = UserIpAddress(HttpContext);
-        if (string.IsNullOrWhiteSpace(userIpAddress))
-        {
-            _logger.LogDebug("No userIp in header when operation is {operationType}", OperationType.SetSecondaryEmail);
-            return null;
-        }
-
-        var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
-        var googleRecaptchaOpen =
-            await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.SetSecondaryEmail);
-        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
-        if (!switchStatus.IsOpen || !googleRecaptchaOpen)
-        {
-            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
-        }
-
-        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
-        {
-            _logger.LogDebug("No token is provided when operation is {operationType}", OperationType.SetSecondaryEmail);
-            return null;
-        }
-
-        var response = await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken, cmd.PlatformType);
-
-        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
-        {
-            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            return new VerifySecondaryEmailResponse();
-        }
-
-        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
-            !string.IsNullOrWhiteSpace(recaptchaToken) &&
-            response.RcValidResult)
-        {
-            return await _secondaryEmailAppService.VerifySecondaryEmailAsync(cmd);
-        }
-
-        return null;
-    }
-
     [HttpGet("verifierServers")]
     public async Task<VerifierServersBasicInfoResponse> GetVerifierServerDetailsAsync(string chainId)
     {
@@ -504,34 +250,31 @@ public class CAVerifierController : CAServerController
         return result;
     }
 
-    private async Task<VerifierServerResponse> TryHandleRegistrationEmailRateLimitAsync(
-        string guardianType, OperationType operationType)
+    private void ApplyOperationResult(VerificationRequestOperationResult operationResult)
     {
-        if (!_registrationEmailRateLimitService.ShouldApply(guardianType, operationType))
+        ApplyStatusCode(operationResult.StatusCode);
+
+        if (operationResult.RetryAfterSeconds.HasValue)
         {
-            return null;
+            HttpContext.Response.Headers["Retry-After"] = operationResult.RetryAfterSeconds.Value.ToString();
+        }
+    }
+
+    private void ApplyRiskControlResult<TResponse>(RiskControlExecutionResult<TResponse> riskControlResult)
+    {
+        if (riskControlResult == null || !riskControlResult.IsHandled)
+        {
+            return;
         }
 
-        var traceId = HttpContext.TraceIdentifier;
-        var clientIp = RequestIpHeaderHelper.GetForwardedClientIp(HttpContext.Request);
-        if (string.IsNullOrWhiteSpace(clientIp))
-        {
-            _logger.LogWarning(
-                "Registration email rate limit rejected request due to missing ip headers. traceId:{TraceId}, operationType:{OperationType}",
-                traceId, operationType);
-            HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            return new VerifierServerResponse();
-        }
+        ApplyStatusCode(riskControlResult.StatusCode);
+    }
 
-        HttpContext.Items[ResolvedClientIpItemKey] = clientIp;
-        var result = await _registrationEmailRateLimitService.CheckAsync(clientIp, operationType, traceId);
-        if (result.IsAllowed)
+    private void ApplyStatusCode(HttpStatusCode? statusCode)
+    {
+        if (statusCode.HasValue)
         {
-            return null;
+            HttpContext.Response.StatusCode = (int)statusCode.Value;
         }
-
-        HttpContext.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-        HttpContext.Response.Headers["Retry-After"] = result.RetryAfterSeconds.ToString();
-        return new VerifierServerResponse();
     }
 }

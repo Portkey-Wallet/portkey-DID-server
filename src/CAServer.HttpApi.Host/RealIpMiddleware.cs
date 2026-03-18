@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.IpInfo;
 using CAServer.IpWhiteList;
 using CAServer.IpWhiteList.Dtos;
 using CAServer.Options;
@@ -18,12 +19,14 @@ public class RealIpMiddleware
     private readonly RealIpOptions _realIpOptions;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly AddToWhiteListUrlsOptions _addToWhiteListUrlsOptions;
+    private readonly IHttpClientIpResolver _clientIpResolver;
     private readonly ICurrentUser _currentUser;
 
 
     public RealIpMiddleware(RequestDelegate requestDelegate, IOptions<RealIpOptions> realIpOptions,
         ILogger<RealIpMiddleware> logger, IIpWhiteListAppService ipWhiteListAppService,
-        IOptions<AddToWhiteListUrlsOptions> addToWhiteListUrlsOptions, ICurrentUser currentUser)
+        IOptions<AddToWhiteListUrlsOptions> addToWhiteListUrlsOptions, ICurrentUser currentUser,
+        IHttpClientIpResolver clientIpResolver)
     {
         _requestDelegate = requestDelegate;
         _logger = logger;
@@ -31,6 +34,7 @@ public class RealIpMiddleware
         _currentUser = currentUser;
         _addToWhiteListUrlsOptions = addToWhiteListUrlsOptions.Value;
         _realIpOptions = realIpOptions.Value;
+        _clientIpResolver = clientIpResolver;
     }
 
     public async Task Invoke(HttpContext context)
@@ -43,15 +47,13 @@ public class RealIpMiddleware
             return;
         }
 
-        var ipArr = headers["X-Forwarded-For"].ToString().Split(',');
-        if (ipArr.Length == 0)
+        var userIp = _clientIpResolver.GetFirstHeaderIp(_realIpOptions.HeaderKey);
+        if (string.IsNullOrWhiteSpace(userIp))
         {
             _logger.LogDebug("Unknown ip address,Refused visit server.ipArr is null");
             await _requestDelegate(context);
             return;
         }
-
-        var userIp = ipArr[0].Trim();
         var userId = _currentUser.Id ?? Guid.Empty;
         _logger.LogDebug("current user id is {id}", userId);
         if (userId == Guid.Empty)

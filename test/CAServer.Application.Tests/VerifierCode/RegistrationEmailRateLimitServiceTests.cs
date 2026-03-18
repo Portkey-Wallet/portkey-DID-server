@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Cache;
+using CAServer.CAAccount.Dtos;
 using CAServer.Options;
 using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
@@ -15,41 +16,45 @@ namespace CAServer.VerifierCode;
 public class RegistrationEmailRateLimitServiceTests
 {
     [Fact]
-    public void ShouldApply_ReturnsExpectedResult()
+    public void GetPolicy_ReturnsExpectedResult()
     {
         var service = CreateService();
 
-        Assert.True(service.ShouldApply("Email", OperationType.CreateCAHolder));
-        Assert.True(service.ShouldApply("email", OperationType.SocialRecovery));
-        Assert.False(service.ShouldApply("Phone", OperationType.CreateCAHolder));
-        Assert.False(service.ShouldApply("Email", OperationType.Approve));
+        Assert.NotNull(service.GetPolicy(CreateContext("Email", OperationType.CreateCAHolder)));
+        Assert.NotNull(service.GetPolicy(CreateContext("email", OperationType.SocialRecovery)));
+        Assert.Null(service.GetPolicy(CreateContext("Phone", OperationType.CreateCAHolder)));
+        Assert.Null(service.GetPolicy(CreateContext("Email", OperationType.Approve)));
     }
 
     [Fact]
-    public void ShouldApply_ReturnsFalse_When_Disabled()
+    public void GetPolicy_ReturnsNull_When_Disabled()
     {
         var service = CreateService(new RegistrationEmailRateLimitOptions
         {
             IsEnabled = false
         });
 
-        Assert.False(service.ShouldApply("Email", OperationType.CreateCAHolder));
+        Assert.Null(service.GetPolicy(CreateContext("Email", OperationType.CreateCAHolder)));
     }
 
     [Fact]
-    public void ShouldApply_ReturnsFalse_When_Rule_Has_No_Effective_Window()
+    public void GetPolicy_ReturnsNull_When_Rule_Has_No_Effective_Window()
     {
         var service = CreateService(new RegistrationEmailRateLimitOptions
         {
             IsEnabled = true,
-            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>
             {
-                Per10Minutes = 0,
-                PerHour = 0
+                [OperationType.CreateCAHolder] = new()
+                {
+                    GuardianType = GuardianIdentifierType.Email.ToString(),
+                    Per10Minutes = 0,
+                    PerHour = 0
+                }
             }
         });
 
-        Assert.False(service.ShouldApply("Email", OperationType.CreateCAHolder));
+        Assert.Null(service.GetPolicy(CreateContext("Email", OperationType.CreateCAHolder)));
     }
 
     [Fact]
@@ -60,7 +65,8 @@ public class RegistrationEmailRateLimitServiceTests
         RegistrationEmailRateLimitCheckResult result = null;
         for (var i = 0; i < 11; i++)
         {
-            result = await service.CheckAsync("1.1.1.1", OperationType.CreateCAHolder, "trace-create");
+            result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "1.1.1.1",
+                "trace-create"));
         }
 
         Assert.NotNull(result);
@@ -79,7 +85,8 @@ public class RegistrationEmailRateLimitServiceTests
         RegistrationEmailRateLimitCheckResult result = null;
         for (var i = 0; i < 16; i++)
         {
-            result = await service.CheckAsync("2.2.2.2", OperationType.SocialRecovery, "trace-recovery");
+            result = await service.CheckAsync(CreateContext("Email", OperationType.SocialRecovery, "2.2.2.2",
+                "trace-recovery"));
         }
 
         Assert.NotNull(result);
@@ -93,21 +100,20 @@ public class RegistrationEmailRateLimitServiceTests
     [Fact]
     public async Task CheckAsync_Blocks_When_Hour_Window_Is_Exceeded()
     {
-        var options = new RegistrationEmailRateLimitOptions
+        var options = CreateOptions();
+        options.Policies[OperationType.CreateCAHolder] = new RegistrationEmailRateLimitPolicyOptions
         {
-            IsEnabled = true,
-            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
-            {
-                Per10Minutes = 100,
-                PerHour = 3
-            }
+            GuardianType = GuardianIdentifierType.Email.ToString(),
+            Per10Minutes = 100,
+            PerHour = 3
         };
         var service = CreateService(options);
 
         RegistrationEmailRateLimitCheckResult result = null;
         for (var i = 0; i < 4; i++)
         {
-            result = await service.CheckAsync("3.3.3.3", OperationType.CreateCAHolder, "trace-hour");
+            result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "3.3.3.3",
+                "trace-hour"));
         }
 
         Assert.NotNull(result);
@@ -122,26 +128,21 @@ public class RegistrationEmailRateLimitServiceTests
     public async Task CheckAsync_Returns_Longest_RetryAfter_When_Multiple_Windows_Are_Exceeded()
     {
         var fixedNow = new DateTime(2026, 1, 1, 10, 5, 0, DateTimeKind.Utc);
-        var options = new RegistrationEmailRateLimitOptions
+        var options = CreateOptions();
+        options.Policies[OperationType.CreateCAHolder] = new RegistrationEmailRateLimitPolicyOptions
         {
-            IsEnabled = true,
-            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
-            {
-                Per10Minutes = 1,
-                PerHour = 1
-            }
+            GuardianType = GuardianIdentifierType.Email.ToString(),
+            Per10Minutes = 1,
+            PerHour = 1
         };
         var service = CreateServiceWithUtcNowSequence(
-            new[]
-            {
-                fixedNow,
-                fixedNow
-            },
+            new[] { fixedNow, fixedNow },
             options,
             new InMemoryCounterCacheProvider());
 
-        await service.CheckAsync("3.3.3.3", OperationType.CreateCAHolder, "trace-first");
-        var result = await service.CheckAsync("3.3.3.3", OperationType.CreateCAHolder, "trace-second");
+        await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "3.3.3.3", "trace-first"));
+        var result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "3.3.3.3",
+            "trace-second"));
 
         Assert.NotNull(result);
         Assert.False(result.IsAllowed);
@@ -155,14 +156,12 @@ public class RegistrationEmailRateLimitServiceTests
     public async Task CheckAsync_Uses_Same_Timestamp_For_All_Windows_In_One_Request()
     {
         var cacheProvider = new RecordingCacheProvider();
-        var options = new RegistrationEmailRateLimitOptions
+        var options = CreateOptions();
+        options.Policies[OperationType.CreateCAHolder] = new RegistrationEmailRateLimitPolicyOptions
         {
-            IsEnabled = true,
-            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
-            {
-                Per10Minutes = 10,
-                PerHour = 10
-            }
+            GuardianType = GuardianIdentifierType.Email.ToString(),
+            Per10Minutes = 10,
+            PerHour = 10
         };
         var service = CreateServiceWithUtcNowSequence(
             new[]
@@ -173,7 +172,8 @@ public class RegistrationEmailRateLimitServiceTests
             options,
             cacheProvider);
 
-        var result = await service.CheckAsync("7.7.7.7", OperationType.CreateCAHolder, "trace-rollover");
+        var result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "7.7.7.7",
+            "trace-rollover"));
 
         Assert.True(result.IsAllowed);
         Assert.Equal(1, service.UtcNowCallCount);
@@ -189,7 +189,8 @@ public class RegistrationEmailRateLimitServiceTests
     {
         var service = CreateService(cacheProvider: new ThrowingCacheProvider());
 
-        var result = await service.CheckAsync("4.4.4.4", OperationType.CreateCAHolder, "trace-fail-open");
+        var result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "4.4.4.4",
+            "trace-fail-open"));
 
         Assert.True(result.IsAllowed);
     }
@@ -198,26 +199,21 @@ public class RegistrationEmailRateLimitServiceTests
     public async Task CheckAsync_Returns_Block_When_Later_Window_Throws_After_Earlier_Window_Is_Exceeded()
     {
         var fixedNow = new DateTime(2026, 1, 1, 10, 5, 0, DateTimeKind.Utc);
-        var options = new RegistrationEmailRateLimitOptions
+        var options = CreateOptions();
+        options.Policies[OperationType.CreateCAHolder] = new RegistrationEmailRateLimitPolicyOptions
         {
-            IsEnabled = true,
-            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
-            {
-                Per10Minutes = 1,
-                PerHour = 1
-            }
+            GuardianType = GuardianIdentifierType.Email.ToString(),
+            Per10Minutes = 1,
+            PerHour = 1
         };
         var service = CreateServiceWithUtcNowSequence(
-            new[]
-            {
-                fixedNow,
-                fixedNow
-            },
+            new[] { fixedNow, fixedNow },
             options,
             new ThrowOnMatchedWindowCacheProvider(":1h:", 2));
 
-        await service.CheckAsync("4.4.4.4", OperationType.CreateCAHolder, "trace-first");
-        var result = await service.CheckAsync("4.4.4.4", OperationType.CreateCAHolder, "trace-partial-failure");
+        await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "4.4.4.4", "trace-first"));
+        var result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "4.4.4.4",
+            "trace-partial-failure"));
 
         Assert.NotNull(result);
         Assert.False(result.IsAllowed);
@@ -231,24 +227,18 @@ public class RegistrationEmailRateLimitServiceTests
     public async Task CheckAsync_Fails_Open_When_Later_Window_Throws_Before_Any_Window_Is_Exceeded()
     {
         var fixedNow = new DateTime(2026, 1, 1, 10, 5, 0, DateTimeKind.Utc);
-        var options = new RegistrationEmailRateLimitOptions
+        var options = CreateOptions();
+        options.Policies[OperationType.CreateCAHolder] = new RegistrationEmailRateLimitPolicyOptions
         {
-            IsEnabled = true,
-            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
-            {
-                Per10Minutes = 10,
-                PerHour = 10
-            }
+            GuardianType = GuardianIdentifierType.Email.ToString(),
+            Per10Minutes = 10,
+            PerHour = 10
         };
-        var service = CreateServiceWithUtcNowSequence(
-            new[]
-            {
-                fixedNow
-            },
-            options,
+        var service = CreateServiceWithUtcNowSequence(new[] { fixedNow }, options,
             new ThrowOnMatchedWindowCacheProvider(":1h:", 1));
 
-        var result = await service.CheckAsync("5.5.5.5", OperationType.CreateCAHolder, "trace-fail-open");
+        var result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "5.5.5.5",
+            "trace-fail-open"));
 
         Assert.True(result.IsAllowed);
     }
@@ -261,7 +251,8 @@ public class RegistrationEmailRateLimitServiceTests
             IsEnabled = false
         }, new ThrowingCacheProvider());
 
-        var result = await service.CheckAsync("5.5.5.5", OperationType.CreateCAHolder, "trace-disabled");
+        var result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "5.5.5.5",
+            "trace-disabled"));
 
         Assert.True(result.IsAllowed);
     }
@@ -273,18 +264,104 @@ public class RegistrationEmailRateLimitServiceTests
         var service = CreateService(new RegistrationEmailRateLimitOptions
         {
             IsEnabled = true,
-            CreateCAHolder = new RegistrationEmailRateLimitRuleOptions
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>
             {
-                Per10Minutes = 0,
-                PerHour = 0
+                [OperationType.CreateCAHolder] = new()
+                {
+                    GuardianType = GuardianIdentifierType.Email.ToString(),
+                    Per10Minutes = 0,
+                    PerHour = 0
+                }
             }
         }, cacheProvider.Object);
 
-        var result = await service.CheckAsync("6.6.6.6", OperationType.CreateCAHolder, "trace-no-window");
+        var result = await service.CheckAsync(CreateContext("Email", OperationType.CreateCAHolder, "6.6.6.6",
+            "trace-no-window"));
 
         Assert.True(result.IsAllowed);
         cacheProvider.Verify(x => x.Increase(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TimeSpan?>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckAsync_Should_Throw_When_ClientIp_Is_Blank_And_Policy_Applies()
+    {
+        var service = CreateService();
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CheckAsync(CreateContext("Email",
+            OperationType.CreateCAHolder, string.Empty, "trace-blank-ip")));
+    }
+
+    [Fact]
+    public void OptionsValidator_Should_Fail_When_Enabled_And_Policies_Are_Missing()
+    {
+        var validator = new RegistrationEmailRateLimitOptionsValidator();
+
+        var result = validator.Validate(string.Empty, new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>()
+        });
+
+        Assert.True(result.Failed);
+    }
+
+    [Fact]
+    public void OptionsValidator_Should_Fail_When_Policy_Has_Invalid_Settings()
+    {
+        var validator = new RegistrationEmailRateLimitOptionsValidator();
+
+        var result = validator.Validate(string.Empty, new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>
+            {
+                [OperationType.CreateCAHolder] = new()
+                {
+                    GuardianType = string.Empty,
+                    Per10Minutes = -1,
+                    PerHour = -1
+                }
+            }
+        });
+
+        Assert.True(result.Failed);
+    }
+
+    private static RegistrationEmailRateLimitOptions CreateOptions()
+    {
+        return new RegistrationEmailRateLimitOptions
+        {
+            IsEnabled = true,
+            Policies = new Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions>
+            {
+                [OperationType.CreateCAHolder] = new()
+                {
+                    GuardianType = GuardianIdentifierType.Email.ToString(),
+                    Per10Minutes = 10,
+                    PerHour = 30
+                },
+                [OperationType.SocialRecovery] = new()
+                {
+                    GuardianType = GuardianIdentifierType.Email.ToString(),
+                    Per10Minutes = 15,
+                    PerHour = 45,
+                    RequireGuardianExistsBeforeConsume = true
+                }
+            }
+        };
+    }
+
+    private static RegistrationEmailRateLimitContext CreateContext(string guardianType, OperationType operationType,
+        string clientIp = "1.1.1.1", string traceId = "trace-id")
+    {
+        return new RegistrationEmailRateLimitContext
+        {
+            GuardianType = guardianType,
+            OperationType = operationType,
+            ClientIp = clientIp,
+            TraceId = traceId
+        };
     }
 
     private static RegistrationEmailRateLimitService CreateService(
@@ -292,10 +369,7 @@ public class RegistrationEmailRateLimitServiceTests
         ICacheProvider cacheProvider = null)
     {
         var optionsSnapshot = new Mock<IOptionsSnapshot<RegistrationEmailRateLimitOptions>>();
-        optionsSnapshot.Setup(x => x.Value).Returns(options ?? new RegistrationEmailRateLimitOptions
-        {
-            IsEnabled = true
-        });
+        optionsSnapshot.Setup(x => x.Value).Returns(options ?? CreateOptions());
 
         return new RegistrationEmailRateLimitService(
             cacheProvider ?? new InMemoryCounterCacheProvider(),
@@ -330,96 +404,24 @@ public class RegistrationEmailRateLimitServiceTests
             return Task.FromResult(count);
         }
 
-        public Task HSetWithExpire(string key, string member, string value, TimeSpan? expire)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> HashDeleteAsync(string key, string member)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<HashEntry[]> HGetAll(string key)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Set(string key, string value, TimeSpan? expire)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Set<T>(string key, T value, TimeSpan? expire) where T : class
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<RedisValue> Get(string key)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<T> Get<T>(string key) where T : class
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Delete(string key)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Dictionary<string, RedisValue>> BatchGet(List<string> keys)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AddScoreAsync(string leaderboardKey, string member, double score)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<double> GetScoreAsync(string leaderboardKey, string member)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<long> GetRankAsync(string leaderboardKey, string member, bool highToLow = true)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<SortedSetEntry[]> GetTopAsync(string leaderboardKey, long startRank, long stopRank,
-            bool highToLow = true)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<long> GetSortedSetLengthAsync(string leaderboardKey)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SetAddAsync(string key, string value, TimeSpan? timeSpan)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SetAddAsync(string key, List<string> values, TimeSpan? timeSpan)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SetRemoveAsync(string key, List<string> values)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<RedisValue[]> SetMembersAsync(string key)
-        {
-            throw new NotImplementedException();
-        }
+        public Task HSetWithExpire(string key, string member, string value, TimeSpan? expire) => throw new NotImplementedException();
+        public Task<bool> HashDeleteAsync(string key, string member) => throw new NotImplementedException();
+        public Task<HashEntry[]> HGetAll(string key) => throw new NotImplementedException();
+        public Task Set(string key, string value, TimeSpan? expire) => throw new NotImplementedException();
+        public Task Set<T>(string key, T value, TimeSpan? expire) where T : class => throw new NotImplementedException();
+        public Task<RedisValue> Get(string key) => throw new NotImplementedException();
+        public Task<T> Get<T>(string key) where T : class => throw new NotImplementedException();
+        public Task Delete(string key) => throw new NotImplementedException();
+        public Task<Dictionary<string, RedisValue>> BatchGet(List<string> keys) => throw new NotImplementedException();
+        public Task AddScoreAsync(string leaderboardKey, string member, double score) => throw new NotImplementedException();
+        public Task<double> GetScoreAsync(string leaderboardKey, string member) => throw new NotImplementedException();
+        public Task<long> GetRankAsync(string leaderboardKey, string member, bool highToLow = true) => throw new NotImplementedException();
+        public Task<SortedSetEntry[]> GetTopAsync(string leaderboardKey, long startRank, long stopRank, bool highToLow = true) => throw new NotImplementedException();
+        public Task<long> GetSortedSetLengthAsync(string leaderboardKey) => throw new NotImplementedException();
+        public Task SetAddAsync(string key, string value, TimeSpan? timeSpan) => throw new NotImplementedException();
+        public Task SetAddAsync(string key, List<string> values, TimeSpan? timeSpan) => throw new NotImplementedException();
+        public Task SetRemoveAsync(string key, List<string> values) => throw new NotImplementedException();
+        public Task<RedisValue[]> SetMembersAsync(string key) => throw new NotImplementedException();
     }
 
     private sealed class ThrowingCacheProvider : InMemoryCounterCacheProvider
@@ -472,8 +474,7 @@ public class RegistrationEmailRateLimitServiceTests
     {
         private readonly Queue<DateTime> _utcNowSequence;
 
-        public TestRegistrationEmailRateLimitService(IEnumerable<DateTime> utcNowSequence,
-            ICacheProvider cacheProvider,
+        public TestRegistrationEmailRateLimitService(IEnumerable<DateTime> utcNowSequence, ICacheProvider cacheProvider,
             ILogger<RegistrationEmailRateLimitService> logger,
             IOptionsSnapshot<RegistrationEmailRateLimitOptions> options)
             : base(cacheProvider, logger, options)

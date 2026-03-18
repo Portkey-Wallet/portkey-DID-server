@@ -1,25 +1,22 @@
+using System.Collections.Generic;
+using CAServer.Verifier;
+
 namespace CAServer.Options;
 
 public class RegistrationEmailRateLimitOptions
 {
     public bool IsEnabled { get; set; }
 
-    public RegistrationEmailRateLimitRuleOptions CreateCAHolder { get; set; } = new()
-    {
-        Per10Minutes = 10,
-        PerHour = 30
-    };
-
-    public RegistrationEmailRateLimitRuleOptions SocialRecovery { get; set; } = new()
-    {
-        Per10Minutes = 15,
-        PerHour = 45
-    };
+    public Dictionary<OperationType, RegistrationEmailRateLimitPolicyOptions> Policies { get; set; } = new();
 }
 
-public class RegistrationEmailRateLimitRuleOptions
+public class RegistrationEmailRateLimitPolicyOptions
 {
+    public string GuardianType { get; set; }
+
     public int Per10Minutes { get; set; }
 
     public int PerHour { get; set; }
+
+    public bool RequireGuardianExistsBeforeConsume { get; set; }
 }

@@ -40,9 +40,18 @@ All other operation types are explicitly excluded from this hard limiter in v1.
 
 ## IP Extraction Rules
 
+### Shared Client IP Resolver
+
+The HTTP layer uses a shared transport-side client IP resolver with two explicit modes:
+
+- `GetForwardedClientIp()`: strict forwarded-header-only resolution for the hard limiter
+- `GetBestEffortClientIp()`: legacy best-effort resolution for captcha, whitelist, secondary email, and existing flows
+
+This change removes the PR-local duplicate IP helper and keeps the resolver semantics centralized without pushing HTTP header parsing into the application contract boundary.
+
 ### Hard Limiter Path
 
-The registration/recovery hard limiter reads the client IP from HTTP headers only.
+The registration/recovery hard limiter uses `GetForwardedClientIp()` and reads the client IP from HTTP headers only.
 
 1. Read `X-Forwarded-For`
 2. Split by comma
@@ -53,10 +62,12 @@ The registration/recovery hard limiter reads the client IP from HTTP headers onl
 
 ### Legacy Flows
 
-Existing controller flows outside the new hard limiter keep the previous best-effort behavior:
+Existing flows outside the new hard limiter use `GetBestEffortClientIp()` and keep the previous best-effort behavior:
 
-1. Read the first IP from `X-Forwarded-For`
-2. If missing, fallback to `RemoteIpAddress`
+1. Reuse a request-scoped resolved IP when one was already established by the hard limiter path
+2. Otherwise read the first IP from `X-Forwarded-For`
+3. If missing, fallback to `X-Real-IP`
+4. If still missing, fallback to `RemoteIpAddress`
 
 This preserves historical behavior for captcha, `isGoogleRecaptchaOpen`, secondary email, and other existing request paths.
 
@@ -124,19 +135,33 @@ The host configuration section is:
 {
   "RegistrationEmailRateLimit": {
     "IsEnabled": false,
-    "CreateCAHolder": {
-      "Per10Minutes": 10,
-      "PerHour": 30
-    },
-    "SocialRecovery": {
-      "Per10Minutes": 15,
-      "PerHour": 45
+    "Policies": {
+      "CreateCAHolder": {
+        "GuardianType": "Email",
+        "Per10Minutes": 10,
+        "PerHour": 30,
+        "RequireGuardianExistsBeforeConsume": false
+      },
+      "SocialRecovery": {
+        "GuardianType": "Email",
+        "Per10Minutes": 15,
+        "PerHour": 45,
+        "RequireGuardianExistsBeforeConsume": true
+      }
     }
   }
 }
 ```
 
-`IsEnabled` controls the feature globally. For each operation, at least one of `Per10Minutes` or `PerHour` must be a positive value for the limiter to apply.
+`IsEnabled` controls the feature globally. Each entry in `Policies` is keyed by `OperationType`.
+`appsettings.json` is the single default source of truth for these policies; the application code does not embed fallback thresholds.
+For each policy, the limiter applies only when:
+
+- the request guardian type matches `GuardianType`
+- at least one of `Per10Minutes` or `PerHour` is positive
+
+`RequireGuardianExistsBeforeConsume` controls whether guardian existence must be confirmed before quota consumption.
+If `IsEnabled = true`, the configuration is validated so that policies are present, `GuardianType` is not blank, and thresholds are not negative.
 
 ## Observability
 
@@ -158,9 +183,11 @@ The server must not log raw email values as part of this feature.
 - This limiter is independent from the existing captcha/check-switch logic and does not re-route `CreateCAHolder` back into a captcha path.
 - Existing captcha behavior remains unchanged for flows that already use captcha or app-check today.
 - The hard limiter is evaluated only when `RegistrationEmailRateLimit:IsEnabled` is set to `true`.
+- `CreateCAHolder` and `SocialRecovery` are dispatched through dedicated operation handlers so the controller remains a thin HTTP adapter.
+- Guardian verification-code flow and secondary-email verification now share the same risk-control orchestration, while the controller remains responsible for writing HTTP status codes.
 - The recommended rollout is to deploy code first with `IsEnabled = false`, verify that registration and recovery requests preserve the current baseline behavior, and then enable the feature through configuration.
 - When `IsEnabled = false`, `SocialRecovery` preserves the current `master` baseline behavior, including the `CheckSwitch = false` fast path that does not introduce guardian existence gating.
-- Existing non-limiter flows keep their original `RemoteIpAddress` fallback behavior.
+- Existing non-limiter flows keep their best-effort IP behavior, including `X-Real-IP` and `RemoteIpAddress` fallback.
 - In `SocialRecovery`, when the hard limiter resolves a forwarded client IP, the same request reuses that IP for downstream whitelist/captcha/count logic.
 - If future abuse patterns change, business-flow-specific policies can be added separately for transfer or approval flows.
 
