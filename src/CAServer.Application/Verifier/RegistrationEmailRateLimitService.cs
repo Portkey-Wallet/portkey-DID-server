@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Cache;
+using CAServer.CAAccount.Dtos;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,14 +36,16 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
             return null;
         }
 
-        if (!string.Equals(context.GuardianType, policyOptions.GuardianType, StringComparison.OrdinalIgnoreCase))
+        if (!TryParseGuardianType(context.GuardianType, out var contextGuardianType) ||
+            !TryParseGuardianType(policyOptions.GuardianType, out var policyGuardianType) ||
+            contextGuardianType != policyGuardianType)
         {
             return null;
         }
 
         var policy = new RegistrationEmailRateLimitPolicy
         {
-            GuardianType = policyOptions.GuardianType,
+            GuardianType = policyGuardianType.ToString(),
             OperationType = context.OperationType,
             Per10Minutes = policyOptions.Per10Minutes,
             PerHour = policyOptions.PerHour,
@@ -136,6 +139,11 @@ public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitServ
         policy = null;
         return _options.Policies != null && _options.Policies.TryGetValue(operationType, out policy) &&
                policy != null;
+    }
+
+    private static bool TryParseGuardianType(string guardianType, out GuardianIdentifierType parsedGuardianType)
+    {
+        return Enum.TryParse(guardianType?.Trim(), true, out parsedGuardianType);
     }
 
     private static IEnumerable<RateLimitWindow> BuildWindows(RegistrationEmailRateLimitPolicy policy)

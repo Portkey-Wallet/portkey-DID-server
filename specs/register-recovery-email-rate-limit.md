@@ -102,8 +102,9 @@ If multiple windows exceed their thresholds in the same request, the limiter ret
 
 These thresholds are intentionally more permissive for `SocialRecovery` because it is a normal-user recovery flow with more legitimate retries.
 
-For `SocialRecovery`, when the hard limiter is enabled, quota is consumed only after `GuardianExistsAsync(...)` confirms that the recovery target exists.
+For the default `SocialRecovery` policy, quota is consumed only after `GuardianExistsAsync(...)` confirms that the recovery target exists.
 Requests for non-existent guardians bypass the hard limiter and do not consume quota.
+If a future policy explicitly sets `RequireGuardianExistsBeforeConsume = false`, guardian existence is still checked before send/risk-control, but quota may already have been consumed.
 
 If both thresholds for one operation are configured as non-positive values, that operation is treated as disabled for the hard limiter and bypasses the header-only enforcement path.
 
@@ -158,11 +159,13 @@ The host configuration section is:
 `appsettings.json` is the single default source of truth for these policies; the application code does not embed fallback thresholds.
 For each policy, the limiter applies only when:
 
-- the request guardian type matches `GuardianType`
+- the request guardian type matches `GuardianType` after trimmed, case-insensitive normalization
 - at least one of `Per10Minutes` or `PerHour` is positive
 
-`RequireGuardianExistsBeforeConsume` controls whether guardian existence must be confirmed before quota consumption.
-If `IsEnabled = true`, the configuration is validated so that policies are present, `GuardianType` is not blank, and thresholds are not negative.
+`GuardianType` must be a valid `GuardianIdentifierType` value such as `Email`.
+`RequireGuardianExistsBeforeConsume` controls whether guardian existence must be confirmed before quota consumption, not whether guardian existence is checked at all.
+For `SocialRecovery`, guardian existence is always checked when the limiter policy applies; the flag only controls whether that check happens before or after quota consumption.
+If `IsEnabled = true`, the configuration is validated so that policies are present, `GuardianType` is not blank, `GuardianType` is valid, and thresholds are not negative.
 
 ## Observability
 

@@ -184,6 +184,48 @@ public class VerificationRequestOperationHandlerTests
     }
 
     [Fact]
+    public async Task SocialRecoveryHandler_Should_Check_Guardian_After_RateLimit_When_Consume_Check_Is_Disabled()
+    {
+        var setup = CreateHandlerSetup(checkSwitchOpen: false);
+        setup.HttpContext.Request.Headers[ClientIpHeaders.XForwardedFor] = "6.6.6.6";
+
+        var sequence = new MockSequence();
+        setup.RateLimitService.InSequence(sequence)
+            .Setup(x => x.CheckAsync(It.Is<RegistrationEmailRateLimitContext>(c =>
+                c.ClientIp == "6.6.6.6" && c.OperationType == OperationType.SocialRecovery)))
+            .ReturnsAsync(RegistrationEmailRateLimitCheckResult.Allow());
+        setup.VerifierAppService.InSequence(sequence)
+            .Setup(x => x.GuardianExistsAsync("missing@example.com"))
+            .ReturnsAsync(false);
+
+        setup.RateLimitService.Setup(x => x.GetPolicy(It.IsAny<RegistrationEmailRateLimitContext>()))
+            .Returns(new RegistrationEmailRateLimitPolicy
+            {
+                GuardianType = "Email",
+                OperationType = OperationType.SocialRecovery,
+                Per10Minutes = 15,
+                PerHour = 45,
+                RequireGuardianExistsBeforeConsume = false
+            });
+
+        var handler = new SocialRecoveryVerificationRequestHandler(setup.ClientIpResolver,
+            Mock.Of<ILogger<SocialRecoveryVerificationRequestHandler>>(), setup.RateLimitService.Object,
+            setup.RiskControlService.Object, setup.SwitchAppService.Object, setup.VerifierAppService.Object);
+
+        var result = await handler.HandleAsync(CreateContext(OperationType.SocialRecovery,
+            guardianIdentifier: "missing@example.com"));
+
+        Assert.True(result.IsHandled);
+        Assert.Null(result.Response);
+        setup.RateLimitService.Verify(x => x.CheckAsync(It.IsAny<RegistrationEmailRateLimitContext>()), Times.Once);
+        setup.VerifierAppService.Verify(x => x.GuardianExistsAsync("missing@example.com"), Times.Once);
+        setup.VerifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Never);
+        setup.RiskControlService.Verify(x => x.HandleRecoveryOperationAsync(It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<SendVerificationRequestInput>(), It.IsAny<OperationType>()), Times.Never);
+    }
+
+    [Fact]
     public async Task SocialRecoveryHandler_Should_Not_Return_401_For_Anonymous_User_In_Legacy_Risk_Control_Path()
     {
         var httpContext = new DefaultHttpContext();

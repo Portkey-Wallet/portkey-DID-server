@@ -69,6 +69,16 @@ public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLim
             return rateLimitResult;
         }
 
+        if (!policy.RequireGuardianExistsBeforeConsume)
+        {
+            var guardianExists =
+                await _verifierAppService.GuardianExistsAsync(context.SendVerificationRequestInput.GuardianIdentifier);
+            if (!guardianExists)
+            {
+                return VerificationRequestOperationResult.Handled();
+            }
+        }
+
         if (!checkSwitchOpen)
         {
             var directResponse = await _verifierAppService.SendVerificationRequestAsync(context.SendVerificationRequestInput);

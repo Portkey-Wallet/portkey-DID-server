@@ -54,6 +54,50 @@ public class CAVerifierControllerTests
     }
 
     [Fact]
+    public async Task SendVerificationRequest_Should_Keep_CreateCaHolder_Outside_RiskControl_When_CheckSwitch_Is_On()
+    {
+        var verifierAppService = new Mock<IVerifierAppService>();
+        verifierAppService.Setup(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()))
+            .ReturnsAsync(new VerifierServerResponse
+            {
+                VerifierSessionId = Guid.NewGuid()
+            });
+
+        var rateLimitService = new Mock<IRegistrationEmailRateLimitService>();
+        rateLimitService.Setup(x => x.GetPolicy(It.IsAny<RegistrationEmailRateLimitContext>()))
+            .Returns((RegistrationEmailRateLimitPolicy)null);
+
+        var dispatcher = new VerificationRequestOperationDispatcher(new IVerificationRequestOperationHandler[]
+        {
+            new CreateCaHolderVerificationRequestHandler(TestHttpClientIpResolverFactory.Create(new DefaultHttpContext()),
+                Mock.Of<ILogger<CreateCaHolderVerificationRequestHandler>>(), rateLimitService.Object,
+                verifierAppService.Object)
+        });
+
+        var riskControlService = new Mock<IVerificationRequestRiskControlService>();
+        var controller = CreateController(
+            verifierAppService: verifierAppService.Object,
+            verificationRequestOperationDispatcher: dispatcher,
+            verificationRequestRiskControlService: riskControlService.Object,
+            checkSwitchOpen: true);
+
+        var response = await controller.SendVerificationRequest("rc-token", "ac-token", new VerifierServerInput
+        {
+            Type = "Email",
+            GuardianIdentifier = "user@example.com",
+            VerifierId = "verifier-id",
+            ChainId = "AELF",
+            OperationType = OperationType.CreateCAHolder
+        });
+
+        Assert.NotNull(response);
+        verifierAppService.Verify(x => x.SendVerificationRequestAsync(It.IsAny<SendVerificationRequestInput>()),
+            Times.Once);
+        riskControlService.Verify(x => x.HandleGuardianOperationAsync(It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<SendVerificationRequestInput>(), It.IsAny<OperationType>()), Times.Never);
+    }
+
+    [Fact]
     public async Task SendVerificationRequest_Should_Use_Legacy_Send_When_Dispatcher_Does_Not_Handle_And_CheckSwitch_Is_Off()
     {
         var dispatcher = new Mock<IVerificationRequestOperationDispatcher>();
