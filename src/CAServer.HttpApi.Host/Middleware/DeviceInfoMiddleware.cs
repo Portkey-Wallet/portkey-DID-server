@@ -1,23 +1,23 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.IpInfo;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace CAServer.Middleware;
 
 public class DeviceInfoMiddleware
 {
-    
+    private readonly IHttpClientIpResolver _clientIpResolver;
     private readonly ILogger<DeviceInfoMiddleware> _logger;
     private readonly RequestDelegate _next;
 
-    public DeviceInfoMiddleware(RequestDelegate next, ILogger<DeviceInfoMiddleware> logger)
+    public DeviceInfoMiddleware(RequestDelegate next, IHttpClientIpResolver clientIpResolver,
+        ILogger<DeviceInfoMiddleware> logger)
     {
         _next = next;
+        _clientIpResolver = clientIpResolver;
         _logger = logger;
     }
 
@@ -46,7 +46,7 @@ public class DeviceInfoMiddleware
             {
                 ClientType = clientTypeExists ? clientType.ToString() : null,
                 Version = clientVersionExists ? clientVersion.ToString() : null,
-                ClientIp = GetClientIp(context)
+                ClientIp = _clientIpResolver.GetBestEffortClientIp()
             };
         }
         catch (Exception e)
@@ -54,31 +54,5 @@ public class DeviceInfoMiddleware
             _logger.LogError(e, "Decode device info error");
         }
         return null;
-    }
-    
-    private string GetClientIp(HttpContext context)
-    {
-        // Check the X-Forwarded-For header (set by some agents)
-        var forwardedHeader = context.Request.Headers["X-Forwarded-For"];
-        if (!string.IsNullOrEmpty(forwardedHeader))
-        {
-            var ip = forwardedHeader.FirstOrDefault();
-            if (!string.IsNullOrEmpty(ip))
-            {
-                return ip.Split(',')[0].Trim();// Take the first IP (if there are more than one)
-            }
-        }
-
-        // Check the X-Real-IP header (set by some agents)
-        var realIpHeader = context.Request.Headers["X-Real-IP"];
-        if (!string.IsNullOrEmpty(realIpHeader))
-        {
-            return realIpHeader;
-        }
-
-        var ipAddress = context.Connection.RemoteIpAddress;
-
-        // Use remote IP address as fallback
-        return ipAddress?.IsIPv4MappedToIPv6 ?? false ? ipAddress.MapToIPv4().ToString() : ipAddress?.ToString();
     }
 }

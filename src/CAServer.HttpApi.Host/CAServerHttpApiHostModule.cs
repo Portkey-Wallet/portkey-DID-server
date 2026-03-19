@@ -29,8 +29,10 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -82,7 +84,11 @@ public class CAServerHttpApiHostModule : AbpModule
 
         Configure<RampOptions>(configuration.GetSection("RampOptions"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
-        Configure<RealIpOptions>(configuration.GetSection("RealIp"));
+        context.Services.AddOptions<RealIpOptions>()
+            .Bind(configuration.GetSection("RealIp"))
+            .ValidateOnStart();
+        context.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<RealIpOptions>,
+            RealIpOptionsValidator>());
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
         Configure<Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));

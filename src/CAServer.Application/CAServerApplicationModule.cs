@@ -33,6 +33,8 @@ using CAServer.TwitterAuth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Polly;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
@@ -152,6 +154,11 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
+        context.Services.AddOptions<RegistrationEmailRateLimitOptions>()
+            .Bind(configuration.GetSection("RegistrationEmailRateLimit"))
+            .ValidateOnStart();
+        context.Services.TryAddEnumerable(ServiceDescriptor.Singleton<
+            IValidateOptions<RegistrationEmailRateLimitOptions>, RegistrationEmailRateLimitOptionsValidator>());
         Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions"));
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
