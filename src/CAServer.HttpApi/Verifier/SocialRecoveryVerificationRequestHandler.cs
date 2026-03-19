@@ -2,12 +2,11 @@ using System;
 using System.Threading.Tasks;
 using CAServer.IpInfo;
 using CAServer.Switch;
-using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Verifier;
 
 public class SocialRecoveryVerificationRequestHandler : RegistrationEmailRateLimitedOperationHandlerBase,
-    IVerificationRequestOperationHandler, ITransientDependency
+    IVerificationRequestOperationHandler
 {
     private readonly IVerificationRequestRiskControlService _verificationRequestRiskControlService;
     private readonly ISwitchAppService _switchAppService;

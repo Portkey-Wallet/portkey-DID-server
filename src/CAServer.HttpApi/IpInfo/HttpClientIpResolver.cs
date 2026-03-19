@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Volo.Abp.DependencyInjection;
 
 namespace CAServer.IpInfo;
 
-public class HttpClientIpResolver : IHttpClientIpResolver, ITransientDependency
+public class HttpClientIpResolver : IHttpClientIpResolver
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly RealIpOptions _realIpOptions;

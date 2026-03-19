@@ -30,6 +30,7 @@ using CAServer.Tokens.Provider;
 using CAServer.Telegram.Options;
 using CAServer.ThirdPart.Processor.Treasury;
 using CAServer.TwitterAuth;
+using CAServer.Verifier;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -159,6 +160,7 @@ public class CAServerApplicationModule : AbpModule
             .ValidateOnStart();
         context.Services.TryAddEnumerable(ServiceDescriptor.Singleton<
             IValidateOptions<RegistrationEmailRateLimitOptions>, RegistrationEmailRateLimitOptionsValidator>());
+        context.Services.AddTransient<IRegistrationEmailRateLimitService, RegistrationEmailRateLimitService>();
         Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions"));
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));

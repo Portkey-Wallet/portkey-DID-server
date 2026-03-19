@@ -6,11 +6,10 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Verifier;
 
-public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitService, ITransientDependency
+public class RegistrationEmailRateLimitService : IRegistrationEmailRateLimitService
 {
     private const string CacheKeyPrefix = "RegistrationEmailRateLimit";
     private static readonly TimeSpan TenMinuteWindow = TimeSpan.FromMinutes(10);
