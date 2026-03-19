@@ -9,13 +9,12 @@ using CAServer.IpInfo;
 using CAServer.IpWhiteList;
 using CAServer.Switch;
 using Microsoft.Extensions.Logging;
-using Volo.Abp.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.Users;
 
 namespace CAServer.Verifier;
 
-public class VerificationRequestRiskControlService : IVerificationRequestRiskControlService, ITransientDependency
+public class VerificationRequestRiskControlService : IVerificationRequestRiskControlService
 {
     private readonly ICurrentUser _currentUser;
     private readonly IGoogleAppService _googleAppService;
