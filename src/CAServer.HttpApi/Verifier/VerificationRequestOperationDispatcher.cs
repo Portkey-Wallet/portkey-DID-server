@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Verifier;
 
-public class VerificationRequestOperationDispatcher : IVerificationRequestOperationDispatcher, ITransientDependency
+public class VerificationRequestOperationDispatcher : IVerificationRequestOperationDispatcher
 {
     private readonly IReadOnlyDictionary<OperationType, IVerificationRequestOperationHandler> _handlers;
 

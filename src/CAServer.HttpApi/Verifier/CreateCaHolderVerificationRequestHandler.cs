@@ -1,12 +1,11 @@
 using System.Threading.Tasks;
 using CAServer.IpInfo;
 using Microsoft.Extensions.Logging;
-using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Verifier;
 
 public class CreateCaHolderVerificationRequestHandler : RegistrationEmailRateLimitedOperationHandlerBase,
-    IVerificationRequestOperationHandler, ITransientDependency
+    IVerificationRequestOperationHandler
 {
     private readonly IVerifierAppService _verifierAppService;
 
