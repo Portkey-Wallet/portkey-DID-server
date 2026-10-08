@@ -35,6 +35,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private const string _defaultSymbol = "ELF";
+    private const int UserAssetsPageSize = 200;
 
     public UserSecurityAppService(IOptionsSnapshot<SecurityOptions> securityOptions,
         IUserSecurityProvider userSecurityProvider, IOptionsSnapshot<ChainOptions> chainOptions,
@@ -472,8 +473,38 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             }
         }
 
-        // Obtain the balance of all token assets by caHash
-        return await _assetsProvider.SearchUserAssetsAsync(caAddrs, "", 0, 200);
+        if (caAddrs.Count == 0)
+        {
+            throw new GraphQLResponseException($"No CA addresses resolved for user assets, caHash: {caHash}");
+        }
+
+        // Read every mixed asset page so NFTs cannot hide tokens on later pages.
+        var assets = new List<IndexerSearchTokenNft>();
+        var skipCount = 0;
+        while (true)
+        {
+            var page = (await _assetsProvider.SearchUserAssetsAsync(caAddrs, "", skipCount, UserAssetsPageSize))
+                ?.CaHolderSearchTokenNFT;
+            if (page?.Data == null || page.TotalRecordCount < 0 ||
+                (page.Data.Count == 0 && skipCount < page.TotalRecordCount))
+            {
+                throw new GraphQLResponseException(
+                    $"Incomplete user assets page, caHash: {caHash}, skipCount: {skipCount}");
+            }
+
+            assets.AddRange(page.Data);
+            skipCount = checked(skipCount + page.Data.Count);
+            if (skipCount >= page.TotalRecordCount) break;
+        }
+
+        return new IndexerSearchTokenNfts
+        {
+            CaHolderSearchTokenNFT = new CaHolderSearchTokenNFT
+            {
+                Data = assets,
+                TotalRecordCount = assets.Count
+            }
+        };
     }
 
     private async Task<TransferLimitDto> GeneratorTransferLimitAsync(IndexerSearchTokenNft token)
