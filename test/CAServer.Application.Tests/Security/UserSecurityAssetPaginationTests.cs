@@ -32,22 +32,24 @@ public class UserSecurityAssetPaginationTests
     private readonly string _caHash = HashHelper.ComputeFrom("asset-pagination-test").ToHex();
     private readonly Mock<IUserAssetsProvider> _assetsProvider = new(MockBehavior.Strict);
     private readonly Mock<IUserSecurityProvider> _securityProvider = new();
+    private readonly Mock<IContractProvider> _contractProvider = new();
     private readonly Mock<IDistributedEventBus> _eventBus = new();
     private readonly List<int> _requestedOffsets = new();
     private readonly List<UserTransferLimitHistoryEto> _publishedHistory = new();
     private readonly UserSecurityAppService _service;
+    private readonly GetHolderInfoOutput _holderInfo;
 
     public UserSecurityAssetPaginationTests()
     {
-        var contractProvider = new Mock<IContractProvider>();
         var caAddress = Address.FromPublicKey(new byte[] { 1, 2, 3 });
-        contractProvider.Setup(p => p.GetHolderInfoAsync(It.IsAny<Hash>(), null, It.IsAny<string>()))
-            .ReturnsAsync(new GetHolderInfoOutput
-            {
-                CaAddress = caAddress,
-                CreateChainId = ChainHelper.ConvertBase58ToChainId("AELF"),
-                GuardianList = new GuardianList()
-            });
+        _holderInfo = new GetHolderInfoOutput
+        {
+            CaAddress = caAddress,
+            CreateChainId = ChainHelper.ConvertBase58ToChainId("AELF"),
+            GuardianList = new GuardianList()
+        };
+        _contractProvider.Setup(p => p.GetHolderInfoAsync(It.IsAny<Hash>(), null, It.IsAny<string>()))
+            .ReturnsAsync(_holderInfo);
 
         _securityProvider.Setup(p => p.GetTransferLimitListByCaHashAsync(_caHash))
             .ReturnsAsync(new IndexerTransferLimitList
@@ -85,7 +87,7 @@ public class UserSecurityAssetPaginationTests
         lazyProvider.Setup(p => p.LazyGetService<IGuidGenerator>(SimpleGuidGenerator.Instance))
             .Returns(SimpleGuidGenerator.Instance);
         _service = new UserSecurityAppService(Snapshot(securityOptions), _securityProvider.Object,
-            Snapshot(chainOptions), contractProvider.Object, NullLogger<UserSecurityAppService>.Instance,
+            Snapshot(chainOptions), _contractProvider.Object, NullLogger<UserSecurityAppService>.Instance,
             _assetsProvider.Object, _eventBus.Object, Mock.Of<IAssetsLibraryProvider>())
         {
             LazyServiceProvider = lazyProvider.Object
@@ -107,6 +109,89 @@ public class UserSecurityAssetPaginationTests
         Assert.Equal(new[] { "AELF-ELF", "tDVV-ELF", "tDVV-USDT" }, Keys(result));
         Assert.Equal(new[] { 0, 200 }, _requestedOffsets);
         Assert.Equal(3, _publishedHistory.Count);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TransferLimits_NoResolvedAddressesFailsWithoutQueryingAssets(bool invalidHash)
+    {
+        SetUnfilteredEmptyAssets();
+        if (!invalidHash)
+        {
+            _contractProvider.Setup(p => p.GetHolderInfoAsync(It.IsAny<Hash>(), null, It.IsAny<string>()))
+                .ThrowsAsync(new InvalidOperationException("Holder RPC unavailable"));
+        }
+
+        var exception = await Record.ExceptionAsync(() =>
+            GetLimitsAsync(caHash: invalidHash ? "not-a-hex-hash" : _caHash));
+
+        VerifyNoAssetQueryOrHistory();
+        Assert.IsType<UserFriendlyException>(exception);
+        _contractProvider.Verify(p => p.GetHolderInfoAsync(It.IsAny<Hash>(), null, It.IsAny<string>()),
+            invalidHash ? Times.Never() : Times.Exactly(2));
+    }
+
+    [Theory]
+    [InlineData(BalanceCheckPath.WithoutChain)]
+    [InlineData(BalanceCheckPath.DestinationChain)]
+    [InlineData(BalanceCheckPath.OriginChain)]
+    public async Task BalanceCheck_AssetHolderLookupsAllFailAfterPrecheck_FailsClosedWithoutQueryingAssets(
+        BalanceCheckPath path)
+    {
+        SetUnfilteredEmptyAssets();
+        _contractProvider.SetupSequence(p => p.GetHolderInfoAsync(It.IsAny<Hash>(), null, It.IsAny<string>()))
+            .ReturnsAsync(_holderInfo)
+            .ReturnsAsync(_holderInfo)
+            .ThrowsAsync(new InvalidOperationException("Main chain holder RPC unavailable"))
+            .ThrowsAsync(new InvalidOperationException("Side chain holder RPC unavailable"));
+
+        var result = await CheckBalanceAsync(path);
+
+        VerifyNoAssetQueryOrHistory();
+        Assert.False(result.IsTransferSafe);
+        Assert.False(result.IsOriginChainSafe);
+        Assert.False(result.IsSynchronizing);
+        _contractProvider.Verify(p => p.GetHolderInfoAsync(It.IsAny<Hash>(), null, It.IsAny<string>()),
+            Times.Exactly(4));
+    }
+
+    [Theory]
+    [InlineData(BalanceCheckPath.WithoutChain)]
+    [InlineData(BalanceCheckPath.DestinationChain)]
+    [InlineData(BalanceCheckPath.OriginChain)]
+    public async Task BalanceCheck_InvalidNonemptyHashFailsClosedWithoutQueryingAssets(BalanceCheckPath path)
+    {
+        SetUnfilteredEmptyAssets();
+
+        var result = await CheckBalanceAsync(path, "not-a-hex-hash");
+
+        VerifyNoAssetQueryOrHistory();
+        Assert.False(result.IsTransferSafe);
+        Assert.False(result.IsOriginChainSafe);
+        Assert.False(result.IsSynchronizing);
+    }
+
+    [Fact]
+    public async Task TransferLimits_OneResolvedAddressStillQueriesOnlyTheSuccessfulChain()
+    {
+        _contractProvider.Setup(p => p.GetHolderInfoAsync(It.IsAny<Hash>(), null, "AELF"))
+            .ThrowsAsync(new InvalidOperationException("Main chain holder RPC unavailable"));
+        _assetsProvider.Setup(p => p.SearchUserAssetsAsync(It.IsAny<List<CAAddressInfo>>(), "", 0, 200))
+            .Callback<List<CAAddressInfo>, string, int, int>((addresses, _, _, _) =>
+            {
+                var address = Assert.Single(addresses);
+                Assert.Equal("tDVV", address.ChainId);
+                Assert.Equal(_holderInfo.CaAddress.ToBase58(), address.CaAddress);
+            })
+            .ReturnsAsync(Page(new List<IndexerSearchTokenNft> { Token("tDVV", "ELF") }, 1));
+
+        var result = await GetLimitsAsync();
+
+        Assert.Equal(1, result.TotalRecordCount);
+        Assert.Equal(new[] { "tDVV-ELF" }, Keys(result));
+        _assetsProvider.Verify(p => p.SearchUserAssetsAsync(It.IsAny<List<CAAddressInfo>>(), "", 0, 200),
+            Times.Once);
     }
 
     [Theory]
@@ -335,18 +420,36 @@ public class UserSecurityAssetPaginationTests
             });
     }
 
-    private Task<TransferLimitListResultDto> GetLimitsAsync(int skip = 0, int take = 1000) =>
+    private void SetUnfilteredEmptyAssets()
+    {
+        _assetsProvider.Setup(p => p.SearchUserAssetsAsync(It.IsAny<List<CAAddressInfo>>(), "",
+                It.IsAny<int>(), 200))
+            .ReturnsAsync(Page(new List<IndexerSearchTokenNft>(), 0));
+    }
+
+    private void VerifyNoAssetQueryOrHistory()
+    {
+        _assetsProvider.Verify(p => p.SearchUserAssetsAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(),
+            It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        _securityProvider.Verify(p => p.GetUserTransferLimitHistoryAsync(It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>()), Times.Never);
+        _securityProvider.Verify(p => p.GetTransferLimitListByCaHashAsync(It.IsAny<string>()), Times.Never);
+        Assert.Empty(_publishedHistory);
+    }
+
+    private Task<TransferLimitListResultDto> GetLimitsAsync(int skip = 0, int take = 1000, string caHash = null) =>
         _service.GetTransferLimitListByCaHashAsync(new GetTransferLimitListByCaHashDto
         {
-            CaHash = _caHash, SkipCount = skip, MaxResultCount = take
+            CaHash = caHash ?? _caHash, SkipCount = skip, MaxResultCount = take
         });
 
-    private Task<TokenBalanceTransferCheckAsyncResultDto> CheckBalanceAsync(BalanceCheckPath path) =>
+    private Task<TokenBalanceTransferCheckAsyncResultDto> CheckBalanceAsync(BalanceCheckPath path, string caHash = null) =>
         path == BalanceCheckPath.WithoutChain
-            ? _service.GetTokenBalanceTransferCheckAsync(new GetTokenBalanceTransferCheckDto { CaHash = _caHash })
+            ? _service.GetTokenBalanceTransferCheckAsync(new GetTokenBalanceTransferCheckDto
+                { CaHash = caHash ?? _caHash })
             : _service.GetTokenBalanceTransferCheckAsync(new GetTokenBalanceTransferCheckWithChainIdDto
             {
-                CaHash = _caHash,
+                CaHash = caHash ?? _caHash,
                 CheckTransferSafeChainId = path == BalanceCheckPath.OriginChain ? "AELF" : "tDVV"
             });
 

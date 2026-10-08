@@ -473,6 +473,11 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             }
         }
 
+        if (caAddrs.Count == 0)
+        {
+            throw new GraphQLResponseException($"No CA addresses resolved for user assets, caHash: {caHash}");
+        }
+
         // Read every mixed asset page so NFTs cannot hide tokens on later pages.
         var assets = new List<IndexerSearchTokenNft>();
         var skipCount = 0;
